@@ -20,6 +20,7 @@ import {
   buildSimulationAttemptSnapshot,
   hasAttemptWorthySimulationWork,
   loadSimulationAttempts,
+  mapAttemptUpsellToCartProducts,
   reconcileSimulationAttemptsForBooking,
 } from './ios-simulation-attempts.service.js';
 import {
@@ -568,13 +569,7 @@ export async function executeIosSimulationBookingAction(
               sessions: 5,
             }
           : null,
-        cartProducts: (targetAttempt.upsellProducts || []).map((p, idx) => ({
-          productId: idx + 1,
-          productName: p.productName,
-          price: p.totalPrice / (p.quantity || 1),
-          quantity: p.quantity,
-          totalPrice: p.totalPrice,
-        })),
+        cartProducts: mapAttemptUpsellToCartProducts(targetAttempt.upsellProducts),
         appliedPromotion: targetAttempt.promotionName
           ? {
               id: 'restored-promo',
@@ -620,7 +615,15 @@ export async function executeIosSimulationBookingAction(
     simulationMode: true,
   });
 
-  if ((action === 'COMPLETE_ORDER' || action === 'COMPLETE_CHECKOUT') && result.statusCode === 200) {
+  const isCompletedOrAppliedAdjustment =
+    (action === 'COMPLETE_ORDER' ||
+      action === 'COMPLETE_CHECKOUT' ||
+      action === 'APPROVE_POST_CHECKOUT_ADJUSTMENT' ||
+      (action === 'SUBMIT_POST_CHECKOUT_ADJUSTMENT' &&
+        result.payload?.settlementStatus !== 'PENDING_POST_CHECKOUT_ADJUSTMENT')) &&
+    result.statusCode === 200;
+
+  if (isCompletedOrAppliedAdjustment) {
     const savedOverride = (await simRepo.loadBookingOverride(bookingId)) || result.payload.updatedOverride || {};
     const meta = await resolveBookingBaseMeta(actorStaffId, bookingId, savedOverride, body, baseStore);
     const snapshot = await appendSimulationAttempt(
@@ -635,7 +638,12 @@ export async function executeIosSimulationBookingAction(
         meta,
       }),
       baseStore,
-      { updateLatestIfSameCompletion: preOverride.status === 'DONE' }
+      {
+        updateLatestIfSameCompletion:
+          preOverride.status === 'DONE' ||
+          action === 'SUBMIT_POST_CHECKOUT_ADJUSTMENT' ||
+          action === 'APPROVE_POST_CHECKOUT_ADJUSTMENT',
+      }
     );
     const allAttempts = await loadSimulationAttempts(actorStaffId, bookingId, baseStore);
     result.payload = {

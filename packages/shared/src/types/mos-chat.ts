@@ -748,6 +748,10 @@ export interface ActionMosChatMissionResponse {
   systemReply?: MosChatThreadReply | null;
 }
 
+export interface TogglePinConversationRequest {
+  pinned?: boolean;
+}
+
 export interface TogglePinConversationResponse {
   success: boolean;
   pinned: boolean;

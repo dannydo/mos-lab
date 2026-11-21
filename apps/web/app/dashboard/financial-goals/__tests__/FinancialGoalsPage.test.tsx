@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { ConfigProvider } from 'antd';
 import FinancialGoalsPage from '../page';
 import { apiClient } from '../../../../lib/api-client';
 import { FinancialGoalsOverview } from '@mos-lab/shared';
@@ -165,6 +166,31 @@ describe('FinancialGoalsPage', () => {
       expect(getOverviewSpy).toHaveBeenCalledWith('2026-11', false);
       expect(localStorage.getItem('financial_goals_include_vat')).toBe('false');
       expect(mockReplace).toHaveBeenCalledWith(expect.stringContaining('vat=false'));
+    });
+  });
+
+  it('opens and closes FinancialGoalConfigModal when clicking the close icon', async () => {
+    render(
+      <ConfigProvider theme={{ token: { motion: false } }}>
+        <FinancialGoalsPage />
+      </ConfigProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /cài đặt kpi/i })).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /cài đặt kpi/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Cài Đặt Mục Tiêu Tài Chính Tháng 2026-11/i)).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /close/i }));
+
+    await waitFor(() => {
+      const wrap = document.querySelector('.ant-modal-wrap');
+      expect(wrap === null || (wrap as HTMLElement).style.display === 'none').toBe(true);
     });
   });
 });

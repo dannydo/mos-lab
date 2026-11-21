@@ -1850,8 +1850,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               hasNewServerPinned ||
               (serverTs > 0 && Math.abs(serverTs - localTs) < 5000 && hasServerCustomizations)
             ) {
+              // Self-healing & Anti-Data Loss (MOS-BUG-238):
+              // If server returns empty pinned list but client has local pinned spaces, preserve local pins!
               const effectivePinned = Array.from(
-                new Set([...serverPinned, ...(serverTs < localTs ? localPinned : [])])
+                new Set([
+                  ...serverPinned,
+                  ...(localPinned.length > 0 && serverPinned.length === 0
+                    ? localPinned
+                    : serverTs < localTs
+                      ? localPinned
+                      : []),
+                ])
               );
               const effectiveHidden = (res.userPrefs?.hiddenIds || []).filter((id) => !effectivePinned.includes(id));
               const mergedPrefs: MosChatUserSidebarPrefs = {
@@ -1859,6 +1868,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 pinnedIds: effectivePinned,
                 hiddenIds: effectiveHidden,
               };
+
+              // Self-heal: If server unexpectedly had 0 pinned items but local client had pinned spaces,
+              // synchronize mergedPrefs back to server to restore persistent pinned state in database.
+              if (localPinned.length > 0 && serverPinned.length === 0) {
+                apiClient.chat.updateUserPrefs(mergedPrefs).catch(() => {});
+              }
 
               try {
                 if (JSON.stringify(prev) === JSON.stringify(mergedPrefs)) {
@@ -3568,7 +3583,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   // ================= GOOGLE CHAT WORKSPACE PERSONAL SIDEBAR ACTIONS =================
   const togglePinConversation = useCallback(
-    (convId: string) => {
+    (convId: string, explicitPinned?: boolean) => {
       const targetConv = allUserConversations.find((c) => c.id === convId);
       const convLabel = targetConv
         ? targetConv.type === 'space'
@@ -3587,11 +3602,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           : [convId, ...(prev.pinnedIds || []).filter((id) => id !== convId)];
 
         // Pinned Trumps Hidden (MOS-BUG-216): Khi ghim thì tự động bỏ khỏi hiddenIds
-        const nextHidden = exists ? prev.hiddenIds || [] : (prev.hiddenIds || []).filter((id) => id !== convId);
+        const nextHidden = willPin ? (prev.hiddenIds || []).filter((id) => id !== convId) : prev.hiddenIds || [];
 
         const nextConvOrder: Record<string, string[]> = { ...(prev.conversationOrder || {}) };
         const secKey = targetConv?.type === 'space' ? 'spaces' : 'dm';
-        if (!exists) {
+        if (willPin) {
           const curArr = nextConvOrder[secKey] || [];
           nextConvOrder[secKey] = [convId, ...curArr.filter((id) => id !== convId)];
           for (const [sKey, arr] of Object.entries(nextConvOrder)) {

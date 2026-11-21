@@ -30,8 +30,9 @@ import {
   loadOrReconcileSimulationAttemptsForActor,
   SIM_TRAINING_SAMPLE_PHOTOS,
 } from './services/ios-simulation-actions.service.js';
-import { resolveCustomerBookingTab } from '@mos-lab/shared';
+import { resolveCustomerBookingTab, YEPPEUM_PRODUCT_ID } from '@mos-lab/shared';
 import { createIosDualModeBooking } from './services/ios-booking-create.service.js';
+import { fetchIosProductCatalog } from './services/ios-product-scan.service.js';
 import { CvlTrainingMentorshipService } from '../kpi/services/cvl-training-mentorship.service.js';
 
 const COMPLETE_NLASH_ATTRS: IosBookingAttributes = {
@@ -447,14 +448,14 @@ test('MOS-FEAT-228: updateSimulationAttempt and SIM_APPLY_ATTEMPT workflow', asy
   const targetAttempt = initialAttempts[0];
   assert.equal(targetAttempt.notes, undefined);
 
-  // 2. Update saved scenario notes, combo, upsell, discount, and tip
+  // 2. Update saved scenario notes, combo, upsell (real Wings product Dưỡng Mi Yeppeum Korea), discount, and tip
   const updated = await updateSimulationAttempt(
     staffId,
     bookingId,
     targetAttempt.attemptId,
     {
       bookingId,
-      notes: 'Kịch bản Chốt Combo 5L VIP + Serum dưỡng mi',
+      notes: 'Kịch bản Chốt Combo 5L VIP + Dưỡng Mi Yeppeum Korea',
       selectedStyle: 'Katun',
       selectedComboName: 'Gói 5 Lần',
       selectedComboPrice: 1850000,
@@ -468,7 +469,7 @@ test('MOS-FEAT-228: updateSimulationAttempt and SIM_APPLY_ATTEMPT workflow', asy
     store
   );
 
-  assert.equal(updated.notes, 'Kịch bản Chốt Combo 5L VIP + Serum dưỡng mi');
+  assert.equal(updated.notes, 'Kịch bản Chốt Combo 5L VIP + Dưỡng Mi Yeppeum Korea');
   assert.equal(updated.selectedStyle, 'Katun');
   assert.equal(updated.selectedComboName, 'Gói 5 Lần');
   assert.equal(updated.selectedComboPrice, 1850000);

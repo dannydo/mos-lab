@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { Card, Typography, Tag, Row, Col, Divider, Table, Alert, Space } from 'antd';
 import {
   PhoneOutlined,
@@ -16,7 +17,10 @@ import {
   BookOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../../../../context/ThemeContext';
-import { MermaidViewer } from '../../../../components/ui/MermaidViewer';
+
+const MermaidViewer = dynamic(() => import('../../../../components/ui/MermaidViewer').then((m) => m.MermaidViewer), {
+  ssr: false,
+});
 
 const { Title, Text, Paragraph } = Typography;
 

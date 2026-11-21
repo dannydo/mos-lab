@@ -512,6 +512,11 @@ const loadChatStateInFlightByFastify = new WeakMap<
   }>
 >();
 const loadStaffInFlightByFastify = new WeakMap<FastifyInstance, Promise<MosChatStaffMember[]>>();
+const MAX_UNREAD_SUMMARY_CACHE_ENTRIES = 300;
+const unreadSummaryCacheByFastify = new WeakMap<
+  FastifyInstance,
+  Map<string, { version: number; staffFetchedAt: number; payload: MosChatUnreadSummaryResponse }>
+>();
 
 function trimConversationsRetention(conversations: MosChatConversation[]): MosChatConversation[] {
   return conversations.map((c) => {
@@ -1545,14 +1550,48 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const state = await loadChatState(fastify);
         const { conversations, tasks, accessConfig, userPrefsByUserKey } = state;
         const staffDirectory = await loadStaffDirectoryCached(fastify);
+        const stateVersion = memoryChatCache?.version || state.version;
+        const staffFetchedAt = memoryStaffCache?.fetchedAt || 0;
+        const summaryCacheKey = `${Number(user?.id || 0)}:${String(user?.username || '').toLowerCase()}:${String(user?.role || '').toLowerCase()}`;
+
+        let fastifySummaryCache = unreadSummaryCacheByFastify.get(fastify);
+        if (!fastifySummaryCache) {
+          fastifySummaryCache = new Map();
+          unreadSummaryCacheByFastify.set(fastify, fastifySummaryCache);
+        }
+        const cachedSummary = fastifySummaryCache.get(summaryCacheKey);
+        if (
+          memoryChatCache &&
+          cachedSummary &&
+          cachedSummary.version === stateVersion &&
+          cachedSummary.staffFetchedAt === staffFetchedAt
+        ) {
+          return cachedSummary.payload;
+        }
+
+        const setSummaryCache = (payload: MosChatUnreadSummaryResponse): MosChatUnreadSummaryResponse => {
+          if (memoryChatCache && fastifySummaryCache) {
+            if (fastifySummaryCache.size >= MAX_UNREAD_SUMMARY_CACHE_ENTRIES) {
+              const oldestKey = fastifySummaryCache.keys().next().value;
+              if (oldestKey !== undefined) fastifySummaryCache.delete(oldestKey);
+            }
+            fastifySummaryCache.set(summaryCacheKey, {
+              version: stateVersion,
+              staffFetchedAt,
+              payload,
+            });
+          }
+          return payload;
+        };
+
         const canAccess = evaluateCanUserAccessMosChat(user, staffDirectory, accessConfig);
         if (!canAccess) {
-          return {
+          return setSummaryCache({
             unreadCount: 0,
             urgentTaskCount: 0,
             hasUnread: false,
-            version: memoryChatCache?.version || state.version,
-          } satisfies MosChatUnreadSummaryResponse;
+            version: stateVersion,
+          });
         }
 
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
@@ -1576,13 +1615,13 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           (t) => !t.done && (t.priority === 'URGENT' || t.priority === 'HIGH')
         ).length;
 
-        return {
+        return setSummaryCache({
           unreadCount: totalUnread,
           urgentTaskCount,
           hasUnread: totalUnread > 0 || urgentTaskCount > 0,
-          version: memoryChatCache?.version || state.version,
+          version: stateVersion,
           lastMessageAt,
-        } satisfies MosChatUnreadSummaryResponse;
+        });
       } catch (err: SafeAny) {
         fastify.log.error('Chat unread-summary error:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể đếm tin nhắn chưa đọc' });
@@ -4327,8 +4366,31 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const state = await loadChatState(fastify);
         const { conversations, userPrefsByUserKey } = state;
         const staffDirectory = await loadStaffDirectoryCached(fastify);
-        const targetConv = conversations.find((c) => c.id === convId);
-        const isSpecialPersonalConv = convId === 'ai-copilot-mos' || convId.startsWith('dm-self-');
+        let targetConv = conversations.find((c) => c.id === convId);
+        if (!targetConv && (fastify as SafeAny)?.prisma?.crm?.crmChatConversation) {
+          try {
+            const dbConv = await (fastify as SafeAny).prisma.crm.crmChatConversation.findUnique({
+              where: { id: convId },
+            });
+            if (dbConv) {
+              targetConv = {
+                id: dbConv.id,
+                type: dbConv.type as SafeAny,
+                name: dbConv.name,
+                color: dbConv.color,
+                subtitle: dbConv.subtitle || undefined,
+                unreadCount: 0,
+                updatedAt: dbConv.updatedAt ? new Date(dbConv.updatedAt).toISOString() : new Date().toISOString(),
+                messages: [],
+              };
+            }
+          } catch (_) {}
+        }
+        const isSpecialPersonalConv =
+          convId === 'ai-copilot-mos' ||
+          convId.startsWith('dm-self-') ||
+          convId.startsWith('space-') ||
+          convId.startsWith('dm-');
         if (!targetConv && !isSpecialPersonalConv) {
           return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc trò chuyện' });
         }
@@ -4343,7 +4405,8 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           ? (currentPrefs.hiddenIds || []).filter((id) => id !== convId)
           : currentPrefs.hiddenIds || [];
 
-        const secKey = targetConv?.type === 'space' ? 'spaces' : 'dm';
+        const isSpace = targetConv?.type === 'space' || convId.startsWith('space-');
+        const secKey = isSpace ? 'spaces' : 'dm';
         const nextConvOrder: Record<string, string[]> = { ...(currentPrefs.conversationOrder || {}) };
         if (shouldPin) {
           const curArr = nextConvOrder[secKey] || [];

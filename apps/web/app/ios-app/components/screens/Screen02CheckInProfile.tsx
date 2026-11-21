@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { hasCompleteNaturalLashSet } from '@mos-lab/shared';
+import {
+  hasCompleteNaturalLashSet,
+  resolveActiveBookingComboWallets,
+  type IosCustomerComboWalletItem,
+} from '@mos-lab/shared';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem, LashHistoryItem, resolveStaffAvatarUrl, KNOWN_STAFF_AVATARS } from '../../state/mockData';
 import { useTheme } from '../../../../context/ThemeContext';
-import { Screen02LashHistorySheet } from './Screen02LashHistorySheet';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { CvFeather2Badge, CvFeather1Badge } from '../ui-kit/CvFeatherLabels';
 import {
@@ -18,8 +21,6 @@ import {
 import { resolveNaturalLashCountLabel } from './NaturalLashAssessmentData';
 import { CustomerAvatarPicker } from '../ui-kit/CustomerAvatarPicker';
 import { History } from 'lucide-react';
-import { ComboWalletDetailModal } from '../ui-kit/ComboWalletDetailModal';
-import { CustomerHistoryAndSpendingSheet } from '../ui-kit/CustomerHistoryAndSpendingSheet';
 import { QuickCheckInComboCard } from './checkin/QuickCheckInComboCard';
 import { CheckInStaffAndProfileCards } from './checkin/CheckInStaffAndProfileCards';
 import { CheckInBottomActionBar } from './checkin/CheckInBottomActionBar';
@@ -30,6 +31,7 @@ interface Screen02CheckInProfileProps {
   booking: BookingItem;
   actor?: ActiveActorProfile;
   isAdmin?: boolean;
+  isSimulationMode?: boolean;
   onRefreshDb?: () => void;
   isCheckInLocked?: boolean;
   activeServicingCustomerName?: string;
@@ -84,6 +86,7 @@ export function Screen02CheckInProfile({
   booking,
   actor,
   isAdmin = false,
+  isSimulationMode = false,
   onRefreshDb,
   isCheckInLocked = false,
   activeServicingCustomerName,
@@ -118,8 +121,9 @@ export function Screen02CheckInProfile({
     booking?.attributes?.isNewClientDiagnosticDone === false;
   const requiresNaturalLashCheck = !hasCompleteNaturalLashSet(booking);
   const customerNote = booking?.customerNote || 'Không có ghi chú đặc biệt';
-  const isComboLive = Boolean(booking?.comboLiveStatus?.isComboLive);
-  const remainingSessions = booking?.comboLiveStatus?.remainingSessions ?? 0;
+  const resolvedWallets = useMemo(() => resolveActiveBookingComboWallets(booking), [booking]);
+  const isComboLive = resolvedWallets.isRedeemingUpperToday;
+  const remainingSessions = resolvedWallets.effectiveComboLiveStatus.remainingSessions ?? 0;
   const actorTierLabel =
     actor?.tier === 'CVLL' ? <CvFeather2Badge /> : actor?.tier === 'CVL' ? <CvFeather1Badge /> : 'CC';
 
@@ -378,9 +382,17 @@ export function Screen02CheckInProfile({
       serviceType: initialServiceType,
       hasUnderMink: Boolean(booking?.attributes?.hasUnderMink),
       underMinkServiceType: booking?.attributes?.underMinkServiceType,
-      hasUnderMinkCombo: Boolean(booking?.underMinkComboStatus?.hasUnderCombo),
+      hasUnderMinkCombo: resolvedWallets.isRedeemingUnderToday,
     });
-  }, [isComboLive, preset, booking, quickServiceType, quickHasUnderMink, quickUnderServiceType]);
+  }, [
+    isComboLive,
+    preset,
+    booking,
+    quickServiceType,
+    quickHasUnderMink,
+    quickUnderServiceType,
+    resolvedWallets.isRedeemingUnderToday,
+  ]);
 
   const handleExecuteQuickCheckIn = () => {
     if (requiresNaturalLashCheck || !onQuickCheckIn) {
@@ -541,6 +553,46 @@ export function Screen02CheckInProfile({
           }}
           onRequestServiceTypeChange={handleRequestQuickServiceTypeChange}
           onOpenWalletModal={() => setIsWalletModalOpen(true)}
+          onSelectUpperWallet={
+            onSelectComboWallet
+              ? (wallet: IosCustomerComboWalletItem) =>
+                  onSelectComboWallet({
+                    targetBookingId: booking?.id,
+                    selectedUpperComboBalanceId: wallet.balanceId,
+                    skipUpperCombo: false,
+                  })
+              : undefined
+          }
+          onSkipUpperCombo={
+            onSelectComboWallet
+              ? () =>
+                  onSelectComboWallet({
+                    targetBookingId: booking?.id,
+                    selectedUpperComboBalanceId: null,
+                    skipUpperCombo: true,
+                  })
+              : undefined
+          }
+          onSelectUnderWallet={
+            onSelectComboWallet
+              ? (wallet: IosCustomerComboWalletItem) =>
+                  onSelectComboWallet({
+                    targetBookingId: booking?.id,
+                    selectedUnderComboBalanceId: wallet.balanceId,
+                    skipUnderCombo: false,
+                  })
+              : undefined
+          }
+          onSkipUnderCombo={
+            onSelectComboWallet
+              ? () =>
+                  onSelectComboWallet({
+                    targetBookingId: booking?.id,
+                    selectedUnderComboBalanceId: null,
+                    skipUnderCombo: true,
+                  })
+              : undefined
+          }
         />
 
         {/* Cards 3, 3.5, Technical Notes, Natural Lash Profile & Lash History */}
@@ -639,28 +691,18 @@ export function Screen02CheckInProfile({
         quickServiceType={quickServiceType}
         quickUnderServiceType={quickUnderServiceType}
         booking={booking}
-      />
-
-      {/* Lash History Modal / Bottom Sheet */}
-      <Screen02LashHistorySheet
-        item={selectedLashHistory}
-        isOpen={isLashHistoryOpen}
-        onClose={() => setIsLashHistoryOpen(false)}
-        onApplySpecs={() => setIsLashHistoryOpen(false)}
-      />
-
-      <ComboWalletDetailModal
-        booking={booking}
-        isOpen={isWalletModalOpen}
-        onClose={() => setIsWalletModalOpen(false)}
+        selectedLashHistory={selectedLashHistory}
+        isLashHistoryOpen={isLashHistoryOpen}
+        setIsLashHistoryOpen={setIsLashHistoryOpen}
+        isWalletModalOpen={isWalletModalOpen}
+        setIsWalletModalOpen={setIsWalletModalOpen}
         isAdmin={isAdmin}
-        onUpdated={() => onRefreshDb?.()}
-      />
-
-      <CustomerHistoryAndSpendingSheet
-        isOpen={isHistoryModalOpen}
-        onClose={() => setIsHistoryModalOpen(false)}
-        booking={booking}
+        onRefreshDb={onRefreshDb}
+        resolvedWallets={resolvedWallets}
+        onSelectComboWallet={onSelectComboWallet}
+        isHistoryModalOpen={isHistoryModalOpen}
+        setIsHistoryModalOpen={setIsHistoryModalOpen}
+        isSimulationMode={isSimulationMode}
       />
 
       {/* ── Referral Diamond Modal (Khách Mới) ───────────────────────────────── */}

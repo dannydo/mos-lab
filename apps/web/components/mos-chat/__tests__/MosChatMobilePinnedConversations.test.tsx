@@ -17,6 +17,7 @@ vi.mock('../../../lib/api-client', () => ({
       updateTask: vi.fn().mockResolvedValue({ success: true }),
       sendMessage: vi.fn().mockResolvedValue({ success: true }),
       getMessages: vi.fn().mockResolvedValue({ messages: [] }),
+      updateUserPrefs: vi.fn().mockResolvedValue({ success: true }),
     },
   },
 }));
@@ -204,7 +205,7 @@ describe('MOS-BUG-196: Mobile Pinned Spaces and DMs Experience', () => {
     const pinHeaderBtn = screen.getByLabelText(/Ghim Không gian này lên đầu/i);
     expect(pinHeaderBtn).toBeInTheDocument();
 
-    // Click pin button
+    // Click pin button - should pass explicit true for pinning (MOS-BUG-238)
     fireEvent.click(pinHeaderBtn);
     expect(apiClient.chat.togglePinConversation).toHaveBeenCalledWith('space-general', true);
   });

@@ -24,6 +24,7 @@ import { basename, dirname, relative, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import type {
   InboxIdeTaskProvisioningRequest,
+  InboxImplementationModelTier,
   InboxFollowUpWorkerJob,
   InboxPlanWorkerJob,
   InboxPlanDraft,
@@ -91,7 +92,7 @@ export type TicketSessionRecord = {
   reportId: number;
   conversationId: string;
   worktreePath: string;
-  modelTier?: 'flash_lite' | 'flash' | 'pro';
+  modelTier?: InboxImplementationModelTier | 'flash_lite' | 'pro';
   createdAt: string;
   updatedAt: string;
 };
@@ -513,11 +514,47 @@ export async function detectAntigravityLsEnv(): Promise<Record<string, string>> 
   return {};
 }
 
-const DEFAULT_AG_MODEL_ENUM_BY_TIER: Record<'flash_lite' | 'flash' | 'pro', string> = {
-  pro: 'MODEL_PLACEHOLDER_M417', // Gemini 4 Argon (High)
-  flash: 'MODEL_PLACEHOLDER_M318', // Gemini 3.8 Flash (High)
-  flash_lite: 'MODEL_PLACEHOLDER_M320', // Gemini 3.8 Flash (Low)
+const AGENTAPI_MODEL_ID_BY_TIER: Record<InboxImplementationModelTier, string> = {
+  hydrogen: 'gemini-4-hydrogen-high',
+  orchestrator_neon: 'gemini-pro-orchestrator-neon',
+  orchestrator_carbon: 'gemini-pro-orchestrator',
+  orchestrator_argon: 'gemini-pro-orchestrator-argon',
+  flash: 'gemini-3.8-flash-high',
 };
+
+const DEFAULT_AG_MODEL_ENUM_BY_TIER: Record<InboxImplementationModelTier, string> = {
+  hydrogen: 'gemini-4-hydrogen-high', // Gemini 4 Hydrogen (High)
+  orchestrator_neon: 'gemini-pro-orchestrator-neon', // Orchestrator (Neon)
+  orchestrator_carbon: 'gemini-pro-orchestrator', // Orchestrator (Carbon)
+  orchestrator_argon: 'gemini-pro-orchestrator-argon', // Orchestrator (Argon)
+  flash: 'MODEL_PLACEHOLDER_M318', // Gemini 3.8 Flash (High)
+};
+
+export function normalizeProvisionerModelTier(modelTier?: string | null): InboxImplementationModelTier {
+  const normalized = (modelTier || '').trim().toLowerCase();
+  if (normalized === 'hydrogen' || normalized === 'gemini-4-hydrogen-high') return 'hydrogen';
+  if (normalized === 'orchestrator_neon' || normalized === 'gemini-pro-orchestrator-neon') {
+    return 'orchestrator_neon';
+  }
+  if (normalized === 'orchestrator_carbon' || normalized === 'gemini-pro-orchestrator') {
+    return 'orchestrator_carbon';
+  }
+  if (normalized === 'orchestrator_argon' || normalized === 'gemini-pro-orchestrator-argon' || normalized === 'pro') {
+    return 'orchestrator_argon';
+  }
+  if (normalized === 'flash' || normalized === 'gemini-3.8-flash-high' || normalized === 'flash_lite') {
+    return 'flash';
+  }
+  return 'hydrogen';
+}
+
+export function resolveAgentApiModelArg(modelTier?: string | null): string {
+  const trimmed = (modelTier || '').trim();
+  if (trimmed.startsWith('gemini-') || trimmed.startsWith('MODEL_PLACEHOLDER_')) {
+    return trimmed;
+  }
+  return AGENTAPI_MODEL_ID_BY_TIER[normalizeProvisionerModelTier(trimmed || process.env.MOS_AG_MODEL)];
+}
 
 export async function resolveAntigravityPlanModel(
   modelTier: string | undefined,
@@ -525,12 +562,12 @@ export async function resolveAntigravityPlanModel(
   csrfToken?: string,
   fetcher: typeof fetch = fetch
 ): Promise<string> {
-  const normalized = (modelTier || process.env.MOS_AG_MODEL?.trim() || 'pro').toLowerCase();
+  const raw = (modelTier || process.env.MOS_AG_MODEL?.trim() || 'hydrogen').trim();
+  const normalized = raw.toLowerCase();
   if (normalized.startsWith('model_placeholder_')) {
     return normalized.toUpperCase();
   }
-  const tier: 'flash_lite' | 'flash' | 'pro' =
-    normalized === 'flash_lite' ? 'flash_lite' : normalized === 'flash' ? 'flash' : 'pro';
+  const tier = normalizeProvisionerModelTier(normalized);
   const fallbackEnum = DEFAULT_AG_MODEL_ENUM_BY_TIER[tier];
 
   if (!lsAddress || !csrfToken) {
@@ -555,19 +592,27 @@ export async function resolveAntigravityPlanModel(
         clientModelConfigs?: Array<{
           label?: string;
           disabled?: boolean;
-          modelOrAlias?: { model?: string };
+          modelOrAlias?: { model?: string; alias?: string };
         }>;
       };
       const configs = (data.clientModelConfigs || []).filter((c) => !c.disabled && c.modelOrAlias?.model);
       const match =
-        tier === 'pro'
-          ? configs.find((c) => /Argon.*\(High\)/i.test(c.label || '')) ||
-            configs.find((c) => /Argon/i.test(c.label || ''))
-          : tier === 'flash'
-            ? configs.find((c) => /Flash.*\(High\)/i.test(c.label || '')) ||
-              configs.find((c) => /Flash/i.test(c.label || ''))
-            : configs.find((c) => /Flash.*\(Low\)/i.test(c.label || '')) ||
-              configs.find((c) => /Flash.*\(Medium\)/i.test(c.label || ''));
+        tier === 'hydrogen'
+          ? configs.find((c) => /Hydrogen.*\(High\)/i.test(c.label || '')) ||
+            configs.find((c) => /Hydrogen/i.test(c.label || '')) ||
+            configs.find((c) => c.modelOrAlias?.model === 'gemini-4-hydrogen-high')
+          : tier === 'orchestrator_neon'
+            ? configs.find((c) => /Orchestrator.*Neon/i.test(c.label || '')) ||
+              configs.find((c) => c.modelOrAlias?.model === 'gemini-pro-orchestrator-neon')
+            : tier === 'orchestrator_carbon'
+              ? configs.find((c) => /Orchestrator.*Carbon/i.test(c.label || '')) ||
+                configs.find((c) => c.modelOrAlias?.model === 'gemini-pro-orchestrator')
+              : tier === 'orchestrator_argon'
+                ? configs.find((c) => /Orchestrator.*Argon/i.test(c.label || '')) ||
+                  configs.find((c) => c.modelOrAlias?.model === 'gemini-pro-orchestrator-argon')
+                : configs.find((c) => /Flash.*\(High\)/i.test(c.label || '')) ||
+                  configs.find((c) => /Flash/i.test(c.label || '')) ||
+                  configs.find((c) => c.modelOrAlias?.model === 'gemini-3.8-flash-high');
       if (match?.modelOrAlias?.model) {
         return match.modelOrAlias.model;
       }
@@ -622,7 +667,7 @@ export async function spawnAntigravitySession(
 ): Promise<string> {
   const prompt = buildAgentPrompt(request, worktreePath);
   const title = `[${request.ticketKey}] ${request.title.slice(0, 80)}`;
-  const modelTier = request.modelTier || (process.env.MOS_AG_MODEL?.trim() as 'flash_lite' | 'flash' | 'pro') || 'pro';
+  const modelTier = normalizeProvisionerModelTier(request.modelTier || process.env.MOS_AG_MODEL?.trim());
   const detectedEnv = await detectAntigravityLsEnv();
   const lsAddress = detectedEnv.ANTIGRAVITY_LS_ADDRESS;
   const csrfToken = detectedEnv.ANTIGRAVITY_CSRF_TOKEN;
@@ -713,7 +758,7 @@ export async function spawnAntigravitySession(
   }
 
   const command = resolveAgentApiCommand();
-  const modelArg = modelTier ? [`--model=${modelTier}`] : [];
+  const modelArg = [`--model=${resolveAgentApiModelArg(modelTier)}`];
   const args = command.endsWith('language_server')
     ? ['agentapi', 'new-conversation', ...modelArg, `--title=${title}`, prompt]
     : ['new-conversation', ...modelArg, `--title=${title}`, prompt];
@@ -756,7 +801,7 @@ export async function sendMessageToAntigravitySession(
   conversationId: string,
   content: string,
   title?: string,
-  modelTier?: 'flash_lite' | 'flash' | 'pro',
+  modelTier?: InboxImplementationModelTier | 'flash_lite' | 'pro',
   fetcher: typeof fetch = fetch
 ): Promise<void> {
   const detectedEnv = await detectAntigravityLsEnv();
@@ -831,11 +876,9 @@ export async function getOrCreateAntigravitySession(
   worktreePath: string
 ): Promise<{ taskId: string; isNew: boolean }> {
   const existing = findExistingSessionForTicket(request.ticketKey, request.reportId);
-  const resolvedTier =
-    request.modelTier ||
-    existing?.modelTier ||
-    (process.env.MOS_AG_MODEL?.trim() as 'flash_lite' | 'flash' | 'pro') ||
-    'pro';
+  const resolvedTier = normalizeProvisionerModelTier(
+    request.modelTier || existing?.modelTier || process.env.MOS_AG_MODEL?.trim()
+  );
   if (existing) {
     process.stdout.write(
       `[Provisioner] Ticket ${request.ticketKey} already has active session ${existing.conversationId}. Reusing session (1 ticket -> 1 session) with modelTier=${resolvedTier}.\n`
@@ -1289,7 +1332,9 @@ Chỉ trả về JSON thuần túy (không dùng markdown code blocks):
     const sessionKey = `clarify:${job.ticketKey}`;
     const sessions = readTicketSessions();
     const existingConvId = sessions[sessionKey]?.conversationId;
-    const res = await AgChatBridgeService.executeLocalAgPrompt(existingConvId, prompt, `Clarify [${job.ticketKey}]`);
+    const res = await AgChatBridgeService.executeLocalAgPrompt(existingConvId, prompt, `Clarify [${job.ticketKey}]`, {
+      model: 'gemini-3.8-flash-high',
+    });
     if (res.conversationId && res.conversationId !== existingConvId) {
       sessions[sessionKey] = {
         conversationId: res.conversationId,

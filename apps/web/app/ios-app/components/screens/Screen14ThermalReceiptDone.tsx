@@ -1,7 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { formatIosPaymentMethodLabel } from '@mos-lab/shared';
+import {
+  canAdjustDoneBookingPostCheckout,
+  formatIosPaymentMethodLabel,
+  getVietnamDateYmd,
+  isDoneBookingPendingPostCheckoutAdjustment,
+  resolveActiveBookingComboWallets,
+} from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { ChevronLeft, Heart, Gem } from 'lucide-react';
 import { BookingItem } from '../../state/mockData';
@@ -10,7 +16,7 @@ import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { CvFeather1Badge, FeatherSvg } from '../ui-kit/CvFeatherLabels';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
 import { CustomerPortfolioTriggerButton } from '../ui-kit/CustomerPortfolioTriggerButton';
-import { ThermalReceiptComboItemsSection } from './checkout/ReceiptComboExpiryLine';
+import { ThermalReceiptComboItemsSection, ThermalServiceComboSubnote } from './checkout/ReceiptComboExpiryLine';
 import { formatCartProductDisplayName } from './upsell/upsellCheckoutHelpers';
 import {
   calculateCvSerumTierBonus,
@@ -19,11 +25,22 @@ import {
   calculateActorTipBreakdown,
 } from '../../state/useIosBillingCheckout';
 import type { CvToCvPlusRequirements } from '../../state/useIosBillingCheckout';
+import { PostCheckoutCvlNoteCard } from './post-checkout/PostCheckoutCvlNoteCard';
+import { PostCheckoutComboSheet } from './post-checkout/PostCheckoutComboSheet';
+import {
+  PostCheckoutAuditTimeline,
+  PostCheckoutDoneCtaButton,
+  PostCheckoutReceiptReconciliationBox,
+} from './post-checkout/PostCheckoutHistorySection';
 
 interface Screen14ThermalReceiptDoneProps {
   booking: BookingItem;
   actor?: ActiveActorProfile;
   cvPlusRules?: Partial<CvToCvPlusRequirements>;
+  isAdmin?: boolean;
+  isSimulationMode?: boolean;
+  isReadOnlyMentorView?: boolean;
+  onRefreshDb?: () => Promise<unknown> | void;
   onFinishOrder: () => void;
   onBack?: () => void;
   simulationReplaySlot?: React.ReactNode;
@@ -33,6 +50,10 @@ export function Screen14ThermalReceiptDone({
   booking,
   actor,
   cvPlusRules,
+  isAdmin = false,
+  isSimulationMode = false,
+  isReadOnlyMentorView = false,
+  onRefreshDb,
   onFinishOrder,
   onBack,
   simulationReplaySlot,
@@ -40,9 +61,25 @@ export function Screen14ThermalReceiptDone({
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
   const [showStaffRewards, setShowStaffRewards] = useState<boolean>(false);
+  const [isPostCheckoutOpen, setIsPostCheckoutOpen] = useState<boolean>(false);
+
+  const postCheckoutEligibility = canAdjustDoneBookingPostCheckout({
+    status: booking?.status,
+    bookingDateYmd: booking?.bookingDateYmd,
+    todayVnYmd: getVietnamDateYmd(),
+    actorTier: actor?.tier,
+    isAdmin,
+    actorStaffId: actor?.staffId,
+    assignedStaffId: booking?.assignedStaffId,
+    checkInStaffId: booking?.checkInStaffId,
+    checkOutStaffId: booking?.checkOutStaffId,
+    isReadOnlyMentorView,
+  });
+  const isPendingPostAdj = booking?.status === 'DONE' && isDoneBookingPendingPostCheckoutAdjustment(booking);
 
   useEffect(() => {
     setShowStaffRewards(false);
+    setIsPostCheckoutOpen(false);
   }, [booking?.id]);
   const customerName = booking?.customerName || 'Chị Trúc';
   const customerPhone = (booking?.customerPhone || '0933.779.207').replace(/\*+\s*/g, '').trim();
@@ -58,15 +95,14 @@ export function Screen14ThermalReceiptDone({
   const tipAmount = booking?.billing?.tipAmount ?? 0;
   const diamondUsed = booking?.billing?.diamondUsed || 0;
   const diamondDiscountAmount = booking?.billing?.diamondDiscountAmount || diamondUsed * 1000;
-  const hasUnderMinkCombo = Boolean(
-    booking?.underMinkComboStatus?.hasUnderCombo && (booking?.underMinkComboStatus?.remainingSessions ?? 0) > 0
-  );
+  const resolvedWallets = resolveActiveBookingComboWallets(booking || {});
+  const hasUnderMinkCombo = resolvedWallets.isRedeemingUnderToday;
   const effectiveServiceCharge = resolveEffectiveServiceTotal({
     servicePrice,
     upgradePrice: booking?.upgradePrice || 0,
     serviceName: booking?.serviceName,
     isComboLive: Boolean(
-      booking?.comboLiveStatus?.isComboLive &&
+      resolvedWallets.isRedeemingUpperToday &&
       (!selectedCombo || !selectedCombo.todayUsageMode || selectedCombo.todayUsageMode === 'USE_OLD_COMBO')
     ),
     hasUnderMink: booking?.attributes?.hasUnderMink,
@@ -269,25 +305,14 @@ export function Screen14ThermalReceiptDone({
           <div className={`flex justify-between items-start ${isDark ? 'text-neutral-300' : 'text-gray-800'}`}>
             <div className="space-y-0.5">
               <span className={`font-bold text-[var(--mos-text)]`}>1. {serviceName}</span>
-              {comboRedemption ? (
-                <div className={`text-[10.5px] ${isDark ? 'text-sky-400' : 'text-sky-700'} font-bold`}>
-                  ✓ Trừ 1 lượt gói · Combo còn{' '}
-                  <span className={`tabular-nums font-black ${isDark ? 'text-sky-300' : 'text-sky-900'}`}>
-                    ✦ {comboRedemption.paidRemaining ?? 0} · ↻ {comboRedemption.bonusRemaining ?? 0}
-                  </span>
-                </div>
-              ) : (selectedCombo && selectedCombo.todaySingleServiceWaived !== false) ||
-                (selectedUnderCombo && selectedUnderCombo.todaySingleServiceWaived !== false) ? (
-                <div className={`text-[10.5px] ${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-bold`}>
-                  {effectiveServiceCharge === 0
-                    ? '✓ Trừ vào Buổi 1 gói mới mua (Miễn thu lẻ ca này)'
-                    : '✓ Đã trừ Buổi 1 gói mới mua · Thu lẻ dịch vụ còn lại'}
-                </div>
-              ) : selectedCombo ? (
-                <div className={`text-[10.5px] ${isDark ? 'text-indigo-400' : 'text-indigo-700'} font-bold`}>
-                  ✓ Khách trả lẻ ca này · Giữ trọn số buổi gói mới mua
-                </div>
-              ) : null}
+              <ThermalServiceComboSubnote
+                isDark={isDark}
+                resolvedWallets={resolvedWallets}
+                comboRedemption={comboRedemption}
+                selectedCombo={selectedCombo}
+                selectedUnderCombo={selectedUnderCombo}
+                effectiveServiceCharge={effectiveServiceCharge}
+              />
             </div>
             <div className="text-right shrink-0">
               <span className={`tabular-nums font-bold text-[var(--mos-text)]`}>
@@ -404,6 +429,8 @@ export function Screen14ThermalReceiptDone({
               })}
             </span>
           </div>
+
+          <PostCheckoutReceiptReconciliationBox booking={booking} isDark={isDark} />
 
           {/* Ảnh bill đối soát kế toán */}
           {booking?.billing?.transferProofPhoto && (
@@ -609,10 +636,32 @@ export function Screen14ThermalReceiptDone({
         )}
       </div>
 
+      <PostCheckoutCvlNoteCard
+        booking={booking}
+        isDark={isDark}
+        showStaffRewards={showStaffRewards}
+        isSimulationMode={isSimulationMode}
+        onNoteCreated={() => void onRefreshDb?.()}
+      />
+      <PostCheckoutAuditTimeline
+        booking={booking}
+        isDark={isDark}
+        showStaffRewards={showStaffRewards}
+        onOpenSheet={() => setIsPostCheckoutOpen(true)}
+      />
+
       {simulationReplaySlot && <div className="pt-2">{simulationReplaySlot}</div>}
 
       {/* Bottom Action Area */}
-      <div className="pt-3">
+      <div className="pt-3 space-y-2">
+        {booking?.status === 'DONE' && postCheckoutEligibility.allowed && (
+          <PostCheckoutDoneCtaButton
+            isDark={isDark}
+            isPendingPostAdj={isPendingPostAdj}
+            onClick={() => setIsPostCheckoutOpen(true)}
+          />
+        )}
+
         <button
           onClick={booking?.status === 'DONE' ? onBack || onFinishOrder : onFinishOrder}
           className="w-full py-3.5 px-4 rounded-2xl bg-[#FFB400] text-black font-extrabold text-[15px] shadow-md active:scale-98 transition-transform text-center cursor-pointer"
@@ -620,6 +669,17 @@ export function Screen14ThermalReceiptDone({
           {booking?.status === 'DONE' ? 'QUAY VỀ DANH SÁCH LỊCH HẸN' : 'ĐÓNG & QUAY VỀ DANH SÁCH KHÁCH HÀNG'}
         </button>
       </div>
+
+      <PostCheckoutComboSheet
+        open={isPostCheckoutOpen}
+        onClose={() => setIsPostCheckoutOpen(false)}
+        booking={booking}
+        actor={actor}
+        isAdmin={isAdmin}
+        isSimulationMode={isSimulationMode}
+        cvPlusRules={cvPlusRules}
+        onAdjusted={onRefreshDb}
+      />
     </div>
   );
 }

@@ -11,6 +11,13 @@ import {
 import { useTheme } from '../../../../context/ThemeContext';
 import { SERUM_TIERS_CVL } from '../../state/mockData';
 import { FeatherSvg } from '../ui-kit/CvFeatherLabels';
+import {
+  FALLBACK_IOS_SIMULATION_PRODUCTS,
+  formatYeppeumProductName,
+  matchesCatalogProduct,
+  resolveItemUnitPrice,
+  SimulationUpsellProductsSection,
+} from './SimulationUpsellProductsSection';
 
 interface SimulationAttemptEditModalProps {
   isOpen: boolean;
@@ -62,18 +69,76 @@ export function SimulationAttemptEditModal({
   const [comboPrice, setComboPrice] = useState<number>(attempt.selectedComboPrice || 0);
   const [underComboName, setUnderComboName] = useState<string>(attempt.selectedUnderComboName || '');
   const [underComboPrice, setUnderComboPrice] = useState<number>(attempt.selectedUnderComboPrice || 0);
-  const [upsellProducts, setUpsellProducts] = useState<
-    Array<{ productName: string; quantity: number; totalPrice: number }>
-  >(attempt.upsellProducts || []);
+  const [upsellProducts, setUpsellProducts] = useState<IosSimulationUpsellProductItem[]>(attempt.upsellProducts || []);
+  const [catalogProducts, setCatalogProducts] = useState<IosProductCatalogItem[]>(FALLBACK_IOS_SIMULATION_PRODUCTS);
   const [promotionName, setPromotionName] = useState<string>(attempt.promotionName || '');
   const [promotionDiscount, setPromotionDiscount] = useState<number>(attempt.promotionDiscountAmount || 0);
   const [tipAmount, setTipAmount] = useState<number>(attempt.tipAmount || 0);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setNotes(attempt.notes || '');
+    setSelectedStyle(attempt.selectedStyle || 'Natural');
+    setComboName(attempt.selectedComboName || '');
+    setComboPrice(attempt.selectedComboPrice || 0);
+    setUnderComboName(attempt.selectedUnderComboName || '');
+    setUnderComboPrice(attempt.selectedUnderComboPrice || 0);
+    setUpsellProducts(attempt.upsellProducts || []);
+    setPromotionName(attempt.promotionName || '');
+    setPromotionDiscount(attempt.promotionDiscountAmount || 0);
+    setTipAmount(attempt.tipAmount || 0);
+    setErrorMsg(null);
+  }, [isOpen, attempt]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    const fetchCatalog = apiClient?.ios?.getProductCatalog;
+    if (typeof fetchCatalog !== 'function') return;
+
+    fetchCatalog()
+      .then((res) => {
+        if (cancelled) return;
+        if (res?.success && Array.isArray(res.products) && res.products.length > 0) {
+          setCatalogProducts(res.products);
+        }
+      })
+      .catch(() => {
+        // Keep canonical Yeppeum fallback when offline or in isolated tests
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  const displayCatalogProducts = useMemo(() => {
+    const merged: IosProductCatalogItem[] = [...catalogProducts];
+    const hasSerumInCatalog = merged.some((p) => p.isSerum || isYeppeumSerumProduct(p));
+    if (!hasSerumInCatalog) {
+      merged.unshift(FALLBACK_IOS_SIMULATION_PRODUCTS[0]);
+    }
+    for (const existing of upsellProducts) {
+      const isSerumExisting = isYeppeumSerumProduct(existing);
+      const alreadyListed = merged.some((cat) => matchesCatalogProduct(existing, cat));
+      if (!alreadyListed) {
+        merged.push({
+          productId: Number(existing.productId) || 0,
+          productSku: '',
+          productName: formatCartProductDisplayName(existing.productName) || existing.productName,
+          price: resolveItemUnitPrice(existing),
+          isSerum: isSerumExisting,
+        });
+      }
+    }
+    return merged;
+  }, [catalogProducts, upsellProducts]);
+
   // Realtime calculated metrics
   const upsellTotal = useMemo(() => {
-    return upsellProducts.reduce((sum, p) => sum + p.totalPrice, 0);
+    return upsellProducts.reduce((sum, p) => sum + Number(p.totalPrice || 0), 0);
   }, [upsellProducts]);
 
   const servicePrice = Number(attempt.servicePrice) || 0;
@@ -81,6 +146,21 @@ export function SimulationAttemptEditModal({
   const grandTotal = useMemo(() => {
     return Math.max(0, servicePrice + comboPrice + underComboPrice + upsellTotal - promotionDiscount + tipAmount);
   }, [servicePrice, comboPrice, underComboPrice, upsellTotal, promotionDiscount, tipAmount]);
+
+  const comboBonus = useMemo(() => {
+    return calculateDualComboTierBonus(comboPrice, underComboPrice).totalBonus;
+  }, [comboPrice, underComboPrice]);
+
+  const serumBonus = useMemo(() => {
+    return upsellProducts.reduce((sum, p) => {
+      const qty = Math.max(1, Number(p.quantity) || 1);
+      const unitPrice = resolveItemUnitPrice(p);
+      if (isYeppeumSerumProduct(p) || /serum/i.test(p.productName || '')) {
+        return sum + calculateCvSerumTierBonus(unitPrice, qty);
+      }
+      return sum;
+    }, 0);
+  }, [upsellProducts]);
 
   const estimatedReward = useMemo(() => {
     const comboBonus = comboPrice > 0 ? (comboPrice >= 1000000 ? 50000 : 30000) : 0;
@@ -91,15 +171,34 @@ export function SimulationAttemptEditModal({
       return sum + calculateCvSerumTierBonus(unitPrice, qty);
     }, 0);
     const tipShare = Math.round(tipAmount * 0.8);
-    return Math.round(servicePrice * 0.1 + comboBonus + serumBonus + tipShare);
-  }, [servicePrice, comboPrice, upsellProducts, tipAmount]);
+    return comboBonus + serumBonus + tipShare;
+  }, [comboBonus, serumBonus, tipAmount]);
 
   const cvPoints = useMemo(() => {
-    let pts = attempt.cvRotationPoints || 1;
+    let pts = 1;
     if (comboPrice > 0) pts += 1;
+    if (underComboPrice > 0) pts += 1;
     if (upsellProducts.length > 0) pts += 1;
     return pts;
-  }, [attempt.cvRotationPoints, comboPrice, upsellProducts]);
+  }, [comboPrice, underComboPrice, upsellProducts]);
+
+  const hasCustomSavedCombo = useMemo(() => {
+    if (!attempt.selectedComboName && !(attempt.selectedComboPrice > 0)) return false;
+    return !COMMON_COMBOS.some(
+      (c) =>
+        (c.price === 0 ? !attempt.selectedComboName && attempt.selectedComboPrice === 0 : c.name === attempt.selectedComboName && c.price === attempt.selectedComboPrice)
+    );
+  }, [attempt.selectedComboName, attempt.selectedComboPrice]);
+
+  const hasCustomSavedUnderCombo = useMemo(() => {
+    if (!attempt.selectedUnderComboName && !(attempt.selectedUnderComboPrice > 0)) return false;
+    return !COMMON_UNDER_COMBOS.some(
+      (uc) =>
+        (uc.price === 0
+          ? !attempt.selectedUnderComboName && attempt.selectedUnderComboPrice === 0
+          : uc.name === attempt.selectedUnderComboName && uc.price === attempt.selectedUnderComboPrice)
+    );
+  }, [attempt.selectedUnderComboName, attempt.selectedUnderComboPrice]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -127,13 +226,26 @@ export function SimulationAttemptEditModal({
 
   if (!isOpen) return null;
 
-  const handleToggleProduct = (item: { productName: string; price: number }) => {
-    const existing = upsellProducts.find((p) => p.productName === item.productName);
+  const handleToggleProduct = (prod: IosProductCatalogItem) => {
+    const isSerum = Boolean(prod.isSerum || isYeppeumSerumProduct(prod));
+    const existing = upsellProducts.find((item) => matchesCatalogProduct(item, prod));
     if (existing) {
-      setUpsellProducts(upsellProducts.filter((p) => p.productName !== item.productName));
-    } else {
-      setUpsellProducts([...upsellProducts, { productName: item.productName, quantity: 1, totalPrice: item.price }]);
+      setUpsellProducts((prev) => prev.filter((p) => !matchesCatalogProduct(p, prod)));
+      return;
     }
+
+    const baseName = formatCartProductDisplayName(prod.productName) || prod.productName;
+    const defaultPrice = isSerum && prod.price <= 0 ? 1100000 : Math.max(0, Number(prod.price || 0));
+    setUpsellProducts((prev) => [
+      ...prev,
+      {
+        ...(prod.productId > 0 ? { productId: prod.productId } : {}),
+        productName: baseName,
+        quantity: 1,
+        unitPrice: defaultPrice,
+        totalPrice: defaultPrice,
+      },
+    ]);
   };
 
   const handleQuantityChange = (productName: string, delta: number) => {
@@ -292,6 +404,27 @@ export function SimulationAttemptEditModal({
               )}
             </div>
             <div className="grid grid-cols-2 gap-1.5">
+              {hasCustomSavedCombo && attempt.selectedComboName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setComboName(attempt.selectedComboName || '');
+                    setComboPrice(attempt.selectedComboPrice || 0);
+                  }}
+                  className={`col-span-2 p-2 rounded-xl text-left border text-[11px] transition-all cursor-pointer ${
+                    comboName === attempt.selectedComboName && comboPrice === attempt.selectedComboPrice
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-500 font-bold'
+                      : isDark
+                        ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700 text-neutral-300'
+                        : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300 text-neutral-700'
+                  }`}
+                >
+                  <div className="truncate">{attempt.selectedComboName} (Đang chọn)</div>
+                  <div className="text-[10px] opacity-75 tabular-nums">
+                    {Number(attempt.selectedComboPrice || 0).toLocaleString('vi-VN')}đ
+                  </div>
+                </button>
+              )}
               {COMMON_COMBOS.map((c) => {
                 const active = comboName === (c.price > 0 ? c.name : '') && comboPrice === c.price;
                 return (
@@ -336,6 +469,28 @@ export function SimulationAttemptEditModal({
               )}
             </div>
             <div className="grid grid-cols-3 gap-1.5">
+              {hasCustomSavedUnderCombo && attempt.selectedUnderComboName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUnderComboName(attempt.selectedUnderComboName || '');
+                    setUnderComboPrice(attempt.selectedUnderComboPrice || 0);
+                  }}
+                  className={`col-span-3 p-2 rounded-xl text-left border text-[10.5px] transition-all cursor-pointer ${
+                    underComboName === attempt.selectedUnderComboName &&
+                    underComboPrice === attempt.selectedUnderComboPrice
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-500 font-bold'
+                      : isDark
+                        ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700 text-neutral-300'
+                        : 'bg-neutral-50 border-neutral-200 hover:border-neutral-300 text-neutral-700'
+                  }`}
+                >
+                  <div className="truncate">{attempt.selectedUnderComboName} (Đang chọn)</div>
+                  <div className="text-[9.5px] opacity-75 tabular-nums">
+                    {Number(attempt.selectedUnderComboPrice || 0).toLocaleString('vi-VN')}đ
+                  </div>
+                </button>
+              )}
               {COMMON_UNDER_COMBOS.map((uc) => {
                 const active = underComboName === (uc.price > 0 ? uc.name : '') && underComboPrice === uc.price;
                 return (
@@ -541,7 +696,11 @@ export function SimulationAttemptEditModal({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-800">
+          <div
+            className={`flex items-center justify-end gap-2 pt-2 border-t ${
+              isDark ? 'border-neutral-800' : 'border-neutral-200'
+            }`}
+          >
             {onApplyToWorkspace && (
               <button
                 type="button"
@@ -562,6 +721,8 @@ export function SimulationAttemptEditModal({
                     promotionDiscountAmount: promotionDiscount,
                     grandTotal,
                     tipAmount,
+                    comboBonusAmount: comboBonus,
+                    serumBonusAmount: serumBonus,
                     totalEstimatedReward: estimatedReward,
                     cvRotationPoints: cvPoints,
                   });

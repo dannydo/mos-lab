@@ -267,7 +267,7 @@ describe('CustomerHistoryAndSpendingSheet (MOS-FEAT-235)', () => {
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
 
-  it('opens customer history & spending sheet directly from Screen03ConsultationMatrix header button', async () => {
+  it('opens customer history & spending sheet directly on ALL tab from Screen03ConsultationMatrix header button and visit badge', async () => {
     render(
       <Screen03ConsultationMatrix
         booking={SAMPLE_BOOKING}
@@ -287,12 +287,28 @@ describe('CustomerHistoryAndSpendingSheet (MOS-FEAT-235)', () => {
       );
       expect(screen.getByText(/1\.425\.600 đ/)).toBeDefined();
     });
+
+    const allTab = screen.getByRole('tab', { name: /TẤT CẢ/i });
+    expect(allTab.getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByTestId('history-row-ALL-8002')).toBeDefined();
+
+    // Switch to THANH TOÁN tab and verify spending row
+    fireEvent.click(screen.getByRole('tab', { name: /THANH TOÁN/i }));
+    expect(screen.getByTestId('history-row-PAYMENTS-8002')).toBeDefined();
+
+    // Close and re-open via LẦN 32 badge in header
+    fireEvent.click(screen.getByRole('button', { name: 'Đóng lịch sử khách hàng' }));
+    fireEvent.click(screen.getByRole('button', { name: /LẦN 32/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /TẤT CẢ/i }).getAttribute('aria-selected')).toBe('true');
+    });
   });
 
-  it('opens customer history & spending sheet from Screen02CheckInProfile', async () => {
+  it('opens customer history & spending sheet on ALL tab from Screen02CheckInProfile and forwards isSimulationMode', async () => {
     render(
       <Screen02CheckInProfile
         booking={SAMPLE_BOOKING}
+        isSimulationMode={true}
         onBack={vi.fn()}
         onCheckIn={vi.fn()}
       />
@@ -303,10 +319,23 @@ describe('CustomerHistoryAndSpendingSheet (MOS-FEAT-235)', () => {
     await waitFor(() => {
       expect(apiClient.ios.getCustomerHistory).toHaveBeenCalledWith(
         33732,
-        expect.objectContaining({ bookingId: 9001 }),
+        expect.objectContaining({ bookingId: 9001, sim: true }),
         expect.any(Object)
       );
       expect(screen.getByText(/1\.425\.600 đ/)).toBeDefined();
+      expect(screen.getByRole('tab', { name: /TẤT CẢ/i }).getAttribute('aria-selected')).toBe('true');
     });
+  });
+
+  it('shows clear message when customerId is missing', () => {
+    render(
+      <CustomerHistoryAndSpendingSheet
+        isOpen={true}
+        initialTab="ALL"
+        onClose={vi.fn()}
+        booking={{ ...SAMPLE_BOOKING, customerId: 0 }}
+      />
+    );
+    expect(screen.getByTestId('history-missing-customer-id')).toBeDefined();
   });
 });

@@ -6,9 +6,16 @@ import {
   isTelesalesRole,
   canAccessIosConsultationApp,
   canDirectlySettleCounterPayment,
+  canSwitchIosBranch,
+  resolveAssignedSalonStoreId,
   resolveLockedIosRoleForUser,
 } from './auth.js';
-import { resolveMenuKeysForApiPath, isCvAllowedPath, isNonAdminAllowedDashboardPath } from './menu-access.js';
+import {
+  resolveMenuKeysForApiPath,
+  isCvAllowedPath,
+  isNonAdminAllowedDashboardPath,
+  resolveLandingRoute,
+} from './menu-access.js';
 
 describe('Auth Role Invariants & Routing Tests', () => {
   it('should correctly identify CV roles', () => {
@@ -55,22 +62,66 @@ describe('Auth Role Invariants & Routing Tests', () => {
     assert.ok(savedFilterKeys.includes('customers-all'));
   });
 
-  it('should return /dashboard/cv for CV roles and /dashboard for others', () => {
-    // CV roles -> /dashboard/cv
-    assert.equal(getDefaultRouteForRole('cv'), '/dashboard/cv');
-    assert.equal(getDefaultRouteForRole('lt'), '/dashboard/cv');
-    assert.equal(getDefaultRouteForRole('technician'), '/dashboard/cv');
-    assert.equal(getDefaultRouteForRole('ktv'), '/dashboard/cv');
+  it('should land each role in its own workspace (Operations Center only for management)', () => {
+    const expected: Record<string, string> = {
+      cv: '/dashboard/cv',
+      lt: '/dashboard/cv',
+      technician: '/dashboard/cv',
+      ktv: '/dashboard/cv',
+      cvl: '/dashboard/cv',
+      cvll: '/dashboard/cv',
+      admin: '/dashboard',
+      super_admin: '/dashboard',
+      manager: '/dashboard',
+      boss: '/dashboard',
+      cho: '/dashboard',
+      fm: '/dashboard',
+      telesales: '/dashboard/telesale-target',
+      booker: '/dashboard/telesale-target',
+      cc: '/ios-app',
+      consultant: '/ios-app',
+      cs: '/dashboard/cskh',
+      coca: '/dashboard/cskh',
+      control: '/dashboard/cskh',
+      oc: '/dashboard/today',
+      ls: '/dashboard/today',
+      qa: '/dashboard/qa-shop',
+      qc: '/dashboard/qa-shop',
+      qa_qc: '/dashboard/qa-shop',
+      hr: '/dashboard/staff',
+      accountant: '/dashboard/finance/cash-flow',
+    };
+    for (const [role, route] of Object.entries(expected)) {
+      assert.equal(getDefaultRouteForRole(role), route, role);
+    }
+    assert.equal(getDefaultRouteForRole(' TELESALES '), '/dashboard/telesale-target');
+    // Unknown / missing roles never fall into the Operations Center
+    assert.equal(getDefaultRouteForRole('new_role'), '/dashboard/chat');
+    assert.equal(getDefaultRouteForRole(null), '/dashboard/chat');
+    assert.equal(getDefaultRouteForRole(undefined), '/dashboard/chat');
+  });
 
-    // Other roles -> /dashboard
-    assert.equal(getDefaultRouteForRole('admin'), '/dashboard');
-    assert.equal(getDefaultRouteForRole('super_admin'), '/dashboard');
-    assert.equal(getDefaultRouteForRole('manager'), '/dashboard');
-    assert.equal(getDefaultRouteForRole('telesales'), '/dashboard');
-    assert.equal(getDefaultRouteForRole('cc'), '/dashboard');
-    assert.equal(getDefaultRouteForRole('cs'), '/dashboard');
-    assert.equal(getDefaultRouteForRole(null), '/dashboard');
-    assert.equal(getDefaultRouteForRole(undefined), '/dashboard');
+  it('resolveLandingRoute respects Menu Access and falls back safely', () => {
+    // Visibility not loaded / admin -> preferred route as-is
+    assert.equal(resolveLandingRoute({ role: 'telesales' }), '/dashboard/telesale-target');
+    assert.equal(resolveLandingRoute({ role: 'admin', menuVisibility: { dashboard: false } }), '/dashboard');
+    // Preferred route visible
+    assert.equal(
+      resolveLandingRoute({ role: 'cs', menuVisibility: { 'cs-hub': true, today: true } }),
+      '/dashboard/cskh'
+    );
+    // Preferred route hidden -> first allowed menu entry (menu order)
+    assert.equal(
+      resolveLandingRoute({ role: 'cs', menuVisibility: { 'cs-hub': false, today: true, kpi: true } }),
+      '/dashboard/today'
+    );
+    // Unknown role -> first allowed menu entry
+    assert.equal(resolveLandingRoute({ role: 'new_role', menuVisibility: { kpi: true } }), '/dashboard/kpi');
+    // Nothing allowed -> universal chat
+    assert.equal(resolveLandingRoute({ role: 'hr', menuVisibility: { today: false } }), '/dashboard/chat');
+    assert.equal(resolveLandingRoute({ role: 'new_role' }), '/dashboard/chat');
+    // CC always gets /ios-app regardless of menu visibility
+    assert.equal(resolveLandingRoute({ role: 'cc', menuVisibility: { today: true } }), '/ios-app');
   });
 
   it('should strictly lock /ios-app access to only CVL, CVLL, CC, and Admin/SuperAdmin', () => {
@@ -161,5 +212,22 @@ describe('Auth Role Invariants & Routing Tests', () => {
       isNonAdminAllowedDashboardPath('/dashboard/nyc/campaigns/hoi-sinh-mi', { cv: true, 'career-path': true }, 'cv'),
       false
     );
+  });
+
+  it('locks non-admin iOS branch switching & normalizes Head Office storeId=4 to Đề Thám (6) (MOS-BUG-237)', () => {
+    assert.equal(resolveAssignedSalonStoreId(6), 6);
+    assert.equal(resolveAssignedSalonStoreId(16), 16);
+    assert.equal(resolveAssignedSalonStoreId(4), 6);
+    assert.equal(resolveAssignedSalonStoreId(0), 6);
+    assert.equal(resolveAssignedSalonStoreId(null), 6);
+
+    assert.equal(canSwitchIosBranch({ isAdmin: false, iosRole: 'CVL' }), false);
+    assert.equal(canSwitchIosBranch({ isAdmin: false, iosRole: 'CVLL' }), false);
+    assert.equal(canSwitchIosBranch({ isAdmin: false, iosRole: 'CC' }), false);
+    assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'CVL' }), false);
+    assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'CVLL' }), false);
+    assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'CV' }), false);
+    assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'CC' }), true);
+    assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'STORE' }), true);
   });
 });

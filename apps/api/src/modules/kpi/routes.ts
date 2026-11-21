@@ -732,6 +732,9 @@ export async function kpiRoutes(fastify: FastifyInstance) {
     }
 
     const { startStr, endStr, start, end } = parseDateRange(startDate, endDate, 7);
+    const cacheKey = `kpi:summary:${user.role}:${targetStaffId ?? 'all'}:${role || 'all'}:${startStr}:${endStr}`;
+    const cachedSummary = fastify.cache?.get(cacheKey);
+    if (cachedSummary) return cachedSummary;
 
     try {
       if (role === 'oc' || role === 'consultant') {
@@ -751,7 +754,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           });
         }
 
-        return {
+        const ocSummary = {
           startDate: startStr,
           endDate: endStr,
           totalPlanned: 0,
@@ -762,28 +765,57 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           totalEarnings,
           salary,
         };
+        fastify.cache?.set(cacheKey, ocSummary, 30_000);
+        return ocSummary;
       }
 
-      const salaries = await calculateBookerSalaryStats(fastify, start, end, targetStaffId);
+      const [salaries, { staffIds, legacyUserIds }] = await Promise.all([
+        calculateBookerSalaryStats(fastify, start, end, targetStaffId),
+        resolveTelesalesKpiScope(fastify, targetStaffId),
+      ]);
       const salary = targetStaffId !== undefined ? salaries[targetStaffId] : null;
-      const { staffIds, legacyUserIds } = await resolveTelesalesKpiScope(fastify, targetStaffId);
       let totalCalled = 0;
       let totalAnswered = 0;
       let totalHappy = 0;
 
-      if (staffIds.length > 0) {
-        // 1. Query crmCallLog (CRM Call Logs)
-        const crmLogs = await fastify.prisma.crm.crmCallLog.findMany({
-          where: {
-            staffId: { in: staffIds },
-            createdAt: { gte: start, lte: end },
-          },
-          select: {
-            callResult: true,
-            outcome: true,
-          },
-        });
+      const [crmLogs, omicallLogs, totalBooked] = await Promise.all([
+        staffIds.length > 0
+          ? fastify.prisma.crm.crmCallLog.findMany({
+              where: {
+                staffId: { in: staffIds },
+                createdAt: { gte: start, lte: end },
+              },
+              select: {
+                callResult: true,
+                outcome: true,
+              },
+            })
+          : Promise.resolve([]),
+        staffIds.length > 0
+          ? fastify.prisma.crm.crmOmicallLog.findMany({
+              where: {
+                staffId: { in: staffIds },
+                createdAt: { gte: start, lte: end },
+                direction: 'outbound',
+              },
+              select: {
+                status: true,
+                happyCallStatus: true,
+              },
+            })
+          : Promise.resolve([]),
+        legacyUserIds.length > 0
+          ? fastify.prisma.legacy.order.count({
+              where: {
+                created_staff_id: { in: legacyUserIds },
+                date_created: { gte: start, lte: end },
+                order_state: { not: 'Cancelled' },
+              },
+            })
+          : Promise.resolve(0),
+      ]);
 
+      if (staffIds.length > 0) {
         const crmCalled = crmLogs.length;
         let crmAnswered = 0;
         let crmHappy = 0;
@@ -796,19 +828,6 @@ export async function kpiRoutes(fastify: FastifyInstance) {
           if (out === 'HAPPY' || out === 'HAPPY_CALL' || out === 'APPROVED') {
             crmHappy++;
           }
-        });
-
-        // 2. Query crmOmicallLog (Raw OmiCall Webhook logs)
-        const omicallLogs = await fastify.prisma.crm.crmOmicallLog.findMany({
-          where: {
-            staffId: { in: staffIds },
-            createdAt: { gte: start, lte: end },
-            direction: 'outbound',
-          },
-          select: {
-            status: true,
-            happyCallStatus: true,
-          },
         });
 
         const omiCalled = omicallLogs.length;
@@ -828,21 +847,6 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         totalHappy = Math.max(crmHappy, omiHappy);
       }
 
-      let totalBooked = 0;
-      if (legacyUserIds.length > 0) {
-        const bookedOrders = await fastify.prisma.legacy.order.findMany({
-          where: {
-            created_staff_id: { in: legacyUserIds },
-            date_created: { gte: start, lte: end },
-            order_state: { not: 'Cancelled' },
-          },
-          select: {
-            id: true,
-          },
-        });
-        totalBooked = bookedOrders.length;
-      }
-
       let totalCheckin = 0;
       let totalEarnings = 0;
 
@@ -851,7 +855,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         totalEarnings += s.totalSalary;
       });
 
-      return {
+      const summary = {
         startDate: startStr,
         endDate: endStr,
         totalPlanned: totalBooked,
@@ -863,6 +867,8 @@ export async function kpiRoutes(fastify: FastifyInstance) {
         totalEarnings: salary ? salary.totalSalary : totalEarnings,
         salary,
       };
+      fastify.cache?.set(cacheKey, summary, 30_000);
+      return summary;
     } catch (err: SafeAny) {
       fastify.log.error(err as SafeAny, 'Summary KPI error');
       return reply.status(500).send({

@@ -390,11 +390,13 @@ export function computeBookingFinancials(params: {
 
   const rawSettlement = overrideBilling?.settlementStatus as IosSettlementStatus | undefined;
   const settlementStatus: IosSettlementStatus | undefined =
-    dbOrderState === 'Completed'
-      ? 'SETTLED_COMPLETED'
-      : (dbOrderState === 'CheckOut' || dbOrderState === 'Check-out') && !rawSettlement
-        ? 'PENDING_COUNTER_SETTLEMENT'
-        : rawSettlement;
+    rawSettlement === 'PENDING_POST_CHECKOUT_ADJUSTMENT'
+      ? 'PENDING_POST_CHECKOUT_ADJUSTMENT'
+      : dbOrderState === 'Completed'
+        ? 'SETTLED_COMPLETED'
+        : (dbOrderState === 'CheckOut' || dbOrderState === 'Check-out') && !rawSettlement
+          ? 'PENDING_COUNTER_SETTLEMENT'
+          : rawSettlement;
 
   return {
     cvRewardBreakdown: {
@@ -448,6 +450,19 @@ export function computeBookingFinancials(params: {
       bankTransferRef: overrideBilling?.bankTransferRef,
       posTransactionId: overrideBilling?.posTransactionId,
       legacySyncedAt: overrideBilling?.legacySyncedAt,
+      ...(overrideBilling?.previousPaidGrandTotal !== undefined
+        ? { previousPaidGrandTotal: overrideBilling.previousPaidGrandTotal }
+        : {}),
+      ...(overrideBilling?.previousPaymentMethod
+        ? { previousPaymentMethod: overrideBilling.previousPaymentMethod }
+        : {}),
+      ...(overrideBilling?.previousPaymentBreakdown
+        ? { previousPaymentBreakdown: overrideBilling.previousPaymentBreakdown }
+        : {}),
+      ...(overrideBilling?.lastAdjustmentMode ? { lastAdjustmentMode: overrideBilling.lastAdjustmentMode } : {}),
+      ...(overrideBilling?.lastAdjustmentDeltaAmount !== undefined
+        ? { lastAdjustmentDeltaAmount: overrideBilling.lastAdjustmentDeltaAmount }
+        : {}),
       tipAmount,
       tipCvShare: tipBreakdown.techShareAmount,
       tipCheckInShare: tipBreakdown.checkInShareAmount,
@@ -467,16 +482,21 @@ export function applyIosScopeAndCounts(
     effectiveRole: string;
     scope: string;
     activeStaffId: number;
+    storeId?: number;
     targetDate?: string;
     todayVn?: string;
   }
 ): { effectiveList: IosBookingItem[]; counts: IosSegmentCounts } {
-  const { effectiveRole, scope, activeStaffId, targetDate, todayVn } = params;
+  const { effectiveRole, scope, activeStaffId, storeId, targetDate, todayVn } = params;
   const shouldApplyCvlPrivacyScope =
     effectiveRole === 'CVL' || (effectiveRole !== 'CC' && effectiveRole !== 'STORE' && scope === 'MY_CUSTOMERS');
+  const branchFiltered =
+    storeId && storeId > 0 && (effectiveRole === 'CVL' || shouldApplyCvlPrivacyScope)
+      ? allBookings.filter((b) => !b.storeId || Number(b.storeId) === Number(storeId))
+      : allBookings;
   const effectiveList = shouldApplyCvlPrivacyScope
-    ? filterBookingsForCvlScope(allBookings, activeStaffId, { targetDate, todayVn })
-    : allBookings;
+    ? filterBookingsForCvlScope(branchFiltered, activeStaffId, { targetDate, todayVn })
+    : branchFiltered;
 
   const counts: IosSegmentCounts = {
     incoming: effectiveList.filter((b) => b.status === 'INCOMING').length,
@@ -486,4 +506,108 @@ export function applyIosScopeAndCounts(
   };
 
   return { effectiveList, counts };
+}
+
+export function buildDefaultLiveOrderAttributes(params: {
+  isFirstVisitClient: boolean;
+  savedProfile?: NaturalLashConsultationAttributes;
+  isRawOrderPlaceholder: boolean;
+  lastSpecs?: {
+    material?: string;
+    volume?: string;
+    count?: string;
+    style?: string;
+    color?: string;
+    serviceKey?: string;
+  };
+  actualSpecs?: {
+    volume?: string;
+    count?: string;
+    style?: string;
+    color?: string;
+    hasUnderMink?: boolean;
+    underMinkServiceType?: 'Normal' | 'Retain';
+  };
+  effectiveServiceName: string;
+  serviceKey?: string | null;
+  servicePrice: number;
+  note?: string;
+  normalizeLashMaterialLabel: (value?: string) => string | undefined;
+}): IosBookingItem['attributes'] {
+  const {
+    isFirstVisitClient,
+    savedProfile,
+    isRawOrderPlaceholder,
+    lastSpecs,
+    actualSpecs,
+    effectiveServiceName,
+    serviceKey,
+    servicePrice,
+    note,
+    normalizeLashMaterialLabel,
+  } = params;
+
+  const matchedSpec = matchComboCategoryAndVolumeFromBooking({
+    material: isRawOrderPlaceholder ? lastSpecs?.material : undefined,
+    volume: actualSpecs?.volume || (isRawOrderPlaceholder ? lastSpecs?.volume : undefined),
+    count: actualSpecs?.count || (isRawOrderPlaceholder ? lastSpecs?.count : undefined),
+    serviceName: effectiveServiceName,
+    serviceKey: !isRawOrderPlaceholder ? serviceKey || undefined : lastSpecs?.serviceKey,
+    servicePrice: !isRawOrderPlaceholder ? servicePrice : undefined,
+  });
+  const catId = matchedSpec.categoryId;
+  const defaultMat =
+    catId === 'Classic_1D' || catId === 'Classic_Volume'
+      ? 'Classic 1D'
+      : catId === 'Volume_2D' || catId === 'Volume_3D'
+        ? 'Volume'
+        : catId.startsWith('HyperLight')
+          ? 'HyperLight'
+          : catId.startsWith('IvyLight')
+            ? 'Ivylight'
+            : catId.startsWith('UltraLight')
+              ? 'UltraLight'
+              : 'Flawless Mink';
+  const defaultVol =
+    defaultMat === 'Classic 1D' || defaultMat === 'Flawless Mink'
+      ? '1D'
+      : catId === 'Volume_3D'
+        ? '3D'
+        : catId === 'Volume_2D'
+          ? '2D'
+          : catId.includes('_')
+            ? catId.split('_')[1]
+            : '4X';
+  const unit =
+    defaultMat === 'Classic 1D' || defaultMat === 'Flawless Mink' ? 'sợi' : defaultMat === 'Ivylight' ? 'nhịp' : 'fan';
+  const fallbackCountPerEye =
+    defaultMat === 'Classic 1D' || defaultMat === 'Ivylight'
+      ? 90
+      : defaultMat === 'Flawless Mink'
+        ? 60
+        : defaultMat === 'UltraLight' || defaultMat === 'Volume'
+          ? 80
+          : 70;
+  const resolvedCountPerEye =
+    matchedSpec.volume !== 'under' && matchedSpec.volumeMeta?.countPerEye
+      ? matchedSpec.volumeMeta.countPerEye
+      : fallbackCountPerEye;
+  const defaultCount = `${resolvedCountPerEye} ${unit}`;
+  const normalizedLastMaterial = normalizeLashMaterialLabel(lastSpecs?.material);
+  const canInheritLastSpecs = isRawOrderPlaceholder || normalizedLastMaterial === defaultMat;
+
+  return {
+    material: canInheritLastSpecs ? normalizedLastMaterial || defaultMat : defaultMat,
+    style: actualSpecs?.style || lastSpecs?.style || 'Natural',
+    volume: actualSpecs?.volume || (canInheritLastSpecs ? lastSpecs?.volume || defaultVol : defaultVol),
+    count: actualSpecs?.count || (canInheritLastSpecs ? lastSpecs?.count || defaultCount : defaultCount),
+    color: actualSpecs?.color || lastSpecs?.color,
+    hasUnderMink: actualSpecs?.hasUnderMink,
+    underMinkServiceType: actualSpecs?.underMinkServiceType,
+    curl: 'C',
+    length: '10-12 mm',
+    thickness: defaultMat === 'Flawless Mink' ? '0.07 mm' : '0.10 mm',
+    isNewClientDiagnosticDone: savedProfile ? true : isFirstVisitClient ? false : undefined,
+    notes: note || '',
+  };
 }

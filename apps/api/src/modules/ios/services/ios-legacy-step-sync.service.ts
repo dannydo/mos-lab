@@ -5,6 +5,7 @@ import {
   defaultCallLegacyPhpEndpoint,
   DEMO_BOOKING_IDS,
   resolveActiveLegacyStaffToken,
+  resolveEffectiveLegacyWalletFlags,
   SettleLegacyOrderBridgeDeps,
 } from './ios-legacy-bridge.service.js';
 import { buildLegacyOrderPayloads, resolveLegacyOrderCatalogSnapshot } from './ios-legacy-payload.mapper.js';
@@ -240,6 +241,7 @@ export async function syncIosStepWithLegacyPhp(
       ...body,
     });
 
+    const walletFlags = resolveEffectiveLegacyWalletFlags(mergedOverride);
     const built = buildLegacyOrderPayloads({
       orderId: bookingId,
       assignedStaffId,
@@ -248,11 +250,11 @@ export async function syncIosStepWithLegacyPhp(
       attributes: mergedOverride.attributes,
       hasUnderMink: mergedOverride.attributes?.hasUnderMink,
       underMinkServiceType: mergedOverride.attributes?.underMinkServiceType,
-      isComboLive: Boolean(mergedOverride.comboRedemption?.redeemSession),
-      hasUnderMinkCombo: false,
+      isComboLive: walletFlags.effectiveRedeemUpper,
+      hasUnderMinkCombo: walletFlags.effectiveRedeemUnder,
       selectedCombo: mergedOverride.selectedCombo,
       selectedUnderCombo: mergedOverride.selectedUnderCombo,
-      comboRedemption: mergedOverride.comboRedemption,
+      comboRedemption: walletFlags.skipUpperCombo ? null : mergedOverride.comboRedemption,
       cartProducts: mergedOverride.cartProducts,
       servicePrice: mergedOverride.servicePrice,
       serviceName: mergedOverride.serviceName,
@@ -521,4 +523,45 @@ export async function syncIosStepWithLegacyPhp(
       warning: err?.message || 'Legacy PHP step sync network timeout or error.',
     };
   }
+}
+
+export function applyStepSyncResultToOverride(
+  nextOverride: BookingOverrideRecord,
+  stepSync: SyncIosStepResult
+): BookingOverrideRecord {
+  const hasRoundSyncPatch = Boolean(
+    stepSync.lastLegacyProgressState ||
+    stepSync.lastLegacyUpperState ||
+    stepSync.lastLegacyUnderState ||
+    stepSync.lastLegacyUpperPhotoSigs ||
+    stepSync.lastLegacyUnderPhotoSigs
+  );
+  const enriched: BookingOverrideRecord = {
+    ...nextOverride,
+    legacyStepSyncStatus: stepSync.status,
+    ...(stepSync.legacyOrderState ? { legacySyncedOrderState: stepSync.legacyOrderState } : {}),
+    ...(stepSync.synced ? { legacyStepSyncedAt: new Date().toISOString() } : {}),
+    ...(hasRoundSyncPatch && nextOverride.progress
+      ? {
+          progress: {
+            ...nextOverride.progress,
+            ...(stepSync.lastLegacyProgressState ? { lastLegacyProgressState: stepSync.lastLegacyProgressState } : {}),
+            ...(stepSync.lastLegacyUpperState ? { lastLegacyUpperState: stepSync.lastLegacyUpperState } : {}),
+            ...(stepSync.lastLegacyUnderState ? { lastLegacyUnderState: stepSync.lastLegacyUnderState } : {}),
+            ...(stepSync.lastLegacyUpperPhotoSigs
+              ? { lastLegacyUpperPhotoSigs: stepSync.lastLegacyUpperPhotoSigs }
+              : {}),
+            ...(stepSync.lastLegacyUnderPhotoSigs
+              ? { lastLegacyUnderPhotoSigs: stepSync.lastLegacyUnderPhotoSigs }
+              : {}),
+          },
+        }
+      : {}),
+  };
+  if (stepSync.warning) {
+    enriched.legacyStepSyncWarning = stepSync.warning;
+  } else {
+    delete enriched.legacyStepSyncWarning;
+  }
+  return enriched;
 }

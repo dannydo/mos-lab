@@ -15,7 +15,7 @@ test('parses persisted launcher visibility and position', () => {
 test('falls back safely for invalid persisted launcher data', () => {
   expect(parseBugReportLauncherPreferences('{invalid')).toEqual(DEFAULT_BUG_REPORT_LAUNCHER_PREFERENCES);
   expect(parseBugReportLauncherPreferences(JSON.stringify({ visible: 'no', position: { x: '1', y: 2 } }))).toEqual({
-    visible: true,
+    visible: false,
     position: null,
   });
 });

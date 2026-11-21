@@ -50,7 +50,7 @@ export function LashPhotoCompareLightbox({ payload, onClose }: LashPhotoCompareL
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex flex-col bg-black/95 text-white animate-in fade-in duration-150"
+      className="fixed inset-0 z-[120] flex flex-col bg-black/95 text-white animate-in fade-in duration-150"
       role="dialog"
       aria-modal="true"
       aria-label="So sánh và phóng to ảnh bộ mi"

@@ -588,6 +588,11 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
     const expandedWidth = drawerWidth >= Math.max(820, expandedPresetWidth - 40);
     const maxDrawerWidth = getMaxAllowedGwDrawerWidth(viewportWidth);
 
+    const hasBottomSheetTabs = readerMode === 'fast' && isSheet && Boolean(data?.tabs && data.tabs.length > 0);
+    const mobileHorizontalSafeClass = isMobile
+      ? 'pl-[max(env(safe-area-inset-left,0px),12px)] pr-[max(env(safe-area-inset-right,0px),12px)]'
+      : 'px-3';
+
     const containerClass = isMobile
       ? 'fixed inset-0 z-[1300] flex flex-col w-full h-[100dvh] pb-[env(safe-area-inset-bottom,0px)]'
       : 'flex flex-col shrink-0 h-full relative';
@@ -606,6 +611,117 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
           color: isDark ? '#f8fafc' : '#0f172a',
           transition: isResizing ? 'none' : 'width 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
         };
+
+    const docIdentityNode = (
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div
+          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+            isSheet
+              ? isDark
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : 'bg-emerald-100 text-emerald-700'
+              : isCanva
+                ? isDark
+                  ? 'bg-violet-500/20 text-violet-300'
+                  : 'bg-violet-100 text-violet-700'
+                : isDark
+                  ? 'bg-sky-500/20 text-sky-400'
+                  : 'bg-sky-100 text-sky-700'
+          }`}
+        >
+          {isSheet ? <FileSpreadsheet size={15} /> : isCanva ? <Palette size={15} /> : <FileText size={15} />}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className={`${isMobile ? 'text-[13px]' : 'text-[12.5px]'} font-extrabold truncate`}>{docTitle}</div>
+          <div className="text-[10.5px] opacity-75 flex items-center gap-1.5 truncate tabular-nums">
+            <span>
+              {isCanva
+                ? `Canva${data?.designType ? ` ${data.designType}` : ''}${data?.authorName ? ` · ${data.authorName}` : ''}`
+                : isSheet
+                  ? 'Google Sheets'
+                  : 'Google Docs'}
+            </span>
+            {data?.activeTab?.title && <span>· {data.activeTab.title}</span>}
+            {effectiveRangeLabel && <span className="font-bold text-amber-500">· {effectiveRangeLabel}</span>}
+          </div>
+        </div>
+      </div>
+    );
+
+    const modeSwitcherNode = (
+      <div
+        className={`flex items-center gap-0.5 p-0.5 rounded-lg ${isMobile ? 'w-full' : ''}`}
+        style={{ background: bgCanvas, border: `1px solid ${bColor}` }}
+      >
+        <button
+          type="button"
+          onClick={() => setReaderMode('fast')}
+          className={`inline-flex items-center justify-center gap-1 leading-none rounded-md font-bold cursor-pointer transition-colors ${
+            isMobile ? 'flex-1 min-h-[36px] px-2.5 py-1.5 text-[11.5px]' : 'px-2 py-1 text-[10.5px]'
+          } ${
+            readerMode === 'fast'
+              ? isDark
+                ? 'bg-emerald-500 text-slate-950'
+                : 'bg-emerald-600 text-white'
+              : 'opacity-75 hover:opacity-100'
+          }`}
+        >
+          <Zap size={isMobile ? 12 : 11} />
+          <span>{isCanva ? 'Đọc nhanh văn bản' : 'Đọc nhanh mOS'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setReaderMode('embed')}
+          className={`inline-flex items-center justify-center gap-1 leading-none rounded-md font-bold cursor-pointer transition-colors ${
+            isMobile ? 'flex-1 min-h-[36px] px-2.5 py-1.5 text-[11.5px]' : 'px-2 py-1 text-[10.5px]'
+          } ${
+            readerMode === 'embed'
+              ? isCanva
+                ? isDark
+                  ? 'bg-violet-500 text-white'
+                  : 'bg-violet-600 text-white'
+                : isDark
+                  ? 'bg-sky-500 text-slate-950'
+                  : 'bg-sky-600 text-white'
+              : 'opacity-75 hover:opacity-100'
+          }`}
+        >
+          <Globe size={isMobile ? 12 : 11} />
+          <span>{isCanva ? 'Canva Trực tiếp' : 'Google Trực tiếp'}</span>
+        </button>
+      </div>
+    );
+
+    const externalLinkNode = (
+      <Tooltip title={isCanva ? 'Mở trên Canva' : 'Mở trên Google'}>
+        <a
+          href={canonicalHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={isCanva ? 'Mở trên Canva' : 'Mở trên Google'}
+          className={`${
+            isMobile ? 'min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg' : 'w-7 h-7 rounded-md'
+          } inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10`}
+        >
+          <ExternalLink size={isMobile ? 16 : 14} />
+        </a>
+      </Tooltip>
+    );
+
+    const closeButtonNode = (
+      <Tooltip title="Đóng trình đọc tài liệu">
+        <button
+          type="button"
+          aria-label="Đóng trình đọc tài liệu"
+          onClick={handleCloseDrawer}
+          className={`${
+            isMobile ? 'min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg' : 'w-7 h-7 rounded-md'
+          } inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/15 hover:text-rose-400`}
+        >
+          <X size={isMobile ? 18 : 16} />
+        </button>
+      </Tooltip>
+    );
 
     return (
       <aside
@@ -942,12 +1058,15 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
 
         {/* SUB-TOOLBAR (Fast Reader Search / Refresh / Range Jump / Ask AI Toggle) */}
         <div
-          className="px-3 py-1.5 flex items-center justify-between gap-2 flex-wrap shrink-0"
-          style={{ background: bgSurface, borderBottom: `1px solid ${bColor}` }}
+          className={`${mobileHorizontalSafeClass} py-1.5 flex items-center justify-between gap-2 flex-wrap shrink-0`}
+          style={{
+            background: bgSurface,
+            borderBottom: `1px solid ${bColor}`,
+          }}
         >
-          <div className="flex items-center gap-1.5 flex-1 min-w-[180px]">
+          <div className={`flex items-center gap-1.5 flex-1 ${isMobile ? 'min-w-[150px]' : 'min-w-[180px]'}`}>
             {readerMode === 'fast' && (
-              <div className="relative flex-1 max-w-[260px]">
+              <div className={`relative flex-1 ${isMobile ? '' : 'max-w-[260px]'}`}>
                 <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-55" />
                 <input
                   type="text"
@@ -961,7 +1080,7 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
                         : 'Tìm trong tài liệu...'
                   }
                   aria-label="Tìm kiếm trong tài liệu"
-                  className="w-full h-7 pl-7 pr-2 rounded-md text-[11.5px] focus:outline-none"
+                  className={`w-full ${isMobile ? 'h-9 text-[12px]' : 'h-7 text-[11.5px]'} pl-7 pr-2 rounded-md focus:outline-none`}
                   style={{
                     background: bgRaised,
                     border: `1px solid ${bColor}`,
@@ -974,7 +1093,9 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
               <button
                 type="button"
                 onClick={scrollToTargetRange}
-                className={`inline-flex items-center gap-1 leading-none px-2 py-1.5 rounded-md text-[11px] font-bold tabular-nums cursor-pointer border ${
+                className={`inline-flex items-center gap-1 leading-none px-2 ${
+                  isMobile ? 'min-h-[36px]' : 'py-1.5'
+                } rounded-md text-[11px] font-bold tabular-nums cursor-pointer border ${
                   isDark
                     ? 'bg-amber-400/20 border-amber-400/50 text-amber-200 hover:bg-amber-400/30'
                     : 'bg-amber-100 border-amber-400 text-amber-950 hover:bg-amber-200'
@@ -991,7 +1112,9 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
               type="button"
               onClick={() => void reload(true)}
               disabled={loading}
-              className="inline-flex items-center gap-1 leading-none px-2 py-1.5 rounded-md text-[11px] font-semibold cursor-pointer border hover:bg-black/5 dark:hover:bg-white/10"
+              className={`inline-flex items-center gap-1 leading-none px-2 ${
+                isMobile ? 'min-h-[36px]' : 'py-1.5'
+              } rounded-md text-[11px] font-semibold cursor-pointer border hover:bg-black/5 dark:hover:bg-white/10`}
               style={{ borderColor: bColor }}
             >
               <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
@@ -1001,7 +1124,9 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
             <button
               type="button"
               onClick={() => setAiBarOpen((v) => !v)}
-              className={`inline-flex items-center gap-1 leading-none px-2.5 py-1.5 rounded-md text-[11px] font-bold cursor-pointer border transition-colors ${
+              className={`inline-flex items-center gap-1 leading-none px-2.5 ${
+                isMobile ? 'min-h-[36px]' : 'py-1.5'
+              } rounded-md text-[11px] font-bold cursor-pointer border transition-colors ${
                 aiBarOpen
                   ? isDark
                     ? 'bg-purple-500 text-white border-purple-400'
@@ -1138,7 +1263,7 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
         {/* SELECTED CELL FORMULA / VALUE BAR (Sheets Fast Mode) */}
         {readerMode === 'fast' && isSheet && selectedCell && (
           <div
-            className="px-3 py-1 flex items-center justify-between gap-2 text-[11.5px] shrink-0"
+            className={`${mobileHorizontalSafeClass} py-1 flex items-center justify-between gap-2 text-[11.5px] shrink-0`}
             style={{ background: bgRaised, borderBottom: `1px solid ${bColor}` }}
           >
             <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -1157,7 +1282,9 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
               <button
                 type="button"
                 onClick={() => void handleCopyText(selectedCell.value, `Đã sao chép giá trị ô ${selectedCell.address}`)}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-semibold cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 shrink-0"
+                className={`inline-flex items-center gap-1 px-1.5 ${
+                  isMobile ? 'min-h-[32px]' : 'py-0.5'
+                } rounded text-[10.5px] font-semibold cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 shrink-0`}
               >
                 <Copy size={11} />
                 <span>Sao chép ô</span>
@@ -1168,9 +1295,14 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
 
         {/* MAIN VIEWPORT */}
         {readerMode === 'embed' ? (
-          <div className="flex-1 flex flex-col min-h-0">
+          <div
+            data-testid="gw-reader-embed-container"
+            className={`flex-1 flex flex-col min-h-0 ${
+              isMobile && !hasBottomSheetTabs ? 'pb-[env(safe-area-inset-bottom,0px)]' : ''
+            }`}
+          >
             <div
-              className="px-3 py-1.5 flex items-center justify-between gap-2 text-[11px] shrink-0"
+              className={`${mobileHorizontalSafeClass} py-1.5 flex items-center justify-between gap-2 text-[11px] shrink-0`}
               style={{
                 background: isCanva
                   ? isDark
@@ -1246,7 +1378,7 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
                 data-testid="gw-reader-embed-iframe"
                 src={embedHref}
                 title={docTitle}
-                className="block w-full flex-1 border-0 bg-white"
+                className="block w-full flex-1 min-h-0 border-0 bg-white"
                 style={{ pointerEvents: isResizing ? 'none' : 'auto' }}
                 allow="fullscreen; clipboard-read; clipboard-write"
                 allowFullScreen
@@ -1254,7 +1386,12 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
             )}
           </div>
         ) : (
-          <div ref={docBodyRef} className="flex-1 overflow-auto min-h-0 flex flex-col">
+          <div
+            ref={docBodyRef}
+            className={`flex-1 overflow-auto min-h-0 flex flex-col ${
+              isMobile && !hasBottomSheetTabs ? 'pb-[env(safe-area-inset-bottom,0px)]' : ''
+            }`}
+          >
             {loading && !data && (
               <div className="flex-1 flex flex-col items-center justify-center p-8 gap-2 text-[12.5px] opacity-75">
                 <Loader2 size={22} className={`animate-spin ${isCanva ? 'text-violet-400' : 'text-emerald-500'}`} />
@@ -1614,10 +1751,18 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
         )}
 
         {/* BOTTOM GOOGLE SHEETS TAB SWITCHER BAR */}
-        {readerMode === 'fast' && isSheet && data?.tabs && data.tabs.length > 0 && (
+        {hasBottomSheetTabs && data?.tabs && (
           <div
-            className="px-2.5 py-1.5 flex items-center gap-1 overflow-x-auto shrink-0"
-            style={{ background: bgRaised, borderTop: `1px solid ${bColor}` }}
+            data-testid="gw-reader-sheet-tabs"
+            className={`${
+              isMobile
+                ? 'pl-[max(env(safe-area-inset-left,0px),10px)] pr-[max(env(safe-area-inset-right,0px),10px)] pt-1.5 pb-[max(env(safe-area-inset-bottom,0px),10px)]'
+                : 'px-2.5 py-1.5'
+            } flex items-center gap-1 overflow-x-auto shrink-0`}
+            style={{
+              background: bgRaised,
+              borderTop: `1px solid ${bColor}`,
+            }}
           >
             {data.tabs.map((tab) => {
               const active = String(tab.gid) === String(data.activeTab?.gid || selectedGid || '');
@@ -1631,7 +1776,9 @@ export const MosChatGoogleWorkspaceDrawer: React.FC<MosChatGoogleWorkspaceDrawer
                     gridScrollRef.current?.scrollTo?.({ top: 0, left: 0 });
                     docBodyRef.current?.scrollTo?.({ top: 0, left: 0 });
                   }}
-                  className={`inline-flex items-center justify-center gap-1.5 leading-none px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold shrink-0 cursor-pointer border transition-colors ${
+                  className={`inline-flex items-center justify-center gap-1.5 leading-none px-2.5 ${
+                    isMobile ? 'min-h-[36px] py-1.5' : 'py-1.5'
+                  } rounded-lg text-[11.5px] font-bold shrink-0 cursor-pointer border transition-colors ${
                     active
                       ? isDark
                         ? 'bg-emerald-500/25 border-emerald-400/65 text-emerald-200'

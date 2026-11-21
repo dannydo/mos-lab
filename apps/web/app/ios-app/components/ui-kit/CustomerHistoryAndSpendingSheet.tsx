@@ -1,18 +1,20 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, Calendar, CreditCard, Gem, History, MapPin, RefreshCw, User, Wrench, X } from 'lucide-react';
+import { AlertCircle, Calendar, CreditCard, History, RefreshCw, X } from 'lucide-react';
 import type {
   IosBookingItem,
-  IosCustomerDiamondTxnItem,
   IosCustomerHistoryResponse,
   IosCustomerHistoryTab,
-  IosCustomerHistoryVisitItem,
+  IosCustomerNoteItem,
 } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
 import { CustomerLashPortfolioTab } from './customer-history/CustomerLashPortfolioTab';
+import { CustomerHistoryDiamondCard, CustomerHistoryVisitCard } from './customer-history/CustomerHistoryCards';
+import { CustomerNotesTab } from './customer-history/CustomerNotesTab';
 import { LashPhotoCompareLightbox, LashPhotoComparePayload } from './customer-history/LashPhotoCompareLightbox';
+import { PostCheckoutCvlNoteModal } from '../screens/post-checkout/PostCheckoutCvlNoteModal';
 
 interface CustomerHistoryAndSpendingSheetProps {
   isOpen: boolean;
@@ -23,39 +25,19 @@ interface CustomerHistoryAndSpendingSheetProps {
   customerFacingMode?: boolean;
   primaryActionLabel?: string;
   onPrimaryAction?: () => void;
+  onNoteCreated?: (note: IosCustomerNoteItem) => void;
 }
 
 const TAB_CONFIG: Array<{ key: IosCustomerHistoryTab; label: string }> = [
-  { key: 'LASH_PHOTOS', label: '📸 BỘ MI' },
+  { key: 'LASH_PHOTOS', label: 'BỘ MI' },
   { key: 'ALL', label: 'TẤT CẢ' },
   { key: 'PAYMENTS', label: 'THANH TOÁN' },
   { key: 'FIX', label: 'FIX' },
   { key: 'REWARDS', label: 'THƯỞNG' },
+  { key: 'NOTES', label: 'GHI CHÚ' },
 ];
 
 const formatVnd = (val: number) => `${Math.round(val || 0).toLocaleString('vi-VN')} đ`;
-
-const getStatusStripeClass = (tone: IosCustomerHistoryVisitItem['statusTone']) => {
-  if (tone === 'completed') return 'bg-emerald-500';
-  if (tone === 'servicing') return 'bg-cyan-500';
-  if (tone === 'canceled') return 'bg-rose-400';
-  return 'bg-amber-400';
-};
-
-const getStatusBadgeClass = (tone: IosCustomerHistoryVisitItem['statusTone'], isDark: boolean) => {
-  if (tone === 'completed') {
-    return isDark
-      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-      : 'bg-emerald-50 text-emerald-700 border-emerald-200';
-  }
-  if (tone === 'servicing') {
-    return isDark ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' : 'bg-cyan-50 text-cyan-700 border-cyan-200';
-  }
-  if (tone === 'canceled') {
-    return isDark ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' : 'bg-rose-50 text-rose-700 border-rose-200';
-  }
-  return isDark ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-700 border-amber-200';
-};
 
 export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendingSheetProps> = ({
   isOpen,
@@ -66,6 +48,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
   customerFacingMode = false,
   primaryActionLabel,
   onPrimaryAction,
+  onNoteCreated,
 }) => {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
@@ -75,6 +58,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lightboxPayload, setLightboxPayload] = useState<LashPhotoComparePayload | null>(null);
+  const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
 
   const loadHistory = useCallback(
     async (signal?: AbortSignal) => {
@@ -131,6 +115,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
   const payments = data?.payments || [];
   const fixVisits = data?.fixVisits || [];
   const diamondTxns = data?.diamondTransactions || [];
+  const customerNotes = data?.notes || booking.cvlNotes || [];
   const effectiveTab: IosCustomerHistoryTab = customerFacingMode ? 'LASH_PHOTOS' : activeTab;
 
   const getTabCount = (key: IosCustomerHistoryTab) => {
@@ -138,241 +123,13 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
     if (key === 'ALL') return visits.length;
     if (key === 'PAYMENTS') return payments.length;
     if (key === 'FIX') return fixVisits.length;
+    if (key === 'NOTES') return customerNotes.length;
     return diamondTxns.length;
-  };
-
-  const renderVisitCard = (item: IosCustomerHistoryVisitItem, index: number, mode: 'ALL' | 'PAYMENTS' | 'FIX') => {
-    const isPaymentMode = mode === 'PAYMENTS';
-    return (
-      <div
-        key={`${mode}-${item.orderId}-${index}`}
-        data-testid={`history-row-${mode}-${item.orderId}`}
-        className={`relative overflow-hidden rounded-2xl border p-3.5 pl-4 transition-colors ${
-          isDark ? 'border-slate-800 bg-slate-900/75' : 'border-slate-200 bg-white shadow-xs'
-        }`}
-      >
-        <div className={`absolute bottom-0 left-0 top-0 w-1 ${getStatusStripeClass(item.statusTone)}`} />
-
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span
-                className={`inline-flex items-center justify-center rounded-md px-1.5 py-0.5 text-[11px] font-bold tabular-nums leading-none ${
-                  isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
-                }`}
-              >
-                {index + 1}
-              </span>
-              {isPaymentMode ? (
-                <span
-                  className={`text-base font-extrabold tabular-nums ${
-                    item.debtAmount > 0
-                      ? 'text-rose-500'
-                      : item.paidAmount > 0
-                        ? isDark
-                          ? 'text-emerald-400'
-                          : 'text-emerald-600'
-                        : isDark
-                          ? 'text-slate-300'
-                          : 'text-slate-700'
-                  }`}
-                >
-                  {formatVnd(item.paidAmount)}
-                </span>
-              ) : (
-                <span className={`text-[13px] font-bold leading-snug ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  {item.serviceName}
-                </span>
-              )}
-              <span
-                className={`inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-none ${getStatusBadgeClass(
-                  item.statusTone,
-                  isDark
-                )}`}
-              >
-                {item.statusLabel}
-              </span>
-              {item.isFixOrder && (
-                <span
-                  className={`inline-flex items-center justify-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-none ${
-                    isDark
-                      ? 'border-rose-500/30 bg-rose-500/15 text-rose-300'
-                      : 'border-rose-200 bg-rose-50 text-rose-700'
-                  }`}
-                >
-                  <Wrench className="h-2.5 w-2.5" />
-                  FIX
-                </span>
-              )}
-            </div>
-
-            {isPaymentMode && (
-              <div className={`mt-1 text-[12px] font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                {item.serviceName}
-              </div>
-            )}
-          </div>
-
-          <div className="flex shrink-0 flex-col items-end gap-1">
-            {isPaymentMode ? (
-              <span
-                className={`inline-flex items-center justify-center rounded-lg px-2 py-1 text-[10px] font-semibold leading-none ${
-                  isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
-                }`}
-              >
-                {item.paymentMethodLabel}
-              </span>
-            ) : (
-              <>
-                {item.diamondEarned > 0 && (
-                  <span
-                    className={`inline-flex items-center justify-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums leading-none ${
-                      isDark ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-50 text-amber-700'
-                    }`}
-                  >
-                    <Gem className="h-2.5 w-2.5" />+{item.diamondEarned}
-                  </span>
-                )}
-                {item.diamondUsed > 0 && (
-                  <span
-                    className={`inline-flex items-center justify-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums leading-none ${
-                      isDark ? 'bg-rose-500/15 text-rose-300' : 'bg-rose-50 text-rose-700'
-                    }`}
-                  >
-                    <Gem className="h-2.5 w-2.5" />-{item.diamondUsed}
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-        {isPaymentMode && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] tabular-nums">
-            {item.totalPrice > 0 && (
-              <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>
-                Giá trị đơn:{' '}
-                <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>{formatVnd(item.totalPrice)}</strong>
-              </span>
-            )}
-            {item.discountAmount > 0 && (
-              <span className="text-amber-500">Combo/Giảm: -{formatVnd(item.discountAmount)}</span>
-            )}
-            {item.diamondUsed > 0 && <span className="text-sky-400">Dùng {item.diamondUsed} KC</span>}
-            {item.tipAmount > 0 && <span className="text-emerald-400">Tip: +{formatVnd(item.tipAmount)}</span>}
-            {item.debtAmount > 0 && (
-              <span className="font-bold text-rose-500">Công nợ: {formatVnd(item.debtAmount)}</span>
-            )}
-          </div>
-        )}
-
-        {item.bookingNote && (
-          <div
-            className={`mt-1.5 rounded-lg px-2.5 py-1.5 text-[11px] leading-snug ${
-              isDark ? 'bg-slate-800/70 text-slate-300' : 'bg-slate-50 text-slate-600'
-            }`}
-          >
-            {item.bookingNote}
-          </div>
-        )}
-
-        <div
-          className={`mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] tabular-nums ${
-            isDark ? 'text-slate-400' : 'text-slate-500'
-          }`}
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`font-semibold ${item.daysAgoLabel === 'Hôm Nay' ? 'text-emerald-500' : ''}`}>
-              {item.daysAgoLabel || item.dateDisplay}
-            </span>
-            <span>·</span>
-            <span>
-              {item.timeDisplay} {item.dateDisplay}
-            </span>
-            <span
-              className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium leading-none ${
-                isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
-              }`}
-            >
-              <MapPin className="h-2.5 w-2.5" />
-              {item.branchName}
-            </span>
-          </div>
-
-          {item.staffNames.length > 0 && (
-            <div className="flex items-center gap-1 text-[11px] font-medium">
-              <User className="h-3 w-3 opacity-70" />
-              <span className="truncate max-w-[160px]">{item.staffNames.join(', ')}</span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const renderDiamondRow = (tx: IosCustomerDiamondTxnItem, index: number) => {
-    const isEarn = tx.amount > 0;
-    return (
-      <div
-        key={`diamond-${tx.id}-${index}`}
-        data-testid={`history-row-REWARDS-${tx.id}`}
-        className={`flex items-start justify-between gap-3 rounded-2xl border p-3.5 ${
-          isDark ? 'border-slate-800 bg-slate-900/75' : 'border-slate-200 bg-white shadow-xs'
-        }`}
-      >
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <Gem className={`h-4 w-4 shrink-0 ${isEarn ? 'text-emerald-400' : 'text-amber-400'}`} />
-            <span
-              className={`text-sm font-extrabold tabular-nums ${
-                isEarn ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : 'text-rose-500'
-              }`}
-            >
-              {isEarn ? `+${tx.amount}` : tx.amount} Kim Cương
-            </span>
-            {tx.orderId && (
-              <span
-                className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
-                  isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                #{tx.orderId}
-              </span>
-            )}
-          </div>
-          {tx.note && (
-            <p className={`mt-1 text-xs leading-snug ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{tx.note}</p>
-          )}
-          <div
-            className={`mt-1.5 flex items-center gap-2 text-[11px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
-          >
-            <span>{tx.daysAgoLabel || tx.dateDisplay}</span>
-            <span>·</span>
-            <span>
-              {tx.timeDisplay} {tx.dateDisplay}
-            </span>
-            {tx.branchName && (
-              <>
-                <span>·</span>
-                <span>{tx.branchName}</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="shrink-0 text-right tabular-nums">
-          <div className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Số dư sau GD</div>
-          <div className={`text-xs font-bold ${isDark ? 'text-amber-300' : 'text-amber-600'}`}>
-            {tx.balanceAfter} KC
-          </div>
-        </div>
-      </div>
-    );
   };
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/65 backdrop-blur-sm p-0 sm:p-4"
+      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/65 backdrop-blur-sm p-0 sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Lịch sử ghé thăm và chi tiêu khách hàng"
@@ -480,11 +237,17 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                 {summary ? `${summary.completedVisits} hoàn thành` : '--'}
               </div>
               <div
-                className={`mt-0.5 flex items-center gap-2 text-[10px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
+                className={`mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] tabular-nums ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
               >
                 <span>Tổng {summary?.totalBookings ?? 0} lịch</span>
                 <span>·</span>
                 <span className="text-amber-500 font-semibold">💎 {summary?.diamondBalance ?? 0} KC</span>
+                {(summary?.totalDebt ?? 0) > 0 && (
+                  <>
+                    <span>·</span>
+                    <span className="text-rose-500 font-bold">Nợ {formatVnd(summary!.totalDebt)}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -498,7 +261,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
             <div
               role="tablist"
               aria-label="Phân loại lịch sử khách hàng"
-              className={`grid grid-cols-5 gap-1 rounded-xl p-1 ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}
+              className={`grid grid-cols-6 gap-1 rounded-xl p-1 ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}
             >
               {TAB_CONFIG.map((tab) => {
                 const isActive = effectiveTab === tab.key;
@@ -569,6 +332,15 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                 />
               ))}
             </div>
+          ) : !booking?.customerId || booking.customerId <= 0 ? (
+            <div
+              data-testid="history-missing-customer-id"
+              className={`rounded-2xl border p-5 text-center text-xs ${
+                isDark ? 'border-slate-800 bg-slate-900/60 text-slate-300' : 'border-slate-200 bg-white text-slate-600'
+              }`}
+            >
+              Chưa có mã hồ sơ khách hàng trên hệ thống (khách mới hoặc lịch nháp chưa liên kết ID).
+            </div>
           ) : (
             <>
               {effectiveTab === 'ALL' &&
@@ -577,7 +349,15 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                     Chưa ghi nhận lịch sử ghé thăm nào.
                   </p>
                 ) : (
-                  visits.map((v, i) => renderVisitCard(v, i, 'ALL'))
+                  visits.map((v, i) => (
+                    <CustomerHistoryVisitCard
+                      key={`ALL-${v.orderId}-${i}`}
+                      item={v}
+                      index={i}
+                      mode="ALL"
+                      isDark={isDark}
+                    />
+                  ))
                 ))}
 
               {effectiveTab === 'PAYMENTS' &&
@@ -586,7 +366,15 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                     Chưa có giao dịch thanh toán nào.
                   </p>
                 ) : (
-                  payments.map((v, i) => renderVisitCard(v, i, 'PAYMENTS'))
+                  payments.map((v, i) => (
+                    <CustomerHistoryVisitCard
+                      key={`PAYMENTS-${v.orderId}-${i}`}
+                      item={v}
+                      index={i}
+                      mode="PAYMENTS"
+                      isDark={isDark}
+                    />
+                  ))
                 ))}
 
               {effectiveTab === 'FIX' &&
@@ -595,7 +383,15 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                     Khách hàng chưa có lượt FIX / bảo hành nào.
                   </p>
                 ) : (
-                  fixVisits.map((v, i) => renderVisitCard(v, i, 'FIX'))
+                  fixVisits.map((v, i) => (
+                    <CustomerHistoryVisitCard
+                      key={`FIX-${v.orderId}-${i}`}
+                      item={v}
+                      index={i}
+                      mode="FIX"
+                      isDark={isDark}
+                    />
+                  ))
                 ))}
 
               {effectiveTab === 'REWARDS' &&
@@ -604,8 +400,19 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                     Chưa có lịch sử tích / sử dụng Kim Cương.
                   </p>
                 ) : (
-                  diamondTxns.map((tx, i) => renderDiamondRow(tx, i))
+                  diamondTxns.map((tx, i) => (
+                    <CustomerHistoryDiamondCard key={`diamond-${tx.id}-${i}`} tx={tx} isDark={isDark} />
+                  ))
                 ))}
+
+              {effectiveTab === 'NOTES' && (
+                <CustomerNotesTab
+                  notes={customerNotes}
+                  isDark={isDark}
+                  canAddNote={Boolean(booking?.customerId && booking.customerId > 0)}
+                  onOpenAddModal={() => setIsAddNoteOpen(true)}
+                />
+              )}
             </>
           )}
         </div>
@@ -637,6 +444,21 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
       </div>
 
       <LashPhotoCompareLightbox payload={lightboxPayload} onClose={() => setLightboxPayload(null)} />
+      {booking?.customerId && booking.customerId > 0 && (
+        <PostCheckoutCvlNoteModal
+          isOpen={isAddNoteOpen}
+          onClose={() => setIsAddNoteOpen(false)}
+          customerId={booking.customerId}
+          customerName={data?.customerName || booking.customerName || 'Khách hàng'}
+          bookingId={booking.id}
+          orderNumber={booking.orderNumber}
+          isSimulationMode={Boolean(isSimulationMode || booking.isSimulationBooking)}
+          onNoteCreated={(created) => {
+            setData((prev) => (prev ? { ...prev, notes: [created, ...(prev.notes || [])] } : prev));
+            onNoteCreated?.(created);
+          }}
+        />
+      )}
     </div>
   );
 };

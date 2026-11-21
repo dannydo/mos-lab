@@ -40,7 +40,14 @@ export function generateReports() {
   mdContent += `| Chỉ số | Kết quả | Trạng thái |\n`;
   mdContent += `| :--- | :--- | :--- |\n`;
   mdContent += `| Tổng số Route kiểm tra | **${summary.totalRoutes}** trang | ${summary.successfulRoutes === summary.totalRoutes ? '✅ Hoàn thành 100%' : '⚠️ Có lỗi'} |\n`;
-  mdContent += `| Thời gian tải trung bình | **${summary.averagePageDurationMs}ms** | ${summary.averagePageDurationMs < 2000 ? '🟢 Nhanh' : '🟡 Cần tối ưu'} |\n`;
+  mdContent += `| Thời gian crawl trung bình (gồm click tab/popup) | **${summary.averagePageDurationMs}ms** | ${summary.averagePageDurationMs < 2000 ? '🟢 Nhanh' : '🟡 Cần tối ưu'} |\n`;
+  if (summary.averageLoadMs !== undefined) {
+    mdContent += `| Tải trang thật TB (Navigation Timing) | **${summary.averageLoadMs ?? 'N/A'}ms** | ${summary.averageLoadMs !== null && summary.averageLoadMs < 1000 ? '🟢 Nhanh' : '🟡 Cần tối ưu'} |\n`;
+    mdContent += `| Thời gian tương tác TB (click tab/popup) | **${summary.averageInteractionMs}ms** | ℹ️ Do bot, không phải tải trang |\n`;
+    mdContent += `| Route bị chặn tương tác (modal che trang / click lỗi) | **${summary.blockedInteractionRoutes}** route (${summary.totalTabClickFailures} tab click lỗi) | ${summary.blockedInteractionRoutes === 0 ? '🟢 Không bị chặn' : '🔴 Số đo bị phình, cần xử lý'} |\n`;
+    const frozen = summary.mainThreadBlockedRoutes || [];
+    mdContent += `| Route treo luồng chính (>5s không phản hồi) | **${frozen.length}** route${frozen.length ? ` (${frozen.map((p) => `\`${p}\``).join(', ')})` : ''} | ${frozen.length === 0 ? '🟢 Mượt' : '🔴 Trang nặng, cần tối ưu'} |\n`;
+  }
   mdContent += `| Số API trễ (>1.000ms) | **${summary.totalSlowApiRequests}** request | ${summary.totalSlowApiRequests === 0 ? '🟢 Tốt' : '🔴 Cảnh báo'} |\n`;
   mdContent += `| Câu SQL Prisma chậm (>500ms) | **${summary.totalPrismaSlowQueries}** câu | ${summary.totalPrismaSlowQueries === 0 ? '🟢 Tốt' : '🔴 Cần tạo Index'} |\n`;
   mdContent += `| Lỗi Console JavaScript | **${summary.totalConsoleErrors}** lỗi | ${summary.totalConsoleErrors === 0 ? '🟢 Không có lỗi' : '🔴 Cần sửa code'} |\n\n`;
@@ -117,10 +124,10 @@ export function generateReports() {
         <div class="text-xs text-emerald-400 mt-1">✓ ${summary.successfulRoutes} thành công</div>
       </div>
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-        <div class="text-xs text-slate-400 uppercase font-medium">Thời gian tải TB</div>
+        <div class="text-xs text-slate-400 uppercase font-medium">Crawl TB (gồm tương tác)</div>
         <div class="text-2xl font-bold mt-1 text-white">${summary.averagePageDurationMs}ms</div>
         <div class="text-xs ${summary.averagePageDurationMs < 2000 ? 'text-emerald-400' : 'text-amber-400'} mt-1">
-          ${summary.averagePageDurationMs < 2000 ? 'Rất mượt mà' : 'Cần tối ưu thêm'}
+          ${summary.averageLoadMs !== undefined ? `Tải thật TB ${summary.averageLoadMs ?? 'N/A'}ms · Chặn: ${summary.blockedInteractionRoutes} route` : summary.averagePageDurationMs < 2000 ? 'Rất mượt mà' : 'Cần tối ưu thêm'}
         </div>
       </div>
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">

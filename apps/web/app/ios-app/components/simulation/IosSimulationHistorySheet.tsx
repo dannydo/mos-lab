@@ -74,8 +74,10 @@ export function IosSimulationHistorySheet({
           const q = Math.max(1, Number(p.quantity || 1));
           const uPrice = Number(p.price || 0);
           return {
+            ...(Number(p.productId) > 0 ? { productId: Number(p.productId) } : {}),
             productName: p.productName || 'Sản phẩm',
             quantity: q,
+            unitPrice: uPrice,
             totalPrice: uPrice * q,
           };
         })

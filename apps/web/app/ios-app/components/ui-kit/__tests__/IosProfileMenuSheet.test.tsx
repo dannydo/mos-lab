@@ -300,4 +300,43 @@ describe('IosProfileMenuSheet Theme & Mode Switching', () => {
     expect(onSelectMentee).toHaveBeenCalledWith(46272);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it('hides branch switcher for non-admin CVL even in Simulation Mode, while allowing Admin in CC view (MOS-BUG-237)', () => {
+    const { rerender } = render(
+      <Screen01IncomingBookings
+        bookings={[]}
+        bookingSegment="INCOMING"
+        setBookingSegment={vi.fn()}
+        onSelectBooking={vi.fn()}
+        role="CVL"
+        isAdmin={false}
+        isSimulationMode={true}
+        selectedStoreId={6}
+        actor={defaultActor}
+      />
+    );
+
+    expect(screen.getByText('DT')).toBeInTheDocument();
+    expect(screen.queryByTitle(/Bấm để đổi chi nhánh/i)).not.toBeInTheDocument();
+
+    rerender(
+      <Screen01IncomingBookings
+        bookings={[]}
+        bookingSegment="INCOMING"
+        setBookingSegment={vi.fn()}
+        onSelectBooking={vi.fn()}
+        role="CC"
+        isAdmin={true}
+        isSimulationMode={false}
+        selectedStoreId={6}
+        actor={defaultActor}
+      />
+    );
+
+    const switchBtn = screen.getByTitle(/Bấm để đổi chi nhánh/i);
+    expect(switchBtn).toBeInTheDocument();
+    fireEvent.click(switchBtn);
+    expect(screen.getByText('Chọn Chi Nhánh Vận Hành')).toBeInTheDocument();
+    expect(screen.getByText('Chi nhánh Estella Place')).toBeInTheDocument();
+  });
 });

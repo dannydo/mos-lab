@@ -7,10 +7,36 @@ import {
   IosSimulationAttemptSourceAction,
   IosSimulationAttemptSummary,
   IosUpdateSimulationAttemptRequest,
+  isYeppeumSerumProduct,
   SafeAny,
+  YEPPEUM_PRODUCT_ID,
 } from '@mos-lab/shared';
 
 export const SIM_ATTEMPT_PREFIX = 'IOS_SIM_ATTEMPTS:';
+
+export function mapAttemptUpsellToCartProducts(
+  upsellProducts: IosSimulationAttemptSummary['upsellProducts'] | undefined
+): IosCartProductItem[] {
+  return (upsellProducts || []).map((p, idx) => {
+    const qty = Math.max(1, Number(p.quantity) || 1);
+    const unitPrice = Number.isFinite(p.unitPrice)
+      ? Math.max(0, Number(p.unitPrice))
+      : Math.round(p.totalPrice / qty);
+    const productId =
+      Number(p.productId) > 0
+        ? Number(p.productId)
+        : isYeppeumSerumProduct({ productName: p.productName })
+          ? YEPPEUM_PRODUCT_ID
+          : idx + 1;
+    return {
+      productId,
+      productName: p.productName,
+      price: unitPrice,
+      quantity: qty,
+      totalPrice: p.totalPrice,
+    };
+  });
+}
 
 export function getSimAttemptsKey(staffId: number, bookingId: number): string {
   return `${SIM_ATTEMPT_PREFIX}${staffId}:${bookingId}`;
@@ -195,11 +221,26 @@ export async function updateSimulationAttempt(
     : current.selectedUnderComboPrice || 0;
 
   const upsellProducts = Array.isArray(updates.upsellProducts)
-    ? updates.upsellProducts.map((p) => ({
-        productName: String(p.productName || '').trim(),
-        quantity: Math.max(1, Number(p.quantity) || 1),
-        totalPrice: Math.max(0, Number(p.totalPrice) || 0),
-      }))
+    ? updates.upsellProducts.map((p) => {
+        const qty = Math.max(1, Number(p.quantity) || 1);
+        const totalPrice = Math.max(0, Number(p.totalPrice) || 0);
+        const unitPrice = Number.isFinite(p.unitPrice)
+          ? Math.max(0, Number(p.unitPrice))
+          : Math.round(totalPrice / qty);
+        const resolvedProductId =
+          Number(p.productId) > 0
+            ? Number(p.productId)
+            : isYeppeumSerumProduct({ productName: p.productName })
+              ? YEPPEUM_PRODUCT_ID
+              : undefined;
+        return {
+          ...(resolvedProductId ? { productId: resolvedProductId } : {}),
+          productName: String(p.productName || '').trim(),
+          quantity: qty,
+          unitPrice,
+          totalPrice,
+        };
+      })
     : current.upsellProducts || [];
 
   const upsellTotal = upsellProducts.reduce((sum, p) => sum + p.totalPrice, 0);
@@ -227,7 +268,7 @@ export async function updateSimulationAttempt(
     return sum + calculateCvSerumTierBonus(unitPrice, qty);
   }, 0);
   const tipActorShare = Math.round(tipAmount * 0.8);
-  const totalEstimatedReward = Math.round(servicePrice * 0.1 + comboBonusAmount + serumBonusAmount + tipActorShare);
+  const totalEstimatedReward = comboBonusAmount + serumBonusAmount + tipActorShare;
 
   const updated: IosSimulationAttemptSummary = {
     ...current,
@@ -346,10 +387,13 @@ export function buildSimulationAttemptSnapshot(params: {
 
   const upsellProducts = cartProducts.map((item) => {
     const qty = Math.max(1, Number(item.quantity || 1));
+    const unitPrice = Number(item.price || 0);
     return {
+      ...(Number(item.productId) > 0 ? { productId: Number(item.productId) } : {}),
       productName: item.productName,
       quantity: qty,
-      totalPrice: Number(item.price || 0) * qty,
+      unitPrice,
+      totalPrice: unitPrice * qty,
     };
   });
   const upsellTotal = upsellProducts.reduce((sum, p) => sum + p.totalPrice, 0);

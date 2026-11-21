@@ -34,6 +34,7 @@ import {
   applyCombosUpdateToBookingDraft,
   applyTargetPromotionToBookingDraft,
   buildRecomputedCheckoutBilling,
+  buildRecordedTipBillingSnapshot,
   computeFreshBillingLineTotals,
   type CartProductItem,
   type SavePromotionTarget,
@@ -65,6 +66,10 @@ export interface UpsellPayload {
   selectedCombo?: NonNullable<BookingItem['selectedCombo']> | null;
   selectedUnderCombo?: NonNullable<BookingItem['selectedUnderCombo']> | null;
   comboRedemption?: NonNullable<BookingItem['comboRedemption']> | null;
+  selectedUpperComboBalanceId?: number | null;
+  selectedUnderComboBalanceId?: number | null;
+  skipUpperCombo?: boolean;
+  skipUnderCombo?: boolean;
 }
 
 export interface UseIosBillingCheckoutParams {
@@ -104,7 +109,17 @@ export function useIosBillingCheckout({
     (payload: Record<string, any>) => {
       const simMeta =
         isSimulationMode && activeBooking ? { simBookingMeta: buildSimBookingMetaPayload(activeBooking) } : {};
-      void postAction('COMPLETE_ORDER', { ...simMeta, ...payload }).then((res) => {
+      const walletSnapshot = activeBooking
+        ? {
+            selectedUpperComboBalanceId: activeBooking.selectedUpperComboBalanceId ?? null,
+            selectedUnderComboBalanceId: activeBooking.selectedUnderComboBalanceId ?? null,
+            skipUpperCombo: Boolean(activeBooking.skipUpperCombo),
+            skipUnderCombo: Boolean(activeBooking.skipUnderCombo),
+            hasUnderMinkCombo:
+              !activeBooking.skipUnderCombo && Boolean(activeBooking.underMinkComboStatus?.hasUnderCombo),
+          }
+        : {};
+      void postAction('COMPLETE_ORDER', { ...simMeta, ...walletSnapshot, ...payload }).then((res) => {
         if (res?.data?.attemptSnapshot) {
           onSimulationAttemptSaved?.(activeBookingId, res.data.attemptSnapshot);
         }
@@ -140,6 +155,22 @@ export function useIosBillingCheckout({
             : prev.selectedUnderCombo || null;
         const nextRedemption =
           upsellPayload?.comboRedemption !== undefined ? upsellPayload.comboRedemption : prev.comboRedemption || null;
+        const nextUpperBalanceId =
+          upsellPayload?.selectedUpperComboBalanceId !== undefined
+            ? upsellPayload.selectedUpperComboBalanceId
+            : (prev.selectedUpperComboBalanceId ?? null);
+        const nextUnderBalanceId =
+          upsellPayload?.selectedUnderComboBalanceId !== undefined
+            ? upsellPayload.selectedUnderComboBalanceId
+            : (prev.selectedUnderComboBalanceId ?? null);
+        const nextSkipUpper =
+          upsellPayload?.skipUpperCombo !== undefined
+            ? Boolean(upsellPayload.skipUpperCombo)
+            : Boolean(prev.skipUpperCombo);
+        const nextSkipUnder =
+          upsellPayload?.skipUnderCombo !== undefined
+            ? Boolean(upsellPayload.skipUnderCombo)
+            : Boolean(prev.skipUnderCombo);
         const {
           serviceTotal: effectiveServiceTotal,
           comboTotal,
@@ -162,7 +193,11 @@ export function useIosBillingCheckout({
           cartProducts: nextProducts,
           selectedCombo: nextCombo,
           selectedUnderCombo: nextUnderCombo,
-          comboRedemption: nextRedemption,
+          comboRedemption: nextSkipUpper ? null : nextRedemption,
+          selectedUpperComboBalanceId: nextUpperBalanceId,
+          selectedUnderComboBalanceId: nextUnderBalanceId,
+          skipUpperCombo: nextSkipUpper,
+          skipUnderCombo: nextSkipUnder,
         });
         const tipAmount = prev.billing?.tipAmount ?? 0;
         const maxEligibleDiamonds = Math.floor(creditEligiblePayableWithVat / 1000);
@@ -208,7 +243,12 @@ export function useIosBillingCheckout({
           cartProducts: nextProducts,
           selectedCombo: resolvedNextCombo,
           selectedUnderCombo: resolvedNextUnderCombo,
-          comboRedemption: nextRedemption,
+          comboRedemption: nextSkipUpper ? null : nextRedemption,
+          selectedUpperComboBalanceId: nextUpperBalanceId,
+          selectedUnderComboBalanceId: nextUnderBalanceId,
+          skipUpperCombo: nextSkipUpper,
+          skipUnderCombo: nextSkipUnder,
+          hasUnderMinkCombo: !nextSkipUnder && Boolean(prev.underMinkComboStatus?.hasUnderCombo),
         });
 
         const tipBreakdown = calculateActorTipBreakdown(
@@ -229,7 +269,11 @@ export function useIosBillingCheckout({
           cartProducts: nextProducts,
           selectedCombo: resolvedNextCombo,
           selectedUnderCombo: resolvedNextUnderCombo,
-          comboRedemption: nextRedemption,
+          comboRedemption: nextSkipUpper ? null : nextRedemption,
+          selectedUpperComboBalanceId: nextUpperBalanceId,
+          selectedUnderComboBalanceId: nextUnderBalanceId,
+          skipUpperCombo: nextSkipUpper,
+          skipUnderCombo: nextSkipUnder,
           _localComboUpdatedAt: Date.now(),
           cvRewardBreakdown: {
             techTipPercent: 70,
@@ -564,68 +608,13 @@ export function useIosBillingCheckout({
       let calculatedBilling: any = null;
 
       updateActiveBooking((prev) => {
-        const cvShare = Math.round(tipAmount * 0.7);
-        const checkInShare = Math.round(tipAmount * 0.1);
-        const checkOutShare = Math.round(tipAmount * 0.1);
-        const ccShare = checkInShare + checkOutShare;
-        const {
-          serviceTotal: freshServiceTotal,
-          comboTotal: freshComboTotal,
-          productTotal: freshProductTotal,
-          subtotal,
-          promotionDiscountAmount,
-          subtotalAfterDiscount,
-          vatRate,
-          vatAmount,
-          creditEligiblePayableWithVat,
-          hasAnyCreditRestrictedItem,
-          isFullCreditLocked,
-        } = computeFreshBillingLineTotals(prev);
-        const maxEligibleDiamonds = Math.floor(creditEligiblePayableWithVat / 1000);
-        const rawDiamondUsed = prev.billing?.diamondUsed ?? 0;
-        const clampedDiamondUsed = isFullCreditLocked
-          ? 0
-          : hasAnyCreditRestrictedItem
-            ? Math.max(0, Math.min(rawDiamondUsed, maxEligibleDiamonds))
-            : rawDiamondUsed;
-        const diamondDiscountAmount = isFullCreditLocked
-          ? 0
-          : hasAnyCreditRestrictedItem
-            ? clampedDiamondUsed * 1000
-            : (prev.billing?.diamondDiscountAmount ?? rawDiamondUsed * 1000);
-        const grandTotal = Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount);
-        const method = prev.billing?.paymentMethod || 'VIETQR';
-        const optimisticSettlement: IosSettlementStatus =
-          grandTotal <= 0 || method === 'VIETQR' || canDirectlySettleCounterPayment(actor.tier)
-            ? 'SETTLED_COMPLETED'
-            : 'PENDING_COUNTER_SETTLEMENT';
-
-        const nextBilling = {
-          ...(prev.billing || {}),
-          subtotal,
-          serviceTotal: freshServiceTotal,
-          comboTotal: freshComboTotal,
-          productTotal: freshProductTotal,
-          promotionDiscountAmount,
-          paymentMethod: method,
-          settlementStatus: optimisticSettlement,
-          vatRate,
-          vatAmount,
-          tipAmount,
-          tipCvShare: cvShare,
-          tipCheckInShare: checkInShare,
-          tipCheckOutShare: checkOutShare,
-          tipCcShare: ccShare,
-          grandTotal,
-          completedAt,
-        };
-
+        const nextBilling = buildRecordedTipBillingSnapshot(prev, tipAmount, actor.tier, completedAt);
         calculatedBilling = nextBilling;
 
         return {
           ...prev,
           status: 'DONE',
-          orderState: optimisticSettlement === 'PENDING_COUNTER_SETTLEMENT' ? 'CheckOut' : 'Completed',
+          orderState: nextBilling.settlementStatus === 'PENDING_COUNTER_SETTLEMENT' ? 'CheckOut' : 'Completed',
           checkOutStaffId: prev.checkOutStaffId || actor.staffId,
           checkOutStaffName: prev.checkOutStaffName || actor.name,
           checkOutStaffTier: prev.checkOutStaffTier || actor.tier,

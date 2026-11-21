@@ -1,3 +1,4 @@
+import { resolveActiveBookingComboWallets, type IosCustomerComboWalletItem } from '@mos-lab/shared';
 import type {
   AutoResolvedComboServiceSpec,
   LashMaterialSpec,
@@ -293,7 +294,13 @@ export function stepUnderMinkCount(currentStr?: string, delta: number = 10): str
 export function resolveQuickCheckInComboPreset(
   booking: {
     serviceName?: string;
+    comboWallets?: IosCustomerComboWalletItem[];
+    selectedUpperComboBalanceId?: number | null;
+    selectedUnderComboBalanceId?: number | null;
+    skipUpperCombo?: boolean;
+    skipUnderCombo?: boolean;
     comboLiveStatus?: {
+      balanceId?: number;
       isComboLive?: boolean;
       remainingSessions?: number;
       normalRemaining?: number;
@@ -301,13 +308,20 @@ export function resolveQuickCheckInComboPreset(
       comboName?: string;
       serviceKey?: string;
       retainDaysLimit?: number;
+      dateExpired?: string | null;
+      isExpired?: boolean;
+      isFrozen?: boolean;
     };
     underMinkComboStatus?: {
+      balanceId?: number;
       hasUnderCombo?: boolean;
       remainingSessions?: number;
       normalRemaining?: number;
       retainRemaining?: number;
       comboName?: string;
+      dateExpired?: string | null;
+      isExpired?: boolean;
+      isFrozen?: boolean;
     };
     lashHistory?: Array<{ date: string; serviceName: string; staffName?: string }>;
     attributes?: {
@@ -329,15 +343,54 @@ export function resolveQuickCheckInComboPreset(
   },
   catalog: LashMaterialSpec[] = DEFAULT_LASH_MATERIAL_CATALOG
 ): QuickCheckInComboPreset {
-  const isComboLive = Boolean(booking?.comboLiveStatus?.isComboLive);
+  const resolvedWallets = resolveActiveBookingComboWallets({
+    comboWallets: booking?.comboWallets,
+    comboLiveStatus: booking?.comboLiveStatus
+      ? {
+          balanceId: booking.comboLiveStatus.balanceId,
+          isComboLive: Boolean(booking.comboLiveStatus.isComboLive),
+          remainingSessions: Number(booking.comboLiveStatus.remainingSessions ?? 0),
+          normalRemaining: booking.comboLiveStatus.normalRemaining,
+          retainRemaining: booking.comboLiveStatus.retainRemaining,
+          comboName: booking.comboLiveStatus.comboName || 'Gói ❖ Live',
+          serviceKey: booking.comboLiveStatus.serviceKey,
+          retainDaysLimit: booking.comboLiveStatus.retainDaysLimit,
+          dateExpired: booking.comboLiveStatus.dateExpired,
+          isExpired: booking.comboLiveStatus.isExpired,
+          isFrozen: booking.comboLiveStatus.isFrozen,
+        }
+      : undefined,
+    underMinkComboStatus: booking?.underMinkComboStatus
+      ? {
+          balanceId: booking.underMinkComboStatus.balanceId,
+          hasUnderCombo: Boolean(booking.underMinkComboStatus.hasUnderCombo),
+          remainingSessions: Number(booking.underMinkComboStatus.remainingSessions ?? 0),
+          normalRemaining: Number(booking.underMinkComboStatus.normalRemaining ?? 0),
+          retainRemaining: Number(booking.underMinkComboStatus.retainRemaining ?? 0),
+          comboName: booking.underMinkComboStatus.comboName || 'Under Mink 390',
+          dateExpired: booking.underMinkComboStatus.dateExpired,
+          isExpired: booking.underMinkComboStatus.isExpired,
+          isFrozen: booking.underMinkComboStatus.isFrozen,
+        }
+      : undefined,
+    selectedUpperComboBalanceId: booking?.selectedUpperComboBalanceId ?? null,
+    selectedUnderComboBalanceId: booking?.selectedUnderComboBalanceId ?? null,
+    skipUpperCombo: Boolean(booking?.skipUpperCombo),
+    skipUnderCombo: Boolean(booking?.skipUnderCombo),
+    bookedServiceName: booking?.serviceName,
+  });
+
+  const effectiveComboStatus = resolvedWallets.effectiveComboLiveStatus;
+  const effectiveUnderStatus = resolvedWallets.effectiveUnderMinkComboStatus;
+  const isComboLive = resolvedWallets.isRedeemingUpperToday;
   const historyUpperEntry = (booking?.lashHistory || []).find((h) => {
     const s = String(h.serviceName || '').toLowerCase();
     return !s.includes('under') && !s.includes('mi dưới');
   });
 
   const sourceText = isComboLive
-    ? booking?.comboLiveStatus?.serviceKey ||
-      booking?.comboLiveStatus?.comboName ||
+    ? effectiveComboStatus?.serviceKey ||
+      effectiveComboStatus?.comboName ||
       historyUpperEntry?.serviceName ||
       booking?.serviceName
     : booking?.attributes?.material || historyUpperEntry?.serviceName || booking?.serviceName;
@@ -386,13 +439,11 @@ export function resolveQuickCheckInComboPreset(
   const length = validLengths.includes(rawLength) ? rawLength : mat.defaultLength;
 
   const color = booking?.attributes?.color || 'Đen Tuyền (Jet Black)';
-  const hasUnderMinkCombo = Boolean(
-    booking?.underMinkComboStatus?.hasUnderCombo && Number(booking?.underMinkComboStatus?.remainingSessions ?? 0) > 0
-  );
-  const underComboRemaining = Number(booking?.underMinkComboStatus?.remainingSessions ?? 0);
-  const underComboNormalRemaining = Number(booking?.underMinkComboStatus?.normalRemaining ?? 0);
-  const underComboRetainRemaining = Number(booking?.underMinkComboStatus?.retainRemaining ?? 0);
-  const underComboName = booking?.underMinkComboStatus?.comboName || 'Combo Mi Dưới';
+  const hasUnderMinkCombo = resolvedWallets.isRedeemingUnderToday;
+  const underComboRemaining = Number(effectiveUnderStatus?.remainingSessions ?? 0);
+  const underComboNormalRemaining = Number(effectiveUnderStatus?.normalRemaining ?? 0);
+  const underComboRetainRemaining = Number(effectiveUnderStatus?.retainRemaining ?? 0);
+  const underComboName = effectiveUnderStatus?.comboName || 'Combo Mi Dưới';
 
   const hasUnderMink =
     detectUnderMinkFromLastVisit(booking?.lashHistory, booking?.attributes?.hasUnderMink) || hasUnderMinkCombo;
@@ -407,13 +458,13 @@ export function resolveQuickCheckInComboPreset(
   const isWithinRetainWindow = daysSinceLastVisit !== null && daysSinceLastVisit <= retainDaysLimit;
   const isAlwaysFullSet = isAlwaysFullSetMaterial(mat.code || mat.id);
 
-  const remainingSessions = Number(booking?.comboLiveStatus?.remainingSessions ?? 0);
+  const remainingSessions = Number(effectiveComboStatus?.remainingSessions ?? 0);
   const hasExplicitCounts =
-    booking?.comboLiveStatus?.normalRemaining !== undefined || booking?.comboLiveStatus?.retainRemaining !== undefined;
+    effectiveComboStatus?.normalRemaining !== undefined || effectiveComboStatus?.retainRemaining !== undefined;
 
   const normalRemaining = isComboLive
     ? hasExplicitCounts
-      ? Number(booking?.comboLiveStatus?.normalRemaining ?? 0)
+      ? Number(effectiveComboStatus?.normalRemaining ?? 0)
       : isAlwaysFullSet
         ? remainingSessions
         : Math.max(1, Math.floor(remainingSessions / 2))
@@ -421,7 +472,7 @@ export function resolveQuickCheckInComboPreset(
 
   const retainRemaining = isComboLive
     ? hasExplicitCounts
-      ? Number(booking?.comboLiveStatus?.retainRemaining ?? 0)
+      ? Number(effectiveComboStatus?.retainRemaining ?? 0)
       : isAlwaysFullSet
         ? 0
         : Math.max(0, remainingSessions - normalRemaining)

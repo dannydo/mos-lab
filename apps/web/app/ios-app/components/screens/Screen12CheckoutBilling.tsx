@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import {
   canDirectlySettleCounterPayment,
+  resolveActiveBookingComboWallets,
   resolveNormalizedPaymentBreakdown,
   type IosPaymentBreakdown,
   type IosPaymentMethod,
@@ -205,12 +206,10 @@ export function Screen12CheckoutBilling({
     [booking, localCartProducts, selectedCombo, selectedUnderCombo, comboRedemption]
   );
   const isComboLive = Boolean(
-    booking?.comboLiveStatus?.isComboLive &&
+    resolvedWallets.isRedeemingUpperToday &&
     (!selectedCombo || !selectedCombo.todayUsageMode || selectedCombo.todayUsageMode === 'USE_OLD_COMBO')
   );
-  const hasUnderMinkCombo = Boolean(
-    booking?.underMinkComboStatus?.hasUnderCombo && (booking?.underMinkComboStatus?.remainingSessions ?? 0) > 0
-  );
+  const hasUnderMinkCombo = resolvedWallets.isRedeemingUnderToday;
   const effectiveServiceCharge = resolveEffectiveServiceTotal({
     servicePrice,
     upgradePrice,

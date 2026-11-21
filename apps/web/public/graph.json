@@ -5872,7 +5872,7 @@
         "path": "/api/auth/dev-directory",
         "module": "auth",
         "handler": "inlineHandler",
-        "line": 84
+        "line": 101
       }
     },
     {
@@ -5886,7 +5886,7 @@
         "path": "/api/auth/login",
         "module": "auth",
         "handler": "inlineHandler",
-        "line": 121
+        "line": 138
       }
     },
     {
@@ -5900,7 +5900,7 @@
         "path": "/api/auth/google",
         "module": "auth",
         "handler": "inlineHandler",
-        "line": 237
+        "line": 254
       }
     },
     {
@@ -5914,7 +5914,7 @@
         "path": "/api/auth/me",
         "module": "auth",
         "handler": "preHandler",
-        "line": 406
+        "line": 423
       }
     },
     {
@@ -5928,7 +5928,7 @@
         "path": "/api/auth/impersonate",
         "module": "auth",
         "handler": "preHandler",
-        "line": 443
+        "line": 460
       }
     },
     {
@@ -5942,7 +5942,7 @@
         "path": "/api/auth/impersonate/exit",
         "module": "auth",
         "handler": "preHandler",
-        "line": 551
+        "line": 568
       }
     },
     {
@@ -8686,7 +8686,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4376
+        "line": 4400
       }
     },
     {
@@ -8700,7 +8700,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4482
+        "line": 4506
       }
     },
     {
@@ -8714,7 +8714,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4557
+        "line": 4581
       }
     },
     {
@@ -8728,7 +8728,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4663
+        "line": 4687
       }
     },
     {
@@ -8742,7 +8742,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4779
+        "line": 4803
       }
     },
     {
@@ -8756,7 +8756,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4881
+        "line": 4905
       }
     },
     {
@@ -8770,7 +8770,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4952
+        "line": 4976
       }
     },
     {
@@ -8784,7 +8784,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4975
+        "line": 4999
       }
     },
     {
@@ -8798,7 +8798,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5156
+        "line": 5180
       }
     },
     {
@@ -8812,7 +8812,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5333
+        "line": 5357
       }
     },
     {
@@ -8826,7 +8826,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5435
+        "line": 5459
       }
     },
     {
@@ -8840,7 +8840,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5448
+        "line": 5472
       }
     },
     {
@@ -8854,7 +8854,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5511
+        "line": 5535
       }
     },
     {
@@ -8868,7 +8868,7 @@
         "path": "/api/chat/messages/search",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5576
+        "line": 5600
       }
     },
     {
@@ -8882,7 +8882,7 @@
         "path": "/api/chat/calls/active",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5967
+        "line": 5991
       }
     },
     {
@@ -8896,7 +8896,7 @@
         "path": "/api/chat/push/config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 6324
+        "line": 6348
       }
     },
     {
@@ -10618,7 +10618,7 @@
         "path": "/api/ios/photos/:filename",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 41
+        "line": 43
       }
     },
     {
@@ -10632,7 +10632,7 @@
         "path": "/api/ios/bookings",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 46
+        "line": 48
       }
     },
     {
@@ -10646,7 +10646,7 @@
         "path": "/api/ios/bookings",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 83
+        "line": 85
       }
     },
     {
@@ -10660,7 +10660,7 @@
         "path": "/api/ios/customers/lookup",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 115
+        "line": 117
       }
     },
     {
@@ -10674,7 +10674,21 @@
         "path": "/api/ios/services/catalog",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 131
+        "line": 133
+      }
+    },
+    {
+      "id": "route:GET:/api/ios/products/catalog",
+      "type": "FastifyRoute",
+      "label": "GET /api/ios/products/catalog",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/ios/products/catalog",
+        "module": "ios",
+        "handler": "inlineHandler",
+        "line": 148
       }
     },
     {
@@ -10688,7 +10702,7 @@
         "path": "/api/ios/bookings/create",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 146
+        "line": 165
       }
     },
     {
@@ -10702,7 +10716,7 @@
         "path": "/api/ios/simulation/mentees",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 165
+        "line": 184
       }
     },
     {
@@ -10716,7 +10730,7 @@
         "path": "/api/ios/simulation/attempts",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 181
+        "line": 200
       }
     },
     {
@@ -10730,7 +10744,21 @@
         "path": "/api/ios/simulation/attempts/:attemptId",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 211
+        "line": 230
+      }
+    },
+    {
+      "id": "route:GET:/api/ios/staff/checkout-eligible",
+      "type": "FastifyRoute",
+      "label": "GET /api/ios/staff/checkout-eligible",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/ios/staff/checkout-eligible",
+        "module": "ios",
+        "handler": "inlineHandler",
+        "line": 263
       }
     },
     {
@@ -10744,7 +10772,7 @@
         "path": "/api/ios/promotions",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 244
+        "line": 291
       }
     },
     {
@@ -10758,7 +10786,21 @@
         "path": "/api/ios/customers/:customerId/history",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 284
+        "line": 331
+      }
+    },
+    {
+      "id": "route:POST:/api/ios/customers/:customerId/notes",
+      "type": "FastifyRoute",
+      "label": "POST /api/ios/customers/:customerId/notes",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/ios/customers/:customerId/notes",
+        "module": "ios",
+        "handler": "inlineHandler",
+        "line": 354
       }
     },
     {
@@ -10772,7 +10814,7 @@
         "path": "/api/ios/combo-balances/expiry",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 307
+        "line": 374
       }
     },
     {
@@ -10786,7 +10828,7 @@
         "path": "/api/ios/products/scan",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 325
+        "line": 392
       }
     },
     {
@@ -10800,7 +10842,7 @@
         "path": "/api/ios/print-receipt",
         "module": "ios",
         "handler": "inlineHandler",
-        "line": 351
+        "line": 418
       }
     },
     {
@@ -27375,6 +27417,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:IosSimulationUpsellProductItem",
+      "type": "SharedType",
+      "label": "IosSimulationUpsellProductItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosSimulationUpsellProductItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:IosSimulationAttemptSummary",
       "type": "SharedType",
       "label": "IosSimulationAttemptSummary",
@@ -27431,6 +27485,18 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosBookingServiceCatalogItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosProductCatalogItem",
+      "type": "SharedType",
+      "label": "IosProductCatalogItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosProductCatalogItem",
         "package": "@mos-lab/shared"
       }
     },
@@ -27627,6 +27693,54 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:IosCustomerNoteSource",
+      "type": "SharedType",
+      "label": "IosCustomerNoteSource",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosCustomerNoteSource",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosCustomerNoteItem",
+      "type": "SharedType",
+      "label": "IosCustomerNoteItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosCustomerNoteItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosCreateCustomerNotePayload",
+      "type": "SharedType",
+      "label": "IosCreateCustomerNotePayload",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosCreateCustomerNotePayload",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosCreateCustomerNoteResponse",
+      "type": "SharedType",
+      "label": "IosCreateCustomerNoteResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosCreateCustomerNoteResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:IosCustomerHistoryLashSpec",
       "type": "SharedType",
       "label": "IosCustomerHistoryLashSpec",
@@ -27707,6 +27821,114 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCustomerHistoryResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosPostCheckoutPaymentMode",
+      "type": "SharedType",
+      "label": "IosPostCheckoutPaymentMode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-post-checkout.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosPostCheckoutPaymentMode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosPostCheckoutAdjustmentStatus",
+      "type": "SharedType",
+      "label": "IosPostCheckoutAdjustmentStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-post-checkout.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosPostCheckoutAdjustmentStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosCheckoutStaffOption",
+      "type": "SharedType",
+      "label": "IosCheckoutStaffOption",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-post-checkout.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosCheckoutStaffOption",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosPostCheckoutSnapshot",
+      "type": "SharedType",
+      "label": "IosPostCheckoutSnapshot",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-post-checkout.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosPostCheckoutSnapshot",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosPostCheckoutPendingDraft",
+      "type": "SharedType",
+      "label": "IosPostCheckoutPendingDraft",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-post-checkout.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosPostCheckoutPendingDraft",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosPostCheckoutAdjustmentEntry",
+      "type": "SharedType",
+      "label": "IosPostCheckoutAdjustmentEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-post-checkout.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosPostCheckoutAdjustmentEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CanAdjustDoneBookingPostCheckoutParams",
+      "type": "SharedType",
+      "label": "CanAdjustDoneBookingPostCheckoutParams",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-post-checkout.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CanAdjustDoneBookingPostCheckoutParams",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ComputePostCheckoutFinancialDeltaParams",
+      "type": "SharedType",
+      "label": "ComputePostCheckoutFinancialDeltaParams",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-post-checkout.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ComputePostCheckoutFinancialDeltaParams",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ComputePostCheckoutFinancialDeltaResult",
+      "type": "SharedType",
+      "label": "ComputePostCheckoutFinancialDeltaResult",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-post-checkout.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ComputePostCheckoutFinancialDeltaResult",
         "package": "@mos-lab/shared"
       }
     },
@@ -29219,6 +29441,18 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ActionMosChatMissionResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TogglePinConversationRequest",
+      "type": "SharedType",
+      "label": "TogglePinConversationRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TogglePinConversationRequest",
         "package": "@mos-lab/shared"
       }
     },
@@ -34239,6 +34473,18 @@
       }
     },
     {
+      "id": "uicomp:AvatarPromptModal.test",
+      "type": "UIComponent",
+      "label": "<AvatarPromptModal.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/avatar/__tests__/AvatarPromptModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "AvatarPromptModal.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:BookingAuditLogDrawer",
       "type": "UIComponent",
       "label": "<BookingAuditLogDrawer />",
@@ -34547,6 +34793,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "BugReportRejectionModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:BugReportSurface.test",
+      "type": "UIComponent",
+      "label": "<BugReportSurface.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/bug-reports/BugReportSurface.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "BugReportSurface.test",
         "isPrimitive": false
       }
     },
@@ -39264,8 +39522,8 @@
       "filePath": "apps/api/src/modules/auth/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20023,
-        "lineCount": 597,
+        "sizeBytes": 20711,
+        "lineCount": 614,
         "ext": ".ts"
       }
     },
@@ -39511,8 +39769,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 84814,
-        "lineCount": 2357,
+        "sizeBytes": 85415,
+        "lineCount": 2371,
         "ext": ".ts"
       }
     },
@@ -39524,8 +39782,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 163830,
-        "lineCount": 4109,
+        "sizeBytes": 164385,
+        "lineCount": 4123,
         "ext": ".ts"
       }
     },
@@ -40161,8 +40419,8 @@
       "filePath": "apps/api/src/modules/chat/chat-pin-persistence.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7805,
-        "lineCount": 219,
+        "sizeBytes": 12523,
+        "lineCount": 327,
         "ext": ".ts"
       }
     },
@@ -40382,8 +40640,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 252561,
-        "lineCount": 6584,
+        "sizeBytes": 253477,
+        "lineCount": 6608,
         "ext": ".ts"
       }
     },
@@ -41415,6 +41673,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/__tests__/ios-customer-notes.test.ts",
+      "type": "File",
+      "label": "ios-customer-notes.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/__tests__/ios-customer-notes.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7654,
+        "lineCount": 227,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/__tests__/ios-cv-points.test.ts",
       "type": "File",
       "label": "ios-cv-points.test.ts",
@@ -41487,8 +41758,8 @@
       "filePath": "apps/api/src/modules/ios/ios-customer-history.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10100,
-        "lineCount": 303,
+        "sizeBytes": 13033,
+        "lineCount": 389,
         "ext": ".ts"
       }
     },
@@ -41528,6 +41799,19 @@
       "metadata": {
         "sizeBytes": 28635,
         "lineCount": 799,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/ios-post-checkout-adjustment.test.ts",
+      "type": "File",
+      "label": "ios-post-checkout-adjustment.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/ios-post-checkout-adjustment.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 19869,
+        "lineCount": 593,
         "ext": ".ts"
       }
     },
@@ -41578,8 +41862,8 @@
       "filePath": "apps/api/src/modules/ios/routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 37519,
-        "lineCount": 1065,
+        "sizeBytes": 40624,
+        "lineCount": 1166,
         "ext": ".ts"
       }
     },
@@ -41606,6 +41890,19 @@
       "metadata": {
         "sizeBytes": 1728,
         "lineCount": 67,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-action-wallet.helper.ts",
+      "type": "File",
+      "label": "ios-action-wallet.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-action-wallet.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3030,
+        "lineCount": 69,
         "ext": ".ts"
       }
     },
@@ -41656,8 +41953,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-booking-create.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23544,
-        "lineCount": 630,
+        "sizeBytes": 23913,
+        "lineCount": 636,
         "ext": ".ts"
       }
     },
@@ -41721,8 +42018,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-combo-expiry.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16997,
-        "lineCount": 445,
+        "sizeBytes": 19179,
+        "lineCount": 494,
         "ext": ".ts"
       }
     },
@@ -41734,8 +42031,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-enrichment.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23843,
-        "lineCount": 616,
+        "sizeBytes": 21443,
+        "lineCount": 555,
         "ext": ".ts"
       }
     },
@@ -41760,8 +42057,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-history.mapper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15745,
-        "lineCount": 446,
+        "sizeBytes": 15858,
+        "lineCount": 451,
         "ext": ".ts"
       }
     },
@@ -41773,8 +42070,21 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-history.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10660,
-        "lineCount": 308,
+        "sizeBytes": 14932,
+        "lineCount": 410,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-customer-notes.service.ts",
+      "type": "File",
+      "label": "ios-customer-notes.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-customer-notes.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 16676,
+        "lineCount": 454,
         "ext": ".ts"
       }
     },
@@ -41812,8 +42122,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23290,
-        "lineCount": 628,
+        "sizeBytes": 25533,
+        "lineCount": 687,
         "ext": ".ts"
       }
     },
@@ -41877,8 +42187,21 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-step-sync.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18893,
-        "lineCount": 525,
+        "sizeBytes": 20678,
+        "lineCount": 568,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-legacy-wallet-reconciler.service.ts",
+      "type": "File",
+      "label": "ios-legacy-wallet-reconciler.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-legacy-wallet-reconciler.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14928,
+        "lineCount": 395,
         "ext": ".ts"
       }
     },
@@ -41890,8 +42213,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-overrides.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20219,
-        "lineCount": 560,
+        "sizeBytes": 20343,
+        "lineCount": 566,
         "ext": ".ts"
       }
     },
@@ -41909,6 +42232,45 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/services/ios-post-checkout-adjustment.service.ts",
+      "type": "File",
+      "label": "ios-post-checkout-adjustment.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-post-checkout-adjustment.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 24740,
+        "lineCount": 629,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-post-checkout-bridge.service.ts",
+      "type": "File",
+      "label": "ios-post-checkout-bridge.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-post-checkout-bridge.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 16575,
+        "lineCount": 448,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts",
+      "type": "File",
+      "label": "ios-post-checkout-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14549,
+        "lineCount": 347,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/services/ios-product-scan.service.ts",
       "type": "File",
       "label": "ios-product-scan.service.ts",
@@ -41916,8 +42278,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-product-scan.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14098,
-        "lineCount": 360,
+        "sizeBytes": 16701,
+        "lineCount": 433,
         "ext": ".ts"
       }
     },
@@ -41981,8 +42343,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-simulation-actions.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 28927,
-        "lineCount": 687,
+        "sizeBytes": 29191,
+        "lineCount": 695,
         "ext": ".ts"
       }
     },
@@ -42007,8 +42369,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-simulation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 24099,
-        "lineCount": 668,
+        "sizeBytes": 15006,
+        "lineCount": 416,
         "ext": ".ts"
       }
     },
@@ -47129,8 +47491,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27572,
-        "lineCount": 605,
+        "sizeBytes": 27902,
+        "lineCount": 613,
         "ext": ".tsx"
       }
     },
@@ -47142,8 +47504,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38942,
-        "lineCount": 858,
+        "sizeBytes": 39039,
+        "lineCount": 852,
         "ext": ".tsx"
       }
     },
@@ -47220,8 +47582,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportImplementationStatusCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6343,
-        "lineCount": 149,
+        "sizeBytes": 6940,
+        "lineCount": 161,
         "ext": ".tsx"
       }
     },
@@ -48871,8 +49233,8 @@
       "filePath": "apps/web/app/dashboard/financial-goals/__tests__/FinancialGoalsPage.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4830,
-        "lineCount": 171,
+        "sizeBytes": 5697,
+        "lineCount": 197,
         "ext": ".tsx"
       }
     },
@@ -48949,7 +49311,7 @@
       "filePath": "apps/web/app/dashboard/financial-goals/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12591,
+        "sizeBytes": 12601,
         "lineCount": 345,
         "ext": ".tsx"
       }
@@ -50983,6 +51345,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/today/__tests__/sandbox-modes.test.tsx",
+      "type": "File",
+      "label": "sandbox-modes.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/__tests__/sandbox-modes.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12508,
+        "lineCount": 365,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/today/components/BookerTeamConfigModal.tsx",
       "type": "File",
       "label": "BookerTeamConfigModal.tsx",
@@ -51016,8 +51391,8 @@
       "filePath": "apps/web/app/dashboard/today/components/RevenueDetailModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6225,
-        "lineCount": 168,
+        "sizeBytes": 14134,
+        "lineCount": 384,
         "ext": ".tsx"
       }
     },
@@ -51094,8 +51469,8 @@
       "filePath": "apps/web/app/dashboard/today/components/TodayStaffAttendance.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11982,
-        "lineCount": 363,
+        "sizeBytes": 19419,
+        "lineCount": 548,
         "ext": ".tsx"
       }
     },
@@ -51107,9 +51482,35 @@
       "filePath": "apps/web/app/dashboard/today/components/TodayStats.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40476,
-        "lineCount": 1055,
+        "sizeBytes": 41281,
+        "lineCount": 1070,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/context/SandboxModeContext.tsx",
+      "type": "File",
+      "label": "SandboxModeContext.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/context/SandboxModeContext.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 17849,
+        "lineCount": 519,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/hooks/mockTodayData.ts",
+      "type": "File",
+      "label": "mockTodayData.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/hooks/mockTodayData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14732,
+        "lineCount": 537,
+        "ext": ".ts"
       }
     },
     {
@@ -51120,8 +51521,8 @@
       "filePath": "apps/web/app/dashboard/today/hooks/useTodayData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30766,
-        "lineCount": 851,
+        "sizeBytes": 34852,
+        "lineCount": 955,
         "ext": ".ts"
       }
     },
@@ -51133,8 +51534,8 @@
       "filePath": "apps/web/app/dashboard/today/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23937,
-        "lineCount": 625,
+        "sizeBytes": 27787,
+        "lineCount": 725,
         "ext": ".tsx"
       }
     },
@@ -51406,8 +51807,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen03ConsultationMatrix.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20673,
-        "lineCount": 410,
+        "sizeBytes": 21659,
+        "lineCount": 429,
         "ext": ".tsx"
       }
     },
@@ -51549,7 +51950,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen13CheckoutTip.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12723,
+        "sizeBytes": 12766,
         "lineCount": 277,
         "ext": ".tsx"
       }
@@ -51562,8 +51963,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29718,
-        "lineCount": 626,
+        "sizeBytes": 31229,
+        "lineCount": 686,
         "ext": ".tsx"
       }
     },
@@ -51763,6 +52164,45 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/screens/__tests__/MultiComboWalletSelection.test.tsx",
+      "type": "File",
+      "label": "MultiComboWalletSelection.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/__tests__/MultiComboWalletSelection.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14822,
+        "lineCount": 413,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/__tests__/PostCheckoutComboFlow.test.tsx",
+      "type": "File",
+      "label": "PostCheckoutComboFlow.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/__tests__/PostCheckoutComboFlow.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10375,
+        "lineCount": 284,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/__tests__/PostCheckoutCvlNotes.test.tsx",
+      "type": "File",
+      "label": "PostCheckoutCvlNotes.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/__tests__/PostCheckoutCvlNotes.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7132,
+        "lineCount": 222,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/screens/__tests__/Screen03ConsultationMatrix.test.tsx",
       "type": "File",
       "label": "Screen03ConsultationMatrix.test.tsx",
@@ -51861,8 +52301,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkin/CheckInModals.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21216,
-        "lineCount": 406,
+        "sizeBytes": 24347,
+        "lineCount": 494,
         "ext": ".tsx"
       }
     },
@@ -51874,8 +52314,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkin/CheckInStaffAndProfileCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28814,
-        "lineCount": 592,
+        "sizeBytes": 28967,
+        "lineCount": 595,
         "ext": ".tsx"
       }
     },
@@ -51900,8 +52340,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkin/QuickCheckInComboCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20228,
-        "lineCount": 436,
+        "sizeBytes": 24280,
+        "lineCount": 534,
         "ext": ".tsx"
       }
     },
@@ -52030,8 +52470,21 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/ReceiptComboExpiryLine.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6506,
-        "lineCount": 171,
+        "sizeBytes": 15504,
+        "lineCount": 388,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/checkout/ReceiptComboItemsSection.tsx",
+      "type": "File",
+      "label": "ReceiptComboItemsSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/checkout/ReceiptComboItemsSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 20221,
+        "lineCount": 423,
         "ext": ".tsx"
       }
     },
@@ -52121,8 +52574,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationHeaderAndTabs.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17041,
-        "lineCount": 412,
+        "sizeBytes": 17999,
+        "lineCount": 431,
         "ext": ".tsx"
       }
     },
@@ -52147,8 +52600,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationNotesAndFooterPanel.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17327,
-        "lineCount": 387,
+        "sizeBytes": 17601,
+        "lineCount": 393,
         "ext": ".tsx"
       }
     },
@@ -52160,8 +52613,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationServiceAndUpgradeCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29128,
-        "lineCount": 652,
+        "sizeBytes": 30640,
+        "lineCount": 697,
         "ext": ".tsx"
       }
     },
@@ -52173,8 +52626,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/ConsultationTypes.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2885,
-        "lineCount": 104,
+        "sizeBytes": 3302,
+        "lineCount": 116,
         "ext": ".ts"
       }
     },
@@ -52225,8 +52678,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/LashVolumeColorAndUnderMinkSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23707,
-        "lineCount": 497,
+        "sizeBytes": 25128,
+        "lineCount": 532,
         "ext": ".tsx"
       }
     },
@@ -52303,8 +52756,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/constraints/comboAndUnderMinkPresets.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17963,
-        "lineCount": 490,
+        "sizeBytes": 20468,
+        "lineCount": 541,
         "ext": ".ts"
       }
     },
@@ -52394,8 +52847,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/useConsultationComboAndUpgrade.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25968,
-        "lineCount": 673,
+        "sizeBytes": 26596,
+        "lineCount": 679,
         "ext": ".ts"
       }
     },
@@ -52420,8 +52873,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/useLashDesignSelection.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25030,
-        "lineCount": 619,
+        "sizeBytes": 27820,
+        "lineCount": 688,
         "ext": ".ts"
       }
     },
@@ -52446,8 +52899,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/IncomingBookingCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26331,
-        "lineCount": 623,
+        "sizeBytes": 27957,
+        "lineCount": 648,
         "ext": ".tsx"
       }
     },
@@ -52459,8 +52912,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/IncomingBookingsModals.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9507,
-        "lineCount": 221,
+        "sizeBytes": 9794,
+        "lineCount": 227,
         "ext": ".tsx"
       }
     },
@@ -52474,6 +52927,97 @@
       "metadata": {
         "sizeBytes": 16922,
         "lineCount": 480,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutComboFormSections.tsx",
+      "type": "File",
+      "label": "PostCheckoutComboFormSections.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutComboFormSections.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 21736,
+        "lineCount": 505,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutComboSheet.tsx",
+      "type": "File",
+      "label": "PostCheckoutComboSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutComboSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 26685,
+        "lineCount": 653,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutCvlNoteCard.tsx",
+      "type": "File",
+      "label": "PostCheckoutCvlNoteCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutCvlNoteCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5918,
+        "lineCount": 153,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutCvlNoteModal.tsx",
+      "type": "File",
+      "label": "PostCheckoutCvlNoteModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutCvlNoteModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9917,
+        "lineCount": 266,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutHistorySection.tsx",
+      "type": "File",
+      "label": "PostCheckoutHistorySection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutHistorySection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10938,
+        "lineCount": 269,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutReconciliationCard.tsx",
+      "type": "File",
+      "label": "PostCheckoutReconciliationCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutReconciliationCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15920,
+        "lineCount": 398,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/post-checkout/postCheckoutWalletHelpers.ts",
+      "type": "File",
+      "label": "postCheckoutWalletHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/post-checkout/postCheckoutWalletHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6236,
+        "lineCount": 151,
         "ext": ".ts"
       }
     },
@@ -52589,8 +53133,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellHeaderAndSerumSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14293,
-        "lineCount": 316,
+        "sizeBytes": 17826,
+        "lineCount": 395,
         "ext": ".tsx"
       }
     },
@@ -52628,8 +53172,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/UpsellOverlays.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4816,
-        "lineCount": 150,
+        "sizeBytes": 5464,
+        "lineCount": 164,
         "ext": ".tsx"
       }
     },
@@ -52667,8 +53211,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/upsellAccountingHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5597,
-        "lineCount": 150,
+        "sizeBytes": 5753,
+        "lineCount": 157,
         "ext": ".ts"
       }
     },
@@ -52680,8 +53224,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/upsellCheckoutHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16109,
-        "lineCount": 382,
+        "sizeBytes": 19595,
+        "lineCount": 468,
         "ext": ".ts"
       }
     },
@@ -52693,8 +53237,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/upsell/useUpsellComboExpiry.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5574,
-        "lineCount": 164,
+        "sizeBytes": 5858,
+        "lineCount": 168,
         "ext": ".ts"
       }
     },
@@ -52797,8 +53341,21 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/ComboWalletDetailModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21900,
-        "lineCount": 459,
+        "sizeBytes": 25050,
+        "lineCount": 517,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/ComboWalletSelectorList.tsx",
+      "type": "File",
+      "label": "ComboWalletSelectorList.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/ComboWalletSelectorList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10256,
+        "lineCount": 233,
         "ext": ".tsx"
       }
     },
@@ -52823,8 +53380,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/CustomerHistoryAndSpendingSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26866,
-        "lineCount": 643,
+        "sizeBytes": 19592,
+        "lineCount": 465,
         "ext": ".tsx"
       }
     },
@@ -52851,6 +53408,19 @@
       "metadata": {
         "sizeBytes": 1714,
         "lineCount": 69,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/CvlCustomerNotesBanner.tsx",
+      "type": "File",
+      "label": "CvlCustomerNotesBanner.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/CvlCustomerNotesBanner.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2113,
+        "lineCount": 53,
         "ext": ".tsx"
       }
     },
@@ -53096,8 +53666,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/__tests__/CustomerHistoryAndSpendingSheet.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9079,
-        "lineCount": 313,
+        "sizeBytes": 10409,
+        "lineCount": 342,
         "ext": ".tsx"
       }
     },
@@ -53135,8 +53705,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/__tests__/IosProfileMenuSheet.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11933,
-        "lineCount": 304,
+        "sizeBytes": 13186,
+        "lineCount": 343,
         "ext": ".tsx"
       }
     },
@@ -53193,6 +53763,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/customer-history/CustomerHistoryCards.tsx",
+      "type": "File",
+      "label": "CustomerHistoryCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/customer-history/CustomerHistoryCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11572,
+        "lineCount": 294,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/ui-kit/customer-history/CustomerLashPortfolioTab.tsx",
       "type": "File",
       "label": "CustomerLashPortfolioTab.tsx",
@@ -53206,6 +53789,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/customer-history/CustomerNotesTab.tsx",
+      "type": "File",
+      "label": "CustomerNotesTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/customer-history/CustomerNotesTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5143,
+        "lineCount": 128,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/ui-kit/customer-history/LashPhotoCompareLightbox.tsx",
       "type": "File",
       "label": "LashPhotoCompareLightbox.tsx",
@@ -53213,7 +53809,7 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/customer-history/LashPhotoCompareLightbox.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8259,
+        "sizeBytes": 8260,
         "lineCount": 198,
         "ext": ".tsx"
       }
@@ -53252,8 +53848,8 @@
       "filePath": "apps/web/app/ios-app/state/__tests__/ios-sdk-contract.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13737,
-        "lineCount": 360,
+        "sizeBytes": 16423,
+        "lineCount": 433,
         "ext": ".ts"
       }
     },
@@ -53304,8 +53900,8 @@
       "filePath": "apps/web/app/ios-app/state/iosActorProfile.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5368,
-        "lineCount": 179,
+        "sizeBytes": 5455,
+        "lineCount": 180,
         "ext": ".ts"
       }
     },
@@ -53330,8 +53926,8 @@
       "filePath": "apps/web/app/ios-app/state/iosBookingMerge.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12246,
-        "lineCount": 288,
+        "sizeBytes": 16565,
+        "lineCount": 382,
         "ext": ".ts"
       }
     },
@@ -53448,7 +54044,7 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "sizeBytes": 19944,
-        "lineCount": 573,
+        "lineCount": 574,
         "ext": ".ts"
       }
     },
@@ -53460,8 +54056,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosConsultationAndCheckIn.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17694,
-        "lineCount": 454,
+        "sizeBytes": 24994,
+        "lineCount": 604,
         "ext": ".ts"
       }
     },
@@ -53577,8 +54173,8 @@
       "filePath": "apps/web/app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1252,
-        "lineCount": 42,
+        "sizeBytes": 1415,
+        "lineCount": 48,
         "ext": ".tsx"
       }
     },
@@ -53824,7 +54420,7 @@
       "filePath": "apps/web/lib/__tests__/bug-report-launcher.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1129,
+        "sizeBytes": 1130,
         "lineCount": 33,
         "ext": ".ts"
       }
@@ -54305,7 +54901,7 @@
       "filePath": "apps/web/lib/bug-report-launcher.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3800,
+        "sizeBytes": 3802,
         "lineCount": 104,
         "ext": ".ts"
       }
@@ -54467,6 +55063,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/resolve-landing-route.ts",
+      "type": "File",
+      "label": "resolve-landing-route.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/resolve-landing-route.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1344,
+        "lineCount": 32,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/safe-storage.ts",
       "type": "File",
       "label": "safe-storage.ts",
@@ -54591,8 +55200,8 @@
       "filePath": "packages/shared/src/catalog/combo-expiry.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 22153,
-        "lineCount": 535,
+        "sizeBytes": 42687,
+        "lineCount": 1009,
         "ext": ".ts"
       }
     },
@@ -54799,8 +55408,8 @@
       "filePath": "packages/shared/src/types/auth.test.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7931,
-        "lineCount": 166,
+        "sizeBytes": 10870,
+        "lineCount": 234,
         "ext": ".ts"
       }
     },
@@ -54812,8 +55421,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10770,
-        "lineCount": 355,
+        "sizeBytes": 13459,
+        "lineCount": 411,
         "ext": ".ts"
       }
     },
@@ -54864,8 +55473,8 @@
       "filePath": "packages/shared/src/types/bug-report.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 47678,
-        "lineCount": 1484,
+        "sizeBytes": 47748,
+        "lineCount": 1490,
         "ext": ".ts"
       }
     },
@@ -55228,8 +55837,21 @@
       "filePath": "packages/shared/src/types/ios-app.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 50765,
-        "lineCount": 1623,
+        "sizeBytes": 53373,
+        "lineCount": 1719,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/ios-post-checkout.ts",
+      "type": "File",
+      "label": "ios-post-checkout.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/ios-post-checkout.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 11209,
+        "lineCount": 325,
         "ext": ".ts"
       }
     },
@@ -55267,8 +55889,8 @@
       "filePath": "packages/shared/src/types/menu-access.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 29188,
-        "lineCount": 943,
+        "sizeBytes": 30585,
+        "lineCount": 984,
         "ext": ".ts"
       }
     },
@@ -55293,8 +55915,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 34654,
-        "lineCount": 1312,
+        "sizeBytes": 34725,
+        "lineCount": 1316,
         "ext": ".ts"
       }
     },
@@ -60712,6 +61334,13 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/ios/products/catalog:ws:apps/api",
+      "source": "route:GET:/api/ios/products/catalog",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:POST:/api/ios/bookings/create:ws:apps/api",
       "source": "route:POST:/api/ios/bookings/create",
       "target": "ws:apps/api",
@@ -60740,6 +61369,13 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/ios/staff/checkout-eligible:ws:apps/api",
+      "source": "route:GET:/api/ios/staff/checkout-eligible",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:GET:/api/ios/promotions:ws:apps/api",
       "source": "route:GET:/api/ios/promotions",
       "target": "ws:apps/api",
@@ -60749,6 +61385,13 @@
     {
       "id": "edge:route:GET:/api/ios/customers/:customerId/history:ws:apps/api",
       "source": "route:GET:/api/ios/customers/:customerId/history",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/ios/customers/:customerId/notes:ws:apps/api",
+      "source": "route:POST:/api/ios/customers/:customerId/notes",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -70064,6 +70707,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:IosSimulationUpsellProductItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosSimulationUpsellProductItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:IosSimulationAttemptSummary:ws:packages/shared",
       "source": "type:@mos-lab/shared:IosSimulationAttemptSummary",
       "target": "ws:packages/shared",
@@ -70094,6 +70744,13 @@
     {
       "id": "edge:type:@mos-lab/shared:IosBookingServiceCatalogItem:ws:packages/shared",
       "source": "type:@mos-lab/shared:IosBookingServiceCatalogItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosProductCatalogItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosProductCatalogItem",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -70211,6 +70868,34 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:IosCustomerNoteSource:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosCustomerNoteSource",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosCustomerNoteItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosCustomerNoteItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosCreateCustomerNotePayload:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosCreateCustomerNotePayload",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosCreateCustomerNoteResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosCreateCustomerNoteResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:IosCustomerHistoryLashSpec:ws:packages/shared",
       "source": "type:@mos-lab/shared:IosCustomerHistoryLashSpec",
       "target": "ws:packages/shared",
@@ -70255,6 +70940,69 @@
     {
       "id": "edge:type:@mos-lab/shared:IosCustomerHistoryResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:IosCustomerHistoryResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosPostCheckoutPaymentMode:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosPostCheckoutPaymentMode",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosPostCheckoutAdjustmentStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosPostCheckoutAdjustmentStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosCheckoutStaffOption:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosCheckoutStaffOption",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosPostCheckoutSnapshot:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosPostCheckoutSnapshot",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosPostCheckoutPendingDraft:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosPostCheckoutPendingDraft",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosPostCheckoutAdjustmentEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosPostCheckoutAdjustmentEntry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CanAdjustDoneBookingPostCheckoutParams:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CanAdjustDoneBookingPostCheckoutParams",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ComputePostCheckoutFinancialDeltaParams:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ComputePostCheckoutFinancialDeltaParams",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ComputePostCheckoutFinancialDeltaResult:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ComputePostCheckoutFinancialDeltaResult",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -71137,6 +71885,13 @@
     {
       "id": "edge:type:@mos-lab/shared:ActionMosChatMissionResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:ActionMosChatMissionResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TogglePinConversationRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TogglePinConversationRequest",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -74278,6 +75033,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:AvatarPromptModal.test:ws:apps/web",
+      "source": "uicomp:AvatarPromptModal.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:AvatarPromptModal.test:token:color:primary",
+      "source": "uicomp:AvatarPromptModal.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:BookingAuditLogDrawer:ws:apps/web",
       "source": "uicomp:BookingAuditLogDrawer",
       "target": "ws:apps/web",
@@ -74637,6 +75406,20 @@
     {
       "id": "edge:uicomp:BugReportRejectionModal:token:color:primary",
       "source": "uicomp:BugReportRejectionModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:BugReportSurface.test:ws:apps/web",
+      "source": "uicomp:BugReportSurface.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:BugReportSurface.test:token:color:primary",
+      "source": "uicomp:BugReportSurface.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -80291,6 +81074,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ios/ios-post-checkout-adjustment.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/ios-post-checkout-adjustment.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/ios-product-scan.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/ios-product-scan.test.ts",
       "target": "ws:packages/shared",
@@ -80314,6 +81104,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-action-wallet.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-action-wallet.helper.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -80410,6 +81207,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-customer-notes.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-customer-notes.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-cv-self-speed.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-cv-self-speed.service.ts",
       "target": "ws:packages/shared",
@@ -80466,6 +81270,27 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-post-checkout-adjustment.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-post-checkout-adjustment.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-post-checkout-bridge.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-post-checkout-bridge.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-product-scan.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-product-scan.service.ts",
       "target": "ws:packages/shared",
@@ -80510,6 +81335,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-simulation-attempts.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-simulation-attempts.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-simulation-enrichment.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-simulation-enrichment.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -83672,6 +84504,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx",
       "target": "ws:packages/shared",
@@ -83728,6 +84567,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen13CheckoutTip.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen13CheckoutTip.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "target": "ws:packages/shared",
@@ -83763,6 +84609,20 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/__tests__/MultiComboWalletSelection.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/__tests__/MultiComboWalletSelection.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/__tests__/PostCheckoutComboFlow.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/__tests__/PostCheckoutComboFlow.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/__tests__/SelfChallengeDurationCard.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/__tests__/SelfChallengeDurationCard.test.tsx",
       "target": "ws:packages/shared",
@@ -83777,6 +84637,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/checkin/CheckInModals.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/checkin/CheckInModals.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/checkin/CheckInStaffAndProfileCards.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/checkin/CheckInStaffAndProfileCards.tsx",
       "target": "ws:packages/shared",
@@ -83784,8 +84651,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/checkin/QuickCheckInComboCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/checkin/QuickCheckInComboCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/checkout/CheckoutBillingOverlays.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/checkout/CheckoutBillingOverlays.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/checkout/CheckoutComboWalletCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/checkout/CheckoutComboWalletCard.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -83854,6 +84735,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/ConsultationNotesAndFooterPanel.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/consultation/ConsultationNotesAndFooterPanel.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/ConsultationServiceAndUpgradeCard.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/consultation/ConsultationServiceAndUpgradeCard.tsx",
       "target": "ws:packages/shared",
@@ -83861,8 +84749,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/LashVolumeColorAndUnderMinkSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/consultation/LashVolumeColorAndUnderMinkSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/comboExpiryConsultHelpers.ts:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/consultation/comboExpiryConsultHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/constraints/comboAndUnderMinkPresets.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/consultation/constraints/comboAndUnderMinkPresets.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -83884,6 +84786,69 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/screens/consultation/useLashDesignSelection.ts:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/consultation/useLashDesignSelection.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/incoming/IncomingBookingCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/incoming/IncomingBookingCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/incoming/IncomingBookingsModals.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/incoming/IncomingBookingsModals.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutComboFormSections.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutComboFormSections.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutComboSheet.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutComboSheet.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutCvlNoteCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutCvlNoteCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutCvlNoteModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutCvlNoteModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutHistorySection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutHistorySection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutReconciliationCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/post-checkout/PostCheckoutReconciliationCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/post-checkout/postCheckoutWalletHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/post-checkout/postCheckoutWalletHelpers.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -84001,6 +84966,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/simulation/SimulationUpsellProductsSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/simulation/SimulationUpsellProductsSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/simulation/__tests__/IosSimulationWorkspaceBar.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/simulation/__tests__/IosSimulationWorkspaceBar.test.tsx",
       "target": "ws:packages/shared",
@@ -84029,6 +85001,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/ui-kit/ComboWalletSelectorList.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/ui-kit/ComboWalletSelectorList.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/ui-kit/CustomerHistoryAndSpendingSheet.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/ui-kit/CustomerHistoryAndSpendingSheet.tsx",
       "target": "ws:packages/shared",
@@ -84038,6 +85017,13 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/ui-kit/CustomerPortfolioTriggerButton.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/ui-kit/CustomerPortfolioTriggerButton.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/ui-kit/CvlCustomerNotesBanner.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/ui-kit/CvlCustomerNotesBanner.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -84085,8 +85071,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/ui-kit/customer-history/CustomerHistoryCards.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/ui-kit/customer-history/CustomerHistoryCards.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/ui-kit/customer-history/CustomerLashPortfolioTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/ui-kit/customer-history/CustomerLashPortfolioTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/ui-kit/customer-history/CustomerNotesTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/ui-kit/customer-history/CustomerNotesTab.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -84134,6 +85134,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/state/iosBookingMerge.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/state/iosBookingMerge.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/state/mockData.ts:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/state/mockData.ts",
       "target": "ws:packages/shared",
@@ -84176,6 +85183,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/state/useIosBookingsSync.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/state/useIosBookingsSync.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/state/useIosConsultationAndCheckIn.ts:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/state/useIosConsultationAndCheckIn.ts",
       "target": "ws:packages/shared",
@@ -84206,13 +85220,6 @@
     {
       "id": "edge:file:apps/web/app/login/page.tsx:ws:packages/shared",
       "source": "file:apps/web/app/login/page.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
-      "id": "edge:file:apps/web/app/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/page.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -84500,6 +85507,13 @@
     {
       "id": "edge:file:apps/web/lib/image-utils.ts:ws:packages/shared",
       "source": "file:apps/web/lib/image-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/resolve-landing-route.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/resolve-landing-route.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -85660,6 +86674,13 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/chat/routes.ts:prisma:crm:CrmChatConversation",
+      "source": "file:apps/api/src/modules/chat/routes.ts",
+      "target": "prisma:crm:CrmChatConversation",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/cs/services/campaign.service.ts:prisma:crm:CrmStaff",
       "source": "file:apps/api/src/modules/cs/services/campaign.service.ts",
       "target": "prisma:crm:CrmStaff",
@@ -86474,6 +87495,34 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-auth.service.ts:prisma:legacy:user_profile",
       "source": "file:apps/api/src/modules/ios/services/ios-auth.service.ts",
+      "target": "prisma:legacy:user_profile",
+      "type": "QUERIES_MODEL",
+      "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts:prisma:crm:CrmCareerProgression",
+      "source": "file:apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts",
+      "target": "prisma:crm:CrmCareerProgression",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts:prisma:crm:CrmTeamMember",
+      "source": "file:apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts",
+      "target": "prisma:crm:CrmTeamMember",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts:prisma:legacy:user_profile",
+      "source": "file:apps/api/src/modules/ios/services/ios-post-checkout-helpers.ts",
       "target": "prisma:legacy:user_profile",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
@@ -88666,6 +89715,13 @@
       "id": "edge:page:/chat:route:GET:/api/ios/customers/:customerId/history",
       "source": "page:/chat",
       "target": "route:GET:/api/ios/customers/:customerId/history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/ios/customers/:customerId/notes",
+      "source": "page:/chat",
+      "target": "route:POST:/api/ios/customers/:customerId/notes",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -92569,6 +93625,13 @@
       "label": "CALLS customers.getMissedSummary"
     },
     {
+      "id": "edge:page:/dashboard/appointments:route:POST:/api/ios/customers/:customerId/notes",
+      "source": "page:/dashboard/appointments",
+      "target": "route:POST:/api/ios/customers/:customerId/notes",
+      "type": "API_CALL",
+      "label": "CALLS customers.getMissedSummary"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/academy-sales/leads/:id/talent-assessments",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
@@ -93675,6 +94738,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/ios/customers/:customerId/notes",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/ios/customers/:customerId/notes",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/kpi/bk/games",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/kpi/bk/games",
@@ -94168,6 +95238,13 @@
       "id": "edge:page:/dashboard/branches:route:GET:/api/ios/services/catalog",
       "source": "page:/dashboard/branches",
       "target": "route:GET:/api/ios/services/catalog",
+      "type": "API_CALL",
+      "label": "CALLS catalog.branches"
+    },
+    {
+      "id": "edge:page:/dashboard/branches:route:GET:/api/ios/products/catalog",
+      "source": "page:/dashboard/branches",
+      "target": "route:GET:/api/ios/products/catalog",
       "type": "API_CALL",
       "label": "CALLS catalog.branches"
     },
@@ -94735,6 +95812,13 @@
       "id": "edge:page:/dashboard/catalog:route:GET:/api/ios/services/catalog",
       "source": "page:/dashboard/catalog",
       "target": "route:GET:/api/ios/services/catalog",
+      "type": "API_CALL",
+      "label": "CALLS catalog.getGroups"
+    },
+    {
+      "id": "edge:page:/dashboard/catalog:route:GET:/api/ios/products/catalog",
+      "source": "page:/dashboard/catalog",
+      "target": "route:GET:/api/ios/products/catalog",
       "type": "API_CALL",
       "label": "CALLS catalog.getGroups"
     },
@@ -96457,6 +97541,13 @@
       "id": "edge:page:/dashboard/design-system:route:GET:/api/ios/customers/:customerId/history",
       "source": "page:/dashboard/design-system",
       "target": "route:GET:/api/ios/customers/:customerId/history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/ios/customers/:customerId/notes",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/ios/customers/:customerId/notes",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -100514,6 +101605,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/ios/products/catalog",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/ios/products/catalog",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/ios/bookings/create",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/ios/bookings/create",
@@ -100542,6 +101640,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/ios/staff/checkout-eligible",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/ios/staff/checkout-eligible",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/ios/promotions",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/ios/promotions",
@@ -100552,6 +101657,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/ios/customers/:customerId/history",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/ios/customers/:customerId/history",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/ios/customers/:customerId/notes",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/ios/customers/:customerId/notes",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -105953,6 +107065,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/ios/products/catalog",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/ios/products/catalog",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/ios/bookings/create",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/ios/bookings/create",
@@ -105981,6 +107100,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/ios/staff/checkout-eligible",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/ios/staff/checkout-eligible",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/ios/promotions",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/ios/promotions",
@@ -105991,6 +107117,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/ios/customers/:customerId/history",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/ios/customers/:customerId/history",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/ios/customers/:customerId/notes",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/ios/customers/:customerId/notes",
       "type": "API_CALL",
       "label": "CALLS customers.getStaff"
     },
@@ -107864,6 +108997,13 @@
       "label": "CALLS omicall.deleteConfig"
     },
     {
+      "id": "edge:page:/dashboard/omicall:route:GET:/api/ios/staff/checkout-eligible",
+      "source": "page:/dashboard/omicall",
+      "target": "route:GET:/api/ios/staff/checkout-eligible",
+      "type": "API_CALL",
+      "label": "CALLS staff.list"
+    },
+    {
       "id": "edge:page:/dashboard/omicall:route:GET:/api/kpi/bk/config",
       "source": "page:/dashboard/omicall",
       "target": "route:GET:/api/kpi/bk/config",
@@ -109411,6 +110551,13 @@
       "label": "CALLS customers.getReferrals"
     },
     {
+      "id": "edge:page:/dashboard/referrals:route:POST:/api/ios/customers/:customerId/notes",
+      "source": "page:/dashboard/referrals",
+      "target": "route:POST:/api/ios/customers/:customerId/notes",
+      "type": "API_CALL",
+      "label": "CALLS customers.getReferrals"
+    },
+    {
       "id": "edge:page:/dashboard/schedule-calendar:route:GET:/api/campaigns/:id/customers",
       "source": "page:/dashboard/schedule-calendar",
       "target": "route:GET:/api/campaigns/:id/customers",
@@ -109862,6 +111009,13 @@
       "id": "edge:page:/dashboard/schedule-calendar:route:GET:/api/ios/customers/:customerId/history",
       "source": "page:/dashboard/schedule-calendar",
       "target": "route:GET:/api/ios/customers/:customerId/history",
+      "type": "API_CALL",
+      "label": "CALLS customers.getAppointments"
+    },
+    {
+      "id": "edge:page:/dashboard/schedule-calendar:route:POST:/api/ios/customers/:customerId/notes",
+      "source": "page:/dashboard/schedule-calendar",
+      "target": "route:POST:/api/ios/customers/:customerId/notes",
       "type": "API_CALL",
       "label": "CALLS customers.getAppointments"
     },
@@ -110975,6 +112129,13 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/ios/customers/:customerId/history",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:GET:/api/ios/customers/:customerId/history",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/ios/customers/:customerId/notes",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/ios/customers/:customerId/notes",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -114941,6 +116102,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/ios/products/catalog",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/ios/products/catalog",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/ios/bookings/create",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/ios/bookings/create",
@@ -114969,6 +116137,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/ios/staff/checkout-eligible",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/ios/staff/checkout-eligible",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/ios/promotions",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/ios/promotions",
@@ -114979,6 +116154,13 @@
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/ios/customers/:customerId/history",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/ios/customers/:customerId/history",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/ios/customers/:customerId/notes",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/ios/customers/:customerId/notes",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -121921,6 +123103,13 @@
       "moduleName": "ios"
     },
     {
+      "method": "GET",
+      "path": "/api/ios/products/catalog",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ios"
+    },
+    {
       "method": "POST",
       "path": "/api/ios/bookings/create",
       "filePath": "apps/api/src/modules/ios/routes.ts",
@@ -121950,6 +123139,13 @@
     },
     {
       "method": "GET",
+      "path": "/api/ios/staff/checkout-eligible",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ios"
+    },
+    {
+      "method": "GET",
       "path": "/api/ios/promotions",
       "filePath": "apps/api/src/modules/ios/routes.ts",
       "handler": "inlineHandler",
@@ -121958,6 +123154,13 @@
     {
       "method": "GET",
       "path": "/api/ios/customers/:customerId/history",
+      "filePath": "apps/api/src/modules/ios/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ios"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ios/customers/:customerId/notes",
       "filePath": "apps/api/src/modules/ios/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "ios"

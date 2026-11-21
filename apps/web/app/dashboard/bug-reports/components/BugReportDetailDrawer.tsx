@@ -32,9 +32,8 @@ import {
   AppIcon,
   SectionCard,
   StatePanel,
-  RichTextViewer,
-  RichTextEditor,
 } from '../../../../components/ui';
+import { RichTextEditor, RichTextViewer } from '../../../../components/ui/rich-text';
 import { BugReportConversation } from '../../../../components/bug-reports/BugReportConversation';
 import { BugReportResolutionTracking } from './BugReportResolutionTracking';
 import { BugReportExecutionTimingCard } from './BugReportExecutionTimingCard';
@@ -68,20 +67,8 @@ import styles from './BugReportDetailDrawer.module.css';
 
 const { Text } = Typography;
 
-export function recommendDefaultModelTier(detail: BugReportDetail | null): InboxImplementationModelTier {
-  if (!detail) return 'flash';
-  if (
-    detail.priority === 'P0' ||
-    detail.priority === 'P1' ||
-    detail.reopen !== null ||
-    detail.implementation?.status === 'CHANGES_REQUESTED'
-  ) {
-    return 'pro';
-  }
-  if (detail.priority === 'P3' && (detail.description?.trim().length ?? 0) < 300) {
-    return 'flash_lite';
-  }
-  return 'flash';
+export function recommendDefaultModelTier(_detail: BugReportDetail | null): InboxImplementationModelTier {
+  return 'hydrogen';
 }
 
 type BugReportDetailDrawerProps = BugReportDetailOptions &
@@ -275,14 +262,20 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                             }
                             className="flex flex-col gap-1.5"
                           >
+                            <Radio value="hydrogen" className="whitespace-nowrap">
+                              {MODEL_TIER_LABELS.hydrogen}
+                            </Radio>
+                            <Radio value="orchestrator_neon" className="whitespace-nowrap">
+                              {MODEL_TIER_LABELS.orchestrator_neon}
+                            </Radio>
+                            <Radio value="orchestrator_carbon" className="whitespace-nowrap">
+                              {MODEL_TIER_LABELS.orchestrator_carbon}
+                            </Radio>
+                            <Radio value="orchestrator_argon" className="whitespace-nowrap">
+                              {MODEL_TIER_LABELS.orchestrator_argon}
+                            </Radio>
                             <Radio value="flash" className="whitespace-nowrap">
                               {MODEL_TIER_LABELS.flash}
-                            </Radio>
-                            <Radio value="pro" className="whitespace-nowrap">
-                              {MODEL_TIER_LABELS.pro}
-                            </Radio>
-                            <Radio value="flash_lite" className="whitespace-nowrap">
-                              {MODEL_TIER_LABELS.flash_lite}
                             </Radio>
                           </Radio.Group>
                         </div>

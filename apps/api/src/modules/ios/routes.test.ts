@@ -143,7 +143,7 @@ test('CVL customer privacy invariant (Kinh Thánh mOS Điều răn UI-010)', () 
     false
   );
 
-  // MOS-BUG-227: When 2+ unassigned customers share the same upcoming slot, strictly only 1 head customer in queue is shown.
+  // UI-010 v1.4.0: When 2+ unassigned customers share the same head slot, ALL of them are shown (next slot stays hidden).
   const now1045 = new Date('2026-11-13T10:45:00+07:00');
   const sameSlotBookings = [
     { id: 10, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '11:00 - 12:30' },
@@ -158,10 +158,10 @@ test('CVL customer privacy invariant (Kinh Thánh mOS Điều răn UI-010)', () 
   });
   assert.deepEqual(
     sameSlotFiltered.map((b) => b.id),
-    [10]
+    [10, 11]
   );
 
-  // MOS-BUG-227: When a customer is past start time and still INCOMING (late), show the single earliest late customer at the head of queue.
+  // UI-010 v1.4.0: A late INCOMING customer is shown AND automatically opens the next head slot group.
   const lateAndNextBookings = [
     { id: 20, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '10:30 - 12:00' },
     { id: 21, isUnassignedQueue: true, status: 'INCOMING', assignedStaffId: 0, timeSlot: '11:00 - 12:30' },
@@ -175,7 +175,7 @@ test('CVL customer privacy invariant (Kinh Thánh mOS Điều răn UI-010)', () 
   });
   assert.deepEqual(
     lateAndNextFiltered.map((b) => b.id),
-    [20]
+    [20, 21, 22]
   );
 
   // Viewing a future date (e.g., tomorrow) must pick the earliest upcoming slot customer.
@@ -1061,4 +1061,105 @@ test('Promotion Visibility ACL & Booking Promotion Hydration', () => {
   assert.equal(mappedItemized[0].cartProducts?.[0]?.appliedPromotion?.name, 'Giảm 10% Dưỡng Mi');
   // Service discount: 154,000 + Product discount: 50,000 = 204,000
   assert.equal(mappedItemized[0].billing?.promotionDiscountAmount, 204000);
+});
+
+test('MOS-BUG-237: CVL is strictly locked to 1 assigned branch in Live, Demo, and Simulation modes', async () => {
+  const store = createInMemoryConfigStore();
+  const mockFastify = {
+    log: { warn: () => {}, info: () => {}, error: () => {} },
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async ({ where }: { where: { key: string } }) => {
+            const val = await store.getOne(where.key);
+            return val !== null ? { key: where.key, value: val } : null;
+          },
+          findMany: async () => [],
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  // 1. CVL at Đề Thám (clientStoreId=6) requesting EP (storeId=16) or ALL (storeId=0) stays locked at 6
+  const dtCvlAttemptEp = await queryIosBookingsList(
+    mockFastify,
+    {
+      id: 2,
+      legacyStaffId: 46272,
+      clientStoreId: 6,
+      username: 'thaoly_cvl',
+      displayName: 'Thảo Ly',
+      role: 'cvl',
+      careerTier: 'CVL',
+    },
+    { storeId: '16', demo: 'true' }
+  );
+  assert.equal(dtCvlAttemptEp.storeId, 6);
+  assert.ok(dtCvlAttemptEp.bookings.every((b) => !b.storeId || b.storeId === 6));
+
+  const dtCvlAttemptAll = await queryIosBookingsList(
+    mockFastify,
+    {
+      id: 2,
+      legacyStaffId: 46272,
+      clientStoreId: 6,
+      username: 'thaoly_cvl',
+      displayName: 'Thảo Ly',
+      role: 'cvl',
+      careerTier: 'CVL',
+    },
+    { storeId: '0', demo: 'true' }
+  );
+  assert.equal(dtCvlAttemptAll.storeId, 6);
+
+  // 2. CVL with Head Office (4) or missing clientStoreId cannot pass storeId=16 or storeId=0
+  const hoCvlAttemptEp = await queryIosBookingsList(
+    mockFastify,
+    {
+      id: 3,
+      legacyStaffId: 49999,
+      clientStoreId: 4,
+      username: 'minhthu_cvl',
+      displayName: 'Minh Thư',
+      role: 'cvl',
+      careerTier: 'CVL',
+    },
+    { storeId: '16', demo: 'true' }
+  );
+  assert.equal(hoCvlAttemptEp.storeId, 6);
+
+  // 3. Estella CVL (clientStoreId=16) stays locked at 16 even if frontend requests storeId=6
+  const epCvlAttemptDt = await queryIosBookingsList(
+    mockFastify,
+    {
+      id: 4,
+      legacyStaffId: 50001,
+      clientStoreId: 16,
+      username: 'ep_cvl',
+      displayName: 'Ngọc Anh',
+      role: 'cvl',
+      careerTier: 'CVL',
+    },
+    { storeId: '6', demo: 'true' }
+  );
+  assert.equal(epCvlAttemptDt.storeId, 16);
+  assert.ok(epCvlAttemptDt.bookings.every((b) => !b.storeId || b.storeId === 16));
+
+  // 4. applyIosScopeAndCounts drops any stray cross-branch booking when storeId is provided for CVL
+  const crossBranchBookings = [
+    { ...INITIAL_BOOKINGS[0], id: 951, storeId: 6, isUnassignedQueue: false, assignedStaffId: 46272 },
+    { ...INITIAL_BOOKINGS[0], id: 952, storeId: 16, isUnassignedQueue: false, assignedStaffId: 46272 },
+  ] as unknown as IosBookingItem[];
+  const scoped = applyIosScopeAndCounts(crossBranchBookings, {
+    effectiveRole: 'CVL',
+    scope: 'MY_CUSTOMERS',
+    activeStaffId: 46272,
+    storeId: 6,
+    targetDate: '2026-11-18',
+    todayVn: '2026-11-18',
+  });
+  assert.deepEqual(
+    scoped.effectiveList.map((b) => b.id),
+    [951]
+  );
 });

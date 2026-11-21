@@ -4,16 +4,20 @@ import type {
   IosBookingListResponse,
   IosBookingActionPayload,
   IosBookingActionResponse,
+  IosCheckoutStaffOption,
   IosPrintReceiptPayload,
   IosPrintReceiptResponse,
   IosPromotionOption,
   IosAdminComboExpiryActionPayload,
   IosAdminComboExpiryActionResponse,
   IosCustomerHistoryResponse,
+  IosCreateCustomerNotePayload,
+  IosCreateCustomerNoteResponse,
   IosScanProductRequest,
   IosScanProductResponse,
   IosCustomerLookupCandidate,
   IosBookingServiceCatalogItem,
+  IosProductCatalogItem,
   IosCreateBookingRequest,
   IosCreateBookingResponse,
   IosSimulationMenteeOption,
@@ -54,6 +58,22 @@ export const iosApi = {
         priority: options?.priority,
         timeout: options?.timeout,
       });
+      return res.data;
+    },
+
+    async listCheckoutEligibleStaff(
+      storeId?: number,
+      options?: ApiRequestOptions
+    ): Promise<{ success: boolean; staff: IosCheckoutStaffOption[]; error?: string }> {
+      const res = await api.get<{ success: boolean; staff: IosCheckoutStaffOption[]; error?: string }>(
+        '/ios/staff/checkout-eligible',
+        {
+          params: storeId ? { storeId } : undefined,
+          signal: options?.signal,
+          priority: options?.priority,
+          timeout: options?.timeout,
+        }
+      );
       return res.data;
     },
 
@@ -118,6 +138,18 @@ export const iosApi = {
           timeout: options?.timeout,
         }
       );
+      return res.data;
+    },
+
+    async getProductCatalog(options?: ApiRequestOptions): Promise<{
+      success: boolean;
+      products: IosProductCatalogItem[];
+    }> {
+      const res = await api.get<{ success: boolean; products: IosProductCatalogItem[] }>('/ios/products/catalog', {
+        signal: options?.signal,
+        priority: options?.priority,
+        timeout: options?.timeout,
+      });
       return res.data;
     },
 

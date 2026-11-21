@@ -9,6 +9,8 @@ import {
   IosCreateBookingRequest,
   IosCreateBookingResponse,
   IosCustomerLookupCandidate,
+  isAdminOrSuperAdminRole,
+  resolveAssignedSalonStoreId,
   SafeAny,
 } from '@mos-lab/shared';
 import { getLegacyPool } from './db-pools.js';
@@ -258,13 +260,17 @@ export async function createIosDualModeBooking(
     };
   }
 
+  const isAdmin = authUser.careerTier === 'ADMIN' || isAdminOrSuperAdminRole(authUser.role || '');
   const isSimulationMode = Boolean(input.simulationMode);
   const actorStaffId = Number(authUser.legacyStaffId || 13783);
   const actorStaffName = String(authUser.displayName || `Nhân sự #${actorStaffId}`);
   const isCvl = authUser.careerTier === 'CVL';
   const targetDate = String(input.date || getVietnamDateYmd()).slice(0, 10);
   const timeHm = normalizeTimeHm(input.timeSlot);
-  const storeId = Number(input.storeId || 1);
+  const assignedStoreId = resolveAssignedSalonStoreId(authUser.clientStoreId);
+  const requestedStoreId = Number(input.storeId);
+  const storeId =
+    isAdmin && Number.isFinite(requestedStoreId) && requestedStoreId > 0 ? requestedStoreId : assignedStoreId;
 
   const catalog = await fetchIosBookingServiceCatalog(fastify);
   const matchedService =

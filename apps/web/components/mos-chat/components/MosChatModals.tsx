@@ -270,7 +270,7 @@ export interface MosChatModalsProps {
   handleRenameCustomSection: (id: string, name: string) => void;
   handleDeleteCustomSection: (id: string) => void;
   handleMoveSectionOrder: (id: string, dir: 'up' | 'down') => void;
-  togglePinConversation: (id: string) => void;
+  togglePinConversation: (id: string, pinned?: boolean) => void | Promise<any>;
   toggleMuteConversation: (id: string) => void;
   toggleHideConversation: (conv: MosChatConversation) => void;
 

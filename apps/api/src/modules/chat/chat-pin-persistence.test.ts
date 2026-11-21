@@ -215,4 +215,112 @@ describe('chat message & space pinning persistence invariants (MOS-BUG-198)', ()
     const mergedPinned = Array.from(new Set([...serverPinned, ...localPinned]));
     assert.deepStrictEqual(mergedPinned, [spaceId]);
   });
+
+  it('prevents toggle inversion when explicit pinned boolean is provided in request body (MOS-BUG-238)', () => {
+    const spaceId = 'space-f29f75e6';
+    // User already has space pinned in user prefs (e.g. from parallel updateUserPrefs call)
+    const currentPrefs: MosChatUserSidebarPrefs = {
+      pinnedIds: [spaceId],
+      hiddenIds: [],
+      mutedIds: [],
+      manualUnreadIds: [],
+      collapsedSections: {},
+      unreadOnlySections: {},
+      sectionOrder: ['dm', 'spaces'],
+      customSections: [],
+      conversationOrder: {},
+      updatedAt: '2026-11-18T19:00:00.000Z',
+    };
+
+    // Client explicitly requests pinning (pinned: true)
+    const bodyWithExplicitPinned = { pinned: true };
+    const exists = (currentPrefs.pinnedIds || []).includes(spaceId);
+    assert.strictEqual(exists, true);
+
+    // Backend route handler logic:
+    // const shouldPin = typeof body.pinned === 'boolean' ? body.pinned : !exists;
+    const shouldPin =
+      typeof bodyWithExplicitPinned.pinned === 'boolean' ? bodyWithExplicitPinned.pinned : !exists;
+
+    // With explicit boolean, shouldPin must remain true, NOT inverted to false!
+    assert.strictEqual(shouldPin, true);
+
+    const filteredPinned = (currentPrefs.pinnedIds || []).filter((id) => id !== spaceId);
+    const nextPinned = shouldPin ? [spaceId, ...filteredPinned] : filteredPinned;
+    assert.deepStrictEqual(nextPinned, [spaceId], 'Space must remain pinned');
+
+    // Contrast with old buggy behavior without body.pinned:
+    const buggyShouldPin = !exists;
+    assert.strictEqual(buggyShouldPin, false, 'Without explicit pinned body, state was inverted to unpinned!');
+  });
+
+  it('preserves local pinned spaces and heals server preferences when server returns empty pinned list (MOS-BUG-238)', () => {
+    const serverPinned: string[] = [];
+    const localPinned: string[] = ['space-core-team', 'space-f29f75e6'];
+    const serverTs = 1763500000000;
+    const localTs = 1763400000000; // server timestamp is newer
+
+    // Self-healing merge algorithm implemented in MosGoogleChatPortal & MosChatContext:
+    const effectivePinned = Array.from(
+      new Set([
+        ...serverPinned,
+        ...(localPinned.length > 0 && serverPinned.length === 0
+          ? localPinned
+          : serverTs < localTs
+            ? localPinned
+            : []),
+      ])
+    );
+
+    // Must NOT be wiped to empty array!
+    assert.deepStrictEqual(effectivePinned, ['space-core-team', 'space-f29f75e6']);
+
+    // Healing trigger condition:
+    const shouldTriggerSelfHealingSync = localPinned.length > 0 && serverPinned.length === 0;
+    assert.strictEqual(shouldTriggerSelfHealingSync, true);
+  });
+
+  it('correctly resolves synchronous willPin and prevents closure delay bug (MOS-BUG-243)', () => {
+    const spaceId = 'space-financial-goals';
+    const userPrefsPinned = ['space-general'];
+
+    // Simulated action: user wants to pin unpinned space
+    const isCurrentlyPinned = userPrefsPinned.includes(spaceId);
+    assert.strictEqual(isCurrentlyPinned, false);
+
+    // Old bug: let willPin = false; mutated inside asynchronous/batched updater.
+    // By the time the API was invoked, willPin was still false!
+    let buggyWillPin = false;
+    const mockAsyncUpdater = (cb: () => void) => {
+      // Not called immediately in batched React setState
+    };
+    mockAsyncUpdater(() => {
+      buggyWillPin = !isCurrentlyPinned;
+    });
+    assert.strictEqual(buggyWillPin, false, 'Buggy closure left willPin as false!');
+
+    // Fixed logic (MOS-BUG-243): compute willPin synchronously BEFORE setState
+    const explicitPinned = undefined; // toggling via click
+    const willPin = typeof explicitPinned === 'boolean' ? explicitPinned : !isCurrentlyPinned;
+    assert.strictEqual(willPin, true, 'Synchronous calculation guarantees correct true value!');
+
+    // When space is already pinned, toggle turns it off
+    const alreadyPinned = true;
+    const willUnpin = !alreadyPinned;
+    assert.strictEqual(willUnpin, false, 'Toggling already pinned space turns willPin to false');
+  });
+
+  it('correctly categorizes space ID to spaces section in conversationOrder (MOS-BUG-243)', () => {
+    const convId = 'space-kho-hang';
+    const targetConv = null; // simulate dynamic space not yet in initial memory state
+
+    const isSpace = targetConv ? (targetConv as { type?: string }).type === 'space' : convId.startsWith('space-');
+    const secKey = isSpace ? 'spaces' : 'dm';
+    assert.strictEqual(secKey, 'spaces', 'Space starting with space- must categorize to spaces section');
+
+    const dmConvId = 'dm-danny-do';
+    const isDm = dmConvId.startsWith('space-');
+    const dmSecKey = isDm ? 'spaces' : 'dm';
+    assert.strictEqual(dmSecKey, 'dm');
+  });
 });

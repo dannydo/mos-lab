@@ -41,7 +41,7 @@ import type {
   UpdateFrontendIssueStatusRequest,
 } from '@mos-lab/shared';
 
-import { api, dedupeInFlightApiGet, ApiRequestOptions } from './base';
+import { api, dedupeApiGet, dedupeInFlightApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
 
 export const systemApi = {
   frontendTelemetry: {
@@ -115,8 +115,11 @@ export const systemApi = {
   },
   uiExperiences: {
     resolve: async (params: UiExperienceResolveParams): Promise<UiExperienceResolveResponse> => {
-      const response = await api.get<UiExperienceResolveResponse>('/ui-experiences/resolve', { params });
-      return response.data;
+      return dedupeApiGet<UiExperienceResolveResponse>(
+        '/ui-experiences/resolve',
+        params as unknown as Record<string, unknown>,
+        15_000
+      );
     },
     recordEvent: async (payload: UiExperienceEventRequest): Promise<UiExperienceEventResponse> => {
       const response = await api.post<UiExperienceEventResponse>('/ui-experiences/events', payload);
@@ -128,18 +131,22 @@ export const systemApi = {
     },
     create: async (payload: CreateUiExperienceRequest): Promise<UiExperienceActivation> => {
       const response = await api.post<{ data: UiExperienceActivation }>('/ui-experiences', payload);
+      invalidateApiGetCache(['/ui-experiences/']);
       return response.data.data;
     },
     revise: async (id: number, payload: ReviseUiExperienceRequest): Promise<UiExperienceActivation> => {
       const response = await api.put<{ data: UiExperienceActivation }>(`/ui-experiences/${id}/revisions`, payload);
+      invalidateApiGetCache(['/ui-experiences/']);
       return response.data.data;
     },
     setLifecycle: async (id: number, payload: SetUiExperienceLifecycleRequest): Promise<UiExperienceActivation> => {
       const response = await api.post<{ data: UiExperienceActivation }>(`/ui-experiences/${id}/lifecycle`, payload);
+      invalidateApiGetCache(['/ui-experiences/']);
       return response.data.data;
     },
     rollback: async (id: number, payload: RollbackUiExperienceRequest): Promise<UiExperienceActivation> => {
       const response = await api.post<{ data: UiExperienceActivation }>(`/ui-experiences/${id}/rollback`, payload);
+      invalidateApiGetCache(['/ui-experiences/']);
       return response.data.data;
     },
     createPreviewToken: async (id: number): Promise<UiExperiencePreviewTokenResponse> => {
@@ -183,18 +190,18 @@ export const systemApi = {
   },
   release: {
     get: async (options?: ApiRequestOptions): Promise<{ deployedAt: string | null; commitSha: string | null }> => {
-      const response = await api.get('/release', {
-        signal: options?.signal,
-        isPolling: options?.isPolling,
-        priority: options?.priority,
-        timeout: options?.timeout,
-      });
-      return response.data;
+      return dedupeApiGet<{ deployedAt: string | null; commitSha: string | null }>(
+        '/release',
+        undefined,
+        10_000,
+        options
+      );
     },
   },
   auth: {
     login: async (data: LoginRequest): Promise<LoginResponse> => {
       const response = await api.post('/auth/login', data);
+      invalidateApiGetCache(['/auth/me', '/menu-access/sidebar', '/user-preferences/pinned-links', '/notifications']);
       return response.data;
     },
     google: async (data: {
@@ -204,18 +211,21 @@ export const systemApi = {
       name?: string;
     }): Promise<LoginResponse> => {
       const response = await api.post('/auth/google', data);
+      invalidateApiGetCache(['/auth/me', '/menu-access/sidebar', '/user-preferences/pinned-links', '/notifications']);
       return response.data;
     },
     me: async (): Promise<Staff> => {
-      const response = await api.get('/auth/me');
-      return response.data?.user || response.data;
+      const payload = await dedupeApiGet<{ user?: Staff } & Staff>('/auth/me', undefined, 10_000);
+      return payload?.user || payload;
     },
     impersonate: async (userId: number): Promise<LoginResponse> => {
       const response = await api.post('/auth/impersonate', { userId });
+      invalidateApiGetCache(['/auth/me', '/menu-access/sidebar', '/user-preferences/pinned-links', '/notifications']);
       return response.data;
     },
     endImpersonation: async (auditId: number): Promise<{ success: boolean }> => {
       const response = await api.post('/auth/impersonate/exit', { auditId });
+      invalidateApiGetCache(['/auth/me', '/menu-access/sidebar', '/user-preferences/pinned-links', '/notifications']);
       return response.data;
     },
     getDevDirectory: async (): Promise<{
@@ -251,9 +261,11 @@ export const systemApi = {
     },
   },
   menuAccess: {
-    getSidebarVisibility: async (): Promise<MenuAccessSidebarResponse> => {
-      const response = await api.get('/menu-access/sidebar');
-      return response.data;
+    getSidebarVisibility: async (options?: { force?: boolean }): Promise<MenuAccessSidebarResponse> => {
+      if (options?.force) {
+        invalidateApiGetCache(['/menu-access/sidebar']);
+      }
+      return dedupeApiGet<MenuAccessSidebarResponse>('/menu-access/sidebar', undefined, 30_000);
     },
     getConfiguration: async (): Promise<MenuAccessConfigurationResponse> => {
       const response = await api.get('/menu-access/configuration');
@@ -264,6 +276,7 @@ export const systemApi = {
       data: UpdateMenuAccessPolicyRequest
     ): Promise<{ success: boolean; policy: MenuAccessPolicy }> => {
       const response = await api.put(`/menu-access/policies/${encodeURIComponent(menuKey)}`, data);
+      invalidateApiGetCache(['/menu-access/sidebar']);
       return response.data;
     },
     updateRoleGroupMatrix: async (
@@ -271,6 +284,7 @@ export const systemApi = {
       data: UpdateRoleGroupMatrixRequest
     ): Promise<{ success: boolean; roleGroupId: number; allowedMenuKeys: string[] }> => {
       const response = await api.put(`/menu-access/role-groups/${roleGroupId}`, data);
+      invalidateApiGetCache(['/menu-access/sidebar']);
       return response.data;
     },
     inspectPermissions: async (params: {
@@ -323,13 +337,18 @@ export const systemApi = {
   })(),
   userPreferences: {
     getPinnedLinks: async (): Promise<PinnedLinkItem[]> => {
-      const response = await api.get<{ success: boolean; data: PinnedLinkItem[] }>('/user-preferences/pinned-links');
-      return response.data.data || [];
+      const data = await dedupeApiGet<{ success: boolean; data: PinnedLinkItem[] }>(
+        '/user-preferences/pinned-links',
+        undefined,
+        15_000
+      );
+      return data.data || [];
     },
     savePinnedLinks: async (items: PinnedLinkItem[]): Promise<PinnedLinkItem[]> => {
       const response = await api.put<{ success: boolean; data: PinnedLinkItem[] }>('/user-preferences/pinned-links', {
         items,
       });
+      invalidateApiGetCache(['/user-preferences/pinned-links']);
       return response.data.data || [];
     },
     addPinnedLink: async (payload: {
@@ -343,13 +362,18 @@ export const systemApi = {
         '/user-preferences/pinned-links',
         payload
       );
+      invalidateApiGetCache(['/user-preferences/pinned-links']);
       return response.data.data || [];
     },
     removePinnedLink: async (id: string): Promise<PinnedLinkItem[]> => {
       const response = await api.delete<{ success: boolean; data: PinnedLinkItem[] }>(
         `/user-preferences/pinned-links/${encodeURIComponent(id)}`
       );
+      invalidateApiGetCache(['/user-preferences/pinned-links']);
       return response.data.data || [];
     },
+  },
+  health: {
+    get: async (): Promise<{ status: string; mode?: string }> => dedupeApiGet('/health', undefined, 30_000),
   },
 };

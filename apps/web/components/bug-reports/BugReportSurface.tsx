@@ -307,6 +307,16 @@ export function BugReportSurface() {
   }, [pathname]);
 
   React.useEffect(() => {
+    const handleWorkflowVisibility = (event: Event) => {
+      const customEvent = event as CustomEvent<{ open?: boolean }>;
+      setExternalWorkflowOpen(Boolean(customEvent.detail?.open));
+    };
+
+    window.addEventListener(BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, handleWorkflowVisibility);
+    return () => window.removeEventListener(BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, handleWorkflowVisibility);
+  }, []);
+
+  React.useEffect(() => {
     if (!enabled) return;
     apiClient.release
       .get()

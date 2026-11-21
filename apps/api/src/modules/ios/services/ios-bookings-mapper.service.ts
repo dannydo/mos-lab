@@ -4,8 +4,8 @@ import {
   IosBookingStatus,
   IosCartProductItem,
   IosPromotionOption,
-  matchComboCategoryAndVolumeFromBooking,
   NaturalLashConsultationAttributes,
+  resolveActiveBookingComboWallets,
   resolveIosCustomerTypeIcon,
   resolveIosHasDiscountTag,
 } from '@mos-lab/shared';
@@ -63,22 +63,21 @@ export function mapLiveOrdersToBookings(params: {
     promotionsById,
   } = params;
 
-  return orders
-    .map((r, index): IosBookingItem => {
-      const rawOverride = overrides[String(r.id)] || {};
-      const { state, status, revertedInLegacy } = resolveEffectiveLiveOrderStateAndStatus({
-        dbOrderState: r.order_state,
-        override: rawOverride,
-        targetDate,
-        todayVn,
-      });
-      const override: BookingOverrideRecord = revertedInLegacy
-        ? {
-            status,
-            orderState: state,
-            ...(rawOverride.customerAvatar ? { customerAvatar: rawOverride.customerAvatar } : {}),
-          }
-        : rawOverride;
+  return orders.map((r, index): IosBookingItem => {
+    const rawOverride = overrides[String(r.id)] || {};
+    const { state, status, revertedInLegacy } = resolveEffectiveLiveOrderStateAndStatus({
+      dbOrderState: r.order_state,
+      override: rawOverride,
+      targetDate,
+      todayVn,
+    });
+    const override: BookingOverrideRecord = revertedInLegacy
+      ? {
+          status,
+          orderState: state,
+          ...(rawOverride.customerAvatar ? { customerAvatar: rawOverride.customerAvatar } : {}),
+        }
+      : rawOverride;
 
       const duration = Number(r.booking_duration_minute) || 90;
       const servicePrice = resolveCanonicalBookedServicePrice(r, override.servicePrice);
@@ -88,58 +87,62 @@ export function mapLiveOrdersToBookings(params: {
       const rawIsNew = r.is_new !== null && r.is_new !== undefined ? Number(r.is_new) : null;
       const customerId = Number(r.user_id) || 0;
 
-      const checkInStaffId = override.checkInStaffId ?? (r.check_in_staff_id ? Number(r.check_in_staff_id) : undefined);
-      const checkInStaffName = override.checkInStaffName ?? r.check_in_staff_name ?? undefined;
-      const checkInStaffTier = override.checkInStaffTier ?? undefined;
+    const checkInStaffId = override.checkInStaffId ?? (r.check_in_staff_id ? Number(r.check_in_staff_id) : undefined);
+    const checkInStaffName = override.checkInStaffName ?? r.check_in_staff_name ?? undefined;
+    const checkInStaffTier = override.checkInStaffTier ?? undefined;
 
-      const checkOutStaffId =
-        override.checkOutStaffId ?? (r.check_out_staff_id ? Number(r.check_out_staff_id) : undefined);
-      const checkOutStaffName = override.checkOutStaffName ?? r.check_out_staff_name ?? undefined;
-      const checkOutStaffTier = override.checkOutStaffTier ?? undefined;
+    const checkOutStaffId =
+      override.checkOutStaffId ?? (r.check_out_staff_id ? Number(r.check_out_staff_id) : undefined);
+    const checkOutStaffName = override.checkOutStaffName ?? r.check_out_staff_name ?? undefined;
+    const checkOutStaffTier = override.checkOutStaffTier ?? undefined;
 
-      const isDbUnassigned = !r.assigned_staff_id || Number(r.assigned_staff_id) === 0;
-      const isServicingOrDone =
-        status === 'SERVICING' ||
-        status === 'DONE' ||
-        Boolean(checkInStaffId) ||
-        Boolean(override.assignedStaffId) ||
-        Boolean(r.check_in_staff_id) ||
-        Boolean(r.assigned_staff_id && Number(r.assigned_staff_id) > 0);
-      const isUnassignedQueue = !override.assignedStaffId && isDbUnassigned && !checkInStaffId && !isServicingOrDone;
+    const isDbUnassigned = !r.assigned_staff_id || Number(r.assigned_staff_id) === 0;
+    const isServicingOrDone =
+      status === 'SERVICING' ||
+      status === 'DONE' ||
+      Boolean(checkInStaffId) ||
+      Boolean(override.assignedStaffId) ||
+      Boolean(r.check_in_staff_id) ||
+      Boolean(r.assigned_staff_id && Number(r.assigned_staff_id) > 0);
+    const isUnassignedQueue = !override.assignedStaffId && isDbUnassigned && !checkInStaffId && !isServicingOrDone;
 
-      const overrideAssignedId = Number(override.assignedStaffId || 0);
-      const dbAssignedId = Number(r.assigned_staff_id || 0);
-      const assignedStaffId = isUnassignedQueue
-        ? 0
-        : overrideAssignedId > 0
-          ? overrideAssignedId
-          : dbAssignedId > 0
-            ? dbAssignedId
-            : 0;
-      const assignedStaffName =
-        assignedStaffId <= 0
-          ? 'Chờ phân công (Đầu tua)'
-          : overrideAssignedId > 0 &&
-              override.assignedStaffName &&
-              override.assignedStaffName !== 'Chờ phân công (Đầu tua)'
-            ? override.assignedStaffName
-            : r.staff_name && r.staff_name !== 'Chưa phân công'
-              ? r.staff_name
-              : override.assignedStaffName && override.assignedStaffName !== 'Chờ phân công (Đầu tua)'
-                ? override.assignedStaffName
-                : checkInStaffName || 'Chuyên Viên';
+    const overrideAssignedId = Number(override.assignedStaffId || 0);
+    const dbAssignedId = Number(r.assigned_staff_id || 0);
+    const assignedStaffId = isUnassignedQueue
+      ? 0
+      : overrideAssignedId > 0
+        ? overrideAssignedId
+        : dbAssignedId > 0
+          ? dbAssignedId
+          : 0;
+    const assignedStaffName =
+      assignedStaffId <= 0
+        ? 'Chờ phân công (Đầu tua)'
+        : overrideAssignedId > 0 &&
+            override.assignedStaffName &&
+            override.assignedStaffName !== 'Chờ phân công (Đầu tua)'
+          ? override.assignedStaffName
+          : r.staff_name && r.staff_name !== 'Chưa phân công'
+            ? r.staff_name
+            : override.assignedStaffName && override.assignedStaffName !== 'Chờ phân công (Đầu tua)'
+              ? override.assignedStaffName
+              : checkInStaffName || 'Chuyên Viên';
 
-      const comboInfo = customerContext.comboBalanceMap.get(customerId) || {
-        isComboLive: false,
-        remainingSessions: 0,
-        normalRemaining: 0,
-        retainRemaining: 0,
-        comboName: 'Chưa có gói ❖ Live',
-        serviceKey: undefined,
-        packageKey: undefined,
-        retainDaysLimit: 21,
-        upsellOpportunity: true,
-      };
+    const customerHistory = customerContext.lashHistoryMap.get(customerId) ?? [];
+    const lastSpecs = customerContext.lastVisitSpecsMap.get(customerId);
+    const baseComboInfo = customerContext.comboBalanceMap.get(customerId) || {
+      isComboLive: false,
+      remainingSessions: 0,
+      normalRemaining: 0,
+      retainRemaining: 0,
+      comboName: 'Chưa có gói ❖ Live',
+      serviceKey: undefined,
+      packageKey: undefined,
+      retainDaysLimit: 21,
+      upsellOpportunity: true,
+    };
+    const baseUnderComboStatus = customerContext.underMinkComboMap.get(customerId);
+    const rawCustomerWallets = customerContext.comboWalletsMap?.get(customerId) || [];
 
       const selectedCombo = override.selectedCombo || null;
       const selectedUnderCombo = override.selectedUnderCombo || null;
@@ -177,282 +180,288 @@ export function mapLiveOrdersToBookings(params: {
         servicePrice,
         upgradePrice,
         serviceName: override.serviceName || r.service_name,
-        isComboLive: Boolean(comboInfo.isComboLive),
-        hasUnderMink: overrideAttrs?.hasUnderMink ?? actualSpecs?.hasUnderMink,
-        underMinkServiceType: overrideAttrs?.underMinkServiceType ?? actualSpecs?.underMinkServiceType,
-        hasUnderMinkCombo: hasUnderMinkComboActive,
-        selectedCombo,
-        selectedUnderCombo,
-        comboRedemption,
-        cartProducts,
-        overrideBilling: override.billing,
-        assignedStaffId,
-        checkInStaffId,
-        checkOutStaffId,
-        activeStaffId,
-        dbOrderState: r.order_state,
-        isTrainingCvlOrder,
-        promotionId: promoState.promotionId,
-        appliedPromotion: promoState.appliedPromotion,
-        servicePromotion: promoState.servicePromotion,
-        comboPromotion: promoState.comboPromotion,
-        underComboPromotion: promoState.underComboPromotion,
-      });
+        comboLiveStatus: baseComboInfo,
+        underMinkComboStatus: baseUnderComboStatus,
+        comboWallets: rawCustomerWallets,
+        selectedUpperComboBalanceId: override.selectedUpperComboBalanceId ?? null,
+        selectedUnderComboBalanceId: override.selectedUnderComboBalanceId ?? null,
+        skipUpperCombo: Boolean(override.skipUpperCombo),
+        skipUnderCombo: Boolean(override.skipUnderCombo),
+      } as IosBookingItem,
+      customerComboExpiryMap[String(customerId)],
+      todayVn
+    );
 
-      const isAnyServiceName = (name?: string | null) => !name || name.toLowerCase().includes('any');
-      const isRawOrderPlaceholder =
-        isAnyServiceName(r.service_name) ||
-        String(r.service_key || '')
-          .toLowerCase()
-          .includes('any') ||
-        Number(r.is_temporary) === 1;
+    const resolvedWallets = resolveActiveBookingComboWallets({
+      comboWallets: preHydratedExpiryBooking.comboWallets,
+      comboLiveStatus: preHydratedExpiryBooking.comboLiveStatus,
+      underMinkComboStatus: preHydratedExpiryBooking.underMinkComboStatus,
+      selectedUpperComboBalanceId: override.selectedUpperComboBalanceId ?? null,
+      selectedUnderComboBalanceId: override.selectedUnderComboBalanceId ?? null,
+      skipUpperCombo: Boolean(override.skipUpperCombo),
+      skipUnderCombo: Boolean(override.skipUnderCombo),
+      bookedServiceName: override.serviceName || r.service_name,
+      lastVisitServiceKey: lastSpecs?.serviceKey,
+      todayYmd: todayVn,
+    });
 
-      const customerHistory = customerContext.lashHistoryMap.get(customerId) ?? [];
-      const lastSpecs = customerContext.lastVisitSpecsMap.get(customerId);
-      const hasPriorRelationship =
-        customerHistory.length > 0 ||
-        Boolean(comboInfo.isComboLive) ||
-        Boolean(comboInfo.isExpired) ||
-        Boolean(underComboStatus?.hasUnderCombo) ||
-        Boolean(underComboStatus?.isExpired);
-      const visits =
-        rawVisits > 0
-          ? rawIsNew === 0 && rawVisits <= 1 && hasPriorRelationship
-            ? 2
-            : rawVisits
-          : rawIsNew === 0 && hasPriorRelationship
-            ? 2
-            : 1;
-      const effectiveIsNew = visits > 1 ? 0 : (rawIsNew ?? 0);
+    const comboInfo = resolvedWallets.effectiveComboLiveStatus;
+    const underComboStatus = resolvedWallets.effectiveUnderMinkComboStatus;
 
-      let effectiveServiceName =
-        override.serviceName && !isAnyServiceName(override.serviceName) ? String(override.serviceName) : '';
+    const selectedCombo = override.selectedCombo || null;
+    const selectedUnderCombo = override.selectedUnderCombo || null;
+    const comboRedemption = override.comboRedemption || null;
+    const rawCartProducts: IosCartProductItem[] = Array.isArray(override.cartProducts) ? override.cartProducts : [];
+    const promoState = resolveItemizedBookingPromotions(
+      override,
+      r.promotion_id,
+      r.os_promotion_id,
+      r.product_promotion_map,
+      rawCartProducts,
+      promotionsById,
+      {
+        servicePrice,
+        osDiscountAmount: r.os_discount_amount,
+      }
+    );
+    const cartProducts = promoState.cartProducts;
+    const upgradePrice = Number(override.upgradePrice || 0);
 
-      if (!effectiveServiceName) {
-        if (!isRawOrderPlaceholder) {
-          effectiveServiceName = r.service_name;
-        } else if (comboInfo.isComboLive && comboInfo.comboName && !isAnyServiceName(comboInfo.comboName)) {
-          effectiveServiceName = comboInfo.comboName;
-        } else if (customerHistory.length > 0) {
-          const validHistory = customerHistory.find((h) => !isAnyServiceName(h.serviceName));
-          if (validHistory?.serviceName) {
-            effectiveServiceName = validHistory.serviceName;
-          }
+    const hasUnderMinkComboActive = resolvedWallets.isRedeemingUnderToday;
+    const overrideAttrs = override.attributes as IosBookingItem['attributes'] | undefined;
+    const actualSpecs = r.actual_order_specs || undefined;
+    const matchedTrainingPair = CvlTrainingMentorshipService.findMatchingTrainingPairForOrder(
+      activeTrainingPairs,
+      assignedStaffId,
+      targetDate
+    );
+    const isTrainingCvlOrder = Boolean(matchedTrainingPair);
+
+    const { cvRewardBreakdown, billing } = computeBookingFinancials({
+      servicePrice,
+      upgradePrice,
+      serviceName: override.serviceName || r.service_name,
+      isComboLive: resolvedWallets.isRedeemingUpperToday,
+      hasUnderMink: overrideAttrs?.hasUnderMink ?? actualSpecs?.hasUnderMink,
+      underMinkServiceType: overrideAttrs?.underMinkServiceType ?? actualSpecs?.underMinkServiceType,
+      hasUnderMinkCombo: hasUnderMinkComboActive,
+      selectedCombo,
+      selectedUnderCombo,
+      comboRedemption,
+      cartProducts,
+      overrideBilling: override.billing,
+      assignedStaffId,
+      checkInStaffId,
+      checkOutStaffId,
+      activeStaffId,
+      dbOrderState: r.order_state,
+      isTrainingCvlOrder,
+      promotionId: promoState.promotionId,
+      appliedPromotion: promoState.appliedPromotion,
+      servicePromotion: promoState.servicePromotion,
+      comboPromotion: promoState.comboPromotion,
+      underComboPromotion: promoState.underComboPromotion,
+    });
+
+    const isAnyServiceName = (name?: string | null) => !name || name.toLowerCase().includes('any');
+    const isRawOrderPlaceholder =
+      isAnyServiceName(r.service_name) ||
+      String(r.service_key || '')
+        .toLowerCase()
+        .includes('any') ||
+      Number(r.is_temporary) === 1;
+
+    const hasPriorRelationship =
+      customerHistory.length > 0 ||
+      resolvedWallets.upperWallets.length > 0 ||
+      resolvedWallets.underWallets.length > 0 ||
+      Boolean(comboInfo.isComboLive) ||
+      Boolean(comboInfo.isExpired) ||
+      Boolean(underComboStatus?.hasUnderCombo) ||
+      Boolean(underComboStatus?.isExpired);
+    const visits =
+      rawVisits > 0
+        ? rawIsNew === 0 && rawVisits <= 1 && hasPriorRelationship
+          ? 2
+          : rawVisits
+        : rawIsNew === 0 && hasPriorRelationship
+          ? 2
+          : 1;
+    const effectiveIsNew = visits > 1 ? 0 : (rawIsNew ?? 0);
+
+    let effectiveServiceName =
+      override.serviceName && !isAnyServiceName(override.serviceName) ? String(override.serviceName) : '';
+
+    if (!effectiveServiceName) {
+      if (!isRawOrderPlaceholder) {
+        effectiveServiceName = r.service_name;
+      } else if (comboInfo.isComboLive && comboInfo.comboName && !isAnyServiceName(comboInfo.comboName)) {
+        effectiveServiceName = comboInfo.comboName;
+      } else if (customerHistory.length > 0) {
+        const validHistory = customerHistory.find((h) => !isAnyServiceName(h.serviceName));
+        if (validHistory?.serviceName) {
+          effectiveServiceName = validHistory.serviceName;
         }
       }
+    }
 
-      if (!effectiveServiceName) {
-        effectiveServiceName = buildCanonicalServiceNameFromSpecs(lastSpecs, visits);
-      }
-      effectiveServiceName = stripNewLashLabel(effectiveServiceName);
-      const resolvedStoreId = Number(r.client_store_id) || storeId;
-      const bookingDdMmYyyy = (() => {
-        if (!r.booking_date_start) return '';
-        const d = r.booking_date_start instanceof Date ? r.booking_date_start : new Date(String(r.booking_date_start));
-        if (Number.isNaN(d.getTime())) return '';
-        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-      })();
-      const priorVisitEntry = customerHistory.find((h) => h.date && h.date !== bookingDdMmYyyy) || customerHistory[0];
-      const isBookedAdvanceMatch = Boolean(
-        (r.booked_staff_id && Number(r.booked_staff_id) > 0 && Number(r.booked_staff_id) === assignedStaffId) ||
-        note.toLowerCase().includes('book') ||
-        note.toLowerCase().includes('chỉ định')
-      );
-
-      const resolvedAttributes = hydrateSavedNaturalLashAttributes(
-        (override.attributes
-          ? {
-              ...override.attributes,
-              material: normalizeLashMaterialLabel(override.attributes.material) || override.attributes.material,
-            }
-          : null) ||
-          (() => {
-            const isFirstVisitClient = effectiveIsNew === 1 || (visits <= 1 && !hasPriorRelationship);
-            const savedProfile = customerNaturalLashMap[String(customerId)];
-            const matchedSpec = matchComboCategoryAndVolumeFromBooking({
-              material: isRawOrderPlaceholder ? lastSpecs?.material : undefined,
-              volume: actualSpecs?.volume || (isRawOrderPlaceholder ? lastSpecs?.volume : undefined),
-              count: actualSpecs?.count || (isRawOrderPlaceholder ? lastSpecs?.count : undefined),
-              serviceName: effectiveServiceName,
-              serviceKey: !isRawOrderPlaceholder ? r.service_key || undefined : lastSpecs?.serviceKey,
-              servicePrice: !isRawOrderPlaceholder ? servicePrice : undefined,
-            });
-            const catId = matchedSpec.categoryId;
-            const defaultMat =
-              catId === 'Classic_1D' || catId === 'Classic_Volume'
-                ? 'Classic 1D'
-                : catId === 'Volume_2D' || catId === 'Volume_3D'
-                  ? 'Volume'
-                  : catId.startsWith('HyperLight')
-                    ? 'HyperLight'
-                    : catId.startsWith('IvyLight')
-                      ? 'Ivylight'
-                      : catId.startsWith('UltraLight')
-                        ? 'UltraLight'
-                        : 'Flawless Mink';
-            const defaultVol =
-              defaultMat === 'Classic 1D' || defaultMat === 'Flawless Mink'
-                ? '1D'
-                : catId === 'Volume_3D'
-                  ? '3D'
-                  : catId === 'Volume_2D'
-                    ? '2D'
-                    : catId.includes('_')
-                      ? catId.split('_')[1]
-                      : '4X';
-            const unit =
-              defaultMat === 'Classic 1D' || defaultMat === 'Flawless Mink'
-                ? 'sợi'
-                : defaultMat === 'Ivylight'
-                  ? 'nhịp'
-                  : 'fan';
-            const fallbackCountPerEye =
-              defaultMat === 'Classic 1D' || defaultMat === 'Ivylight'
-                ? 90
-                : defaultMat === 'Flawless Mink'
-                  ? 60
-                  : defaultMat === 'UltraLight' || defaultMat === 'Volume'
-                    ? 80
-                    : 70;
-            const resolvedCountPerEye =
-              matchedSpec.volume !== 'under' && matchedSpec.volumeMeta?.countPerEye
-                ? matchedSpec.volumeMeta.countPerEye
-                : fallbackCountPerEye;
-            const defaultCount = `${resolvedCountPerEye} ${unit}`;
-            const normalizedLastMaterial = normalizeLashMaterialLabel(lastSpecs?.material);
-            const canInheritLastSpecs = isRawOrderPlaceholder || normalizedLastMaterial === defaultMat;
-
-            return {
-              material: canInheritLastSpecs ? normalizedLastMaterial || defaultMat : defaultMat,
-              style: actualSpecs?.style || lastSpecs?.style || 'Natural',
-              volume: actualSpecs?.volume || (canInheritLastSpecs ? lastSpecs?.volume || defaultVol : defaultVol),
-              count: actualSpecs?.count || (canInheritLastSpecs ? lastSpecs?.count || defaultCount : defaultCount),
-              color: actualSpecs?.color || lastSpecs?.color,
-              hasUnderMink: actualSpecs?.hasUnderMink,
-              underMinkServiceType: actualSpecs?.underMinkServiceType,
-              curl: 'C',
-              length: '10-12 mm',
-              thickness: defaultMat === 'Flawless Mink' ? '0.07 mm' : '0.10 mm',
-              isNewClientDiagnosticDone: savedProfile ? true : isFirstVisitClient ? false : undefined,
-              notes: note || '',
-            };
-          })(),
-        customerNaturalLashMap[String(customerId)]
-      );
-
-      const resolvedServiceType = override.serviceType || r.service_type || 'Normal';
-      let resolvedCvPoints: number;
-      let resolvedCvBreakdown: string | undefined;
-      if (typeof override.cvRotationPoints === 'number' && override.cvRotationPoints > 0) {
-        resolvedCvPoints = Math.round(override.cvRotationPoints);
-        resolvedCvBreakdown = override.cvRotationBreakdown;
-      } else if (!override.attributes && typeof r.ledger_cv_points === 'number' && r.ledger_cv_points > 0) {
-        resolvedCvPoints = r.ledger_cv_points;
-        resolvedCvBreakdown = r.ledger_cv_breakdown || undefined;
-      } else {
-        const computed = computeCanonicalCvRotationPoints({
-          material: resolvedAttributes?.material,
-          volume: resolvedAttributes?.volume,
-          count: resolvedAttributes?.count,
-          serviceType: resolvedServiceType,
-          serviceName: effectiveServiceName,
-          style: resolvedAttributes?.style,
-          color: resolvedAttributes?.color,
-          hasUnderMink: resolvedAttributes?.hasUnderMink,
-          underMinkServiceType: resolvedAttributes?.underMinkServiceType,
-        });
-        resolvedCvPoints = computed.totalPoints;
-        resolvedCvBreakdown =
-          (override.attributes ? override.cvRotationBreakdown : undefined) || computed.breakdownLabel;
-      }
-
-      return {
-        id: Number(r.id),
-        orderNumber: orderNum,
-        customerName: (r.customer_name || 'Khách').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim(),
-        customerPhone: formatPhoneNumberDots(r.customer_phone, !canViewFullPhone),
-        customerId,
-        diamondBalance: customerContext.diamondBalanceMap.get(customerId) ?? 0,
-        customerAvatar:
-          (override.customerAvatar !== undefined ? override.customerAvatar : customerAvatarMap[String(customerId)]) ||
-          resolveCustomerAvatar(r.customer_avatar, customerId),
-        assignedStaffAvatar: isUnassignedQueue
-          ? undefined
-          : override.assignedStaffAvatar || resolveStaffAvatar(r.staff_avatar || r.check_in_staff_avatar),
-        customerVisits: visits,
-        lastVisitDate: priorVisitEntry?.date,
-        customerNote: note,
-        timeSlot: formatTimeSlot(r.booking_date_start, duration),
-        time12h: formatTime12h(r.booking_date_start),
-        storeId: resolvedStoreId,
-        branchCode: resolvedStoreId === 16 ? 'EP' : 'DT',
-        branchName: resolvedStoreId === 16 ? 'Estella Place' : 'Đề Thám',
-        serviceName: effectiveServiceName,
-        serviceType: override.serviceType || r.service_type || 'Normal',
-        servicePrice,
-        serviceDuration: duration,
-        bookerName: r.booker_name,
-        bookerAvatar: resolveCustomerAvatar(r.booker_avatar),
-        customerTypeIcon: resolveIosCustomerTypeIcon(note, visits, effectiveIsNew),
-        hasDiscountTag: resolveIosHasDiscountTag(
-          note,
-          Number(r.combo_sale_required),
-          r.promotion_id || r.os_promotion_id
-        ),
-        assignedStaffName,
-        assignedStaffId,
-        isUnassignedQueue,
-        isNextQueueCustomer: isUnassignedQueue,
-        isBookedInAdvance: !isUnassignedQueue && assignedStaffId > 0 && isBookedAdvanceMatch,
-        isTuaAssigned: !isUnassignedQueue && assignedStaffId > 0 && !isBookedAdvanceMatch,
-        bookingAccessTag: isUnassignedQueue
-          ? 'NEXT_QUEUE_CUSTOMER'
-          : assignedStaffId === activeStaffId || checkInStaffId === activeStaffId || checkOutStaffId === activeStaffId
-            ? 'MY_BOOKED_CUSTOMER'
-            : 'STORE_CUSTOMER',
-        checkInStaffId,
-        checkInStaffName,
-        checkInStaffTier,
-        checkInStaffAvatar: resolveCustomerAvatar(r.check_in_staff_avatar),
-        checkOutStaffId,
-        checkOutStaffName,
-        checkOutStaffTier,
-        checkOutStaffAvatar: resolveCustomerAvatar(r.check_out_staff_avatar),
-        assignedBed: override.assignedBed || `Giường 0${(index % 6) + 1}`,
-        status,
-        orderState: state || undefined,
-        comboLiveStatus: {
-          ...comboInfo,
-          retainDaysLimit: comboInfo.retainDaysLimit ?? 25,
-          upsellOpportunity:
-            comboInfo.upsellOpportunity ??
-            (!comboInfo.isComboLive ||
-              comboInfo.remainingSessions <= 2 ||
-              Boolean(comboInfo.isExpiringSoon) ||
-              Boolean(comboInfo.isExpired)),
-        },
-        underMinkComboStatus: customerContext.underMinkComboMap.get(customerId),
-        comboWallets: customerContext.comboWalletsMap?.get(customerId) || [],
-        lashHistory: customerHistory,
-        selectedCombo,
-        selectedUnderCombo,
-        comboRedemption,
-        attributes: resolvedAttributes,
-        progress: mergeHydratedBookingProgress(r.legacy_progress, override.progress),
-        survey: override.survey || undefined,
-        upgradePrice,
-        cvRotationPoints: resolvedCvPoints,
-        cvRotationBreakdown: resolvedCvBreakdown,
-        ...promoState,
-        cvRewardBreakdown,
-        billing,
-        isTrainingCvlOrder,
-        trainingMentorName: matchedTrainingPair?.mentorDisplayName,
-      };
-    })
-    .map((mapped) =>
-      applyCustomerComboExpiryOverridesToBooking(mapped, customerComboExpiryMap[String(mapped.customerId)], todayVn)
+    if (!effectiveServiceName) {
+      effectiveServiceName = buildCanonicalServiceNameFromSpecs(lastSpecs, visits);
+    }
+    effectiveServiceName = stripNewLashLabel(effectiveServiceName);
+    const resolvedStoreId = Number(r.client_store_id) || storeId;
+    const bookingDdMmYyyy = (() => {
+      if (!r.booking_date_start) return '';
+      const d = r.booking_date_start instanceof Date ? r.booking_date_start : new Date(String(r.booking_date_start));
+      if (Number.isNaN(d.getTime())) return '';
+      return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    })();
+    const priorVisitEntry = customerHistory.find((h) => h.date && h.date !== bookingDdMmYyyy) || customerHistory[0];
+    const isBookedAdvanceMatch = Boolean(
+      (r.booked_staff_id && Number(r.booked_staff_id) > 0 && Number(r.booked_staff_id) === assignedStaffId) ||
+      note.toLowerCase().includes('book') ||
+      note.toLowerCase().includes('chỉ định')
     );
+
+    const resolvedAttributes = hydrateSavedNaturalLashAttributes(
+      (override.attributes
+        ? {
+            ...override.attributes,
+            material: normalizeLashMaterialLabel(override.attributes.material) || override.attributes.material,
+          }
+        : null) ||
+        buildDefaultLiveOrderAttributes({
+          isFirstVisitClient: effectiveIsNew === 1 || (visits <= 1 && !hasPriorRelationship),
+          savedProfile: customerNaturalLashMap[String(customerId)],
+          isRawOrderPlaceholder,
+          lastSpecs,
+          actualSpecs,
+          effectiveServiceName,
+          serviceKey: r.service_key,
+          servicePrice,
+          note,
+          normalizeLashMaterialLabel,
+        }),
+      customerNaturalLashMap[String(customerId)]
+    );
+
+    const resolvedServiceType = override.serviceType || r.service_type || 'Normal';
+    let resolvedCvPoints: number;
+    let resolvedCvBreakdown: string | undefined;
+    if (typeof override.cvRotationPoints === 'number' && override.cvRotationPoints > 0) {
+      resolvedCvPoints = Math.round(override.cvRotationPoints);
+      resolvedCvBreakdown = override.cvRotationBreakdown;
+    } else if (!override.attributes && typeof r.ledger_cv_points === 'number' && r.ledger_cv_points > 0) {
+      resolvedCvPoints = r.ledger_cv_points;
+      resolvedCvBreakdown = r.ledger_cv_breakdown || undefined;
+    } else {
+      const computed = computeCanonicalCvRotationPoints({
+        material: resolvedAttributes?.material,
+        volume: resolvedAttributes?.volume,
+        count: resolvedAttributes?.count,
+        serviceType: resolvedServiceType,
+        serviceName: effectiveServiceName,
+        style: resolvedAttributes?.style,
+        color: resolvedAttributes?.color,
+        hasUnderMink: resolvedAttributes?.hasUnderMink,
+        underMinkServiceType: resolvedAttributes?.underMinkServiceType,
+      });
+      resolvedCvPoints = computed.totalPoints;
+      resolvedCvBreakdown = (override.attributes ? override.cvRotationBreakdown : undefined) || computed.breakdownLabel;
+    }
+
+    return {
+      id: Number(r.id),
+      orderNumber: orderNum,
+      customerName: (r.customer_name || 'Khách').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim(),
+      customerPhone: formatPhoneNumberDots(r.customer_phone, !canViewFullPhone),
+      customerId,
+      diamondBalance: customerContext.diamondBalanceMap.get(customerId) ?? 0,
+      customerAvatar:
+        (override.customerAvatar !== undefined ? override.customerAvatar : customerAvatarMap[String(customerId)]) ||
+        resolveCustomerAvatar(r.customer_avatar, customerId),
+      assignedStaffAvatar: isUnassignedQueue
+        ? undefined
+        : override.assignedStaffAvatar || resolveStaffAvatar(r.staff_avatar || r.check_in_staff_avatar),
+      customerVisits: visits,
+      lastVisitDate: priorVisitEntry?.date,
+      customerNote: note,
+      timeSlot: formatTimeSlot(r.booking_date_start, duration),
+      time12h: formatTime12h(r.booking_date_start),
+      storeId: resolvedStoreId,
+      branchCode: resolvedStoreId === 16 ? 'EP' : 'DT',
+      branchName: resolvedStoreId === 16 ? 'Estella Place' : 'Đề Thám',
+      bookingDateYmd: targetDate,
+      serviceName: effectiveServiceName,
+      serviceType: override.serviceType || r.service_type || 'Normal',
+      servicePrice,
+      serviceDuration: duration,
+      bookerName: r.booker_name,
+      bookerAvatar: resolveCustomerAvatar(r.booker_avatar),
+      customerTypeIcon: resolveIosCustomerTypeIcon(note, visits, effectiveIsNew),
+      hasDiscountTag: resolveIosHasDiscountTag(
+        note,
+        Number(r.combo_sale_required),
+        r.promotion_id || r.os_promotion_id
+      ),
+      assignedStaffName,
+      assignedStaffId,
+      isUnassignedQueue,
+      isNextQueueCustomer: isUnassignedQueue,
+      isBookedInAdvance: !isUnassignedQueue && assignedStaffId > 0 && isBookedAdvanceMatch,
+      isTuaAssigned: !isUnassignedQueue && assignedStaffId > 0 && !isBookedAdvanceMatch,
+      bookingAccessTag: isUnassignedQueue
+        ? 'NEXT_QUEUE_CUSTOMER'
+        : assignedStaffId === activeStaffId || checkInStaffId === activeStaffId || checkOutStaffId === activeStaffId
+          ? 'MY_BOOKED_CUSTOMER'
+          : 'STORE_CUSTOMER',
+      checkInStaffId,
+      checkInStaffName,
+      checkInStaffTier,
+      checkInStaffAvatar: resolveCustomerAvatar(r.check_in_staff_avatar),
+      checkOutStaffId,
+      checkOutStaffName,
+      checkOutStaffTier,
+      checkOutStaffAvatar: resolveCustomerAvatar(r.check_out_staff_avatar),
+      assignedBed: override.assignedBed || `Giường 0${(index % 6) + 1}`,
+      status,
+      orderState: state || undefined,
+      comboLiveStatus: {
+        ...comboInfo,
+        retainDaysLimit: comboInfo.retainDaysLimit ?? 25,
+        upsellOpportunity:
+          comboInfo.upsellOpportunity ??
+          (!comboInfo.isComboLive ||
+            comboInfo.remainingSessions <= 2 ||
+            Boolean(comboInfo.isExpiringSoon) ||
+            Boolean(comboInfo.isExpired)),
+      },
+      underMinkComboStatus: underComboStatus,
+      comboWallets: resolvedWallets.allWallets,
+      selectedUpperComboBalanceId: resolvedWallets.selectedUpperComboBalanceId,
+      selectedUnderComboBalanceId: resolvedWallets.selectedUnderComboBalanceId,
+      skipUpperCombo: resolvedWallets.skipUpperCombo,
+      skipUnderCombo: resolvedWallets.skipUnderCombo,
+      lashHistory: customerHistory,
+      cvlNotes: customerContext.cvlNotesMap?.get(customerId) || [],
+      selectedCombo,
+      selectedUnderCombo,
+      comboRedemption,
+      attributes: resolvedAttributes,
+      progress: mergeHydratedBookingProgress(r.legacy_progress, override.progress),
+      survey: override.survey || undefined,
+      upgradePrice,
+      cvRotationPoints: resolvedCvPoints,
+      cvRotationBreakdown: resolvedCvBreakdown,
+      ...promoState,
+      cvRewardBreakdown,
+      billing,
+      pendingPostCheckoutAdjustment: override.pendingPostCheckoutAdjustment || null,
+      postCheckoutAdjustments: Array.isArray(override.postCheckoutAdjustments) ? override.postCheckoutAdjustments : [],
+      isTrainingCvlOrder,
+      trainingMentorName: matchedTrainingPair?.mentorDisplayName,
+    };
+  });
 }
 
 export function buildDemoModeBookings(params: {
@@ -510,15 +519,41 @@ export function buildDemoModeBookings(params: {
     const cartProducts = promoState.cartProducts;
 
     const preHydratedDemo = applyCustomerComboExpiryOverridesToBooking(
-      mock as unknown as IosBookingItem,
+      {
+        ...(mock as unknown as IosBookingItem),
+        selectedUpperComboBalanceId:
+          override.selectedUpperComboBalanceId !== undefined
+            ? override.selectedUpperComboBalanceId
+            : (mock as unknown as IosBookingItem).selectedUpperComboBalanceId,
+        selectedUnderComboBalanceId:
+          override.selectedUnderComboBalanceId !== undefined
+            ? override.selectedUnderComboBalanceId
+            : (mock as unknown as IosBookingItem).selectedUnderComboBalanceId,
+        skipUpperCombo:
+          override.skipUpperCombo !== undefined
+            ? Boolean(override.skipUpperCombo)
+            : Boolean((mock as unknown as IosBookingItem).skipUpperCombo),
+        skipUnderCombo:
+          override.skipUnderCombo !== undefined
+            ? Boolean(override.skipUnderCombo)
+            : Boolean((mock as unknown as IosBookingItem).skipUnderCombo),
+      },
       customerComboExpiryMap[String(mock.customerId)],
       todayVn
     );
+    const resolvedDemoWallets = resolveActiveBookingComboWallets({
+      comboWallets: preHydratedDemo.comboWallets,
+      comboLiveStatus: preHydratedDemo.comboLiveStatus,
+      underMinkComboStatus: preHydratedDemo.underMinkComboStatus,
+      selectedUpperComboBalanceId: preHydratedDemo.selectedUpperComboBalanceId ?? null,
+      selectedUnderComboBalanceId: preHydratedDemo.selectedUnderComboBalanceId ?? null,
+      skipUpperCombo: Boolean(preHydratedDemo.skipUpperCombo),
+      skipUnderCombo: Boolean(preHydratedDemo.skipUnderCombo),
+      bookedServiceName: override.serviceName || mock.serviceName,
+      todayYmd: todayVn,
+    });
     const effectiveAttrs = (override.attributes || mock.attributes) as IosBookingItem['attributes'];
-    const hasUnderMinkComboMock = Boolean(
-      preHydratedDemo.underMinkComboStatus?.hasUnderCombo &&
-      (preHydratedDemo.underMinkComboStatus?.remainingSessions ?? 0) > 0
-    );
+    const hasUnderMinkComboMock = resolvedDemoWallets.isRedeemingUnderToday;
     const matchedTrainingPair = CvlTrainingMentorshipService.findMatchingTrainingPairForOrder(
       activeTrainingPairs,
       assignedStaffId,
@@ -530,7 +565,7 @@ export function buildDemoModeBookings(params: {
       servicePrice,
       upgradePrice,
       serviceName: override.serviceName || mock.serviceName,
-      isComboLive: Boolean(preHydratedDemo.comboLiveStatus?.isComboLive),
+      isComboLive: resolvedDemoWallets.isRedeemingUpperToday,
       hasUnderMink: effectiveAttrs?.hasUnderMink,
       underMinkServiceType: effectiveAttrs?.underMinkServiceType,
       hasUnderMinkCombo: hasUnderMinkComboMock,
@@ -555,6 +590,13 @@ export function buildDemoModeBookings(params: {
 
     return {
       ...preHydratedDemo,
+      comboLiveStatus: resolvedDemoWallets.effectiveComboLiveStatus,
+      underMinkComboStatus: resolvedDemoWallets.effectiveUnderMinkComboStatus,
+      comboWallets: resolvedDemoWallets.allWallets,
+      selectedUpperComboBalanceId: resolvedDemoWallets.selectedUpperComboBalanceId,
+      selectedUnderComboBalanceId: resolvedDemoWallets.selectedUnderComboBalanceId,
+      skipUpperCombo: resolvedDemoWallets.skipUpperCombo,
+      skipUnderCombo: resolvedDemoWallets.skipUnderCombo,
       customerPhone: formatPhoneNumberDots(mock.customerPhone, !canViewFullPhone),
       customerVisits: mock.customerVisits ?? 1,
       customerNote: mock.customerNote ?? '',
@@ -565,6 +607,7 @@ export function buildDemoModeBookings(params: {
       storeId: resolvedStoreId,
       branchCode: resolvedStoreId === 16 ? 'EP' : 'DT',
       branchName: resolvedStoreId === 16 ? 'Estella Place' : 'Đề Thám',
+      bookingDateYmd: targetDate,
       status,
       orderState: override.orderState || (mock as unknown as IosBookingItem).orderState,
       serviceName: stripNewLashLabel(override.serviceName || mock.serviceName),
@@ -620,6 +663,8 @@ export function buildDemoModeBookings(params: {
       ...promoState,
       cvRewardBreakdown,
       billing,
+      pendingPostCheckoutAdjustment: override.pendingPostCheckoutAdjustment || null,
+      postCheckoutAdjustments: Array.isArray(override.postCheckoutAdjustments) ? override.postCheckoutAdjustments : [],
       isTrainingCvlOrder,
       trainingMentorName: matchedTrainingPair?.mentorDisplayName,
       lashHistory: mock.lashHistory ?? [],

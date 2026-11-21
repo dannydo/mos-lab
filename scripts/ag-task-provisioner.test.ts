@@ -6,8 +6,10 @@ import test from 'node:test';
 import {
   buildAgentPrompt,
   buildAntigravityCascadeConfig,
+  normalizeProvisionerModelTier,
   readManagedRuntimeConfig,
   readProvisioningLedger,
+  resolveAgentApiModelArg,
   resolveAntigravityPlanModel,
   runProvisionerOnce,
   runClarificationWatcher,
@@ -470,13 +472,61 @@ test('probeIsAntigravityPort rejects non-antigravity HTTP ports', async () => {
   }
 });
 
-test('resolveAntigravityPlanModel maps pro to Argon High (MODEL_PLACEHOLDER_M417), flash to Flash High (MODEL_PLACEHOLDER_M318), and flash_lite to Flash Low (MODEL_PLACEHOLDER_M320)', async () => {
-  assert.equal(await resolveAntigravityPlanModel('pro'), 'MODEL_PLACEHOLDER_M417');
+test('resolveAntigravityPlanModel and resolveAgentApiModelArg map hydrogen, orchestrator_neon, orchestrator_carbon, orchestrator_argon, and flash cleanly', async () => {
+  assert.equal(normalizeProvisionerModelTier(undefined), 'hydrogen');
+  assert.equal(await resolveAntigravityPlanModel(undefined), 'gemini-4-hydrogen-high');
+  assert.equal(await resolveAntigravityPlanModel('hydrogen'), 'gemini-4-hydrogen-high');
+  assert.equal(await resolveAntigravityPlanModel('orchestrator_neon'), 'gemini-pro-orchestrator-neon');
+  assert.equal(await resolveAntigravityPlanModel('orchestrator_carbon'), 'gemini-pro-orchestrator');
+  assert.equal(await resolveAntigravityPlanModel('orchestrator_argon'), 'gemini-pro-orchestrator-argon');
   assert.equal(await resolveAntigravityPlanModel('flash'), 'MODEL_PLACEHOLDER_M318');
-  assert.equal(await resolveAntigravityPlanModel('flash_lite'), 'MODEL_PLACEHOLDER_M320');
+  // Legacy tier compatibility
+  assert.equal(await resolveAntigravityPlanModel('pro'), 'gemini-pro-orchestrator-argon');
+  assert.equal(await resolveAntigravityPlanModel('flash_lite'), 'MODEL_PLACEHOLDER_M318');
 
-  const cascadeConfig = buildAntigravityCascadeConfig('MODEL_PLACEHOLDER_M417');
-  assert.equal(cascadeConfig.plannerConfig.planModel, 'MODEL_PLACEHOLDER_M417');
+  assert.equal(resolveAgentApiModelArg(undefined), 'gemini-4-hydrogen-high');
+  assert.equal(resolveAgentApiModelArg('hydrogen'), 'gemini-4-hydrogen-high');
+  assert.equal(resolveAgentApiModelArg('orchestrator_neon'), 'gemini-pro-orchestrator-neon');
+  assert.equal(resolveAgentApiModelArg('orchestrator_carbon'), 'gemini-pro-orchestrator');
+  assert.equal(resolveAgentApiModelArg('orchestrator_argon'), 'gemini-pro-orchestrator-argon');
+  assert.equal(resolveAgentApiModelArg('flash'), 'gemini-3.8-flash-high');
+
+  const mockFetcher: typeof fetch = async () =>
+    new Response(
+      JSON.stringify({
+        clientModelConfigs: [
+          { label: 'Gemini 4 Hydrogen (High)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_H_HIGH' } },
+          { label: 'Orchestrator (Neon)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_ON' } },
+          { label: 'Orchestrator (Carbon)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_OC' } },
+          { label: 'Orchestrator (Argon)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_OA' } },
+          { label: 'Gemini 3.8 Flash (High)', modelOrAlias: { model: 'MODEL_PLACEHOLDER_M318' } },
+        ],
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  assert.equal(
+    await resolveAntigravityPlanModel('hydrogen', 'localhost:1234', 'csrf-1', mockFetcher),
+    'MODEL_PLACEHOLDER_H_HIGH'
+  );
+  assert.equal(
+    await resolveAntigravityPlanModel('orchestrator_neon', 'localhost:1234', 'csrf-1', mockFetcher),
+    'MODEL_PLACEHOLDER_ON'
+  );
+  assert.equal(
+    await resolveAntigravityPlanModel('orchestrator_carbon', 'localhost:1234', 'csrf-1', mockFetcher),
+    'MODEL_PLACEHOLDER_OC'
+  );
+  assert.equal(
+    await resolveAntigravityPlanModel('orchestrator_argon', 'localhost:1234', 'csrf-1', mockFetcher),
+    'MODEL_PLACEHOLDER_OA'
+  );
+  assert.equal(
+    await resolveAntigravityPlanModel('flash', 'localhost:1234', 'csrf-1', mockFetcher),
+    'MODEL_PLACEHOLDER_M318'
+  );
+
+  const cascadeConfig = buildAntigravityCascadeConfig('MODEL_PLACEHOLDER_H_HIGH');
+  assert.equal(cascadeConfig.plannerConfig.planModel, 'MODEL_PLACEHOLDER_H_HIGH');
   assert.equal(
     cascadeConfig.plannerConfig.toolConfig.runCommand.autoCommandConfig.autoExecutionPolicy,
     'CASCADE_COMMANDS_AUTO_EXECUTION_EAGER'
