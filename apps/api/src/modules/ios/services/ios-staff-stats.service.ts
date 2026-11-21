@@ -227,10 +227,17 @@ export async function fetchLiveStaffMonthlyStats(
     const techPromise = pool.query<mysql.RowDataPacket[]>(
       `SELECT
          COALESCE(SUM(total_order), 0) AS totalOrders,
-         COALESCE(SUM(total_paid_cash_amount + total_paid_credit_card_amount + total_paid_bank_transfer_amount), 0) AS totalRev,
-         COALESCE(SUM(working_minute), 0) AS totalWorkingMinute
+         COALESCE(SUM(total_paid_cash_amount + total_paid_credit_card_amount + total_paid_bank_transfer_amount), 0) AS totalRev
        FROM report_staff_technician
        WHERE user_id = ? AND date >= DATE(?) AND date < DATE(?)`,
+      [activeStaffId, monthStart, monthEnd]
+    );
+
+    // `working_minute` lives in `report_staff` (one row per user/day), NOT in `report_staff_technician`.
+    const workingMinutePromise = pool.query<mysql.RowDataPacket[]>(
+      `SELECT COALESCE(SUM(working_minute), 0) AS totalWorkingMinute
+       FROM report_staff
+       WHERE user_id = ? AND date >= DATE(?) AND date < DATE(?) AND working_minute > 0`,
       [activeStaffId, monthStart, monthEnd]
     );
 
@@ -343,16 +350,25 @@ export async function fetchLiveStaffMonthlyStats(
       comboAndProductStaffParams
     );
 
-    const [[techRows], [liveOrderRows], [relRows], [bonusRows], [tipRows], [comboRows], [productRows]] =
-      await Promise.all([
-        techPromise,
-        liveOrderPromise,
-        relPromise,
-        bonusPromise,
-        tipPromise,
-        comboRowsPromise,
-        productRowsPromise,
-      ]);
+    const [
+      [techRows],
+      [workingMinuteRows],
+      [liveOrderRows],
+      [relRows],
+      [bonusRows],
+      [tipRows],
+      [comboRows],
+      [productRows],
+    ] = await Promise.all([
+      techPromise,
+      workingMinutePromise,
+      liveOrderPromise,
+      relPromise,
+      bonusPromise,
+      tipPromise,
+      comboRowsPromise,
+      productRowsPromise,
+    ]);
 
     const totalOrders = Math.max(Number(techRows?.[0]?.totalOrders || 0), Number(liveOrderRows?.[0]?.liveOrders || 0));
     const totalRev = Math.max(Number(techRows?.[0]?.totalRev || 0), Number(liveOrderRows?.[0]?.liveOrderRev || 0));
@@ -400,7 +416,7 @@ export async function fetchLiveStaffMonthlyStats(
       }
     }
 
-    const totalWorkHours = Math.round((Number(techRows?.[0]?.totalWorkingMinute || 0) / 60) * 100) / 100;
+    const totalWorkHours = Math.round((Number(workingMinuteRows?.[0]?.totalWorkingMinute || 0) / 60) * 100) / 100;
     const hourlyWageRate = cvPlusRules.hourlyWage || 27500;
     const hourlyPayMonth = Math.round(totalWorkHours * hourlyWageRate);
 
