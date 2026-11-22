@@ -5,10 +5,8 @@
   "maxDotAgentsMdBytes": 1500,
   "files": {
     "apps/api/src/modules/bug-reports/inbox-implementation.service.ts": 4123,
-    "apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts": 2601,
     "apps/api/src/modules/career/career.service.ts": 3111,
     "apps/api/src/modules/kpi/routes.ts": 1629,
-    "apps/api/src/modules/kpi/routes/bk.routes.ts": 1583,
     "apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx": 2290,
     "apps/web/app/dashboard/academy-leads/campaigns/[slug]/page.tsx": 798,
     "apps/web/app/dashboard/academy-leads/components/AcademyTalentWorkshopDrawer.tsx": 3045,
