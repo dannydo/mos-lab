@@ -25,9 +25,15 @@ apps/api/src/modules/ios/
     ├── ios-bookings-mapper.service.ts        # Pure mappers: mapLiveOrdersToBookings, buildDemoModeBookings, CVL scope
     ├── ios-bookings-query.service.ts         # Orchestrates GET /ios/bookings (Live Mode vs ?demo=1 mode)
     ├── ios-legacy-bridge.service.ts          # End-of-order Legacy PHP settlement bridge (COMPLETE_ORDER)
+    ├── ios-legacy-transport.service.ts       # Legacy PHP HTTP transport, token resolution & report polling
+    ├── ios-legacy-payload.mapper.ts          # Builds check-in / consultation / payment Legacy PHP payloads
+    ├── ios-legacy-attributes.mapper.ts       # Maps Upper & Under lash attributes into Legacy option IDs
     ├── ios-legacy-step-sync.service.ts       # Real-time step-by-step Live Mode sync to Legacy PHP (/1/order/*)
     ├── ios-legacy-state-reconciler.service.ts # Two-way Legacy <-> mOS state reconciler & DEFERRED auto-healer
-    └── ios-actions.service.ts                # Executes POST /ios/bookings state transitions with per-booking locks
+    ├── ios-actions.service.ts                # Executes POST /ios/bookings state transitions with per-booking locks
+    ├── ios-actions-completion.helper.ts      # Promo validation, COMPLETE_ORDER transition & post-save step sync
+    ├── ios-simulation-actions.service.ts     # Sandbox action handler (OPS-004)
+    └── ios-simulation-meta.helper.ts         # Training sample photos, booking meta lookup & CVL sim guard
 ```
 
 ---
@@ -76,8 +82,8 @@ apps/api/src/modules/ios/
 
 ## 3. 3-Step Recipe: Adding a New Booking Field or `POST` Action
 
-1. **Shared Contract (`packages/shared/src/types/ios-app.ts`)**:
-   Add the new DTO field, action union literal (`IosBookingActionType`), or pure calculation helper in `@mos-lab/shared`, then run `pnpm --filter @mos-lab/shared build`.
+1. **Shared Contract (`packages/shared/src/types/ios-app.ts` barrel over `types/ios-app/{booking-models,booking-contracts,pricing-and-tips,scope-and-payments,customer-history}.ts`)**:
+   Add the new DTO field, action union literal (`IosBookingActionType`), or pure calculation helper in the relevant slice under `types/ios-app/`, re-exported via `types/ios-app.ts`, then run `pnpm --filter @mos-lab/shared build`.
 2. **Service Implementation (`apps/api/src/modules/ios/services/`)**:
    - For a new `POST` action: add a branch inside `executeIosBookingAction` in `ios-actions.service.ts` (mutating `nextOverride` inside `repo.withBookingLock`).
    - For a new read/mapped field: query in `ios-bookings-sql.service.ts` or `ios-customer-enrichment.service.ts` and map in `ios-bookings-mapper.service.ts` (both Live and Demo mappers).

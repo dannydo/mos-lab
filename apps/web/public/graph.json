@@ -27015,323 +27015,11 @@
       }
     },
     {
-      "id": "type:@mos-lab/shared:IosUserRole",
-      "type": "SharedType",
-      "label": "IosUserRole",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosUserRole",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BookingScopeMode",
-      "type": "SharedType",
-      "label": "BookingScopeMode",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BookingScopeMode",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CustomerBookingTab",
-      "type": "SharedType",
-      "label": "CustomerBookingTab",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CustomerBookingTab",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosBookingStatus",
-      "type": "SharedType",
-      "label": "IosBookingStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosBookingStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosSettlementStatus",
-      "type": "SharedType",
-      "label": "IosSettlementStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosSettlementStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosBranchConfig",
-      "type": "SharedType",
-      "label": "IosBranchConfig",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosBranchConfig",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosSegmentCounts",
-      "type": "SharedType",
-      "label": "IosSegmentCounts",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosSegmentCounts",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosStaffMonthlyStats",
-      "type": "SharedType",
-      "label": "IosStaffMonthlyStats",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosStaffMonthlyStats",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosActiveActorProfile",
-      "type": "SharedType",
-      "label": "IosActiveActorProfile",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosActiveActorProfile",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:NaturalLashConsultationAttributes",
-      "type": "SharedType",
-      "label": "NaturalLashConsultationAttributes",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "NaturalLashConsultationAttributes",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:LashHistoryPhoto",
-      "type": "SharedType",
-      "label": "LashHistoryPhoto",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "LashHistoryPhoto",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:LashHistoryStaffMember",
-      "type": "SharedType",
-      "label": "LashHistoryStaffMember",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "LashHistoryStaffMember",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:LashHistoryItem",
-      "type": "SharedType",
-      "label": "LashHistoryItem",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "LashHistoryItem",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:ComboPackageOption",
-      "type": "SharedType",
-      "label": "ComboPackageOption",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "ComboPackageOption",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:SerumTierOption",
-      "type": "SharedType",
-      "label": "SerumTierOption",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "SerumTierOption",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosSelectedComboRemaining",
-      "type": "SharedType",
-      "label": "IosSelectedComboRemaining",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosSelectedComboRemaining",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosSelectedCombo",
-      "type": "SharedType",
-      "label": "IosSelectedCombo",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosSelectedCombo",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosSelectedUnderCombo",
-      "type": "SharedType",
-      "label": "IosSelectedUnderCombo",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosSelectedUnderCombo",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosComboRedemption",
-      "type": "SharedType",
-      "label": "IosComboRedemption",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosComboRedemption",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosBookingAttributes",
-      "type": "SharedType",
-      "label": "IosBookingAttributes",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosBookingAttributes",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosBookingProgress",
-      "type": "SharedType",
-      "label": "IosBookingProgress",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosBookingProgress",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosScannedProductUnit",
-      "type": "SharedType",
-      "label": "IosScannedProductUnit",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosScannedProductUnit",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosScannedProductCatalogMatch",
-      "type": "SharedType",
-      "label": "IosScannedProductCatalogMatch",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosScannedProductCatalogMatch",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosScanProductRequest",
-      "type": "SharedType",
-      "label": "IosScanProductRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosScanProductRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosScanProductResponse",
-      "type": "SharedType",
-      "label": "IosScanProductResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosScanProductResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:IosCartProductItem",
-      "type": "SharedType",
-      "label": "IosCartProductItem",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "IosCartProductItem",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
       "id": "type:@mos-lab/shared:IosBookingItem",
       "type": "SharedType",
       "label": "IosBookingItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosBookingItem",
@@ -27343,7 +27031,7 @@
       "type": "SharedType",
       "label": "IosBookingListQuery",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosBookingListQuery",
@@ -27355,7 +27043,7 @@
       "type": "SharedType",
       "label": "IosBookingListResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosBookingListResponse",
@@ -27367,7 +27055,7 @@
       "type": "SharedType",
       "label": "IosBookingActionType",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosBookingActionType",
@@ -27379,7 +27067,7 @@
       "type": "SharedType",
       "label": "IosBookingActionPayload",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosBookingActionPayload",
@@ -27391,7 +27079,7 @@
       "type": "SharedType",
       "label": "IosBookingActionResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosBookingActionResponse",
@@ -27403,7 +27091,7 @@
       "type": "SharedType",
       "label": "IosSimulationAttemptSourceAction",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosSimulationAttemptSourceAction",
@@ -27415,7 +27103,7 @@
       "type": "SharedType",
       "label": "IosSimulationUpsellProductItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosSimulationUpsellProductItem",
@@ -27427,7 +27115,7 @@
       "type": "SharedType",
       "label": "IosSimulationAttemptSummary",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosSimulationAttemptSummary",
@@ -27439,7 +27127,7 @@
       "type": "SharedType",
       "label": "IosUpdateSimulationAttemptRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosUpdateSimulationAttemptRequest",
@@ -27451,7 +27139,7 @@
       "type": "SharedType",
       "label": "IosSimulationMenteeOption",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosSimulationMenteeOption",
@@ -27463,7 +27151,7 @@
       "type": "SharedType",
       "label": "IosCustomerLookupCandidate",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCustomerLookupCandidate",
@@ -27475,7 +27163,7 @@
       "type": "SharedType",
       "label": "IosBookingServiceCatalogItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosBookingServiceCatalogItem",
@@ -27487,7 +27175,7 @@
       "type": "SharedType",
       "label": "IosProductCatalogItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosProductCatalogItem",
@@ -27499,7 +27187,7 @@
       "type": "SharedType",
       "label": "IosCreateBookingRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCreateBookingRequest",
@@ -27511,7 +27199,7 @@
       "type": "SharedType",
       "label": "IosCreateBookingResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCreateBookingResponse",
@@ -27523,7 +27211,7 @@
       "type": "SharedType",
       "label": "IosPrintReceiptPayload",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosPrintReceiptPayload",
@@ -27535,7 +27223,7 @@
       "type": "SharedType",
       "label": "IosPrintReceiptResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosPrintReceiptResponse",
@@ -27547,7 +27235,7 @@
       "type": "SharedType",
       "label": "IosAdminComboExpiryAction",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosAdminComboExpiryAction",
@@ -27559,7 +27247,7 @@
       "type": "SharedType",
       "label": "IosAdminComboExpiryActionPayload",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosAdminComboExpiryActionPayload",
@@ -27571,7 +27259,7 @@
       "type": "SharedType",
       "label": "IosAdminComboExpiryActionResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosAdminComboExpiryActionResponse",
@@ -27583,7 +27271,7 @@
       "type": "SharedType",
       "label": "ActorTipBreakdown",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ActorTipBreakdown",
@@ -27595,7 +27283,7 @@
       "type": "SharedType",
       "label": "ServicingSubStatus",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ServicingSubStatus",
@@ -27603,74 +27291,314 @@
       }
     },
     {
-      "id": "type:@mos-lab/shared:CheckoutTipPercentTier",
+      "id": "type:@mos-lab/shared:IosUserRole",
       "type": "SharedType",
-      "label": "CheckoutTipPercentTier",
+      "label": "IosUserRole",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "typeName": "CheckoutTipPercentTier",
+        "typeName": "IosUserRole",
         "package": "@mos-lab/shared"
       }
     },
     {
-      "id": "type:@mos-lab/shared:PercentTipSuggestionItem",
+      "id": "type:@mos-lab/shared:BookingScopeMode",
       "type": "SharedType",
-      "label": "PercentTipSuggestionItem",
+      "label": "BookingScopeMode",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "typeName": "PercentTipSuggestionItem",
+        "typeName": "BookingScopeMode",
         "package": "@mos-lab/shared"
       }
     },
     {
-      "id": "type:@mos-lab/shared:FilterBookingsForCvlScopeOptions",
+      "id": "type:@mos-lab/shared:CustomerBookingTab",
       "type": "SharedType",
-      "label": "FilterBookingsForCvlScopeOptions",
+      "label": "CustomerBookingTab",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "typeName": "FilterBookingsForCvlScopeOptions",
+        "typeName": "CustomerBookingTab",
         "package": "@mos-lab/shared"
       }
     },
     {
-      "id": "type:@mos-lab/shared:IosPaymentMethod",
+      "id": "type:@mos-lab/shared:IosBookingStatus",
       "type": "SharedType",
-      "label": "IosPaymentMethod",
+      "label": "IosBookingStatus",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "typeName": "IosPaymentMethod",
+        "typeName": "IosBookingStatus",
         "package": "@mos-lab/shared"
       }
     },
     {
-      "id": "type:@mos-lab/shared:IosPaymentBreakdown",
+      "id": "type:@mos-lab/shared:IosSettlementStatus",
       "type": "SharedType",
-      "label": "IosPaymentBreakdown",
+      "label": "IosSettlementStatus",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "typeName": "IosPaymentBreakdown",
+        "typeName": "IosSettlementStatus",
         "package": "@mos-lab/shared"
       }
     },
     {
-      "id": "type:@mos-lab/shared:NormalizedPaymentBreakdownResult",
+      "id": "type:@mos-lab/shared:IosBranchConfig",
       "type": "SharedType",
-      "label": "NormalizedPaymentBreakdownResult",
+      "label": "IosBranchConfig",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "typeName": "NormalizedPaymentBreakdownResult",
+        "typeName": "IosBranchConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosSegmentCounts",
+      "type": "SharedType",
+      "label": "IosSegmentCounts",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosSegmentCounts",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosStaffMonthlyStats",
+      "type": "SharedType",
+      "label": "IosStaffMonthlyStats",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosStaffMonthlyStats",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosActiveActorProfile",
+      "type": "SharedType",
+      "label": "IosActiveActorProfile",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosActiveActorProfile",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:NaturalLashConsultationAttributes",
+      "type": "SharedType",
+      "label": "NaturalLashConsultationAttributes",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "NaturalLashConsultationAttributes",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:LashHistoryPhoto",
+      "type": "SharedType",
+      "label": "LashHistoryPhoto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "LashHistoryPhoto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:LashHistoryStaffMember",
+      "type": "SharedType",
+      "label": "LashHistoryStaffMember",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "LashHistoryStaffMember",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:LashHistoryItem",
+      "type": "SharedType",
+      "label": "LashHistoryItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "LashHistoryItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ComboPackageOption",
+      "type": "SharedType",
+      "label": "ComboPackageOption",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ComboPackageOption",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SerumTierOption",
+      "type": "SharedType",
+      "label": "SerumTierOption",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SerumTierOption",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosSelectedComboRemaining",
+      "type": "SharedType",
+      "label": "IosSelectedComboRemaining",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosSelectedComboRemaining",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosSelectedCombo",
+      "type": "SharedType",
+      "label": "IosSelectedCombo",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosSelectedCombo",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosSelectedUnderCombo",
+      "type": "SharedType",
+      "label": "IosSelectedUnderCombo",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosSelectedUnderCombo",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosComboRedemption",
+      "type": "SharedType",
+      "label": "IosComboRedemption",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosComboRedemption",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosBookingAttributes",
+      "type": "SharedType",
+      "label": "IosBookingAttributes",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosBookingAttributes",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosBookingProgress",
+      "type": "SharedType",
+      "label": "IosBookingProgress",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosBookingProgress",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosScannedProductUnit",
+      "type": "SharedType",
+      "label": "IosScannedProductUnit",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosScannedProductUnit",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosScannedProductCatalogMatch",
+      "type": "SharedType",
+      "label": "IosScannedProductCatalogMatch",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosScannedProductCatalogMatch",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosScanProductRequest",
+      "type": "SharedType",
+      "label": "IosScanProductRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosScanProductRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosScanProductResponse",
+      "type": "SharedType",
+      "label": "IosScanProductResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosScanProductResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosCartProductItem",
+      "type": "SharedType",
+      "label": "IosCartProductItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosCartProductItem",
         "package": "@mos-lab/shared"
       }
     },
@@ -27679,7 +27607,7 @@
       "type": "SharedType",
       "label": "IosCustomerHistoryTab",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCustomerHistoryTab",
@@ -27691,7 +27619,7 @@
       "type": "SharedType",
       "label": "IosCustomerNoteSource",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCustomerNoteSource",
@@ -27703,7 +27631,7 @@
       "type": "SharedType",
       "label": "IosCustomerNoteItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCustomerNoteItem",
@@ -27715,7 +27643,7 @@
       "type": "SharedType",
       "label": "IosCreateCustomerNotePayload",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCreateCustomerNotePayload",
@@ -27727,7 +27655,7 @@
       "type": "SharedType",
       "label": "IosCreateCustomerNoteResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCreateCustomerNoteResponse",
@@ -27739,7 +27667,7 @@
       "type": "SharedType",
       "label": "IosCustomerHistoryLashSpec",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCustomerHistoryLashSpec",
@@ -27751,7 +27679,7 @@
       "type": "SharedType",
       "label": "IosCustomerHistoryServiceDetail",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCustomerHistoryServiceDetail",
@@ -27763,7 +27691,7 @@
       "type": "SharedType",
       "label": "IosCustomerHistoryStaffRef",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCustomerHistoryStaffRef",
@@ -27775,7 +27703,7 @@
       "type": "SharedType",
       "label": "IosCustomerHistoryVisitItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCustomerHistoryVisitItem",
@@ -27787,7 +27715,7 @@
       "type": "SharedType",
       "label": "IosCustomerDiamondTxnItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCustomerDiamondTxnItem",
@@ -27799,7 +27727,7 @@
       "type": "SharedType",
       "label": "IosCustomerHistorySummary",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCustomerHistorySummary",
@@ -27811,10 +27739,82 @@
       "type": "SharedType",
       "label": "IosCustomerHistoryResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/ios-app.ts",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "IosCustomerHistoryResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CheckoutTipPercentTier",
+      "type": "SharedType",
+      "label": "CheckoutTipPercentTier",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/pricing-and-tips.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CheckoutTipPercentTier",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PercentTipSuggestionItem",
+      "type": "SharedType",
+      "label": "PercentTipSuggestionItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/pricing-and-tips.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PercentTipSuggestionItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FilterBookingsForCvlScopeOptions",
+      "type": "SharedType",
+      "label": "FilterBookingsForCvlScopeOptions",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/scope-and-payments.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FilterBookingsForCvlScopeOptions",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosPaymentMethod",
+      "type": "SharedType",
+      "label": "IosPaymentMethod",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/scope-and-payments.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosPaymentMethod",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:IosPaymentBreakdown",
+      "type": "SharedType",
+      "label": "IosPaymentBreakdown",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/scope-and-payments.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "IosPaymentBreakdown",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:NormalizedPaymentBreakdownResult",
+      "type": "SharedType",
+      "label": "NormalizedPaymentBreakdownResult",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/ios-app/scope-and-payments.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "NormalizedPaymentBreakdownResult",
         "package": "@mos-lab/shared"
       }
     },
@@ -43993,6 +43993,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/services/ios-actions-completion.helper.ts",
+      "type": "File",
+      "label": "ios-actions-completion.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-actions-completion.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10406,
+        "lineCount": 294,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/services/ios-actions.service.ts",
       "type": "File",
       "label": "ios-actions.service.ts",
@@ -44000,8 +44013,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-actions.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 29067,
-        "lineCount": 700,
+        "sizeBytes": 21208,
+        "lineCount": 529,
         "ext": ".ts"
       }
     },
@@ -44201,6 +44214,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/services/ios-legacy-attributes.mapper.ts",
+      "type": "File",
+      "label": "ios-legacy-attributes.mapper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-legacy-attributes.mapper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9071,
+        "lineCount": 199,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts",
       "type": "File",
       "label": "ios-legacy-bridge.service.ts",
@@ -44208,8 +44234,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 25533,
-        "lineCount": 687,
+        "sizeBytes": 19711,
+        "lineCount": 511,
         "ext": ".ts"
       }
     },
@@ -44234,8 +44260,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-payload.mapper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 28144,
-        "lineCount": 676,
+        "sizeBytes": 19445,
+        "lineCount": 492,
         "ext": ".ts"
       }
     },
@@ -44275,6 +44301,19 @@
       "metadata": {
         "sizeBytes": 20678,
         "lineCount": 568,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-legacy-transport.service.ts",
+      "type": "File",
+      "label": "ios-legacy-transport.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-legacy-transport.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6427,
+        "lineCount": 199,
         "ext": ".ts"
       }
     },
@@ -44429,8 +44468,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-simulation-actions.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 29191,
-        "lineCount": 695,
+        "sizeBytes": 19042,
+        "lineCount": 485,
         "ext": ".ts"
       }
     },
@@ -44457,6 +44496,19 @@
       "metadata": {
         "sizeBytes": 12487,
         "lineCount": 311,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-simulation-meta.helper.ts",
+      "type": "File",
+      "label": "ios-simulation-meta.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-simulation-meta.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10662,
+        "lineCount": 221,
         "ext": ".ts"
       }
     },
@@ -58410,6 +58462,71 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/ios-app/booking-contracts.ts",
+      "type": "File",
+      "label": "booking-contracts.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 12669,
+        "lineCount": 467,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/ios-app/booking-models.ts",
+      "type": "File",
+      "label": "booking-models.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/ios-app/booking-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 9306,
+        "lineCount": 350,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/ios-app/customer-history.ts",
+      "type": "File",
+      "label": "customer-history.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 3574,
+        "lineCount": 145,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/ios-app/pricing-and-tips.ts",
+      "type": "File",
+      "label": "pricing-and-tips.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/ios-app/pricing-and-tips.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 14339,
+        "lineCount": 374,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/ios-app/scope-and-payments.ts",
+      "type": "File",
+      "label": "scope-and-payments.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/ios-app/scope-and-payments.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 15030,
+        "lineCount": 419,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/ios-app.ts",
       "type": "File",
       "label": "ios-app.ts",
@@ -58417,8 +58534,8 @@
       "filePath": "packages/shared/src/types/ios-app.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 53709,
-        "lineCount": 1721,
+        "sizeBytes": 276,
+        "lineCount": 7,
         "ext": ".ts"
       }
     },
@@ -73056,6 +73173,167 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:IosBookingItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosBookingItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosBookingListQuery:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosBookingListQuery",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosBookingListResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosBookingListResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosBookingActionType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosBookingActionType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosBookingActionPayload:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosBookingActionPayload",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosBookingActionResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosBookingActionResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosSimulationAttemptSourceAction:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosSimulationAttemptSourceAction",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosSimulationUpsellProductItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosSimulationUpsellProductItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosSimulationAttemptSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosSimulationAttemptSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosUpdateSimulationAttemptRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosUpdateSimulationAttemptRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosSimulationMenteeOption:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosSimulationMenteeOption",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosCustomerLookupCandidate:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosCustomerLookupCandidate",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosBookingServiceCatalogItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosBookingServiceCatalogItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosProductCatalogItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosProductCatalogItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosCreateBookingRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosCreateBookingRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosCreateBookingResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosCreateBookingResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosPrintReceiptPayload:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosPrintReceiptPayload",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosPrintReceiptResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosPrintReceiptResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosAdminComboExpiryAction:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosAdminComboExpiryAction",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosAdminComboExpiryActionPayload:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosAdminComboExpiryActionPayload",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosAdminComboExpiryActionResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosAdminComboExpiryActionResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ActorTipBreakdown:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ActorTipBreakdown",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ServicingSubStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ServicingSubStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:IosUserRole:ws:packages/shared",
       "source": "type:@mos-lab/shared:IosUserRole",
       "target": "ws:packages/shared",
@@ -73238,209 +73516,6 @@
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:IosBookingItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosBookingItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosBookingListQuery:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosBookingListQuery",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosBookingListResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosBookingListResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosBookingActionType:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosBookingActionType",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosBookingActionPayload:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosBookingActionPayload",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosBookingActionResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosBookingActionResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosSimulationAttemptSourceAction:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosSimulationAttemptSourceAction",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosSimulationUpsellProductItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosSimulationUpsellProductItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosSimulationAttemptSummary:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosSimulationAttemptSummary",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosUpdateSimulationAttemptRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosUpdateSimulationAttemptRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosSimulationMenteeOption:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosSimulationMenteeOption",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosCustomerLookupCandidate:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosCustomerLookupCandidate",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosBookingServiceCatalogItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosBookingServiceCatalogItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosProductCatalogItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosProductCatalogItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosCreateBookingRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosCreateBookingRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosCreateBookingResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosCreateBookingResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosPrintReceiptPayload:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosPrintReceiptPayload",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosPrintReceiptResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosPrintReceiptResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosAdminComboExpiryAction:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosAdminComboExpiryAction",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosAdminComboExpiryActionPayload:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosAdminComboExpiryActionPayload",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosAdminComboExpiryActionResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosAdminComboExpiryActionResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:ActorTipBreakdown:ws:packages/shared",
-      "source": "type:@mos-lab/shared:ActorTipBreakdown",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:ServicingSubStatus:ws:packages/shared",
-      "source": "type:@mos-lab/shared:ServicingSubStatus",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:CheckoutTipPercentTier:ws:packages/shared",
-      "source": "type:@mos-lab/shared:CheckoutTipPercentTier",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PercentTipSuggestionItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PercentTipSuggestionItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:FilterBookingsForCvlScopeOptions:ws:packages/shared",
-      "source": "type:@mos-lab/shared:FilterBookingsForCvlScopeOptions",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosPaymentMethod:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosPaymentMethod",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:IosPaymentBreakdown:ws:packages/shared",
-      "source": "type:@mos-lab/shared:IosPaymentBreakdown",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:NormalizedPaymentBreakdownResult:ws:packages/shared",
-      "source": "type:@mos-lab/shared:NormalizedPaymentBreakdownResult",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
       "id": "edge:type:@mos-lab/shared:IosCustomerHistoryTab:ws:packages/shared",
       "source": "type:@mos-lab/shared:IosCustomerHistoryTab",
       "target": "ws:packages/shared",
@@ -73520,6 +73595,48 @@
     {
       "id": "edge:type:@mos-lab/shared:IosCustomerHistoryResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:IosCustomerHistoryResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CheckoutTipPercentTier:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CheckoutTipPercentTier",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PercentTipSuggestionItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PercentTipSuggestionItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FilterBookingsForCvlScopeOptions:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FilterBookingsForCvlScopeOptions",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosPaymentMethod:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosPaymentMethod",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:IosPaymentBreakdown:ws:packages/shared",
+      "source": "type:@mos-lab/shared:IosPaymentBreakdown",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:NormalizedPaymentBreakdownResult:ws:packages/shared",
+      "source": "type:@mos-lab/shared:NormalizedPaymentBreakdownResult",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -85635,6 +85752,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-actions-completion.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-actions-completion.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-actions.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-actions.service.ts",
       "target": "ws:packages/shared",
@@ -85740,6 +85864,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-legacy-attributes.mapper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-legacy-attributes.mapper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts",
       "target": "ws:packages/shared",
@@ -85777,6 +85908,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-legacy-step-sync.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-legacy-step-sync.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-legacy-transport.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-legacy-transport.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -85861,6 +85999,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-simulation-enrichment.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-simulation-enrichment.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-simulation-meta.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-simulation-meta.helper.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -123926,8 +124071,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4559,
-    "totalEdges": 9281,
+    "totalNodes": 4568,
+    "totalEdges": 9285,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -123936,14 +124081,14 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 496,
-      "File": 1449
+      "File": 1458
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 562,
       "USES_TOKEN": 498,
-      "IMPORTS": 846,
+      "IMPORTS": 850,
       "QUERIES_MODEL": 452,
       "API_CALL": 4378
     },
