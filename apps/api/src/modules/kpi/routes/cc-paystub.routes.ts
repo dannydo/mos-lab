@@ -13,6 +13,7 @@ import { StaffOffDayService } from '../../staff/services/staff-off-day.service.j
 import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';
 import {
   buildExcludeTrainingCvlOrderSql,
+  createFastifyLegacyTipExecutor,
   CvlTrainingMentorshipService,
 } from '../services/cvl-training-mentorship.service.js';
 import { CcMentorPayoutService } from '../services/cc-mentor-payout.service.js';
@@ -296,6 +297,10 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         fastify,
         startPart,
         endPart
+      );
+      await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(
+        createFastifyLegacyTipExecutor(fastify),
+        activeTrainingPairs
       );
       const excludeTrainingCcTipSql = buildExcludeTrainingCvlOrderSql(
         activeTrainingPairs,
@@ -1198,6 +1203,10 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         fastify,
         startPart,
         endPart
+      );
+      await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(
+        createFastifyLegacyTipExecutor(fastify),
+        activeTrainingPairs
       );
       const excludeTrainingLegacyTipSql = buildExcludeTrainingCvlOrderSql(
         activeTrainingPairs,

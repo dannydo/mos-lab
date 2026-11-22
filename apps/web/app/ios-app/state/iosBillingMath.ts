@@ -1,4 +1,5 @@
 import {
+  calculateActorTipBreakdown,
   calculateCvSerumTierBonus,
   calculateDualComboTierBonus,
   calculateIosItemizedPromotionDiscounts,
@@ -6,6 +7,7 @@ import {
   resolveActiveBookingComboWallets,
   resolveEffectiveServiceTotal,
   type CvToCvPlusRequirements,
+  type IosActiveActorProfile,
 } from '@mos-lab/shared';
 import type { IosPromotionOption, IosPromotionTargetScope, IosSettlementStatus } from '@mos-lab/shared';
 import type { BookingItem } from './mockData';
@@ -367,11 +369,17 @@ export function buildRecordedTipBillingSnapshot(
   prev: BookingItem,
   tipAmount: number,
   actorTier?: string,
-  completedAt: string = new Date().toISOString()
+  completedAt: string = new Date().toISOString(),
+  actor?: Partial<IosActiveActorProfile> | null
 ) {
-  const cvShare = Math.round(tipAmount * 0.7);
-  const checkInShare = Math.round(tipAmount * 0.1);
-  const checkOutShare = Math.round(tipAmount * 0.1);
+  const tipBreakdown = calculateActorTipBreakdown(
+    prev,
+    actor ?? (actorTier ? ({ tier: actorTier } as Partial<IosActiveActorProfile>) : null),
+    tipAmount
+  );
+  const cvShare = tipBreakdown.techShareAmount;
+  const checkInShare = tipBreakdown.checkInShareAmount;
+  const checkOutShare = tipBreakdown.checkOutShareAmount;
   const ccShare = checkInShare + checkOutShare;
   const {
     serviceTotal: freshServiceTotal,

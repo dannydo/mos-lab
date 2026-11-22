@@ -411,9 +411,10 @@ export function useIosBillingCheckout({
 
       updateActiveBooking((prev) => {
         const tipAmount = chosenTip !== undefined ? chosenTip : (prev.billing?.tipAmount ?? 0);
-        const cvShare = Math.round(tipAmount * 0.7);
-        const checkInShare = Math.round(tipAmount * 0.1);
-        const checkOutShare = Math.round(tipAmount * 0.1);
+        const tipBreakdown = calculateActorTipBreakdown(prev, actor, tipAmount);
+        const cvShare = tipBreakdown.techShareAmount;
+        const checkInShare = tipBreakdown.checkInShareAmount;
+        const checkOutShare = tipBreakdown.checkOutShareAmount;
         const ccShare = checkInShare + checkOutShare;
 
         const nextBookingDraft: BookingItem = {
@@ -608,7 +609,7 @@ export function useIosBillingCheckout({
       let calculatedBilling: any = null;
 
       updateActiveBooking((prev) => {
-        const nextBilling = buildRecordedTipBillingSnapshot(prev, tipAmount, actor.tier, completedAt);
+        const nextBilling = buildRecordedTipBillingSnapshot(prev, tipAmount, actor.tier, completedAt, actor);
         calculatedBilling = nextBilling;
 
         return {

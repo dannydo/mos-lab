@@ -33,6 +33,7 @@ export function ScreenCvPaystub({
   const currentMonthLabel = `Tháng ${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
   const staffName = actor?.name || 'Chuyên Viên';
   const isCvll = actor?.tier === 'CVLL';
+  const isTrainingMentee = Boolean(actor?.isTrainingMentee || staffStats?.isTrainingMentee);
 
   const myCompletedBookings = useMemo(() => {
     const actorId = Number(actor?.staffId || 0);
@@ -137,9 +138,11 @@ export function ScreenCvPaystub({
         },
         {
           id: 'tip',
-          title: 'Thưởng Tips Phân Bổ (70/10/10)',
+          title: isTrainingMentee ? 'Thưởng Tips Training (90%)' : 'Thưởng Tips Phân Bổ (70/10/10)',
           amount: liveTipAmount,
-          desc: `Hôm nay: +${tipToday.toLocaleString('vi-VN')}đ (70% Làm mi + 10% In + 10% Out)`,
+          desc: isTrainingMentee
+            ? `Hôm nay: +${tipToday.toLocaleString('vi-VN')}đ (90% Tip trọn vẹn trong kỳ training)`
+            : `Hôm nay: +${tipToday.toLocaleString('vi-VN')}đ (70% Làm mi + 10% In + 10% Out)`,
           icon: HeartHandshake,
           color: 'text-rose-500',
         },
@@ -250,7 +253,7 @@ export function ScreenCvPaystub({
         <div>
           <div className="flex items-center justify-between mb-2 px-1">
             <h3 className="text-xs font-semibold text-[#8E8E93] uppercase tracking-wider">
-              Lịch Sử Tiền Tip Theo Chặng (70/10/10)
+              Lịch Sử Tiền Tip Theo Chặng ({isTrainingMentee ? '90% Training' : '70/10/10'})
             </h3>
             <span className="text-[11px] text-[#8E8E93]">Minh bạch theo ca</span>
           </div>

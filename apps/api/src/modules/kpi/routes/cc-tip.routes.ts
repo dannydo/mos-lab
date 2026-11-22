@@ -14,6 +14,7 @@ import { TeamService } from '../../teams/team.service.js';
 import { getPreviousReportPeriod } from '../services/report-period-comparison.js';
 import {
   buildExcludeTrainingCvlOrderSql,
+  createFastifyLegacyTipExecutor,
   CvlTrainingMentorshipService,
 } from '../services/cvl-training-mentorship.service.js';
 
@@ -78,6 +79,10 @@ async function getCcTipSummaryForPeriod(
     fastify,
     options.dateFrom.slice(0, 10),
     options.endAt.slice(0, 10)
+  );
+  await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(
+    createFastifyLegacyTipExecutor(fastify),
+    activeTrainingPairs
   );
   const filteredOrdersCte = buildActualCheckinOrdersCte(activeTrainingPairs);
   const dateQueryParams = actualCheckinQueryParams(options.dateFrom, options.endAt);
@@ -173,6 +178,10 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
         fastify,
         startPart,
         endPart
+      );
+      await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(
+        createFastifyLegacyTipExecutor(fastify),
+        activeTrainingPairs
       );
       const filteredOrdersCte = buildActualCheckinOrdersCte(activeTrainingPairs);
       const dateQueryParams = actualCheckinQueryParams(startPart, endPart);
@@ -334,6 +343,10 @@ export async function registerCcTipRoutes(fastify: FastifyInstance) {
         getActiveCcIds(fastify),
         CvlTrainingMentorshipService.getActivePairsForRange(fastify, startPart, endPart),
       ]);
+      await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(
+        createFastifyLegacyTipExecutor(fastify),
+        activeTrainingPairs
+      );
       const activeCcIds = activeCcIdsRaw || [37790, 34295, 46092, 51659, 48026, 48997];
       const activeCcStr = activeCcIds.join(',');
 
