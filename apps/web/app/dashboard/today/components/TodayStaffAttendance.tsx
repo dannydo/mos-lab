@@ -215,7 +215,7 @@ const TodayStaffAttendance = React.memo(
                       return (
                         <Space size={6}>
                           <Tag color="processing" icon={<ClockCircleOutlined />} className="tabular-nums">
-                            Đang bấm giờ
+                            {sandbox.formatStaffTimerMMSS(rec.name)}
                           </Tag>
                           <Button
                             size="small"

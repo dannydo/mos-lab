@@ -18,6 +18,7 @@ import TodayStats from './components/TodayStats';
 import TodayBookingsTable from './components/TodayBookingsTable';
 import TodayComingTable from './components/TodayComingTable';
 import TodayStaffAttendance from './components/TodayStaffAttendance';
+import SandboxControlPanel from './components/SandboxControlPanel';
 import { IconButton, PageHeader, ReportPeriodNavigator, ToolbarToggle } from '../../../components/ui';
 
 dayjs.extend(isoWeek);
@@ -368,6 +369,8 @@ function TodayDashboardContent() {
           </Space>
         </div>
       )}
+
+      {sandbox.isSandbox && <SandboxControlPanel />}
 
       <Spin spinning={data.loading}>
         {mainViewMode === 'calendar' ? (

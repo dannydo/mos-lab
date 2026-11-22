@@ -328,6 +328,8 @@ function IosAppInner() {
             onAutoSaveDraft={state.handleAutoSaveConsultationDraft}
             isSimulationMode={state.isSimulationMode}
             isReadOnlyMentorView={state.isReadOnlyMentorView}
+            simPresetMode={state.simPresetMode}
+            onSimJumpToStep={state.handleSimJumpToStep}
             onSimFastForwardToUpsell={state.handleSimFastForwardToUpsell}
             onSelectComboWallet={state.handleSelectComboWallet}
           />
@@ -394,6 +396,7 @@ function IosAppInner() {
             onFinishTimer={state.handleFinishTimer}
             onEditService={() => state.handleOpenConsultation(9)}
             isAdmin={state.isAdmin}
+            isSimulationMode={state.isSimulationMode}
             onRevertToIncoming={state.handleRevertToIncoming}
           />
         );
@@ -547,6 +550,11 @@ function IosAppInner() {
           onRevertConsultation={state.handleSimRevertConsultation}
           onResetToIncoming={state.handleSimResetToIncoming}
           onExitSimulation={state.toggleSimulationMode}
+          simPresetMode={state.simPresetMode}
+          onSelectSimPresetMode={state.selectSimPresetMode}
+          onSimJumpToStep={state.handleSimJumpToStep}
+          simMaterialsChecklist={state.simMaterialsChecklist}
+          onToggleSimMaterial={state.toggleSimMaterialCheck}
         />
 
         {/* Screen Body */}
@@ -612,31 +620,19 @@ function IosAppInner() {
           }}
           onOpenChat={() => {
             setIsProfileSheetOpen(false);
-            const chatUrl = '/chat';
-            const win = window.open(chatUrl, '_blank');
-            if (!win || win.closed || typeof win.closed === 'undefined') {
-              window.location.href = chatUrl;
-            }
+            const win = window.open('/chat', '_blank');
+            if (!win || win.closed) window.location.href = '/chat';
           }}
           onOpenCareer={() => {
             setIsProfileSheetOpen(false);
-            const staffIdParam = state.actor?.staffId ? `?staffId=${state.actor.staffId}` : '';
-            const careerUrl = `/dashboard/career-path${staffIdParam}`;
-            const win = window.open(careerUrl, '_blank');
-            if (!win || win.closed || typeof win.closed === 'undefined') {
-              window.location.href = careerUrl;
-            }
+            const url = `/dashboard/career-path${state.actor?.staffId ? `?staffId=${state.actor.staffId}` : ''}`;
+            const win = window.open(url, '_blank');
+            if (!win || win.closed) window.location.href = url;
           }}
           onLogout={() => {
             setIsProfileSheetOpen(false);
             if (typeof window !== 'undefined') {
-              window.localStorage.removeItem('mos_token');
-              window.localStorage.removeItem('mos_user');
-              window.localStorage.removeItem('mos_omicall_auto_init');
-              window.localStorage.removeItem('mos_original_token');
-              window.localStorage.removeItem('mos_original_user');
-              window.localStorage.removeItem('mos_original_omicall_auto_init');
-              window.localStorage.removeItem('mos_impersonation_audit_id');
+              ['mos_token', 'mos_user', 'mos_omicall_auto_init', 'mos_original_token', 'mos_original_user', 'mos_original_omicall_auto_init', 'mos_impersonation_audit_id'].forEach((k) => window.localStorage.removeItem(k));
               window.location.replace('/login');
             }
           }}

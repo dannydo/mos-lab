@@ -221,4 +221,51 @@ describe('IosSimulationWorkspaceBar Overlay & Stacking Contract', () => {
     fireEvent.click(exitBtn);
     expect(onExitSimulation).toHaveBeenCalledTimes(1);
   });
+
+  it('opens Multi-Mode Sandbox selector modal (z-[80]) allowing mode switches, step jumps, and material checklist toggles', () => {
+    const onSelectSimPresetMode = vi.fn();
+    const onSimJumpToStep = vi.fn();
+    const onToggleSimMaterial = vi.fn();
+
+    render(
+      <IosSimulationWorkspaceBar
+        isSimulationMode={true}
+        isReadOnlyMentorView={false}
+        menteesList={[]}
+        activeBooking={SAMPLE_BOOKING}
+        currentStep={3}
+        simPresetMode="training"
+        onSelectSimPresetMode={onSelectSimPresetMode}
+        onSimJumpToStep={onSimJumpToStep}
+        simMaterialsChecklist={[
+          { id: 'glue', label: 'Keo nối mi Wings Ultra-Bond', stockNote: 'Đủ ca', checked: true },
+          { id: 'fans', label: 'Khay mi Fan UltraLight', stockNote: 'Còn 4 hộp', checked: false },
+        ]}
+        onToggleSimMaterial={onToggleSimMaterial}
+        onOpenHistory={vi.fn()}
+        onRevertConsultation={vi.fn()}
+        onResetToIncoming={vi.fn()}
+        onExitSimulation={vi.fn()}
+      />
+    );
+
+    const modePill = screen.getByRole('button', { name: 'Chọn mode giả lập Sandbox' });
+    expect(modePill.textContent).toContain('Training Ca');
+
+    fireEvent.click(modePill);
+
+    const modeDialog = screen.getByRole('dialog', { name: 'Chọn mode giả lập Sandbox' });
+    expect(modeDialog.parentElement).toBe(document.body);
+    expect(modeDialog.className).toContain('z-[80]');
+
+    fireEvent.click(screen.getByText(/Sales Chốt Combo · Sản Phẩm · Quà Tặng/i));
+    expect(onSelectSimPresetMode).toHaveBeenCalledWith('sales');
+
+    fireEvent.click(screen.getByText(/Khay mi Fan UltraLight/i));
+    expect(onToggleSimMaterial).toHaveBeenCalledWith('fans');
+
+    fireEvent.click(screen.getByText(/Bấm giờ \(B9\)/i));
+    expect(onSimJumpToStep).toHaveBeenCalledWith(9, 771121);
+    expect(screen.queryByRole('dialog', { name: 'Chọn mode giả lập Sandbox' })).toBeNull();
+  });
 });
