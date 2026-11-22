@@ -493,16 +493,18 @@ export function Screen14ThermalReceiptDone({
         </button>
       </div>
 
-      <PostCheckoutComboSheet
-        open={isPostCheckoutOpen}
-        onClose={() => setIsPostCheckoutOpen(false)}
-        booking={booking}
-        actor={actor}
-        isAdmin={isAdmin}
-        isSimulationMode={isSimulationMode}
-        cvPlusRules={cvPlusRules}
-        onAdjusted={onRefreshDb}
-      />
+      {isPostCheckoutOpen && (
+        <PostCheckoutComboSheet
+          open={isPostCheckoutOpen}
+          onClose={() => setIsPostCheckoutOpen(false)}
+          booking={booking}
+          actor={actor}
+          isAdmin={isAdmin}
+          isSimulationMode={isSimulationMode}
+          cvPlusRules={cvPlusRules}
+          onAdjusted={onRefreshDb}
+        />
+      )}
     </div>
   );
 }

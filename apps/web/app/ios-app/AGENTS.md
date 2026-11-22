@@ -29,7 +29,7 @@ This document is the authoritative developer contract for AI Agents working insi
 
 ## 2. Step-Index Routing Map (`state.currentStep` <-> Component)
 
-> **Critical Note for AI Agents:** Because `Step 8` was inserted for `Screen07bLashProgressCleaned`, `currentStep` numbers `8..15` are offset by `+1` from `Screen08..Screen14` filenames! Always check this table when calling `setCurrentStep(n)`:
+> **Critical Note for AI Agents:** Because `Step 8` was inserted for `Screen07bLashProgressCleaned`, `currentStep` numbers `8..15` are offset by `+1` from `Screen08..Screen14` filenames! Always import named `IOS_STEPS.*` constants from [`state/iosStepRegistry.ts`](./state/iosStepRegistry.ts) rather than hardcoding magic step numbers:
 
 | `currentStep` | Screen Component                   | Business Stage                                                              | Primary Next Transition                                              |
 | :-----------: | :--------------------------------- | :-------------------------------------------------------------------------- | :------------------------------------------------------------------- |
@@ -68,6 +68,7 @@ apps/web/app/ios-app/
 │   ├── useIosBookingList.ts          # Standalone booking list hook via apiClient.ios
 │   ├── useIosBillingCheckout.ts      # Upsell, checkout, tip & bonus hook (+ iosBillingCheckoutBuilders.ts)
 │   ├── iosBillingCheckoutBuilders.ts # Pure booking/billing transition builders for GoToBilling & Payment
+│   ├── iosStepRegistry.ts            # Canonical named IOS_STEPS (1..15) & resolveIosStepId helper
 │   ├── offlineSync.ts                # LocalStorage + IndexedDB progress snapshot & offline action replay
 │   └── mockData.ts                   # Shared type re-exports + demo dataset (?demo=1 only)
 ├── components/

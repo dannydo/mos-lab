@@ -1,12 +1,23 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { canSwitchIosBranch } from '@mos-lab/shared';
 import type { useIosAppState } from '../state/useIosAppState';
 import { IosProfileMenuSheet } from './ui-kit/IosProfileMenuSheet';
-import { IosSimulationWorkspaceBar } from './simulation/IosSimulationWorkspaceBar';
-import { IosSimulationHistorySheet } from './simulation/IosSimulationHistorySheet';
-import { IosCreateBookingSheet } from './modals/booking/IosCreateBookingSheet';
+
+const IosSimulationWorkspaceBar = dynamic(
+  () => import('./simulation/IosSimulationWorkspaceBar').then((m) => m.IosSimulationWorkspaceBar),
+  { ssr: false }
+);
+const IosSimulationHistorySheet = dynamic(
+  () => import('./simulation/IosSimulationHistorySheet').then((m) => m.IosSimulationHistorySheet),
+  { ssr: false }
+);
+const IosCreateBookingSheet = dynamic(
+  () => import('./modals/booking/IosCreateBookingSheet').then((m) => m.IosCreateBookingSheet),
+  { ssr: false }
+);
 
 interface IosAppGlobalOverlaysProps {
   state: ReturnType<typeof useIosAppState>;
@@ -56,23 +67,25 @@ export function IosAppGlobalOverlays({
 
   return (
     <>
-      <IosSimulationWorkspaceBar
-        isSimulationMode={state.isSimulationMode}
-        isReadOnlyMentorView={state.isReadOnlyMentorView}
-        simulationActorStaffName={state.simulationActorStaffName}
-        menteesList={state.menteesList}
-        selectedMenteeStaffId={state.selectedMenteeStaffId}
-        onSelectMentee={state.selectMenteeStaffId}
-        activeBooking={state.activeBooking}
-        currentStep={state.currentStep}
-        isBusy={state.isSimActionBusy}
-        simActionError={state.simActionError}
-        onDismissError={() => state.setSimActionError(null)}
-        onOpenHistory={state.openHistoryForBooking}
-        onRevertConsultation={state.handleSimRevertConsultation}
-        onResetToIncoming={state.handleSimResetToIncoming}
-        onExitSimulation={state.toggleSimulationMode}
-      />
+      {state.isSimulationMode && (
+        <IosSimulationWorkspaceBar
+          isSimulationMode={state.isSimulationMode}
+          isReadOnlyMentorView={state.isReadOnlyMentorView}
+          simulationActorStaffName={state.simulationActorStaffName}
+          menteesList={state.menteesList}
+          selectedMenteeStaffId={state.selectedMenteeStaffId}
+          onSelectMentee={state.selectMenteeStaffId}
+          activeBooking={state.activeBooking}
+          currentStep={state.currentStep}
+          isBusy={state.isSimActionBusy}
+          simActionError={state.simActionError}
+          onDismissError={() => state.setSimActionError(null)}
+          onOpenHistory={state.openHistoryForBooking}
+          onRevertConsultation={state.handleSimRevertConsultation}
+          onResetToIncoming={state.handleSimResetToIncoming}
+          onExitSimulation={state.toggleSimulationMode}
+        />
+      )}
 
       {children}
 
@@ -109,36 +122,40 @@ export function IosAppGlobalOverlays({
         onLogout={handleLogout}
       />
 
-      <IosCreateBookingSheet
-        isOpen={state.isCreateBookingOpen}
-        onClose={() => state.setIsCreateBookingOpen(false)}
-        isSimulationMode={state.isSimulationMode}
-        selectedStoreId={state.selectedStoreId}
-        branchName={state.currentBranch?.name}
-        targetDate={state.targetDateStr}
-        actorStaffId={state.actor?.staffId}
-        onCreated={state.handleBookingCreated}
-      />
+      {state.isCreateBookingOpen && (
+        <IosCreateBookingSheet
+          isOpen={state.isCreateBookingOpen}
+          onClose={() => state.setIsCreateBookingOpen(false)}
+          isSimulationMode={state.isSimulationMode}
+          selectedStoreId={state.selectedStoreId}
+          branchName={state.currentBranch?.name}
+          targetDate={state.targetDateStr}
+          actorStaffId={state.actor?.staffId}
+          onCreated={state.handleBookingCreated}
+        />
+      )}
 
-      <IosSimulationHistorySheet
-        isOpen={state.isHistorySheetOpen}
-        onClose={() => state.setIsHistorySheetOpen(false)}
-        booking={state.bookings.find((b) => Number(b.id) === Number(state.historyBookingId)) || state.activeBooking}
-        attempts={state.historyBookingId ? state.attemptsByBookingId[state.historyBookingId] || [] : []}
-        isLoading={state.historyLoading}
-        error={state.historyError}
-        isReadOnly={state.isReadOnlyMentorView}
-        isBusy={state.isSimActionBusy}
-        onRetryLoad={() => {
-          if (state.historyBookingId) {
-            void state.loadAttemptsForBooking(state.historyBookingId);
-          }
-        }}
-        onRevertConsultation={state.handleSimRevertConsultation}
-        onResetToIncoming={state.handleSimResetToIncoming}
-        onUpdateAttempt={state.handleUpdateSimulationAttempt}
-        onApplyAttempt={state.handleApplyAttemptToWorkspace}
-      />
+      {state.isHistorySheetOpen && (
+        <IosSimulationHistorySheet
+          isOpen={state.isHistorySheetOpen}
+          onClose={() => state.setIsHistorySheetOpen(false)}
+          booking={state.bookings.find((b) => Number(b.id) === Number(state.historyBookingId)) || state.activeBooking}
+          attempts={state.historyBookingId ? state.attemptsByBookingId[state.historyBookingId] || [] : []}
+          isLoading={state.historyLoading}
+          error={state.historyError}
+          isReadOnly={state.isReadOnlyMentorView}
+          isBusy={state.isSimActionBusy}
+          onRetryLoad={() => {
+            if (state.historyBookingId) {
+              void state.loadAttemptsForBooking(state.historyBookingId);
+            }
+          }}
+          onRevertConsultation={state.handleSimRevertConsultation}
+          onResetToIncoming={state.handleSimResetToIncoming}
+          onUpdateAttempt={state.handleUpdateSimulationAttempt}
+          onApplyAttempt={state.handleApplyAttemptToWorkspace}
+        />
+      )}
     </>
   );
 }

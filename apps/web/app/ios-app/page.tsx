@@ -4,6 +4,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { canSwitchIosBranch, hasCompleteNaturalLashSet, isDoneBookingPendingCheckout } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
+import { IOS_STEPS } from './state/iosStepRegistry';
 import { useIosSessionAuth } from './state/useIosSessionAuth';
 import { useIosFontScale } from './state/useIosFontScale';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
@@ -43,7 +44,7 @@ function IosAppInner() {
   const bookingIdStr = searchParams.get('bookingId');
   const isDemoMode = searchParams.get('demo') === '1' || searchParams.get('demo') === 'true';
   const isSimModeParam = searchParams.get('sim') === '1' || searchParams.get('sim') === 'true';
-  const initialStep = stepStr ? parseInt(stepStr, 10) : 1;
+  const initialStep = stepStr ? parseInt(stepStr, 10) : IOS_STEPS.INCOMING;
   const initialBookingId = bookingIdStr ? parseInt(bookingIdStr, 10) : undefined;
   const initialRole: IosUserRole =
     roleParam && ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'].includes(roleParam) ? roleParam : 'CVL';
@@ -53,7 +54,7 @@ function IosAppInner() {
   useIosSessionAuth(roleParam, state.setRole, setAuthorized);
 
   useEffect(() => {
-    if (!authorized || state.currentStep !== 6) return;
+    if (!authorized || state.currentStep !== IOS_STEPS.CV_RECEIVE) return;
     const candidate =
       state.bookings.find((b) => Number(b.id) === Number(state.activeBookingId)) ||
       (state.activeServicingBooking
@@ -61,7 +62,7 @@ function IosAppInner() {
         : null);
     if (!candidate || candidate.id <= 0) return;
     if (!hasCompleteNaturalLashSet(candidate) && !candidate.progress?.startedAt) {
-      state.handleOpenConsultation(6);
+      state.handleOpenConsultation(IOS_STEPS.CV_RECEIVE);
     }
   }, [
     authorized,
@@ -89,24 +90,24 @@ function IosAppInner() {
     state.setActiveBookingId(idNum);
     const target = state.bookings.find((b) => Number(b.id) === idNum);
     if (target && isDoneBookingPendingCheckout(target)) {
-      state.setCurrentStep(13);
+      state.setCurrentStep(IOS_STEPS.CHECKOUT);
     } else if (target?.status === 'DONE' || Boolean(target?.billing?.completedAt)) {
-      state.setCurrentStep(15);
+      state.setCurrentStep(IOS_STEPS.RECEIPT_DONE);
     } else if (target?.status === 'SERVICING') {
       const needsNaturalLashCheck = !hasCompleteNaturalLashSet(target) && !target.progress?.startedAt;
       const step = target.progress?.currentStep;
       if (needsNaturalLashCheck) {
-        state.handleOpenConsultation(6);
-      } else if (step && step >= 3 && step <= 14) {
+        state.handleOpenConsultation(IOS_STEPS.CV_RECEIVE);
+      } else if (step && step >= IOS_STEPS.CONSULTATION && step <= IOS_STEPS.CHECKOUT_TIP) {
         state.setCurrentStep(step);
       } else {
-        state.setCurrentStep(6);
+        state.setCurrentStep(IOS_STEPS.CV_RECEIVE);
       }
     } else if (target?.status === 'CHECKED_IN') {
-      state.setCurrentStep(3);
+      state.setCurrentStep(IOS_STEPS.CONSULTATION);
     } else {
       // Khách INCOMING / Chờ đón: Bắt buộc vào Step 2 (Check-in hồ sơ đón khách)
-      state.setCurrentStep(2);
+      state.setCurrentStep(IOS_STEPS.CHECK_IN);
     }
   };
 
@@ -200,7 +201,7 @@ function IosAppInner() {
           isDemoMode={isDemoMode}
           onBack={() => {
             state.setActiveTab('booking');
-            state.setCurrentStep(1);
+            state.setCurrentStep(IOS_STEPS.INCOMING);
           }}
           onOpenSettings={() => state.setIsSettingsOpen(true)}
         />
@@ -216,9 +217,9 @@ function IosAppInner() {
       state.activeBooking;
 
     switch (state.currentStep) {
-      case 1:
+      case IOS_STEPS.INCOMING:
         return renderIncomingBookingsScreen();
-      case 2:
+      case IOS_STEPS.CHECK_IN:
         return (
           <Screen02CheckInProfile
             booking={currentBooking}
@@ -234,7 +235,7 @@ function IosAppInner() {
             )}
             activeServicingCustomerName={state.activeServicingBooking?.customerName}
             onResumeServicing={() => state.handleResumeServicing()}
-            onBack={() => state.setCurrentStep(1)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.INCOMING)}
             onCheckIn={state.handleCheckIn}
             onQuickCheckIn={state.handleSaveConsultation}
             onSelectComboWallet={state.handleSelectComboWallet}
@@ -242,14 +243,14 @@ function IosAppInner() {
             onReferralConfirmed={state.setPendingReferral}
           />
         );
-      case 3:
+      case IOS_STEPS.CONSULTATION:
         return (
           <Screen03ConsultationMatrix
             booking={currentBooking}
             actor={state.actor}
             isAdmin={state.isAdmin}
             onRefreshDb={() => state.refreshDb()}
-            onBack={() => state.setCurrentStep(2)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.CHECK_IN)}
             onSave={state.handleSaveConsultation}
             onUpdateAvatar={state.handleUpdateCustomerAvatar}
             onAutoSaveDraft={state.handleAutoSaveConsultationDraft}
@@ -259,39 +260,39 @@ function IosAppInner() {
             onSelectComboWallet={state.handleSelectComboWallet}
           />
         );
-      case 4:
+      case IOS_STEPS.STAFF_ASSIGN:
         return (
           <Screen04StaffQueueAssign
             booking={currentBooking}
             currentBranch={state.currentBranch}
-            onBack={() => state.setCurrentStep(3)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.CONSULTATION)}
             onAssign={state.handleAssignStaff}
           />
         );
-      case 5:
+      case IOS_STEPS.TRANSFER:
         return (
           <Screen05ServicingTransfer
             booking={currentBooking}
             servicingBookings={state.bookings.filter((b) => b.status === 'SERVICING')}
             currentBranch={state.currentBranch}
-            onBack={() => state.setCurrentStep(4)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.STAFF_ASSIGN)}
             onTransferToCv={state.handleTransferToCv}
           />
         );
-      case 6:
+      case IOS_STEPS.CV_RECEIVE:
         return (
           <Screen06CvDashboardReceive
             booking={currentBooking}
             onStartTask={state.handleCvStartTask}
-            onEditService={() => state.handleOpenConsultation(6)}
+            onEditService={() => state.handleOpenConsultation(IOS_STEPS.CV_RECEIVE)}
             onBack={() => {
               state.setActiveTab('booking');
-              state.setCurrentStep(1);
+              state.setCurrentStep(IOS_STEPS.INCOMING);
             }}
             staffStats={state.staffStats}
           />
         );
-      case 7:
+      case IOS_STEPS.LASH_BEFORE:
         return (
           <Screen07LashProgressBefore
             booking={currentBooking}
@@ -301,11 +302,11 @@ function IosAppInner() {
             isSimulationMode={state.isSimulationMode}
           />
         );
-      case 8:
+      case IOS_STEPS.LASH_CLEANED:
         return (
           <Screen07bLashProgressCleaned
             booking={currentBooking}
-            onBack={() => state.setCurrentStep(7)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.LASH_BEFORE)}
             onSavePhoto={(photoUrl, retainLashes) => state.handleSaveCleanedPhoto(photoUrl, retainLashes)}
             onAutoSavePhoto={(url, retainLashes) =>
               state.handleAutoSavePhoto('cleaned', url, retainLashes ? { retainLashes } : undefined)
@@ -313,28 +314,28 @@ function IosAppInner() {
             isSimulationMode={state.isSimulationMode}
           />
         );
-      case 9:
+      case IOS_STEPS.LASH_TIMER:
         return (
           <Screen08LashProgressTimer
             booking={currentBooking}
-            onBack={() => state.setCurrentStep(8)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.LASH_CLEANED)}
             onFinishTimer={state.handleFinishTimer}
-            onEditService={() => state.handleOpenConsultation(9)}
+            onEditService={() => state.handleOpenConsultation(IOS_STEPS.LASH_TIMER)}
             isAdmin={state.isAdmin}
             onRevertToIncoming={state.handleRevertToIncoming}
           />
         );
-      case 10:
+      case IOS_STEPS.LASH_AFTER:
         return (
           <Screen09LashProgressAfter
             booking={currentBooking}
-            onBack={() => state.setCurrentStep(9)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.LASH_TIMER)}
             onSavePhoto={state.handleSaveAfterPhoto}
             onAutoSavePhoto={(url) => state.handleAutoSavePhoto('after', url)}
             isSimulationMode={state.isSimulationMode}
           />
         );
-      case 11:
+      case IOS_STEPS.CUSTOMER_SURVEY:
         return (
           <Screen10CustomerSurvey
             booking={currentBooking}
@@ -344,7 +345,7 @@ function IosAppInner() {
             onComplete={state.handleCompleteSurvey}
           />
         );
-      case 12:
+      case IOS_STEPS.PRODUCT_UPSELL:
         return (
           <Screen11ProductUpsell
             booking={currentBooking}
@@ -357,7 +358,7 @@ function IosAppInner() {
             onGoToBilling={state.handleGoToBilling}
           />
         );
-      case 13:
+      case IOS_STEPS.CHECKOUT:
         return (
           <Screen12CheckoutBilling
             booking={currentBooking}
@@ -366,9 +367,9 @@ function IosAppInner() {
             onBack={() => {
               if (isDoneBookingPendingCheckout(currentBooking)) {
                 state.setBookingSegment('DONE');
-                state.setCurrentStep(1);
+                state.setCurrentStep(IOS_STEPS.INCOMING);
               } else {
-                state.setCurrentStep(12);
+                state.setCurrentStep(IOS_STEPS.PRODUCT_UPSELL);
               }
             }}
             onChoosePayment={state.handleChoosePaymentMethod}
@@ -376,21 +377,21 @@ function IosAppInner() {
             onUpdateCartProducts={state.handleUpdateCartProducts}
             onSelectComboWallet={state.handleSelectComboWallet}
             onUpdateCombos={state.handleUpdateCombos}
-            onEditService={() => state.handleOpenConsultation(13)}
+            onEditService={() => state.handleOpenConsultation(IOS_STEPS.CHECKOUT)}
             pendingReferral={state.pendingReferral}
           />
         );
-      case 14:
+      case IOS_STEPS.CHECKOUT_TIP:
         return (
           <Screen13CheckoutTip
             booking={currentBooking}
             actor={state.actor}
             cvPlusRules={state.staffStats?.cvPlusRules}
-            onBack={() => state.setCurrentStep(13)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.CHECKOUT)}
             onRecordTip={state.handleRecordTip}
           />
         );
-      case 15:
+      case IOS_STEPS.RECEIPT_DONE:
         return (
           <Screen14ThermalReceiptDone
             booking={currentBooking}
@@ -417,7 +418,7 @@ function IosAppInner() {
             onBack={() => {
               state.setActiveServicingBookingId(null);
               state.setBookingSegment('DONE');
-              state.setCurrentStep(1);
+              state.setCurrentStep(IOS_STEPS.INCOMING);
             }}
           />
         );
@@ -427,7 +428,10 @@ function IosAppInner() {
   };
 
   const showTabBar =
-    !state.isSettingsOpen && (state.activeTab === 'paystub' || state.currentStep === 1 || state.currentStep === 6);
+    !state.isSettingsOpen &&
+    (state.activeTab === 'paystub' ||
+      state.currentStep === IOS_STEPS.INCOMING ||
+      state.currentStep === IOS_STEPS.CV_RECEIVE);
 
   const handleTabChange = (tab: string) => {
     state.setActiveTab(tab);
@@ -437,12 +441,12 @@ function IosAppInner() {
     }
 
     if (tab === 'booking') {
-      state.setCurrentStep(1);
+      state.setCurrentStep(IOS_STEPS.INCOMING);
     } else if (tab === 'task') {
       if (state.activeServicingBooking) {
         state.handleResumeServicing(state.activeServicingBooking.id);
       } else {
-        state.setCurrentStep(6);
+        state.setCurrentStep(IOS_STEPS.CV_RECEIVE);
       }
     } else if (tab === 'paystub') {
       state.setActiveTab('paystub');
@@ -484,7 +488,7 @@ function IosAppInner() {
                   state.handleResumeServicing(state.activeServicingBooking.id);
                 } else {
                   state.setActiveTab('booking');
-                  state.setCurrentStep(3);
+                  state.setCurrentStep(IOS_STEPS.CONSULTATION);
                 }
               }}
               badgeCounts={{

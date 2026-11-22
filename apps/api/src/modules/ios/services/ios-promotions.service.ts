@@ -131,6 +131,47 @@ export async function fetchIosPromotionsForActor(
   return rows.map(mapRawPromotionRow);
 }
 
+interface PromotionCacheEntry {
+  option: IosPromotionOption | null;
+  expiresAt: number;
+}
+
+const PROMOTION_BY_ID_CACHE_TTL_MS = 60_000;
+let promotionByIdCacheByPool = new WeakMap<object, Map<number, PromotionCacheEntry>>();
+
+function isWeakMapKey(value: unknown): value is object {
+  return (typeof value === 'object' || typeof value === 'function') && value !== null;
+}
+
+function getPromotionPoolCache(pool: object): Map<number, PromotionCacheEntry> {
+  let poolMap = promotionByIdCacheByPool.get(pool);
+  if (!poolMap) {
+    poolMap = new Map<number, PromotionCacheEntry>();
+    promotionByIdCacheByPool.set(pool, poolMap);
+  }
+  return poolMap;
+}
+
+export function invalidatePromotionsByIdsCache(promotionIds?: number[], pool?: mysql.Pool): void {
+  if (isWeakMapKey(pool)) {
+    const poolMap = promotionByIdCacheByPool.get(pool);
+    if (!poolMap) return;
+    if (!promotionIds || promotionIds.length === 0) {
+      poolMap.clear();
+      return;
+    }
+    for (const rawId of promotionIds) {
+      const id = Number(rawId);
+      if (Number.isFinite(id) && id > 0) {
+        poolMap.delete(id);
+      }
+    }
+    return;
+  }
+
+  promotionByIdCacheByPool = new WeakMap<object, Map<number, PromotionCacheEntry>>();
+}
+
 export async function fetchPromotionsByIds(
   pool: mysql.Pool,
   promotionIds: number[]
@@ -141,8 +182,25 @@ export async function fetchPromotionsByIds(
   );
   if (uniqueIds.length === 0) return result;
 
+  const now = Date.now();
+  const poolCache = isWeakMapKey(pool) ? getPromotionPoolCache(pool) : null;
+  const missingIds: number[] = [];
+
+  for (const id of uniqueIds) {
+    const cached = poolCache?.get(id);
+    if (cached && cached.expiresAt > now) {
+      if (cached.option) {
+        result.set(id, cached.option);
+      }
+      continue;
+    }
+    missingIds.push(id);
+  }
+
+  if (missingIds.length === 0) return result;
+
   try {
-    const placeholders = uniqueIds.map(() => '?').join(',');
+    const placeholders = missingIds.map(() => '?').join(',');
     const sql = `
       SELECT
         p.id,
@@ -167,10 +225,19 @@ export async function fetchPromotionsByIds(
       LEFT JOIN promotion_language pl ON pl.promotion_id = p.id AND pl.language_id = 1
       WHERE p.id IN (${placeholders})
     `;
-    const [rows] = await pool.query<RawPromotionRow[]>(sql, uniqueIds);
+    const [rows] = await pool.query<RawPromotionRow[]>(sql, missingIds);
+    const expiresAt = Date.now() + PROMOTION_BY_ID_CACHE_TTL_MS;
+    const foundIds = new Set<number>();
     for (const row of rows) {
       const mapped = mapRawPromotionRow(row);
+      foundIds.add(mapped.promotionId);
       result.set(mapped.promotionId, mapped);
+      poolCache?.set(mapped.promotionId, { option: mapped, expiresAt });
+    }
+    for (const id of missingIds) {
+      if (!foundIds.has(id)) {
+        poolCache?.set(id, { option: null, expiresAt });
+      }
     }
   } catch {
     // Graceful fallback if legacy table unavailable in mock/test runs

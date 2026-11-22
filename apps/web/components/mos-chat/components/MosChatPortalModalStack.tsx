@@ -120,65 +120,77 @@ export const MosChatPortalModalStack: React.FC<MosChatPortalModalStackProps> = (
   missionActions,
 }) => (
   <>
-    <MosChatNotificationSettingsModal
-      open={spacesDock.notifSettingsModalOpen}
-      onClose={() => spacesDock.setNotifSettingsModalOpen(false)}
-      userPrefs={sidebarPrefs.userPrefs}
-      conversations={sidebarPrefs.allUserConversations}
-      onChangeGlobalMode={sidebarActions.handleChangeGlobalNotificationMode}
-      onChangeChannelOverride={sidebarActions.handleChangeChannelNotificationOverride}
-      themeMode={themeMode}
-    />
+    {spacesDock.notifSettingsModalOpen && (
+      <MosChatNotificationSettingsModal
+        open={spacesDock.notifSettingsModalOpen}
+        onClose={() => spacesDock.setNotifSettingsModalOpen(false)}
+        userPrefs={sidebarPrefs.userPrefs}
+        conversations={sidebarPrefs.allUserConversations}
+        onChangeGlobalMode={sidebarActions.handleChangeGlobalNotificationMode}
+        onChangeChannelOverride={sidebarActions.handleChangeChannelNotificationOverride}
+        themeMode={themeMode}
+      />
+    )}
 
-    <MosChatSearchModal
-      open={navActions.searchModalOpen}
-      onClose={() => navActions.setSearchModalOpen(false)}
-      activeConversation={sidebarPrefs.activeConversation}
-      onSelectMessage={navActions.handleSelectSearchResult}
-    />
+    {navActions.searchModalOpen && (
+      <MosChatSearchModal
+        open={navActions.searchModalOpen}
+        onClose={() => navActions.setSearchModalOpen(false)}
+        activeConversation={sidebarPrefs.activeConversation}
+        onSelectMessage={navActions.handleSelectSearchResult}
+      />
+    )}
 
-    <MosChatAiAuditReasonModal
-      open={Boolean(aiAccess.aiAuditPrompt)}
-      loading={aiAccess.aiAuditLoading}
-      onCancel={() => aiAccess.setAiAuditPrompt(null)}
-      onConfirm={(reason) => void aiAccess.handleConfirmAiAudit(reason)}
-    />
-    <MosChatAiSessionsModal
-      open={aiAccess.aiSessionsModalOpen}
-      onClose={() => aiAccess.setAiSessionsModalOpen(false)}
-      activeSessionId={aiAccess.aiSessionId}
-      onSelectSession={(sessionId) => {
-        aiAccess.setAiSessionsModalOpen(false);
-        void aiAccess.openAiSessionById(sessionId);
-      }}
-    />
-    <MosChatReactionUsersModal
-      open={msgMutations.reactionUsersModalOpen}
-      target={msgMutations.reactionUsersTarget}
-      onClose={msgMutations.handleCloseReactionUsers}
-      currentUser={currentUser}
-      staffDirectory={staffDirectory}
-      onToggleReaction={msgMutations.handleToggleReaction}
-      isDark={isDark}
-    />
+    {Boolean(aiAccess.aiAuditPrompt) && (
+      <MosChatAiAuditReasonModal
+        open={Boolean(aiAccess.aiAuditPrompt)}
+        loading={aiAccess.aiAuditLoading}
+        onCancel={() => aiAccess.setAiAuditPrompt(null)}
+        onConfirm={(reason) => void aiAccess.handleConfirmAiAudit(reason)}
+      />
+    )}
+    {aiAccess.aiSessionsModalOpen && (
+      <MosChatAiSessionsModal
+        open={aiAccess.aiSessionsModalOpen}
+        onClose={() => aiAccess.setAiSessionsModalOpen(false)}
+        activeSessionId={aiAccess.aiSessionId}
+        onSelectSession={(sessionId) => {
+          aiAccess.setAiSessionsModalOpen(false);
+          void aiAccess.openAiSessionById(sessionId);
+        }}
+      />
+    )}
+    {msgMutations.reactionUsersModalOpen && (
+      <MosChatReactionUsersModal
+        open={msgMutations.reactionUsersModalOpen}
+        target={msgMutations.reactionUsersTarget}
+        onClose={msgMutations.handleCloseReactionUsers}
+        currentUser={currentUser}
+        staffDirectory={staffDirectory}
+        onToggleReaction={msgMutations.handleToggleReaction}
+        isDark={isDark}
+      />
+    )}
 
-    <MosChatForwardModal
-      open={Boolean(navActions.forwardModalTarget)}
-      onClose={() => navActions.setForwardModalTarget(null)}
-      sourceConversation={
-        sidebarPrefs.allUserConversations.find((c) => c.id === navActions.forwardModalTarget?.sourceConversationId) ||
-        sidebarPrefs.activeConversation
-      }
-      sourceMessage={navActions.forwardModalTarget?.message || null}
-      sourceReply={navActions.forwardModalTarget?.reply || null}
-      conversations={sidebarPrefs.allUserConversations}
-      staffDirectory={staffDirectory}
-      currentUser={currentUser}
-      pinnedIds={sidebarPrefs.userPrefs.pinnedIds}
-      isDark={isDark}
-      onSubmit={navActions.handleForwardMessage}
-      onNavigateToConversation={(cid) => navActions.navigateToMessage(cid)}
-    />
+    {Boolean(navActions.forwardModalTarget) && (
+      <MosChatForwardModal
+        open={Boolean(navActions.forwardModalTarget)}
+        onClose={() => navActions.setForwardModalTarget(null)}
+        sourceConversation={
+          sidebarPrefs.allUserConversations.find((c) => c.id === navActions.forwardModalTarget?.sourceConversationId) ||
+          sidebarPrefs.activeConversation
+        }
+        sourceMessage={navActions.forwardModalTarget?.message || null}
+        sourceReply={navActions.forwardModalTarget?.reply || null}
+        conversations={sidebarPrefs.allUserConversations}
+        staffDirectory={staffDirectory}
+        currentUser={currentUser}
+        pinnedIds={sidebarPrefs.userPrefs.pinnedIds}
+        isDark={isDark}
+        onSubmit={navActions.handleForwardMessage}
+        onNavigateToConversation={(cid) => navActions.navigateToMessage(cid)}
+      />
+    )}
 
     <MosChatModals
       isDark={isDark}
