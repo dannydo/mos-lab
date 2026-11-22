@@ -23997,323 +23997,11 @@
       }
     },
     {
-      "id": "type:@mos-lab/shared:BucketType",
-      "type": "SharedType",
-      "label": "BucketType",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BucketType",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BookingUserServiceType",
-      "type": "SharedType",
-      "label": "BookingUserServiceType",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BookingUserServiceType",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BookingServiceStatus",
-      "type": "SharedType",
-      "label": "BookingServiceStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BookingServiceStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:TouchpointStatus",
-      "type": "SharedType",
-      "label": "TouchpointStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "TouchpointStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:LocaTouchpointState",
-      "type": "SharedType",
-      "label": "LocaTouchpointState",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "LocaTouchpointState",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:Customer",
-      "type": "SharedType",
-      "label": "Customer",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "Customer",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CustomerElsaReservation",
-      "type": "SharedType",
-      "label": "CustomerElsaReservation",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CustomerElsaReservation",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CreateElsaReservationInput",
-      "type": "SharedType",
-      "label": "CreateElsaReservationInput",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CreateElsaReservationInput",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:ReleaseElsaReservationInput",
-      "type": "SharedType",
-      "label": "ReleaseElsaReservationInput",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "ReleaseElsaReservationInput",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CustomerStats",
-      "type": "SharedType",
-      "label": "CustomerStats",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CustomerStats",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CreateCustomerInput",
-      "type": "SharedType",
-      "label": "CreateCustomerInput",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CreateCustomerInput",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CreateCustomerResponse",
-      "type": "SharedType",
-      "label": "CreateCustomerResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CreateCustomerResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CustomerCreationOptionsResponse",
-      "type": "SharedType",
-      "label": "CustomerCreationOptionsResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CustomerCreationOptionsResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:DailyActivity",
-      "type": "SharedType",
-      "label": "DailyActivity",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "DailyActivity",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CustomerWeeklyProgress",
-      "type": "SharedType",
-      "label": "CustomerWeeklyProgress",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CustomerWeeklyProgress",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:ListCustomersParams",
-      "type": "SharedType",
-      "label": "ListCustomersParams",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "ListCustomersParams",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CustomerServiceFilterOption",
-      "type": "SharedType",
-      "label": "CustomerServiceFilterOption",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CustomerServiceFilterOption",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CustomerServiceFilterCategory",
-      "type": "SharedType",
-      "label": "CustomerServiceFilterCategory",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CustomerServiceFilterCategory",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CustomerServiceFilterOptionsResponse",
-      "type": "SharedType",
-      "label": "CustomerServiceFilterOptionsResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CustomerServiceFilterOptionsResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:ListCustomersResponse",
-      "type": "SharedType",
-      "label": "ListCustomersResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "ListCustomersResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CustomerStatsResponse",
-      "type": "SharedType",
-      "label": "CustomerStatsResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CustomerStatsResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BulkDeleteCustomersRequest",
-      "type": "SharedType",
-      "label": "BulkDeleteCustomersRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BulkDeleteCustomersRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BulkDeleteCustomersResponse",
-      "type": "SharedType",
-      "label": "BulkDeleteCustomersResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BulkDeleteCustomersResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:LashSpecification",
-      "type": "SharedType",
-      "label": "LashSpecification",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "LashSpecification",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:Appointment",
-      "type": "SharedType",
-      "label": "Appointment",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "Appointment",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CustomerHistoryEntry",
-      "type": "SharedType",
-      "label": "CustomerHistoryEntry",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CustomerHistoryEntry",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
       "id": "type:@mos-lab/shared:AssignmentHistoryBatch",
       "type": "SharedType",
       "label": "AssignmentHistoryBatch",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-allocation-activity.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AssignmentHistoryBatch",
@@ -24325,7 +24013,7 @@
       "type": "SharedType",
       "label": "RevokePreviewResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-allocation-activity.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "RevokePreviewResponse",
@@ -24337,7 +24025,7 @@
       "type": "SharedType",
       "label": "RandomIdsResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-allocation-activity.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "RandomIdsResponse",
@@ -24349,7 +24037,7 @@
       "type": "SharedType",
       "label": "CustomerAssignmentTimelineItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-allocation-activity.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CustomerAssignmentTimelineItem",
@@ -24361,7 +24049,7 @@
       "type": "SharedType",
       "label": "AssignmentHistoryResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-allocation-activity.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AssignmentHistoryResponse",
@@ -24373,7 +24061,7 @@
       "type": "SharedType",
       "label": "AssignmentHistoryDetail",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-allocation-activity.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AssignmentHistoryDetail",
@@ -24385,286 +24073,10 @@
       "type": "SharedType",
       "label": "AssignmentHistoryDetailsResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-allocation-activity.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AssignmentHistoryDetailsResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:Referral",
-      "type": "SharedType",
-      "label": "Referral",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "Referral",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AppointmentSummary",
-      "type": "SharedType",
-      "label": "AppointmentSummary",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AppointmentSummary",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:ListAppointmentsResponse",
-      "type": "SharedType",
-      "label": "ListAppointmentsResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "ListAppointmentsResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CustomerNote",
-      "type": "SharedType",
-      "label": "CustomerNote",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CustomerNote",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:ComboBalance",
-      "type": "SharedType",
-      "label": "ComboBalance",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "ComboBalance",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:DetailedCustomerResponse",
-      "type": "SharedType",
-      "label": "DetailedCustomerResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "DetailedCustomerResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:Promotion",
-      "type": "SharedType",
-      "label": "Promotion",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "Promotion",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UpdateBookingRequest",
-      "type": "SharedType",
-      "label": "UpdateBookingRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UpdateBookingRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BookingRescheduleEligibilityResponse",
-      "type": "SharedType",
-      "label": "BookingRescheduleEligibilityResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BookingRescheduleEligibilityResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:Service",
-      "type": "SharedType",
-      "label": "Service",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "Service",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MissedReasonCategory",
-      "type": "SharedType",
-      "label": "MissedReasonCategory",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MissedReasonCategory",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MissedResponsibility",
-      "type": "SharedType",
-      "label": "MissedResponsibility",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MissedResponsibility",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MissedFollowUpStatus",
-      "type": "SharedType",
-      "label": "MissedFollowUpStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MissedFollowUpStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MissedLog",
-      "type": "SharedType",
-      "label": "MissedLog",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MissedLog",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MissedReasonBreakdownItem",
-      "type": "SharedType",
-      "label": "MissedReasonBreakdownItem",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MissedReasonBreakdownItem",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MissedResponsibilityBreakdownItem",
-      "type": "SharedType",
-      "label": "MissedResponsibilityBreakdownItem",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MissedResponsibilityBreakdownItem",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MissedFollowUpBreakdownItem",
-      "type": "SharedType",
-      "label": "MissedFollowUpBreakdownItem",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MissedFollowUpBreakdownItem",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MissedSummaryStats",
-      "type": "SharedType",
-      "label": "MissedSummaryStats",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MissedSummaryStats",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:SaveMissedLogInput",
-      "type": "SharedType",
-      "label": "SaveMissedLogInput",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "SaveMissedLogInput",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BookingActionType",
-      "type": "SharedType",
-      "label": "BookingActionType",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BookingActionType",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BookingAuditLog",
-      "type": "SharedType",
-      "label": "BookingAuditLog",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BookingAuditLog",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BookingAuditLogFilter",
-      "type": "SharedType",
-      "label": "BookingAuditLogFilter",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BookingAuditLogFilter",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BookingAuditSummary",
-      "type": "SharedType",
-      "label": "BookingAuditSummary",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BookingAuditSummary",
         "package": "@mos-lab/shared"
       }
     },
@@ -24673,7 +24085,7 @@
       "type": "SharedType",
       "label": "LocaStaffActivityStats",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-allocation-activity.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "LocaStaffActivityStats",
@@ -24685,7 +24097,7 @@
       "type": "SharedType",
       "label": "LocaStaffActivityLogItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-allocation-activity.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "LocaStaffActivityLogItem",
@@ -24697,10 +24109,598 @@
       "type": "SharedType",
       "label": "LocaStaffActivityResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-allocation-activity.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "LocaStaffActivityResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:LashSpecification",
+      "type": "SharedType",
+      "label": "LashSpecification",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "LashSpecification",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:Appointment",
+      "type": "SharedType",
+      "label": "Appointment",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "Appointment",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AppointmentSummary",
+      "type": "SharedType",
+      "label": "AppointmentSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AppointmentSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ListAppointmentsResponse",
+      "type": "SharedType",
+      "label": "ListAppointmentsResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ListAppointmentsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:Promotion",
+      "type": "SharedType",
+      "label": "Promotion",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "Promotion",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateBookingRequest",
+      "type": "SharedType",
+      "label": "UpdateBookingRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateBookingRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BookingRescheduleEligibilityResponse",
+      "type": "SharedType",
+      "label": "BookingRescheduleEligibilityResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BookingRescheduleEligibilityResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:Service",
+      "type": "SharedType",
+      "label": "Service",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "Service",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MissedReasonCategory",
+      "type": "SharedType",
+      "label": "MissedReasonCategory",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MissedReasonCategory",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MissedResponsibility",
+      "type": "SharedType",
+      "label": "MissedResponsibility",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MissedResponsibility",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MissedFollowUpStatus",
+      "type": "SharedType",
+      "label": "MissedFollowUpStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MissedFollowUpStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MissedLog",
+      "type": "SharedType",
+      "label": "MissedLog",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MissedLog",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MissedReasonBreakdownItem",
+      "type": "SharedType",
+      "label": "MissedReasonBreakdownItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MissedReasonBreakdownItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MissedResponsibilityBreakdownItem",
+      "type": "SharedType",
+      "label": "MissedResponsibilityBreakdownItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MissedResponsibilityBreakdownItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MissedFollowUpBreakdownItem",
+      "type": "SharedType",
+      "label": "MissedFollowUpBreakdownItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MissedFollowUpBreakdownItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MissedSummaryStats",
+      "type": "SharedType",
+      "label": "MissedSummaryStats",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MissedSummaryStats",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SaveMissedLogInput",
+      "type": "SharedType",
+      "label": "SaveMissedLogInput",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SaveMissedLogInput",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BookingActionType",
+      "type": "SharedType",
+      "label": "BookingActionType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BookingActionType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BookingAuditLog",
+      "type": "SharedType",
+      "label": "BookingAuditLog",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BookingAuditLog",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BookingAuditLogFilter",
+      "type": "SharedType",
+      "label": "BookingAuditLogFilter",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BookingAuditLogFilter",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BookingAuditSummary",
+      "type": "SharedType",
+      "label": "BookingAuditSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BookingAuditSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BucketType",
+      "type": "SharedType",
+      "label": "BucketType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BucketType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BookingUserServiceType",
+      "type": "SharedType",
+      "label": "BookingUserServiceType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BookingUserServiceType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BookingServiceStatus",
+      "type": "SharedType",
+      "label": "BookingServiceStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BookingServiceStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TouchpointStatus",
+      "type": "SharedType",
+      "label": "TouchpointStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TouchpointStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:LocaTouchpointState",
+      "type": "SharedType",
+      "label": "LocaTouchpointState",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "LocaTouchpointState",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:Customer",
+      "type": "SharedType",
+      "label": "Customer",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "Customer",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CustomerElsaReservation",
+      "type": "SharedType",
+      "label": "CustomerElsaReservation",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CustomerElsaReservation",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateElsaReservationInput",
+      "type": "SharedType",
+      "label": "CreateElsaReservationInput",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateElsaReservationInput",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ReleaseElsaReservationInput",
+      "type": "SharedType",
+      "label": "ReleaseElsaReservationInput",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ReleaseElsaReservationInput",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CustomerStats",
+      "type": "SharedType",
+      "label": "CustomerStats",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CustomerStats",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateCustomerInput",
+      "type": "SharedType",
+      "label": "CreateCustomerInput",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateCustomerInput",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateCustomerResponse",
+      "type": "SharedType",
+      "label": "CreateCustomerResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateCustomerResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CustomerCreationOptionsResponse",
+      "type": "SharedType",
+      "label": "CustomerCreationOptionsResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CustomerCreationOptionsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:DailyActivity",
+      "type": "SharedType",
+      "label": "DailyActivity",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "DailyActivity",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CustomerWeeklyProgress",
+      "type": "SharedType",
+      "label": "CustomerWeeklyProgress",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CustomerWeeklyProgress",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ListCustomersParams",
+      "type": "SharedType",
+      "label": "ListCustomersParams",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ListCustomersParams",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CustomerServiceFilterOption",
+      "type": "SharedType",
+      "label": "CustomerServiceFilterOption",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CustomerServiceFilterOption",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CustomerServiceFilterCategory",
+      "type": "SharedType",
+      "label": "CustomerServiceFilterCategory",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CustomerServiceFilterCategory",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CustomerServiceFilterOptionsResponse",
+      "type": "SharedType",
+      "label": "CustomerServiceFilterOptionsResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CustomerServiceFilterOptionsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ListCustomersResponse",
+      "type": "SharedType",
+      "label": "ListCustomersResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ListCustomersResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CustomerStatsResponse",
+      "type": "SharedType",
+      "label": "CustomerStatsResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CustomerStatsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BulkDeleteCustomersRequest",
+      "type": "SharedType",
+      "label": "BulkDeleteCustomersRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BulkDeleteCustomersRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BulkDeleteCustomersResponse",
+      "type": "SharedType",
+      "label": "BulkDeleteCustomersResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BulkDeleteCustomersResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CustomerHistoryEntry",
+      "type": "SharedType",
+      "label": "CustomerHistoryEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CustomerHistoryEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:Referral",
+      "type": "SharedType",
+      "label": "Referral",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "Referral",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CustomerNote",
+      "type": "SharedType",
+      "label": "CustomerNote",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CustomerNote",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ComboBalance",
+      "type": "SharedType",
+      "label": "ComboBalance",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ComboBalance",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:DetailedCustomerResponse",
+      "type": "SharedType",
+      "label": "DetailedCustomerResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-detail-slots.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "DetailedCustomerResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -24709,7 +24709,7 @@
       "type": "SharedType",
       "label": "LashSetDetail",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-detail-slots.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "LashSetDetail",
@@ -24721,7 +24721,7 @@
       "type": "SharedType",
       "label": "SlotBookingInfo",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-detail-slots.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SlotBookingInfo",
@@ -24733,7 +24733,7 @@
       "type": "SharedType",
       "label": "SlotMatrixCell",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-detail-slots.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SlotMatrixCell",
@@ -24745,7 +24745,7 @@
       "type": "SharedType",
       "label": "SlotMatrixMap",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/customer.ts",
+      "filePath": "packages/shared/src/types/customer/customer-detail-slots.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SlotMatrixMap",
@@ -46771,6 +46771,58 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/services/bk-leaderboard/bk-leaderboard.types.ts",
+      "type": "File",
+      "label": "bk-leaderboard.types.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard/bk-leaderboard.types.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1733,
+        "lineCount": 74,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/bk-leaderboard/booking-leaderboard.ts",
+      "type": "File",
+      "label": "booking-leaderboard.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard/booking-leaderboard.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9219,
+        "lineCount": 245,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/bk-leaderboard/done-leaderboard.ts",
+      "type": "File",
+      "label": "done-leaderboard.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard/done-leaderboard.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15359,
+        "lineCount": 361,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/bk-leaderboard/revenue-leaderboard.ts",
+      "type": "File",
+      "label": "revenue-leaderboard.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard/revenue-leaderboard.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7715,
+        "lineCount": 200,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/services/bk-leaderboard.service.test.ts",
       "type": "File",
       "label": "bk-leaderboard.service.test.ts",
@@ -46791,8 +46843,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 34198,
-        "lineCount": 867,
+        "sizeBytes": 2338,
+        "lineCount": 72,
         "ext": ".ts"
       }
     },
@@ -46888,6 +46940,45 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/services/cb-live-telemetry/cb-drilldown.ts",
+      "type": "File",
+      "label": "cb-drilldown.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cb-live-telemetry/cb-drilldown.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7071,
+        "lineCount": 171,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/cb-live-telemetry/cb-target-config.ts",
+      "type": "File",
+      "label": "cb-target-config.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cb-live-telemetry/cb-target-config.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5602,
+        "lineCount": 166,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/cb-live-telemetry/cb-telemetry-daily-forecast.ts",
+      "type": "File",
+      "label": "cb-telemetry-daily-forecast.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cb-live-telemetry/cb-telemetry-daily-forecast.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10457,
+        "lineCount": 260,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.test.ts",
       "type": "File",
       "label": "cb-live-telemetry.service.test.ts",
@@ -46908,8 +46999,8 @@
       "filePath": "apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 35964,
-        "lineCount": 869,
+        "sizeBytes": 15258,
+        "lineCount": 388,
         "ext": ".ts"
       }
     },
@@ -61526,6 +61617,58 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/customer/customer-allocation-activity.types.ts",
+      "type": "File",
+      "label": "customer-allocation-activity.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/customer/customer-allocation-activity.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 3592,
+        "lineCount": 150,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "type": "File",
+      "label": "customer-booking-missed.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/customer/customer-booking-missed.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 8086,
+        "lineCount": 282,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/customer/customer-core.types.ts",
+      "type": "File",
+      "label": "customer-core.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 9353,
+        "lineCount": 353,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/customer/customer-detail-slots.types.ts",
+      "type": "File",
+      "label": "customer-detail-slots.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/customer/customer-detail-slots.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 1987,
+        "lineCount": 77,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/customer.ts",
       "type": "File",
       "label": "customer.ts",
@@ -61533,8 +61676,8 @@
       "filePath": "packages/shared/src/types/customer.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 22784,
-        "lineCount": 858,
+        "sizeBytes": 237,
+        "lineCount": 5,
         "ext": ".ts"
       }
     },
@@ -74916,6 +75059,223 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:AssignmentHistoryBatch:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AssignmentHistoryBatch",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:RevokePreviewResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:RevokePreviewResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:RandomIdsResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:RandomIdsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CustomerAssignmentTimelineItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CustomerAssignmentTimelineItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AssignmentHistoryResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AssignmentHistoryResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AssignmentHistoryDetail:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AssignmentHistoryDetail",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AssignmentHistoryDetailsResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AssignmentHistoryDetailsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:LocaStaffActivityStats:ws:packages/shared",
+      "source": "type:@mos-lab/shared:LocaStaffActivityStats",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:LocaStaffActivityLogItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:LocaStaffActivityLogItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:LocaStaffActivityResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:LocaStaffActivityResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:LashSpecification:ws:packages/shared",
+      "source": "type:@mos-lab/shared:LashSpecification",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:Appointment:ws:packages/shared",
+      "source": "type:@mos-lab/shared:Appointment",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AppointmentSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AppointmentSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ListAppointmentsResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ListAppointmentsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:Promotion:ws:packages/shared",
+      "source": "type:@mos-lab/shared:Promotion",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdateBookingRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateBookingRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BookingRescheduleEligibilityResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BookingRescheduleEligibilityResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:Service:ws:packages/shared",
+      "source": "type:@mos-lab/shared:Service",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MissedReasonCategory:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MissedReasonCategory",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MissedResponsibility:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MissedResponsibility",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MissedFollowUpStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MissedFollowUpStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MissedLog:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MissedLog",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MissedReasonBreakdownItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MissedReasonBreakdownItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MissedResponsibilityBreakdownItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MissedResponsibilityBreakdownItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MissedFollowUpBreakdownItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MissedFollowUpBreakdownItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MissedSummaryStats:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MissedSummaryStats",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SaveMissedLogInput:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SaveMissedLogInput",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BookingActionType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BookingActionType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BookingAuditLog:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BookingAuditLog",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BookingAuditLogFilter:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BookingAuditLogFilter",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BookingAuditSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BookingAuditSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:BucketType:ws:packages/shared",
       "source": "type:@mos-lab/shared:BucketType",
       "target": "ws:packages/shared",
@@ -75077,20 +75437,6 @@
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:LashSpecification:ws:packages/shared",
-      "source": "type:@mos-lab/shared:LashSpecification",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:Appointment:ws:packages/shared",
-      "source": "type:@mos-lab/shared:Appointment",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
       "id": "edge:type:@mos-lab/shared:CustomerHistoryEntry:ws:packages/shared",
       "source": "type:@mos-lab/shared:CustomerHistoryEntry",
       "target": "ws:packages/shared",
@@ -75098,71 +75444,8 @@
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:AssignmentHistoryBatch:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AssignmentHistoryBatch",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:RevokePreviewResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:RevokePreviewResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:RandomIdsResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:RandomIdsResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:CustomerAssignmentTimelineItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:CustomerAssignmentTimelineItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AssignmentHistoryResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AssignmentHistoryResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AssignmentHistoryDetail:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AssignmentHistoryDetail",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AssignmentHistoryDetailsResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AssignmentHistoryDetailsResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
       "id": "edge:type:@mos-lab/shared:Referral:ws:packages/shared",
       "source": "type:@mos-lab/shared:Referral",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AppointmentSummary:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AppointmentSummary",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:ListAppointmentsResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:ListAppointmentsResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -75184,146 +75467,6 @@
     {
       "id": "edge:type:@mos-lab/shared:DetailedCustomerResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:DetailedCustomerResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:Promotion:ws:packages/shared",
-      "source": "type:@mos-lab/shared:Promotion",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:UpdateBookingRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UpdateBookingRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:BookingRescheduleEligibilityResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:BookingRescheduleEligibilityResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:Service:ws:packages/shared",
-      "source": "type:@mos-lab/shared:Service",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MissedReasonCategory:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MissedReasonCategory",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MissedResponsibility:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MissedResponsibility",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MissedFollowUpStatus:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MissedFollowUpStatus",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MissedLog:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MissedLog",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MissedReasonBreakdownItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MissedReasonBreakdownItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MissedResponsibilityBreakdownItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MissedResponsibilityBreakdownItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MissedFollowUpBreakdownItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MissedFollowUpBreakdownItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MissedSummaryStats:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MissedSummaryStats",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:SaveMissedLogInput:ws:packages/shared",
-      "source": "type:@mos-lab/shared:SaveMissedLogInput",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:BookingActionType:ws:packages/shared",
-      "source": "type:@mos-lab/shared:BookingActionType",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:BookingAuditLog:ws:packages/shared",
-      "source": "type:@mos-lab/shared:BookingAuditLog",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:BookingAuditLogFilter:ws:packages/shared",
-      "source": "type:@mos-lab/shared:BookingAuditLogFilter",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:BookingAuditSummary:ws:packages/shared",
-      "source": "type:@mos-lab/shared:BookingAuditSummary",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:LocaStaffActivityStats:ws:packages/shared",
-      "source": "type:@mos-lab/shared:LocaStaffActivityStats",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:LocaStaffActivityLogItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:LocaStaffActivityLogItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:LocaStaffActivityResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:LocaStaffActivityResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -90932,8 +91075,29 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-leaderboard.service.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-leaderboard/bk-leaderboard.types.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/bk-leaderboard/bk-leaderboard.types.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-leaderboard/booking-leaderboard.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/bk-leaderboard/booking-leaderboard.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-leaderboard/done-leaderboard.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/bk-leaderboard/done-leaderboard.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-leaderboard/revenue-leaderboard.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/bk-leaderboard/revenue-leaderboard.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -90969,6 +91133,27 @@
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-salary-config-and-rules.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-salary-config-and-rules.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cb-live-telemetry/cb-drilldown.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cb-live-telemetry/cb-drilldown.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cb-live-telemetry/cb-target-config.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cb-live-telemetry/cb-target-config.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cb-live-telemetry/cb-telemetry-daily-forecast.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cb-live-telemetry/cb-telemetry-daily-forecast.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -98128,8 +98313,8 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-leaderboard.service.ts:prisma:crm:CrmBkGame",
-      "source": "file:apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-leaderboard/booking-leaderboard.ts:prisma:crm:CrmBkGame",
+      "source": "file:apps/api/src/modules/kpi/services/bk-leaderboard/booking-leaderboard.ts",
       "target": "prisma:crm:CrmBkGame",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
@@ -98205,8 +98390,8 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts:prisma:crm:CrmConfig",
-      "source": "file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/cb-live-telemetry/cb-target-config.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/kpi/services/cb-live-telemetry/cb-target-config.ts",
       "target": "prisma:crm:CrmConfig",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
@@ -129538,8 +129723,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4842,
-    "totalEdges": 9567,
+    "totalNodes": 4853,
+    "totalEdges": 9573,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -129548,14 +129733,14 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 547,
-      "File": 1681
+      "File": 1692
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 613,
       "USES_TOKEN": 549,
-      "IMPORTS": 992,
+      "IMPORTS": 998,
       "QUERIES_MODEL": 532,
       "API_CALL": 4336
     },

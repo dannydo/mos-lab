@@ -25,8 +25,6 @@
     "apps/api/src/modules/kpi/routes/cv-speed.routes.ts": 948,
     "apps/api/src/modules/kpi/services/bk-game-team-booking-done-bonus.service.ts": 914,
     "apps/api/src/modules/kpi/services/bk-game.service.ts": 1275,
-    "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts": 867,
-    "apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts": 869,
     "apps/api/src/modules/kpi/services/telesale-tv-celebration.service.ts": 1313,
     "apps/api/src/modules/post-hub/post-hub.service.ts": 1070,
     "apps/api/src/modules/qa-shop/qa-shop.service.ts": 1157,
@@ -158,7 +156,6 @@
     "apps/web/components/ui/MermaidViewer.tsx": 1102,
     "apps/web/config/sidebar.config.tsx": 702,
     "packages/shared/src/catalog/combo-expiry.ts": 1009,
-    "packages/shared/src/theme/tokens.ts": 1312,
-    "packages/shared/src/types/customer.ts": 858
+    "packages/shared/src/theme/tokens.ts": 1312
   }
 }
