@@ -14640,8 +14640,8 @@
       "filePath": "apps/web/app/dashboard/fal/page.tsx",
       "metadata": {
         "routePath": "/dashboard/fal",
-        "apiCallsCount": 3,
-        "apiCalls": ["fal.listCases", "fal.submitLogExplanation", "fal.approveLog"]
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -60388,8 +60388,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/CustomerFilters.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 57258,
-        "lineCount": 1477,
+        "sizeBytes": 5610,
+        "lineCount": 216,
         "ext": ".tsx"
       }
     },
@@ -60663,6 +60663,123 @@
       "metadata": {
         "sizeBytes": 1958,
         "lineCount": 50,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/customer-filters/CustomerCallAndCampaignSections.tsx",
+      "type": "File",
+      "label": "CustomerCallAndCampaignSections.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/customer-filters/CustomerCallAndCampaignSections.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5893,
+        "lineCount": 170,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/customer-filters/CustomerFilterDrawer.tsx",
+      "type": "File",
+      "label": "CustomerFilterDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/customer-filters/CustomerFilterDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9494,
+        "lineCount": 229,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/customer-filters/CustomerFilterToolbar.tsx",
+      "type": "File",
+      "label": "CustomerFilterToolbar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/customer-filters/CustomerFilterToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4425,
+        "lineCount": 120,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/customer-filters/CustomerPersonalAndLifecycleSections.tsx",
+      "type": "File",
+      "label": "CustomerPersonalAndLifecycleSections.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/customer-filters/CustomerPersonalAndLifecycleSections.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11970,
+        "lineCount": 358,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/customer-filters/CustomerServiceAndAllocationSections.tsx",
+      "type": "File",
+      "label": "CustomerServiceAndAllocationSections.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/customer-filters/CustomerServiceAndAllocationSections.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11080,
+        "lineCount": 310,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/customer-filters/constants.ts",
+      "type": "File",
+      "label": "constants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/customer-filters/constants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3883,
+        "lineCount": 101,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/customer-filters/filterHelpers.ts",
+      "type": "File",
+      "label": "filterHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/customer-filters/filterHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8987,
+        "lineCount": 265,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/customer-filters/types.ts",
+      "type": "File",
+      "label": "types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/customer-filters/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3839,
+        "lineCount": 87,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/customer-filters/useFilterDrawerResize.ts",
+      "type": "File",
+      "label": "useFilterDrawerResize.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/customer-filters/useFilterDrawerResize.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2997,
+        "lineCount": 93,
         "ext": ".ts"
       }
     },
@@ -61460,6 +61577,123 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/fal/fal-page-modules/FalControlTowerHeader.tsx",
+      "type": "File",
+      "label": "FalControlTowerHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/fal/fal-page-modules/FalControlTowerHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2836,
+        "lineCount": 87,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/fal/fal-page-modules/FalExplanationModal.tsx",
+      "type": "File",
+      "label": "FalExplanationModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/fal/fal-page-modules/FalExplanationModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1715,
+        "lineCount": 45,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/fal/fal-page-modules/FalIndicators.tsx",
+      "type": "File",
+      "label": "FalIndicators.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/fal/fal-page-modules/FalIndicators.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10707,
+        "lineCount": 309,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/fal/fal-page-modules/FalTraceDrawer.tsx",
+      "type": "File",
+      "label": "FalTraceDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/fal/fal-page-modules/FalTraceDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9861,
+        "lineCount": 274,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/fal/fal-page-modules/falPageHelpers.ts",
+      "type": "File",
+      "label": "falPageHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/fal/fal-page-modules/falPageHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8706,
+        "lineCount": 213,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/fal/fal-page-modules/falPageTypes.ts",
+      "type": "File",
+      "label": "falPageTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/fal/fal-page-modules/falPageTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2034,
+        "lineCount": 75,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/fal/fal-page-modules/falTableColumns.tsx",
+      "type": "File",
+      "label": "falTableColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/fal/fal-page-modules/falTableColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7840,
+        "lineCount": 243,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/fal/fal-page-modules/useFalControlTowerPage.ts",
+      "type": "File",
+      "label": "useFalControlTowerPage.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/fal/fal-page-modules/useFalControlTowerPage.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7499,
+        "lineCount": 231,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/fal/fal-page-modules/useTraceDrawerResize.ts",
+      "type": "File",
+      "label": "useTraceDrawerResize.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/fal/fal-page-modules/useTraceDrawerResize.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2899,
+        "lineCount": 78,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/fal/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -61467,8 +61701,8 @@
       "filePath": "apps/web/app/dashboard/fal/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 49816,
-        "lineCount": 1338,
+        "sizeBytes": 4390,
+        "lineCount": 145,
         "ext": ".tsx"
       }
     },
@@ -63456,8 +63690,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialSopModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 66473,
-        "lineCount": 1405,
+        "sizeBytes": 7320,
+        "lineCount": 213,
         "ext": ".tsx"
       }
     },
@@ -63809,6 +64043,123 @@
       "metadata": {
         "sizeBytes": 4243,
         "lineCount": 129,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/DraftReviewTab.tsx",
+      "type": "File",
+      "label": "DraftReviewTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/DraftReviewTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8532,
+        "lineCount": 162,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/GlueRodStandardsTab.tsx",
+      "type": "File",
+      "label": "GlueRodStandardsTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/GlueRodStandardsTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5626,
+        "lineCount": 120,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/PilotMaterialSopHeader.tsx",
+      "type": "File",
+      "label": "PilotMaterialSopHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/PilotMaterialSopHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6004,
+        "lineCount": 124,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/PilotMaterialSopSubModals.tsx",
+      "type": "File",
+      "label": "PilotMaterialSopSubModals.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/PilotMaterialSopSubModals.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12922,
+        "lineCount": 322,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/SanitizationProceduresTab.tsx",
+      "type": "File",
+      "label": "SanitizationProceduresTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/SanitizationProceduresTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6702,
+        "lineCount": 139,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/SolutionNormColumns.tsx",
+      "type": "File",
+      "label": "SolutionNormColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/SolutionNormColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4804,
+        "lineCount": 131,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/SolutionNormsTab.tsx",
+      "type": "File",
+      "label": "SolutionNormsTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/SolutionNormsTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2083,
+        "lineCount": 54,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/pilot-material-sop-helpers.ts",
+      "type": "File",
+      "label": "pilot-material-sop-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/pilot-material-sop-helpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6770,
+        "lineCount": 225,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/usePilotMaterialSop.ts",
+      "type": "File",
+      "label": "usePilotMaterialSop.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/usePilotMaterialSop.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10911,
+        "lineCount": 343,
         "ext": ".ts"
       }
     },
@@ -66615,8 +66966,8 @@
       "filePath": "apps/web/app/dashboard/today/components/TodayCalendarSummary.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 53215,
-        "lineCount": 1330,
+        "sizeBytes": 4889,
+        "lineCount": 145,
         "ext": ".tsx"
       }
     },
@@ -66683,6 +67034,149 @@
         "sizeBytes": 2816,
         "lineCount": 87,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-calendar-summary/CalendarFilterControlBar.tsx",
+      "type": "File",
+      "label": "CalendarFilterControlBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-calendar-summary/CalendarFilterControlBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4183,
+        "lineCount": 109,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-calendar-summary/CalendarKpiCards.tsx",
+      "type": "File",
+      "label": "CalendarKpiCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-calendar-summary/CalendarKpiCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5745,
+        "lineCount": 131,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-calendar-summary/CalendarRevenueSection.tsx",
+      "type": "File",
+      "label": "CalendarRevenueSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-calendar-summary/CalendarRevenueSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2207,
+        "lineCount": 72,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-calendar-summary/HourlyDistributionChartCard.tsx",
+      "type": "File",
+      "label": "HourlyDistributionChartCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-calendar-summary/HourlyDistributionChartCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5088,
+        "lineCount": 132,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-calendar-summary/HourlyMatrixSection.tsx",
+      "type": "File",
+      "label": "HourlyMatrixSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-calendar-summary/HourlyMatrixSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11038,
+        "lineCount": 253,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-calendar-summary/OperationalBreakdownCard.tsx",
+      "type": "File",
+      "label": "OperationalBreakdownCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-calendar-summary/OperationalBreakdownCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3470,
+        "lineCount": 93,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-calendar-summary/SlotDetailModal.tsx",
+      "type": "File",
+      "label": "SlotDetailModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-calendar-summary/SlotDetailModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6500,
+        "lineCount": 159,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-calendar-summary/calendarSummaryConstants.ts",
+      "type": "File",
+      "label": "calendarSummaryConstants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-calendar-summary/calendarSummaryConstants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1603,
+        "lineCount": 68,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-calendar-summary/calendarSummaryHelpers.ts",
+      "type": "File",
+      "label": "calendarSummaryHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-calendar-summary/calendarSummaryHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7824,
+        "lineCount": 232,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-calendar-summary/types.ts",
+      "type": "File",
+      "label": "types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-calendar-summary/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2341,
+        "lineCount": 84,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-calendar-summary/useTodayCalendarSummary.ts",
+      "type": "File",
+      "label": "useTodayCalendarSummary.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-calendar-summary/useTodayCalendarSummary.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3967,
+        "lineCount": 125,
+        "ext": ".ts"
       }
     },
     {
@@ -108951,6 +109445,34 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/customers/components/customer-filters/CustomerCallAndCampaignSections.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/customers/components/customer-filters/CustomerCallAndCampaignSections.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/customers/components/customer-filters/CustomerFilterToolbar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/customers/components/customer-filters/CustomerFilterToolbar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/customers/components/customer-filters/CustomerServiceAndAllocationSections.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/customers/components/customer-filters/CustomerServiceAndAllocationSections.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/customers/components/customer-filters/types.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/customers/components/customer-filters/types.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/customers/components/customer-table/CustomerOperationalStatus.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/customers/components/customer-table/CustomerOperationalStatus.tsx",
       "target": "ws:packages/shared",
@@ -109245,8 +109767,8 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/fal/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/fal/page.tsx",
+      "id": "edge:file:apps/web/app/dashboard/fal/fal-page-modules/falPageTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/fal/fal-page-modules/falPageTypes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -110015,13 +110537,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialSopModal.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialSopModal.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMetricsGrid.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMetricsGrid.tsx",
       "target": "ws:packages/shared",
@@ -110073,6 +110588,69 @@
     {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/DraftReviewTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/DraftReviewTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/GlueRodStandardsTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/GlueRodStandardsTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/PilotMaterialSopHeader.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/PilotMaterialSopHeader.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/PilotMaterialSopSubModals.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/PilotMaterialSopSubModals.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/SanitizationProceduresTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/SanitizationProceduresTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/SolutionNormColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/SolutionNormColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/SolutionNormsTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/SolutionNormsTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/pilot-material-sop-helpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/pilot-material-sop-helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/usePilotMaterialSop.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-material-sop-modal/usePilotMaterialSop.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -111121,15 +111699,43 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/today/components/TodayCalendarSummary.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/today/components/TodayCalendarSummary.tsx",
+      "id": "edge:file:apps/web/app/dashboard/today/components/TodayComingTable.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/components/TodayComingTable.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/today/components/TodayComingTable.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/today/components/TodayComingTable.tsx",
+      "id": "edge:file:apps/web/app/dashboard/today/components/today-calendar-summary/CalendarFilterControlBar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/components/today-calendar-summary/CalendarFilterControlBar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/today/components/today-calendar-summary/CalendarRevenueSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/components/today-calendar-summary/CalendarRevenueSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/today/components/today-calendar-summary/SlotDetailModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/components/today-calendar-summary/SlotDetailModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/today/components/today-calendar-summary/calendarSummaryHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/components/today-calendar-summary/calendarSummaryHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/today/components/today-calendar-summary/types.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/components/today-calendar-summary/types.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -121955,27 +122561,6 @@
       "target": "route:POST:/api/kpi/telesale-target/celebration-quotes/reset",
       "type": "API_CALL",
       "label": "CALLS kpi.getCcXoayReport"
-    },
-    {
-      "id": "edge:page:/dashboard/fal:route:GET:/api/fal/cases",
-      "source": "page:/dashboard/fal",
-      "target": "route:GET:/api/fal/cases",
-      "type": "API_CALL",
-      "label": "CALLS fal.listCases"
-    },
-    {
-      "id": "edge:page:/dashboard/fal:route:POST:/api/fal/logs/:orderServiceId/explanation",
-      "source": "page:/dashboard/fal",
-      "target": "route:POST:/api/fal/logs/:orderServiceId/explanation",
-      "type": "API_CALL",
-      "label": "CALLS fal.listCases"
-    },
-    {
-      "id": "edge:page:/dashboard/fal:route:POST:/api/fal/logs/:orderServiceId/approval",
-      "source": "page:/dashboard/fal",
-      "target": "route:POST:/api/fal/logs/:orderServiceId/approval",
-      "type": "API_CALL",
-      "label": "CALLS fal.listCases"
     },
     {
       "id": "edge:page:/dashboard/finance/cash-flow:route:GET:/api/cash-flow/forecast",
@@ -136609,8 +137194,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5689,
-    "totalEdges": 9047,
+    "totalNodes": 5727,
+    "totalEdges": 9060,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -136619,16 +137204,16 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 780,
-      "File": 2295
+      "File": 2333
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 846,
       "USES_TOKEN": 782,
-      "IMPORTS": 1412,
+      "IMPORTS": 1428,
       "QUERIES_MODEL": 602,
-      "API_CALL": 2860
+      "API_CALL": 2857
     },
     "fastifyRouteCount": 777,
     "prismaModelCount": 183,
