@@ -1,57 +1,20 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useRef } from 'react';
+import { Alert, Button, Card, Result, Select, Space, Tabs, Tooltip, message, theme as antdTheme } from 'antd';
 import {
-  Tabs,
-  Card,
-  Badge,
-  Tag,
-  Switch,
-  Typography,
-  Space,
-  theme as antdTheme,
-  Result,
-  Alert,
-  Button,
-  Select,
-  Input,
-  Row,
-  Col,
-  message,
-  Drawer,
-  Form,
-  InputNumber,
-  Popconfirm,
-  Tooltip,
-} from 'antd';
-import {
-  ShopOutlined,
   AppstoreOutlined,
-  TagOutlined,
-  ProjectOutlined,
-  SearchOutlined,
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  TrophyOutlined,
   ClockCircleOutlined,
+  PlusOutlined,
+  ProjectOutlined,
+  ShopOutlined,
+  TagOutlined,
   ThunderboltOutlined,
+  TrophyOutlined,
 } from '@ant-design/icons';
 import { RotateCcw, ShoppingBag } from 'lucide-react';
-import { useTheme } from '../../../context/ThemeContext';
-import { apiClient } from '../../../lib/api-client';
-import dayjs, { Dayjs } from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
-import {
-  AppIcon,
-  DataTable,
-  FeatureToolbar,
-  IconButton,
-  PageHeader,
-  ReportPeriodNavigator,
-  SearchField,
-  ToolbarToggle,
-} from '../../../components/ui';
+import { type CatalogItemType } from '@mos-lab/shared';
+import { AppIcon, IconButton, PageHeader, ReportPeriodNavigator, SearchField } from '../../../components/ui';
 import CatalogReportHeader from './components/CatalogReportHeader';
 import CatalogLeaderboardCard from './components/CatalogLeaderboardCard';
 import CatalogItemDetailPanel from './components/CatalogItemDetailPanel';
@@ -60,587 +23,41 @@ import CatalogComboConsultTab from './components/CatalogComboConsultTab';
 import CatalogBenchmarkTab from './components/CatalogBenchmarkTab';
 import CatalogBranchTab from './components/CatalogBranchTab';
 import { ServiceDeactivateConfirmModal } from './components/ServiceDeactivateConfirmModal';
+import { type CatalogFilterItemType, type CatalogViewMode } from './components/catalogHelpers';
+import { buildComboColumns, buildProductColumns, buildServiceColumns } from './components/catalogTableColumns';
+import { useCatalogCrudActions } from './components/useCatalogCrudActions';
+import { useCatalogPageState } from './components/useCatalogPageState';
+import {
+  CatalogCombosTabPane,
+  CatalogProductsTabPane,
+  CatalogServicesTabPane,
+} from './components/CatalogManagementTabs';
+import { CatalogComboDrawer, CatalogProductDrawer, CatalogServiceDrawer } from './components/CatalogFormDrawers';
 import catalogStyles from './catalog.module.css';
 
-import {
-  CatalogService,
-  CatalogServicePrice,
-  CatalogProduct,
-  CatalogReportSummary,
-  CatalogItemHistoryResponse,
-  CatalogItemType,
-  ServiceLiveComboCheckResult,
-  SERVICE_GROUPS,
-  SERVICE_TYPES,
-  vietnameseSearchFilter,
-  isAdminOrSuperAdminRole,
-} from '@mos-lab/shared';
+export type { CatalogFilterItemType, CatalogViewMode };
 
-dayjs.extend(isoWeek);
-
-const LASH_STYLE_OPTIONS = [
-  { value: 'Classic', label: 'Classic' },
-  { value: 'Mink', label: 'Mink' },
-  { value: 'Volume 3D', label: 'Volume 3D' },
-  { value: 'Volume 4D', label: 'Volume 4D' },
-  { value: 'Volume 5D', label: 'Volume 5D' },
-  { value: 'Ultralight', label: 'Ultralight' },
-  { value: 'Hyperlight', label: 'Hyperlight' },
-  { value: 'Flawless', label: 'Flawless' },
-  { value: 'Ivylight', label: 'Ivylight' },
-  { value: 'Under Mink', label: 'Under Mink' },
+const REPORT_TYPE_OPTIONS = [
+  { value: 'all', label: 'Tất cả loại' },
+  { value: 'service', label: 'Dịch vụ' },
+  { value: 'combo', label: 'Gói Combo' },
+  { value: 'product', label: 'Sản phẩm' },
 ];
 
-const inferLashStyle = (serviceKey?: string, serviceName?: string): string | null => {
-  const key = (serviceKey || '').toLowerCase();
-  const name = (serviceName || '').toLowerCase();
-  if (key === 'any-service-product' || key.includes('product') || name.includes('shopping cart')) {
-    return null;
-  }
-  const combined = `${key} ${name}`;
-  if (key.startsWith('lash-lift') || combined.includes('lash lift') || combined.includes('uốn mi')) return 'Lash Lift';
-  if (key.startsWith('ivylight-') || combined.includes('ivylight')) return 'Ivylight';
-  if (
-    key.startsWith('flawless-') ||
-    combined.includes('flawless') ||
-    key.startsWith('mink-') ||
-    combined.includes('mink')
-  )
-    return 'Mink';
-  if (key.startsWith('hyperlight-') || combined.includes('hyperlight')) return 'Hyperlight';
-  if (key.startsWith('ultralight-') || combined.includes('ultralight') || combined.includes('ultra light'))
-    return 'Ultralight';
-  if (key.startsWith('volume-') || combined.includes('volume')) return 'Volume 3D';
-  if (key.startsWith('under-mink-') || combined.includes('under mink') || combined.includes('lashes under'))
-    return 'Under Mink';
-  if (key.startsWith('classic-') || combined.includes('classic')) return 'Classic';
-  return 'Classic';
-};
-
-const inferLashCount = (serviceKey?: string, serviceName?: string): number | null => {
-  const key = (serviceKey || '').toLowerCase();
-  const name = (serviceName || '').toLowerCase();
-  if (key === 'any-service-product' || key.includes('product') || name.includes('shopping cart')) {
-    return null;
-  }
-  const combined = `${key} ${name}`;
-
-  const countMatch = combined.match(/(\d{2,3})\s*(sợi|soi|lashes|sợ)/);
-  if (countMatch) {
-    return parseInt(countMatch[1], 10);
-  }
-
-  return null;
-};
-
-const getLashStyleTagColor = (style?: string) => {
-  if (!style) return 'default';
-  const lower = style.toLowerCase();
-  if (lower.includes('classic')) return 'green';
-  if (lower.includes('mink') && !lower.includes('under')) return 'orange';
-  if (lower.includes('ivylight')) return 'purple';
-  if (lower.includes('ultralight')) return 'cyan';
-  if (lower.includes('hyperlight')) return 'magenta';
-  if (lower.includes('flawless')) return 'gold';
-  if (lower.includes('volume')) return 'blue';
-  if (lower.includes('under')) return 'volcano';
-  if (lower.includes('lift')) return 'gold';
-  return 'geekblue';
-};
-
-export type CatalogViewMode = 'month' | 'week' | 'day';
-export type CatalogFilterItemType = 'all' | 'service' | 'combo' | 'product';
-
-const getLastPage = (total: number, pageSize: number) => Math.max(1, Math.ceil(total / Math.max(1, pageSize)));
-
-const { Title, Text } = Typography;
-const { TextArea } = Input;
-
 export default function CatalogPage() {
-  const { themeMode } = useTheme();
   const { token } = antdTheme.useToken();
-
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-
-  // Persistent Tab state ('report' | 'services' | 'combos' | 'products')
-  const [activeTab, setActiveTab] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('catalog_active_tab');
-      if (saved) return saved;
-    }
-    return 'report';
-  });
-
-  // Persistent Pagination states
-  const [leaderboardPage, setLeaderboardPage] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('catalog_leaderboard_page');
-      if (saved) return Number(saved);
-    }
-    return 1;
-  });
-  const [leaderboardPageSize, setLeaderboardPageSize] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('catalog_leaderboard_pageSize');
-      if (saved) return Number(saved);
-    }
-    return 20;
-  });
-
-  const [servicePage, setServicePage] = useState<number>(1);
-  const [servicePageSize, setServicePageSize] = useState<number>(10);
-
-  const [comboPage, setComboPage] = useState<number>(1);
-  const [comboPageSize, setComboPageSize] = useState<number>(10);
-
-  const [productPage, setProductPage] = useState<number>(1);
-  const [productPageSize, setProductPageSize] = useState<number>(10);
-
-  // Data states
-  const [services, setServices] = useState<CatalogService[]>([]);
-  const [combos, setCombos] = useState<CatalogServicePrice[]>([]);
-  const [products, setProducts] = useState<CatalogProduct[]>([]);
-
-  // Loading states
-  const [loadingServices, setLoadingServices] = useState(false);
-  const [loadingCombos, setLoadingCombos] = useState(false);
-  const [loadingProducts, setLoadingProducts] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  // Filters
-  const [serviceSearch, setServiceSearch] = useState('');
-  const [serviceGroupFilter, setServiceGroupFilter] = useState<string>('all');
-  const [serviceTypeFilter, setServiceTypeFilter] = useState<string>('all');
-  const [productSearch, setProductSearch] = useState('');
-
-  // Dynamic Metadata Options (Master Services only)
-  const [dynamicGroups, setDynamicGroups] = useState<string[]>(['LashesTop', 'LashesUnder', 'LashLift', 'Product']);
-  const [dynamicTypes, setDynamicTypes] = useState<string[]>(['Normal', 'Retain', 'Removal']);
-
-  // Stats
-  const [stats, setStats] = useState({
-    totalServices: 0,
-    activeServices: 0,
-    totalCombos: 0,
-    activeCombos: 0,
-    totalProducts: 0,
-    activeProducts: 0,
-  });
-
-  // Drawer states
-  const [serviceDrawerOpen, setServiceDrawerOpen] = useState(false);
-  const [editingService, setEditingService] = useState<CatalogService | null>(null);
-
-  // Live Combo Pre-deactivation Warning Modal states
-  const [liveComboModalOpen, setLiveComboModalOpen] = useState(false);
-  const [liveComboCheckData, setLiveComboCheckData] = useState<ServiceLiveComboCheckResult | null>(null);
-  const [pendingDeactivateTarget, setPendingDeactivateTarget] = useState<{
-    type: 'toggle' | 'save' | 'delete';
-    id: number;
-    values?: any;
-    currentDisabled?: boolean;
-    serviceName?: string;
-  } | null>(null);
-  const [deactivateLoading, setDeactivateLoading] = useState(false);
-
-  const [comboDrawerOpen, setComboDrawerOpen] = useState(false);
-  const [editingCombo, setEditingCombo] = useState<CatalogServicePrice | null>(null);
-
-  const [productDrawerOpen, setProductDrawerOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<CatalogProduct | null>(null);
   const openBranchCreateRef = useRef<(() => void) | null>(null);
+  const state = useCatalogPageState();
 
-  // Form instances
-  const [serviceForm] = Form.useForm();
-  const [comboForm] = Form.useForm();
-  const [productForm] = Form.useForm();
-  const [isCatalogAdmin, setIsCatalogAdmin] = useState(false);
-
-  // Show disabled items filter (default false -> hides disabled items)
-  const [showDisabled, setShowDisabled] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('catalog_show_disabled');
-      if (saved !== null) return saved === 'true';
-    }
-    return false;
+  const crud = useCatalogCrudActions({
+    services: state.services,
+    fetchServices: state.fetchServices,
+    fetchCombos: state.fetchCombos,
+    fetchProducts: state.fetchProducts,
   });
 
-  // Report & Leaderboard States (CC Dashboard Style)
-  const [viewMode, setViewMode] = useState<CatalogViewMode>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('catalog_view_mode');
-      if (saved && ['month', 'week', 'day'].includes(saved)) return saved as CatalogViewMode;
-    }
-    return 'month';
-  });
-  const [referenceDate, setReferenceDate] = useState<Dayjs>(dayjs());
-  const [reportItemType, setReportItemType] = useState<CatalogFilterItemType>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('catalog_report_item_type');
-      if (saved && ['all', 'service', 'combo', 'product'].includes(saved)) return saved as CatalogFilterItemType;
-    }
-    return 'all';
-  });
-  const [reportSearch, setReportSearch] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('catalog_report_search');
-      if (saved !== null) return saved;
-    }
-    return '';
-  });
-  const [reportSummary, setReportSummary] = useState<CatalogReportSummary | null>(null);
-  const [loadingReport, setLoadingReport] = useState(false);
-
-  const getPeriodLabel = () => {
-    if (viewMode === 'month') {
-      return `Tháng ${referenceDate.format('MM/YYYY')}`;
-    }
-    if (viewMode === 'week') {
-      const weekNum = referenceDate.isoWeek();
-      return `Tuần ${weekNum} (${referenceDate.startOf('isoWeek').format('DD/MM')} - ${referenceDate.endOf('isoWeek').format('DD/MM/YYYY')})`;
-    }
-    return referenceDate.format('DD/MM/YYYY');
-  };
-
-  // Selected Item Detail State
-  const [selectedLeaderboardItem, setSelectedLeaderboardItem] = useState<{
-    itemId: number;
-    itemType: CatalogItemType;
-    name: string;
-  } | null>(null);
-  const [itemHistoryData, setItemHistoryData] = useState<CatalogItemHistoryResponse | null>(null);
-  const [loadingItemHistory, setLoadingItemHistory] = useState(false);
-
-  // Load persistent settings from localStorage on mount
-  useEffect(() => {
-    const userStr = localStorage.getItem('mos_user');
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        const isDanhDo = Boolean(
-          user?.username?.toLowerCase() === 'danhdo@gmail.com' || user?.email?.toLowerCase() === 'danhdo@gmail.com'
-        );
-        const hasAdminAccess = isAdminOrSuperAdminRole(user?.role) || isDanhDo;
-        setIsAdmin(hasAdminAccess);
-        setIsCatalogAdmin(hasAdminAccess);
-      } catch {
-        setIsAdmin(false);
-        setIsCatalogAdmin(false);
-      }
-    } else {
-      setIsAdmin(false);
-      setIsCatalogAdmin(false);
-    }
-
-    const savedServicePage = localStorage.getItem('catalog_service_page');
-    if (savedServicePage) setServicePage(Number(savedServicePage));
-    const savedServiceSize = localStorage.getItem('catalog_service_pageSize');
-    if (savedServiceSize) setServicePageSize(Number(savedServiceSize));
-
-    const savedComboPage = localStorage.getItem('catalog_combo_page');
-    if (savedComboPage) setComboPage(Number(savedComboPage));
-    const savedComboSize = localStorage.getItem('catalog_combo_pageSize');
-    if (savedComboSize) setComboPageSize(Number(savedComboSize));
-
-    const savedProductPage = localStorage.getItem('catalog_product_page');
-    if (savedProductPage) setProductPage(Number(savedProductPage));
-    const savedProductSize = localStorage.getItem('catalog_product_pageSize');
-    if (savedProductSize) setProductPageSize(Number(savedProductSize));
-
-    fetchGroupsAndTypes();
-  }, []);
-
-  const fetchGroupsAndTypes = async () => {
-    try {
-      const [groupsRes, typesRes] = await Promise.all([apiClient.catalog.getGroups(), apiClient.catalog.getTypes()]);
-      if (groupsRes?.success && Array.isArray(groupsRes.data) && groupsRes.data.length > 0) {
-        setDynamicGroups(groupsRes.data);
-      }
-      if (typesRes?.success && Array.isArray(typesRes.data) && typesRes.data.length > 0) {
-        setDynamicTypes(typesRes.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch catalog groups and types:', err);
-    }
-  };
-
-  const handleViewModeChange = (mode: CatalogViewMode) => {
-    setViewMode(mode);
-    setLeaderboardPage(1);
-    localStorage.setItem('catalog_view_mode', mode);
-    localStorage.setItem('catalog_leaderboard_page', '1');
-  };
-
-  const handleReportItemTypeChange = (type: CatalogFilterItemType) => {
-    setReportItemType(type);
-    setLeaderboardPage(1);
-    localStorage.setItem('catalog_report_item_type', type);
-    localStorage.setItem('catalog_leaderboard_page', '1');
-  };
-
-  const handleReportSearchChange = (val: string) => {
-    setReportSearch(val);
-    setLeaderboardPage(1);
-    localStorage.setItem('catalog_report_search', val);
-    localStorage.setItem('catalog_leaderboard_page', '1');
-  };
-
-  const handleLeaderboardPageChange = (page: number, pageSize: number) => {
-    // Changing the visible rows per page changes the page boundary. Always
-    // return to page one so the controlled state, range label, and data rows
-    // cannot briefly describe different slices of the leaderboard.
-    const nextPage = pageSize === leaderboardPageSize ? page : 1;
-    setLeaderboardPage(nextPage);
-    setLeaderboardPageSize(pageSize);
-    localStorage.setItem('catalog_leaderboard_page', String(nextPage));
-    localStorage.setItem('catalog_leaderboard_pageSize', String(pageSize));
-  };
-
-  const handleShowDisabledChange = (checked: boolean) => {
-    setShowDisabled(checked);
-    localStorage.setItem('catalog_show_disabled', String(checked));
-  };
-
-  const handleTabChange = (key: string) => {
-    setActiveTab(key);
-    localStorage.setItem('catalog_active_tab', key);
-  };
-
-  const handleServicePageChange = (page: number, pageSize: number) => {
-    setServicePage(page);
-    setServicePageSize(pageSize);
-    localStorage.setItem('catalog_service_page', String(page));
-    localStorage.setItem('catalog_service_pageSize', String(pageSize));
-  };
-
-  const handleComboPageChange = (page: number, pageSize: number) => {
-    setComboPage(page);
-    setComboPageSize(pageSize);
-    localStorage.setItem('catalog_combo_page', String(page));
-    localStorage.setItem('catalog_combo_pageSize', String(pageSize));
-  };
-
-  const handleProductPageChange = (page: number, pageSize: number) => {
-    setProductPage(page);
-    setProductPageSize(pageSize);
-    localStorage.setItem('catalog_product_page', String(page));
-    localStorage.setItem('catalog_product_pageSize', String(pageSize));
-  };
-
-  const fetchServices = async () => {
-    setLoadingServices(true);
-    try {
-      const res = await apiClient.catalog.listServices({
-        search: serviceSearch || undefined,
-        group: serviceGroupFilter !== 'all' ? serviceGroupFilter : undefined,
-        pageSize: 1000,
-      });
-      setServices(res.data);
-      updateStats('services', res.data);
-    } catch {
-      message.error('Lỗi khi tải danh sách dịch vụ');
-    } finally {
-      setLoadingServices(false);
-    }
-  };
-
-  const fetchCombos = async () => {
-    setLoadingCombos(true);
-    try {
-      const res = await apiClient.catalog.listCombos({ pageSize: 1000 });
-      setCombos(res.data);
-      updateStats('combos', res.data);
-    } catch {
-      message.error('Lỗi khi tải danh sách gói combo');
-    } finally {
-      setLoadingCombos(false);
-    }
-  };
-
-  const fetchProducts = async () => {
-    setLoadingProducts(true);
-    try {
-      const res = await apiClient.catalog.listProducts({
-        search: productSearch || undefined,
-        pageSize: 1000,
-      });
-      setProducts(res.data);
-      updateStats('products', res.data);
-    } catch {
-      message.error('Lỗi khi tải danh sách sản phẩm');
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
-
-  const getDateBounds = () => {
-    let dFrom: string;
-    let dTo: string;
-    if (viewMode === 'day') {
-      dFrom = referenceDate.format('YYYY-MM-DD');
-      dTo = referenceDate.format('YYYY-MM-DD');
-    } else if (viewMode === 'week') {
-      dFrom = referenceDate.startOf('isoWeek').format('YYYY-MM-DD');
-      dTo = referenceDate.endOf('isoWeek').format('YYYY-MM-DD');
-    } else {
-      dFrom = referenceDate.startOf('month').format('YYYY-MM-DD');
-      dTo = referenceDate.endOf('month').format('YYYY-MM-DD');
-    }
-    return { dFrom, dTo };
-  };
-
-  const handleNavigateDate = (direction: number) => {
-    setLeaderboardPage(1);
-    localStorage.setItem('catalog_leaderboard_page', '1');
-    if (viewMode === 'month') {
-      setReferenceDate((prev) => prev.add(direction, 'month'));
-    } else if (viewMode === 'week') {
-      setReferenceDate((prev) => prev.add(direction, 'week'));
-    } else if (viewMode === 'day') {
-      setReferenceDate((prev) => prev.add(direction, 'day'));
-    }
-  };
-
-  const handleToday = () => {
-    setReferenceDate(dayjs());
-    setViewMode('month');
-    setLeaderboardPage(1);
-    localStorage.setItem('catalog_leaderboard_page', '1');
-  };
-
-  const fetchReportSummary = async () => {
-    setLoadingReport(true);
-    try {
-      const { dFrom, dTo } = getDateBounds();
-      const res = await apiClient.catalog.statsSummary({
-        period: viewMode === 'day' ? 'today' : viewMode,
-        dateFrom: dFrom,
-        dateTo: dTo,
-        search: reportSearch || undefined,
-        itemType: reportItemType,
-      });
-      if (res && res.success) {
-        setReportSummary(res.data);
-      }
-    } catch (err) {
-      console.error('Error fetching catalog report summary:', err);
-    } finally {
-      setLoadingReport(false);
-    }
-  };
-
-  const fetchItemHistory = async (item: { itemId: number; itemType: CatalogItemType; name: string }) => {
-    setLoadingItemHistory(true);
-    try {
-      const { dFrom, dTo } = getDateBounds();
-      const res = await apiClient.catalog.itemHistory({
-        itemId: item.itemId,
-        itemType: item.itemType,
-        dateFrom: dFrom,
-        dateTo: dTo,
-      });
-      if (res && res.success) {
-        setItemHistoryData(res);
-      }
-    } catch (err) {
-      console.error('Error fetching item history:', err);
-    } finally {
-      setLoadingItemHistory(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchReportSummary();
-  }, [viewMode, referenceDate, reportItemType, reportSearch]);
-
-  // A saved page can become invalid when a report filter or date range makes
-  // the leaderboard shorter. Clamp it immediately to keep the table rows and
-  // its footer range in lockstep.
-  useEffect(() => {
-    const lastPage = getLastPage(reportSummary?.leaderboard.length ?? 0, leaderboardPageSize);
-    if (leaderboardPage <= lastPage) return;
-
-    setLeaderboardPage(lastPage);
-    localStorage.setItem('catalog_leaderboard_page', String(lastPage));
-  }, [leaderboardPage, leaderboardPageSize, reportSummary?.leaderboard.length]);
-
-  useEffect(() => {
-    if (selectedLeaderboardItem) {
-      fetchItemHistory(selectedLeaderboardItem);
-    } else {
-      setItemHistoryData(null);
-    }
-  }, [selectedLeaderboardItem, viewMode, referenceDate]);
-
-  const handleEditItemFromDetail = (itemId: number, itemType: CatalogItemType) => {
-    if (itemType === 'service') {
-      const target = services.find((s) => s.id === itemId);
-      if (target) {
-        setActiveTab('services');
-        handleOpenServiceDrawer(target);
-      } else {
-        message.info('Vui lòng mở tab Dịch vụ bên dưới để chỉnh sửa');
-      }
-    } else if (itemType === 'combo') {
-      const target = combos.find((c) => c.id === itemId);
-      if (target) {
-        setActiveTab('combos');
-        handleOpenComboDrawer(target);
-      } else {
-        message.info('Vui lòng mở tab Combo bên dưới để chỉnh sửa');
-      }
-    } else {
-      const target = products.find((p) => p.id === itemId);
-      if (target) {
-        setActiveTab('products');
-        handleOpenProductDrawer(target);
-      } else {
-        message.info('Vui lòng mở tab Sản phẩm bên dưới để chỉnh sửa');
-      }
-    }
-  };
-
-  const handleToggleStatusFromDetail = async (itemId: number, itemType: CatalogItemType, currentDisabled: boolean) => {
-    if (itemType === 'service') {
-      await handleToggleServiceStatus(itemId, currentDisabled);
-    } else if (itemType === 'combo') {
-      await handleToggleComboStatus(itemId, currentDisabled);
-    } else {
-      await handleToggleProductStatus(itemId, currentDisabled);
-    }
-    fetchReportSummary();
-    if (selectedLeaderboardItem) {
-      fetchItemHistory(selectedLeaderboardItem);
-    }
-  };
-
-  const updateStats = (type: 'services' | 'combos' | 'products', data: any[]) => {
-    setStats((prev) => {
-      const newStats = { ...prev };
-      if (type === 'services') {
-        newStats.totalServices = data.length;
-        newStats.activeServices = data.filter((d) => !d.isDisabled).length;
-      } else if (type === 'combos') {
-        newStats.totalCombos = data.length;
-        newStats.activeCombos = data.filter((d) => !d.isDisabled).length;
-      } else if (type === 'products') {
-        newStats.totalProducts = data.length;
-        newStats.activeProducts = data.filter((d) => !d.isDisabled).length;
-      }
-      return newStats;
-    });
-  };
-
-  useEffect(() => {
-    if (isAdmin) {
-      fetchServices();
-      fetchCombos();
-      fetchProducts();
-    }
-  }, [isAdmin, serviceSearch, serviceGroupFilter, productSearch]);
-
-  if (isAdmin === null) return null;
-  if (!isAdmin) {
+  if (state.isAdmin === null) return null;
+  if (!state.isAdmin) {
     return (
       <Result
         status="403"
@@ -655,723 +72,65 @@ export default function CatalogPage() {
     );
   }
 
-  const formatCurrency = (val: number | undefined) => {
-    if (val === undefined || val === null) return '-';
-    return new Intl.NumberFormat('vi-VN').format(Math.round(val)) + ' đ';
-  };
-
-  // ─── Service Handlers ──────────────────────────────────────────────────────
-
-  const handleOpenServiceDrawer = (record?: CatalogService) => {
-    if (record) {
-      setEditingService(record);
-      const firstPrice = record.prices && record.prices.length > 0 ? record.prices[0].servicePrice : undefined;
-      const isProduct =
-        record.serviceGroup === 'Product' ||
-        record.serviceType === 'Product' ||
-        record.serviceKey === 'any-service-product';
-      serviceForm.setFieldsValue({
-        serviceName: record.serviceName,
-        serviceKey: record.serviceKey,
-        serviceGroup: record.serviceGroup,
-        serviceType: record.serviceType,
-        lashStyle: isProduct
-          ? undefined
-          : record.lashStyle || inferLashStyle(record.serviceKey, record.serviceName) || undefined,
-        lashCount: isProduct
-          ? undefined
-          : record.lashCount || inferLashCount(record.serviceKey, record.serviceName) || undefined,
-        durationMinute: record.durationMinute,
-        durationMinuteStandard: record.durationMinuteStandard || record.durationMinute,
-        remindingIntervalDay: record.remindingIntervalDay,
-        servicePrice: firstPrice,
-        serviceDescription: record.serviceDescription,
-      });
+  const handleEditItemFromDetail = (itemId: number, itemType: CatalogItemType) => {
+    if (itemType === 'service') {
+      const target = state.services.find((s) => s.id === itemId);
+      if (target) {
+        state.setActiveTab('services');
+        crud.handleOpenServiceDrawer(target);
+      } else {
+        message.info('Vui lòng mở tab Dịch vụ bên dưới để chỉnh sửa');
+      }
+    } else if (itemType === 'combo') {
+      const target = state.combos.find((c) => c.id === itemId);
+      if (target) {
+        state.setActiveTab('combos');
+        crud.handleOpenComboDrawer(target);
+      } else {
+        message.info('Vui lòng mở tab Combo bên dưới để chỉnh sửa');
+      }
     } else {
-      setEditingService(null);
-      serviceForm.resetFields();
-      serviceForm.setFieldsValue({
-        serviceGroup: 'LashesTop',
-        serviceType: 'Normal',
-        lashStyle: 'Classic',
-        lashCount: 80,
-        durationMinute: 60,
-        durationMinuteStandard: 60,
-        remindingIntervalDay: 21,
-      });
-    }
-    setServiceDrawerOpen(true);
-  };
-
-  const handleSaveService = async (values: any, forceConfirm = false) => {
-    setSaving(true);
-    try {
-      if (editingService) {
-        if (values.isDisabled && !forceConfirm) {
-          try {
-            const checkRes = await apiClient.catalog.checkServiceLiveCombos(editingService.id);
-            if (checkRes.data && checkRes.data.totalOwners > 0) {
-              setLiveComboCheckData(checkRes.data);
-              setPendingDeactivateTarget({
-                type: 'save',
-                id: editingService.id,
-                values,
-                serviceName: editingService.serviceName,
-              });
-              setLiveComboModalOpen(true);
-              setSaving(false);
-              return;
-            }
-          } catch (e) {
-            console.error(e);
-          }
-        }
-        await apiClient.catalog.updateService(editingService.id, { ...values, confirm: forceConfirm });
-        message.success('Cập nhật dịch vụ thành công');
+      const target = state.products.find((p) => p.id === itemId);
+      if (target) {
+        state.setActiveTab('products');
+        crud.handleOpenProductDrawer(target);
       } else {
-        await apiClient.catalog.createService(values);
-        message.success('Tạo dịch vụ mới thành công');
-      }
-      setServiceDrawerOpen(false);
-      fetchServices();
-    } catch (err: any) {
-      if (err.response?.data?.code === 'LIVE_COMBOS_DETECTED' && err.response?.data?.data) {
-        setLiveComboCheckData(err.response.data.data);
-        setPendingDeactivateTarget({
-          type: 'save',
-          id: editingService?.id || 0,
-          values,
-          serviceName: editingService?.serviceName,
-        });
-        setLiveComboModalOpen(true);
-      } else {
-        message.error('Lỗi khi lưu dịch vụ');
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleToggleServiceStatus = async (id: number, currentDisabled: boolean, forceConfirm = false) => {
-    const targetService = services.find((s) => s.id === id);
-    const targetName = targetService?.serviceName;
-
-    if (!currentDisabled && !forceConfirm) {
-      try {
-        const checkRes = await apiClient.catalog.checkServiceLiveCombos(id);
-        if (checkRes.data && checkRes.data.totalOwners > 0) {
-          setLiveComboCheckData(checkRes.data);
-          setPendingDeactivateTarget({
-            type: 'toggle',
-            id,
-            currentDisabled,
-            serviceName: targetName,
-          });
-          setLiveComboModalOpen(true);
-          return;
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    try {
-      await apiClient.catalog.updateService(id, { isDisabled: !currentDisabled, confirm: forceConfirm });
-      message.success(currentDisabled ? 'Đã kích hoạt dịch vụ' : 'Đã vô hiệu hóa dịch vụ');
-      fetchServices();
-    } catch (err: any) {
-      if (err.response?.data?.code === 'LIVE_COMBOS_DETECTED' && err.response?.data?.data) {
-        setLiveComboCheckData(err.response.data.data);
-        setPendingDeactivateTarget({
-          type: 'toggle',
-          id,
-          currentDisabled,
-          serviceName: targetName,
-        });
-        setLiveComboModalOpen(true);
-      } else {
-        message.error('Lỗi khi đổi trạng thái dịch vụ');
+        message.info('Vui lòng mở tab Sản phẩm bên dưới để chỉnh sửa');
       }
     }
   };
 
-  const handleDeleteService = async (id: number, forceConfirm = false) => {
-    const targetService = services.find((s) => s.id === id);
-    const targetName = targetService?.serviceName;
-
-    if (!forceConfirm) {
-      try {
-        const checkRes = await apiClient.catalog.checkServiceLiveCombos(id);
-        if (checkRes.data && checkRes.data.totalOwners > 0) {
-          setLiveComboCheckData(checkRes.data);
-          setPendingDeactivateTarget({
-            type: 'delete',
-            id,
-            serviceName: targetName,
-          });
-          setLiveComboModalOpen(true);
-          return;
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    try {
-      await apiClient.catalog.deleteService(id, forceConfirm);
-      message.success('Đã vô hiệu hóa dịch vụ');
-      fetchServices();
-    } catch (err: any) {
-      if (err.response?.data?.code === 'LIVE_COMBOS_DETECTED' && err.response?.data?.data) {
-        setLiveComboCheckData(err.response.data.data);
-        setPendingDeactivateTarget({
-          type: 'delete',
-          id,
-          serviceName: targetName,
-        });
-        setLiveComboModalOpen(true);
-      } else {
-        message.error('Lỗi khi vô hiệu hóa dịch vụ');
-      }
-    }
-  };
-
-  const handleConfirmDeactivateModal = async () => {
-    if (!pendingDeactivateTarget) return;
-    setDeactivateLoading(true);
-    try {
-      const { type, id, values, currentDisabled } = pendingDeactivateTarget;
-      if (type === 'save' && values) {
-        await handleSaveService(values, true);
-      } else if (type === 'toggle') {
-        await handleToggleServiceStatus(id, currentDisabled || false, true);
-      } else if (type === 'delete') {
-        await handleDeleteService(id, true);
-      }
-      setLiveComboModalOpen(false);
-      setLiveComboCheckData(null);
-      setPendingDeactivateTarget(null);
-    } catch {
-      message.error('Lỗi khi ngưng hoạt động dịch vụ');
-    } finally {
-      setDeactivateLoading(false);
-    }
-  };
-
-  const handleComboValuesChange = (changedValues: any, allValues: any) => {
-    if (changedValues.serviceId || changedValues.normalCount !== undefined || changedValues.retainCount !== undefined) {
-      const selectedService = services.find((s) => s.id === allValues.serviceId);
-      if (selectedService && selectedService.prices && selectedService.prices.length > 0) {
-        const retailPrice = selectedService.prices[0].servicePrice || 0;
-        const buyNormal = allValues.normalCount || 0;
-        const calculatedPrice = Math.round(retailPrice * buyNormal);
-        if (calculatedPrice > 0) {
-          comboForm.setFieldsValue({ servicePrice: calculatedPrice });
-        }
-      }
-    }
-  };
-
-  const handleOpenComboDrawer = (record?: CatalogServicePrice) => {
-    if (record) {
-      setEditingCombo(record);
-      comboForm.setFieldsValue({
-        serviceId: record.serviceId,
-        servicePricePackageKey: record.servicePricePackageKey,
-        servicePriceType: record.servicePriceType,
-        servicePrice: record.servicePrice,
-        normalCount: record.normalCount,
-        bonusNormalCount: record.bonusNormalCount || 0,
-        retainCount: record.retainCount,
-        bonusRetainCount: record.bonusRetainCount || 0,
-        expiryAfterDay: record.expiryAfterDay,
-      });
+  const handleToggleStatusFromDetail = async (itemId: number, itemType: CatalogItemType, currentDisabled: boolean) => {
+    if (itemType === 'service') {
+      await crud.handleToggleServiceStatus(itemId, currentDisabled);
+    } else if (itemType === 'combo') {
+      await crud.handleToggleComboStatus(itemId, currentDisabled);
     } else {
-      setEditingCombo(null);
-      comboForm.resetFields();
-      comboForm.setFieldsValue({
-        servicePriceType: 'Combo',
-        normalCount: 7,
-        bonusNormalCount: 3,
-        retainCount: 0,
-        bonusRetainCount: 0,
-        expiryAfterDay: 180,
-        servicePrice: 2000000,
-      });
+      await crud.handleToggleProductStatus(itemId, currentDisabled);
     }
-    setComboDrawerOpen(true);
-  };
-
-  const handleSaveCombo = async (values: any) => {
-    setSaving(true);
-    try {
-      const perNormalPrice =
-        values.normalCount > 0
-          ? Math.round(values.servicePrice / (values.normalCount + values.retainCount))
-          : values.servicePrice;
-      const perRetainPrice = perNormalPrice;
-
-      const payload = {
-        ...values,
-        servicePriceType: 'Combo',
-        perNormalPrice,
-        perRetainPrice,
-      };
-
-      if (editingCombo) {
-        await apiClient.catalog.updateCombo(editingCombo.id, payload);
-        message.success('Cập nhật gói combo thành công');
-      } else {
-        await apiClient.catalog.createCombo(payload);
-        message.success('Tạo gói combo mới thành công');
-      }
-      setComboDrawerOpen(false);
-      fetchCombos();
-    } catch (err: any) {
-      message.error(err?.response?.data?.error || 'Lỗi khi lưu gói combo');
-    } finally {
-      setSaving(false);
+    state.fetchReportSummary();
+    if (state.selectedLeaderboardItem) {
+      state.fetchItemHistory(state.selectedLeaderboardItem);
     }
   };
 
-  const handleToggleComboStatus = async (id: number, currentDisabled: boolean) => {
-    try {
-      await apiClient.catalog.updateCombo(id, { isDisabled: !currentDisabled });
-      message.success(currentDisabled ? 'Đã kích hoạt gói combo' : 'Đã vô hiệu hóa gói combo');
-      fetchCombos();
-    } catch {
-      message.error('Lỗi khi đổi trạng thái gói combo');
-    }
-  };
+  const serviceColumns = buildServiceColumns({
+    onToggleStatus: (id, disabled) => crud.handleToggleServiceStatus(id, disabled),
+    onOpenDrawer: crud.handleOpenServiceDrawer,
+    onDelete: (id) => crud.handleDeleteService(id),
+  });
 
-  const handleDeleteCombo = async (id: number) => {
-    try {
-      await apiClient.catalog.deleteCombo(id);
-      message.success('Đã vô hiệu hóa gói combo');
-      fetchCombos();
-    } catch {
-      message.error('Lỗi khi vô hiệu hóa gói combo');
-    }
-  };
+  const comboColumns = buildComboColumns({
+    onToggleStatus: crud.handleToggleComboStatus,
+    onOpenDrawer: crud.handleOpenComboDrawer,
+    onDelete: crud.handleDeleteCombo,
+  });
 
-  // ─── Product Handlers ──────────────────────────────────────────────────────
-
-  const handleOpenProductDrawer = (record?: CatalogProduct) => {
-    if (record) {
-      setEditingProduct(record);
-      productForm.setFieldsValue({
-        productName: record.productName,
-        productSku: record.productSku,
-        productPrice: record.productPrice,
-        productDescription: record.productDescription,
-      });
-    } else {
-      setEditingProduct(null);
-      productForm.resetFields();
-    }
-    setProductDrawerOpen(true);
-  };
-
-  const handleSaveProduct = async (values: any) => {
-    setSaving(true);
-    try {
-      if (editingProduct) {
-        await apiClient.catalog.updateProduct(editingProduct.id, values);
-        message.success('Cập nhật sản phẩm thành công');
-      } else {
-        await apiClient.catalog.createProduct(values);
-        message.success('Tạo sản phẩm mới thành công');
-      }
-      setProductDrawerOpen(false);
-      fetchProducts();
-    } catch {
-      message.error('Lỗi khi lưu sản phẩm');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleToggleProductStatus = async (id: number, currentDisabled: boolean) => {
-    try {
-      await apiClient.catalog.updateProduct(id, { isDisabled: !currentDisabled });
-      message.success(currentDisabled ? 'Đã kích hoạt sản phẩm' : 'Đã vô hiệu hóa sản phẩm');
-      fetchProducts();
-    } catch {
-      message.error('Lỗi khi đổi trạng thái sản phẩm');
-    }
-  };
-
-  const handleDeleteProduct = async (id: number) => {
-    try {
-      await apiClient.catalog.deleteProduct(id);
-      message.success('Đã vô hiệu hóa sản phẩm');
-      fetchProducts();
-    } catch {
-      message.error('Lỗi khi vô hiệu hóa sản phẩm');
-    }
-  };
-
-  // ─── Table Columns ─────────────────────────────────────────────────────────
-
-  const serviceColumns = [
-    {
-      title: 'Position',
-      dataIndex: 'position',
-      key: 'position',
-      width: 80,
-      align: 'center' as const,
-      render: (val: number) => <span className="tabular-nums font-semibold">{val}</span>,
-    },
-    {
-      title: 'Tên dịch vụ',
-      dataIndex: 'serviceName',
-      key: 'serviceName',
-      render: (text: string, record: CatalogService) => (
-        <Space direction="vertical" size={0}>
-          <Text strong>{text || record.serviceKey}</Text>
-          <Text type="secondary" style={{ fontSize: '12px' }}>
-            {record.serviceKey}
-          </Text>
-        </Space>
-      ),
-    },
-    {
-      title: 'Loại dịch vụ',
-      dataIndex: 'serviceType',
-      key: 'serviceType',
-      render: (type: string) => {
-        let color = 'blue';
-        let label = type;
-        if (type === 'Normal') {
-          color = 'blue';
-          label = 'Normal (Nối mới)';
-        } else if (type === 'Retain') {
-          color = 'purple';
-          label = 'Retain (Dặm mi)';
-        } else if (type === 'Fix') {
-          color = 'orange';
-          label = 'Fix (Sửa mi hỏng)';
-        } else if (type === 'Adjust') {
-          color = 'magenta';
-          label = 'Adjust (Chỉnh dáng)';
-        } else if (type === 'Log') {
-          color = 'cyan';
-          label = 'Log (Ghi nhận)';
-        } else if (type === 'Removal') {
-          color = 'red';
-          label = 'Removal (Tháo mi)';
-        } else if (type === 'Product') {
-          color = 'geekblue';
-          label = 'Product';
-        }
-        return <Tag color={color}>{label}</Tag>;
-      },
-    },
-    {
-      title: 'Nhóm',
-      dataIndex: 'serviceGroup',
-      key: 'serviceGroup',
-      render: (group: string) => <Tag color="blue">{group}</Tag>,
-    },
-    {
-      title: 'Dòng mi',
-      dataIndex: 'lashStyle',
-      key: 'lashStyle',
-      render: (style: string, record: CatalogService) => {
-        if (
-          record.serviceGroup === 'Product' ||
-          record.serviceType === 'Product' ||
-          record.serviceKey === 'any-service-product'
-        ) {
-          return <span className="text-slate-400">-</span>;
-        }
-        const displayStyle = style || inferLashStyle(record.serviceKey, record.serviceName);
-        return displayStyle ? (
-          <Tag color={getLashStyleTagColor(displayStyle)}>{displayStyle}</Tag>
-        ) : (
-          <span className="text-slate-400">-</span>
-        );
-      },
-    },
-    {
-      title: 'Số sợi mi',
-      dataIndex: 'lashCount',
-      key: 'lashCount',
-      align: 'right' as const,
-      render: (count: number | null, record: CatalogService) => {
-        if (
-          record.serviceGroup === 'Product' ||
-          record.serviceType === 'Product' ||
-          record.serviceKey === 'any-service-product'
-        ) {
-          return <span className="text-slate-400">-</span>;
-        }
-        const displayCount = count || inferLashCount(record.serviceKey, record.serviceName);
-        return displayCount ? (
-          <Tag color="geekblue" className="tabular-nums font-medium">
-            {displayCount} sợi
-          </Tag>
-        ) : (
-          <span className="text-slate-400">-</span>
-        );
-      },
-    },
-    {
-      title: 'Thời lượng (phút)',
-      dataIndex: 'durationMinute',
-      key: 'durationMinute',
-      align: 'right' as const,
-      render: (val: number) => <span className="tabular-nums">{val}</span>,
-    },
-    {
-      title: 'Giá bán lẻ',
-      key: 'servicePrice',
-      align: 'right' as const,
-      render: (_: any, record: CatalogService) => {
-        const price = record.prices && record.prices.length > 0 ? record.prices[0].servicePrice : undefined;
-        return (
-          <span className="tabular-nums font-semibold" style={{ color: '#D4A84B' }}>
-            {formatCurrency(price)}
-          </span>
-        );
-      },
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'isDisabled',
-      key: 'isDisabled',
-      align: 'center' as const,
-      render: (isDisabled: boolean, record: CatalogService) => (
-        <Switch checked={!isDisabled} size="small" onChange={() => handleToggleServiceStatus(record.id, isDisabled)} />
-      ),
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      align: 'center' as const,
-      width: 120,
-      render: (_: any, record: CatalogService) => (
-        <Space size="small">
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="text"
-              icon={<EditOutlined style={{ color: token.colorPrimary }} />}
-              onClick={() => handleOpenServiceDrawer(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Vô hiệu hóa dịch vụ"
-            description="Bạn có chắc chắn muốn vô hiệu hóa dịch vụ này không?"
-            onConfirm={() => handleDeleteService(record.id)}
-            okText="Đồng ý"
-            cancelText="Hủy"
-          >
-            <Tooltip title="Vô hiệu hóa">
-              <Button type="text" danger icon={<DeleteOutlined />} aria-label="Xóa danh mục" title="Xóa danh mục" />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
-  const comboColumns = [
-    {
-      title: 'Tên gói',
-      dataIndex: 'servicePricePackageKey',
-      key: 'servicePricePackageKey',
-      render: (text: string) => <Text strong>{text}</Text>,
-    },
-    {
-      title: 'Loại giá',
-      dataIndex: 'servicePriceType',
-      key: 'servicePriceType',
-      render: (type: string) => <Tag color="purple">{type}</Tag>,
-    },
-    {
-      title: 'Giá gói',
-      dataIndex: 'servicePrice',
-      key: 'servicePrice',
-      align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums" style={{ color: '#52c41a', fontWeight: 'bold' }}>
-          {formatCurrency(val)}
-        </span>
-      ),
-    },
-    {
-      title: '✦ Lượt nối',
-      key: 'normalCount',
-      align: 'center' as const,
-      render: (_: any, record: CatalogServicePrice) => {
-        const hasBonus = (record.bonusNormalCount || 0) > 0;
-        return (
-          <Space direction="vertical" size={2} align="center">
-            <span className="tabular-nums font-medium">
-              {hasBonus ? `✦ ${record.normalCount} mua` : `✦ ${record.normalCount}`}
-            </span>
-            {hasBonus && (
-              <Tag color="green" style={{ fontSize: '11px', margin: 0 }}>
-                +✦ {record.bonusNormalCount} tặng
-              </Tag>
-            )}
-          </Space>
-        );
-      },
-    },
-    {
-      title: '↻ Lượt dặm',
-      key: 'retainCount',
-      align: 'center' as const,
-      render: (_: any, record: CatalogServicePrice) => {
-        const hasBonus = (record.bonusRetainCount || 0) > 0;
-        return (
-          <Space direction="vertical" size={2} align="center">
-            <span className="tabular-nums font-medium">
-              {hasBonus ? `↻ ${record.retainCount} mua` : `↻ ${record.retainCount}`}
-            </span>
-            {hasBonus && (
-              <Tag color="cyan" style={{ fontSize: '11px', margin: 0 }}>
-                +↻ {record.bonusRetainCount} tặng
-              </Tag>
-            )}
-          </Space>
-        );
-      },
-    },
-    {
-      title: 'Hạn (ngày)',
-      dataIndex: 'expiryAfterDay',
-      key: 'expiryAfterDay',
-      align: 'center' as const,
-      render: (val: number) => <span className="tabular-nums">{val}</span>,
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'isDisabled',
-      key: 'isDisabled',
-      align: 'center' as const,
-      render: (isDisabled: boolean, record: CatalogServicePrice) => (
-        <Switch checked={!isDisabled} size="small" onChange={() => handleToggleComboStatus(record.id, isDisabled)} />
-      ),
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      align: 'center' as const,
-      width: 120,
-      render: (_: any, record: CatalogServicePrice) => (
-        <Space size="small">
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="text"
-              icon={<EditOutlined style={{ color: token.colorPrimary }} />}
-              onClick={() => handleOpenComboDrawer(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Vô hiệu hóa gói combo"
-            description="Bạn có chắc chắn muốn vô hiệu hóa gói combo này không?"
-            onConfirm={() => handleDeleteCombo(record.id)}
-            okText="Đồng ý"
-            cancelText="Hủy"
-          >
-            <Tooltip title="Vô hiệu hóa">
-              <Button type="text" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
-  const productColumns = [
-    {
-      title: 'SKU',
-      dataIndex: 'productSku',
-      key: 'productSku',
-      render: (text: string) => <Text type="secondary">{text}</Text>,
-    },
-    {
-      title: 'Tên sản phẩm',
-      dataIndex: 'productName',
-      key: 'productName',
-      render: (text: string, record: CatalogProduct) => <Text strong>{text || record.productSku}</Text>,
-    },
-    {
-      title: 'Giá',
-      dataIndex: 'productPrice',
-      key: 'productPrice',
-      align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums" style={{ color: '#D4A84B', fontWeight: 'bold' }}>
-          {formatCurrency(val)}
-        </span>
-      ),
-    },
-    {
-      title: 'Tồn kho',
-      dataIndex: 'inStockCount',
-      key: 'inStockCount',
-      align: 'center' as const,
-      render: (inStock: number = 0, record: CatalogProduct) => {
-        const total = record.totalStockCount || 0;
-        if (inStock > 0) {
-          return (
-            <Tooltip title={`Tồn mới: ${inStock} / Tổng lịch sử nhập: ${total}`}>
-              <Tag color="success" className="font-semibold tabular-nums">
-                {inStock} sẵn có
-              </Tag>
-            </Tooltip>
-          );
-        }
-        return (
-          <Tooltip title={`Đã hết tồn kho mới. Tổng lịch sử nhập: ${total}`}>
-            <Tag color="default" style={{ opacity: 0.6 }} className="tabular-nums">
-              Hết hàng ({total})
-            </Tag>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'isDisabled',
-      key: 'isDisabled',
-      align: 'center' as const,
-      render: (isDisabled: boolean, record: CatalogProduct) => (
-        <Switch checked={!isDisabled} size="small" onChange={() => handleToggleProductStatus(record.id, isDisabled)} />
-      ),
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      align: 'center' as const,
-      width: 120,
-      render: (_: any, record: CatalogProduct) => (
-        <Space size="small">
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="text"
-              icon={<EditOutlined style={{ color: token.colorPrimary }} />}
-              onClick={() => handleOpenProductDrawer(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Vô hiệu hóa sản phẩm"
-            description="Bạn có chắc chắn muốn vô hiệu hóa sản phẩm này không?"
-            onConfirm={() => handleDeleteProduct(record.id)}
-            okText="Đồng ý"
-            cancelText="Hủy"
-          >
-            <Tooltip title="Vô hiệu hóa">
-              <Button type="text" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const productColumns = buildProductColumns({
+    onToggleStatus: crud.handleToggleProductStatus,
+    onOpenDrawer: crud.handleOpenProductDrawer,
+    onDelete: crud.handleDeleteProduct,
+  });
 
   return (
     <div className={`responsive-page responsive-workspace catalog-page ${catalogStyles.page}`}>
@@ -1383,62 +142,53 @@ export default function CatalogPage() {
         extra={
           <div className={catalogStyles.reportControls}>
             <ReportPeriodNavigator
-              mode={viewMode}
-              value={referenceDate}
-              label={getPeriodLabel()}
-              onModeChange={handleViewModeChange}
-              onPrevious={() => handleNavigateDate(-1)}
-              onNext={() => handleNavigateDate(1)}
-              onValueChange={(date) => {
-                setReferenceDate(date);
-                setLeaderboardPage(1);
-                localStorage.setItem('catalog_leaderboard_page', '1');
-              }}
+              mode={state.viewMode}
+              value={state.referenceDate}
+              label={state.getPeriodLabel()}
+              onModeChange={state.handleViewModeChange}
+              onPrevious={() => state.handleNavigateDate(-1)}
+              onNext={() => state.handleNavigateDate(1)}
+              onValueChange={state.handleDateValueChange}
             />
-            <IconButton label="Quay về kỳ hiện tại" icon={RotateCcw} onClick={handleToday} />
+            <IconButton label="Quay về kỳ hiện tại" icon={RotateCcw} onClick={state.handleToday} />
 
-            {activeTab === 'report' && (
+            {state.activeTab === 'report' && (
               <div className={catalogStyles.reportFilters}>
                 <Select
                   aria-label="Lọc loại dữ liệu báo cáo"
                   className={catalogStyles.reportTypeSelect}
-                  value={reportItemType}
-                  onChange={(val) => handleReportItemTypeChange(val as CatalogFilterItemType)}
-                  options={[
-                    { value: 'all', label: 'Tất cả loại' },
-                    { value: 'service', label: 'Dịch vụ' },
-                    { value: 'combo', label: 'Gói Combo' },
-                    { value: 'product', label: 'Sản phẩm' },
-                  ]}
+                  value={state.reportItemType}
+                  onChange={(val) => state.handleReportItemTypeChange(val as CatalogFilterItemType)}
+                  options={REPORT_TYPE_OPTIONS}
                 />
                 <SearchField
                   behavior="filter"
                   aria-label="Tìm dữ liệu báo cáo"
                   className={catalogStyles.reportSearch}
                   placeholder="Tìm kiếm..."
-                  value={reportSearch}
-                  onChange={(event) => handleReportSearchChange(event.target.value)}
+                  value={state.reportSearch}
+                  onChange={(event) => state.handleReportSearchChange(event.target.value)}
                   allowClear
                 />
               </div>
             )}
 
-            {isCatalogAdmin && activeTab === 'services' && (
+            {state.isCatalogAdmin && state.activeTab === 'services' && (
               <Tooltip title="Thêm dịch vụ mới">
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenServiceDrawer()} />
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => crud.handleOpenServiceDrawer()} />
               </Tooltip>
             )}
-            {isCatalogAdmin && activeTab === 'combos' && (
+            {state.isCatalogAdmin && state.activeTab === 'combos' && (
               <Tooltip title="Thêm gói combo mới">
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenComboDrawer()} />
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => crud.handleOpenComboDrawer()} />
               </Tooltip>
             )}
-            {isCatalogAdmin && activeTab === 'products' && (
+            {state.isCatalogAdmin && state.activeTab === 'products' && (
               <Tooltip title="Thêm sản phẩm mới">
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenProductDrawer()} />
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => crud.handleOpenProductDrawer()} />
               </Tooltip>
             )}
-            {isCatalogAdmin && activeTab === 'branches' && (
+            {state.isCatalogAdmin && state.activeTab === 'branches' && (
               <Tooltip title="Thêm chi nhánh mới">
                 <Button type="primary" icon={<PlusOutlined />} onClick={() => openBranchCreateRef.current?.()} />
               </Tooltip>
@@ -1447,7 +197,7 @@ export default function CatalogPage() {
         }
       />
 
-      {!isCatalogAdmin && (
+      {!state.isCatalogAdmin && (
         <Alert
           type="info"
           showIcon
@@ -1457,15 +207,14 @@ export default function CatalogPage() {
         />
       )}
 
-      {/* Main Tabs Container (CC Dashboard Style) */}
       <Card
         variant="outlined"
         style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
         className={`shadow-sm rounded-xl dashboard-main-tabs-card ${catalogStyles.tabsCard}`}
       >
         <Tabs
-          activeKey={activeTab}
-          onChange={handleTabChange}
+          activeKey={state.activeTab}
+          onChange={state.handleTabChange}
           size="large"
           destroyOnHidden
           animated={{ inkBar: true, tabPane: true }}
@@ -1480,32 +229,32 @@ export default function CatalogPage() {
               ),
               children: (
                 <div className={`${catalogStyles.tabPane} space-y-4`}>
-                  <CatalogReportHeader summary={reportSummary} loading={loadingReport} />
+                  <CatalogReportHeader summary={state.reportSummary} loading={state.loadingReport} />
                   <CatalogLeaderboardCard
-                    leaderboard={reportSummary?.leaderboard || []}
-                    loading={loadingReport}
-                    selectedItem={selectedLeaderboardItem}
-                    page={leaderboardPage}
-                    pageSize={leaderboardPageSize}
-                    onPageChange={handleLeaderboardPageChange}
+                    leaderboard={state.reportSummary?.leaderboard || []}
+                    loading={state.loadingReport}
+                    selectedItem={state.selectedLeaderboardItem}
+                    page={state.leaderboardPage}
+                    pageSize={state.leaderboardPageSize}
+                    onPageChange={state.handleLeaderboardPageChange}
                     onSelectItem={(item) => {
                       if (
-                        selectedLeaderboardItem?.itemId === item.itemId &&
-                        selectedLeaderboardItem?.itemType === item.itemType
+                        state.selectedLeaderboardItem?.itemId === item.itemId &&
+                        state.selectedLeaderboardItem?.itemType === item.itemType
                       ) {
-                        setSelectedLeaderboardItem(null);
+                        state.setSelectedLeaderboardItem(null);
                       } else {
-                        setSelectedLeaderboardItem(item);
+                        state.setSelectedLeaderboardItem(item);
                       }
                     }}
                   />
-                  {selectedLeaderboardItem && (
+                  {state.selectedLeaderboardItem && (
                     <div className="mt-6 pt-2">
                       <CatalogItemDetailPanel
-                        selectedItem={selectedLeaderboardItem}
-                        historyData={itemHistoryData}
-                        loading={loadingItemHistory}
-                        onClose={() => setSelectedLeaderboardItem(null)}
+                        selectedItem={state.selectedLeaderboardItem}
+                        historyData={state.itemHistoryData}
+                        loading={state.loadingItemHistory}
+                        onClose={() => state.setSelectedLeaderboardItem(null)}
                         onEditItem={handleEditItemFromDetail}
                         onToggleStatus={handleToggleStatusFromDetail}
                       />
@@ -1523,91 +272,38 @@ export default function CatalogPage() {
                 </Space>
               ),
               children: (
-                <div className={`${catalogStyles.tabPane} space-y-4`}>
-                  <div className="flex flex-col sm:flex-row justify-between gap-4">
-                    <Space wrap align="center">
-                      <Input
-                        aria-label="Tìm dịch vụ"
-                        placeholder="Tìm dịch vụ..."
-                        prefix={<SearchOutlined />}
-                        value={serviceSearch}
-                        onChange={(e) => {
-                          setServiceSearch(e.target.value);
-                          setServicePage(1);
-                          localStorage.setItem('catalog_service_page', '1');
-                        }}
-                        style={{ width: 220 }}
-                        allowClear
-                      />
-                      <Select
-                        aria-label="Lọc nhóm dịch vụ"
-                        value={serviceGroupFilter}
-                        onChange={(val) => {
-                          setServiceGroupFilter(val);
-                          setServicePage(1);
-                          localStorage.setItem('catalog_service_page', '1');
-                        }}
-                        style={{ width: 210 }}
-                        options={[
-                          { value: 'all', label: 'Tất cả nhóm' },
-                          { value: 'Lashes', label: 'Lashes (Tất cả Mi)' },
-                          { value: 'LashesTop', label: 'LashesTop (Mi trên)' },
-                          { value: 'LashesUnder', label: 'LashesUnder (Mi dưới)' },
-                          { value: 'Product', label: 'Product (Giỏ hàng)' },
-                        ]}
-                      />
-                      <Select
-                        aria-label="Lọc loại dịch vụ"
-                        value={serviceTypeFilter}
-                        onChange={(val) => {
-                          setServiceTypeFilter(val);
-                          setServicePage(1);
-                          localStorage.setItem('catalog_service_page', '1');
-                        }}
-                        style={{ width: 210 }}
-                        options={[
-                          { value: 'all', label: 'Tất cả loại dịch vụ' },
-                          { value: 'Normal', label: 'Normal (Nối mới)' },
-                          { value: 'Retain', label: 'Retain (Dặm mi)' },
-                          { value: 'Removal', label: 'Removal (Tháo mi)' },
-                          { value: 'Product', label: 'Product (Giỏ hàng)' },
-                        ]}
-                      />
-                      <Space className="ml-2">
-                        <Text type="secondary" style={{ fontSize: '13px' }}>
-                          Chỉ hiện mục đã ẩn:
-                        </Text>
-                        <Switch
-                          aria-label="Chỉ hiện dịch vụ đã ẩn"
-                          checked={showDisabled}
-                          onChange={(checked) => {
-                            handleShowDisabledChange(checked);
-                            setServicePage(1);
-                          }}
-                          size="small"
-                        />
-                      </Space>
-                    </Space>
-                  </div>
-
-                  <DataTable
-                    rowKey="id"
-                    columns={serviceColumns}
-                    dataSource={services
-                      .filter((s) => (showDisabled ? s.isDisabled : !s.isDisabled))
-                      .filter((s) => (serviceTypeFilter === 'all' ? true : s.serviceType === serviceTypeFilter))}
-                    loading={loadingServices}
-                    pagination={{
-                      current: servicePage,
-                      pageSize: servicePageSize,
-                      onChange: handleServicePageChange,
-                      showSizeChanger: true,
-                      pageSizeOptions: ['10', '20', '50', '100'],
-                      showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
-                    }}
-                    scroll={{ x: 800 }}
-                  />
-                </div>
+                <CatalogServicesTabPane
+                  tabPaneClassName={catalogStyles.tabPane}
+                  services={state.services}
+                  loadingServices={state.loadingServices}
+                  showDisabled={state.showDisabled}
+                  serviceSearch={state.serviceSearch}
+                  serviceGroupFilter={state.serviceGroupFilter}
+                  serviceTypeFilter={state.serviceTypeFilter}
+                  servicePage={state.servicePage}
+                  servicePageSize={state.servicePageSize}
+                  columns={serviceColumns}
+                  onSearchChange={(val) => {
+                    state.setServiceSearch(val);
+                    state.setServicePage(1);
+                    localStorage.setItem('catalog_service_page', '1');
+                  }}
+                  onGroupFilterChange={(val) => {
+                    state.setServiceGroupFilter(val);
+                    state.setServicePage(1);
+                    localStorage.setItem('catalog_service_page', '1');
+                  }}
+                  onTypeFilterChange={(val) => {
+                    state.setServiceTypeFilter(val);
+                    state.setServicePage(1);
+                    localStorage.setItem('catalog_service_page', '1');
+                  }}
+                  onShowDisabledChange={(checked) => {
+                    state.handleShowDisabledChange(checked);
+                    state.setServicePage(1);
+                  }}
+                  onPageChange={state.handleServicePageChange}
+                />
               ),
             },
             {
@@ -1619,42 +315,20 @@ export default function CatalogPage() {
                 </Space>
               ),
               children: (
-                <div className={`${catalogStyles.tabPane} space-y-4`}>
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <Space wrap align="center">
-                      <Text type="secondary">Danh sách tất cả các gói dịch vụ combo mua trước nhiều lượt</Text>
-                      <Space className="ml-3">
-                        <Text type="secondary" style={{ fontSize: '13px' }}>
-                          Chỉ hiện mục đã ẩn:
-                        </Text>
-                        <Switch
-                          checked={showDisabled}
-                          onChange={(checked) => {
-                            handleShowDisabledChange(checked);
-                            setComboPage(1);
-                          }}
-                          size="small"
-                        />
-                      </Space>
-                    </Space>
-                  </div>
-
-                  <DataTable
-                    rowKey="id"
-                    columns={comboColumns}
-                    dataSource={combos.filter((c) => (showDisabled ? c.isDisabled : !c.isDisabled))}
-                    loading={loadingCombos}
-                    pagination={{
-                      current: comboPage,
-                      pageSize: comboPageSize,
-                      onChange: handleComboPageChange,
-                      showSizeChanger: true,
-                      pageSizeOptions: ['10', '20', '50', '100'],
-                      showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} gói combo`,
-                    }}
-                    scroll={{ x: 900 }}
-                  />
-                </div>
+                <CatalogCombosTabPane
+                  tabPaneClassName={catalogStyles.tabPane}
+                  combos={state.combos}
+                  loadingCombos={state.loadingCombos}
+                  showDisabled={state.showDisabled}
+                  comboPage={state.comboPage}
+                  comboPageSize={state.comboPageSize}
+                  columns={comboColumns}
+                  onShowDisabledChange={(checked) => {
+                    state.handleShowDisabledChange(checked);
+                    state.setComboPage(1);
+                  }}
+                  onPageChange={state.handleComboPageChange}
+                />
               ),
             },
             {
@@ -1694,55 +368,28 @@ export default function CatalogPage() {
                 </Space>
               ),
               children: (
-                <div className={`${catalogStyles.tabPane} ${catalogStyles.tabContent}`}>
-                  <FeatureToolbar
-                    primary={
-                      <SearchField
-                        behavior="filter"
-                        aria-label="Tìm sản phẩm"
-                        className={catalogStyles.listSearch}
-                        placeholder="Tìm SKU hoặc tên sản phẩm..."
-                        value={productSearch}
-                        onChange={(event) => {
-                          setProductSearch(event.target.value);
-                          setProductPage(1);
-                          localStorage.setItem('catalog_product_page', '1');
-                        }}
-                        allowClear
-                      />
-                    }
-                    filters={
-                      <ToolbarToggle
-                        label="Chỉ hiện mục đã ẩn"
-                        aria-label="Chỉ hiện sản phẩm đã ẩn"
-                        checked={showDisabled}
-                        onChange={(checked) => {
-                          handleShowDisabledChange(checked);
-                          setProductPage(1);
-                        }}
-                      />
-                    }
-                    filterTitle="Lọc sản phẩm"
-                    filterTriggerLabel="Mở bộ lọc sản phẩm"
-                    activeFilterCount={showDisabled ? 1 : 0}
-                  />
-
-                  <DataTable
-                    rowKey="id"
-                    columns={productColumns}
-                    dataSource={products.filter((p) => (showDisabled ? p.isDisabled : !p.isDisabled))}
-                    loading={loadingProducts}
-                    pagination={{
-                      current: productPage,
-                      pageSize: productPageSize,
-                      onChange: handleProductPageChange,
-                      showSizeChanger: true,
-                      pageSizeOptions: ['10', '20', '50', '100'],
-                      showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} sản phẩm`,
-                    }}
-                    scroll={{ x: 700 }}
-                  />
-                </div>
+                <CatalogProductsTabPane
+                  tabPaneClassName={catalogStyles.tabPane}
+                  tabContentClassName={catalogStyles.tabContent}
+                  listSearchClassName={catalogStyles.listSearch}
+                  products={state.products}
+                  loadingProducts={state.loadingProducts}
+                  showDisabled={state.showDisabled}
+                  productSearch={state.productSearch}
+                  productPage={state.productPage}
+                  productPageSize={state.productPageSize}
+                  columns={productColumns}
+                  onSearchChange={(val) => {
+                    state.setProductSearch(val);
+                    state.setProductPage(1);
+                    localStorage.setItem('catalog_product_page', '1');
+                  }}
+                  onShowDisabledChange={(checked) => {
+                    state.handleShowDisabledChange(checked);
+                    state.setProductPage(1);
+                  }}
+                  onPageChange={state.handleProductPageChange}
+                />
               ),
             },
             {
@@ -1781,282 +428,44 @@ export default function CatalogPage() {
         />
       </Card>
 
-      {/* ─── Service Drawer Form ────────────────────────────────────────────── */}
-      <Drawer
-        title={editingService ? 'Chỉnh sửa Dịch vụ' : 'Thêm Dịch Vụ Mới'}
-        open={serviceDrawerOpen}
-        onClose={() => setServiceDrawerOpen(false)}
-        width={480}
-        extra={
-          <Button type="primary" loading={saving} onClick={() => serviceForm.submit()}>
-            Lưu Dịch Vụ
-          </Button>
-        }
-      >
-        <Form
-          form={serviceForm}
-          layout="vertical"
-          onFinish={handleSaveService}
-          onValuesChange={(changedValues, allValues) => {
-            const key = allValues.serviceKey;
-            const name = allValues.serviceName;
-            const type = allValues.serviceType;
-            const group = allValues.serviceGroup;
-            const isProd = group === 'Product' || type === 'Product' || key === 'any-service-product';
+      <CatalogServiceDrawer
+        open={crud.serviceDrawerOpen}
+        saving={crud.saving}
+        editingService={crud.editingService}
+        form={crud.serviceForm}
+        dynamicGroups={state.dynamicGroups}
+        dynamicTypes={state.dynamicTypes}
+        onClose={() => crud.setServiceDrawerOpen(false)}
+        onFinish={(values) => crud.handleSaveService(values)}
+      />
 
-            if (isProd) {
-              serviceForm.setFieldsValue({ lashStyle: undefined, lashCount: undefined });
-              return;
-            }
+      <CatalogComboDrawer
+        open={crud.comboDrawerOpen}
+        saving={crud.saving}
+        editingCombo={crud.editingCombo}
+        form={crud.comboForm}
+        services={state.services}
+        onClose={() => crud.setComboDrawerOpen(false)}
+        onFinish={crud.handleSaveCombo}
+        onValuesChange={crud.handleComboValuesChange}
+      />
 
-            if (
-              changedValues.serviceKey !== undefined ||
-              changedValues.serviceName !== undefined ||
-              changedValues.serviceType !== undefined ||
-              changedValues.serviceGroup !== undefined
-            ) {
-              const inferredStyle = changedValues.lashStyle || inferLashStyle(key, name);
-              const inferredCount = inferLashCount(key, name);
-              const updates: any = {};
-              updates.lashStyle = inferredStyle || undefined;
-              updates.lashCount = inferredCount || undefined;
+      <CatalogProductDrawer
+        open={crud.productDrawerOpen}
+        saving={crud.saving}
+        editingProduct={crud.editingProduct}
+        form={crud.productForm}
+        onClose={() => crud.setProductDrawerOpen(false)}
+        onFinish={crud.handleSaveProduct}
+      />
 
-              const noTouchupStyles = ['Mink', 'Ivylight', 'Flawless'];
-              if (inferredStyle && noTouchupStyles.includes(inferredStyle) && type === 'Retain') {
-                updates.durationMinute = 103;
-                updates.durationMinuteStandard = 103;
-              }
-
-              serviceForm.setFieldsValue(updates);
-            }
-          }}
-        >
-          <Form.Item
-            name="serviceName"
-            label="Tên dịch vụ"
-            rules={[{ required: true, message: 'Vui lòng nhập tên dịch vụ' }]}
-          >
-            <Input placeholder="Ví dụ: Classic 390" />
-          </Form.Item>
-
-          <Form.Item
-            name="serviceKey"
-            label="Mã SKU / Service Key"
-            rules={[{ required: true, message: 'Vui lòng nhập mã key' }]}
-          >
-            <Input placeholder="Ví dụ: classic-390" disabled={!!editingService} />
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item name="serviceGroup" label="Nhóm dịch vụ" rules={[{ required: true }]}>
-                <Select
-                  options={dynamicGroups.map((g) => {
-                    const labels: Record<string, string> = {
-                      LashesTop: 'LashesTop (Mi trên)',
-                      LashesUnder: 'LashesUnder (Mi dưới)',
-                      LashLift: 'LashLift (Uốn mi)',
-                      Product: 'Product (Giỏ hàng)',
-                    };
-                    return { value: g, label: labels[g] || g };
-                  })}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="serviceType" label="Loại dịch vụ" rules={[{ required: true }]}>
-                <Select
-                  options={dynamicTypes.map((t) => {
-                    const labels: Record<string, string> = {
-                      Normal: 'Normal (Nối mới)',
-                      Retain: 'Retain (Dặm mi)',
-                      Removal: 'Removal (Tháo mi)',
-                      Product: 'Product (Giỏ hàng)',
-                    };
-                    return { value: t, label: labels[t] || t };
-                  })}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="lashStyle" label="Dòng mi">
-                <Select options={LASH_STYLE_OPTIONS} placeholder="Chọn Dòng Mi" allowClear />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item name="durationMinute" label="Thời lượng (phút)" rules={[{ required: true }]}>
-                <InputNumber min={5} max={300} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="lashCount" label="Số sợi mi">
-                <Select
-                  options={[30, 60, 70, 80, 90, 100, 120, 140].map((c) => ({ value: c, label: `${c} sợi` }))}
-                  placeholder="Chọn số sợi"
-                  allowClear
-                />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="servicePrice" label="Giá bán lẻ (VNĐ)">
-                <InputNumber
-                  min={0}
-                  step={10000}
-                  style={{ width: '100%' }}
-                  formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item name="serviceDescription" label="Mô tả chi tiết">
-            <TextArea rows={3} placeholder="Nhập mô tả chi tiết dịch vụ..." />
-          </Form.Item>
-        </Form>
-      </Drawer>
-
-      {/* ─── Combo Drawer Form ──────────────────────────────────────────────── */}
-      <Drawer
-        title={editingCombo ? 'Chỉnh sửa Gói Combo' : 'Thêm Gói Combo Mới'}
-        open={comboDrawerOpen}
-        onClose={() => setComboDrawerOpen(false)}
-        width={480}
-        extra={
-          <Button type="primary" loading={saving} onClick={() => comboForm.submit()}>
-            Lưu Gói Combo
-          </Button>
-        }
-      >
-        <Form form={comboForm} layout="vertical" onFinish={handleSaveCombo} onValuesChange={handleComboValuesChange}>
-          <Form.Item
-            name="servicePricePackageKey"
-            label="Tên gói Combo (Package Key)"
-            rules={[{ required: true, message: 'Vui lòng nhập tên gói combo' }]}
-          >
-            <Input placeholder="Ví dụ: 7+3-classic-volume" />
-          </Form.Item>
-
-          <Form.Item
-            name="serviceId"
-            label="Dịch vụ áp dụng"
-            rules={[{ required: true, message: 'Vui lòng chọn dịch vụ áp dụng' }]}
-          >
-            <Select
-              showSearch
-              placeholder="Chọn dịch vụ"
-              filterOption={vietnameseSearchFilter}
-              options={services.map((s) => ({
-                value: s.id,
-                label: `${s.serviceName || s.serviceKey} (${s.serviceGroup})`,
-              }))}
-            />
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Loại gói">
-                <Input value="Gói Combo" disabled style={{ color: '#d4b106', fontWeight: 600 }} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="servicePrice" label="Giá trọn gói (VNĐ)" rules={[{ required: true }]}>
-                <InputNumber
-                  min={0}
-                  step={50000}
-                  style={{ width: '100%' }}
-                  formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="normalCount" label="Số lượt nối (Mua)" rules={[{ required: true }]}>
-                <InputNumber min={0} max={100} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="bonusNormalCount" label="Lượt nối tặng (+)">
-                <InputNumber min={0} max={100} style={{ width: '100%' }} placeholder="0" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="retainCount" label="Số lượt dặm (Mua)" rules={[{ required: true }]}>
-                <InputNumber min={0} max={100} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="bonusRetainCount" label="Lượt dặm tặng (+)">
-                <InputNumber min={0} max={100} style={{ width: '100%' }} placeholder="0" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item name="expiryAfterDay" label="Hạn sử dụng (ngày)" rules={[{ required: true }]}>
-            <InputNumber min={1} max={1000} style={{ width: '100%' }} placeholder="Ví dụ: 180" />
-          </Form.Item>
-        </Form>
-      </Drawer>
-
-      {/* ─── Product Drawer Form ────────────────────────────────────────────── */}
-      <Drawer
-        title={editingProduct ? 'Chỉnh sửa Sản phẩm' : 'Thêm Sản Phẩm Mới'}
-        open={productDrawerOpen}
-        onClose={() => setProductDrawerOpen(false)}
-        width={480}
-        extra={
-          <Button type="primary" loading={saving} onClick={() => productForm.submit()}>
-            Lưu Sản Phẩm
-          </Button>
-        }
-      >
-        <Form form={productForm} layout="vertical" onFinish={handleSaveProduct}>
-          <Form.Item
-            name="productName"
-            label="Tên sản phẩm"
-            rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm' }]}
-          >
-            <Input placeholder="Ví dụ: Lipstick Supreme Matte RD 144" />
-          </Form.Item>
-
-          <Form.Item
-            name="productSku"
-            label="Mã SKU sản phẩm"
-            rules={[{ required: true, message: 'Vui lòng nhập mã SKU' }]}
-          >
-            <Input placeholder="Ví dụ: lipstick-144" disabled={!!editingProduct} />
-          </Form.Item>
-
-          <Form.Item name="productPrice" label="Giá bán lẻ (VNĐ)" rules={[{ required: true }]}>
-            <InputNumber
-              min={0}
-              step={10000}
-              style={{ width: '100%' }}
-              formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-            />
-          </Form.Item>
-        </Form>
-      </Drawer>
-
-      {/* ─── Service Deactivate Live Combo Warning Modal ─────────────────── */}
       <ServiceDeactivateConfirmModal
-        open={liveComboModalOpen}
-        loading={deactivateLoading}
-        serviceName={pendingDeactivateTarget?.serviceName}
-        data={liveComboCheckData}
-        onCancel={() => {
-          setLiveComboModalOpen(false);
-          setLiveComboCheckData(null);
-          setPendingDeactivateTarget(null);
-        }}
-        onConfirm={handleConfirmDeactivateModal}
+        open={crud.liveComboModalOpen}
+        loading={crud.deactivateLoading}
+        serviceName={crud.pendingDeactivateTarget?.serviceName}
+        data={crud.liveComboCheckData}
+        onCancel={crud.resetDeactivateModal}
+        onConfirm={crud.handleConfirmDeactivateModal}
       />
     </div>
   );
