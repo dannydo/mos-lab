@@ -26,15 +26,20 @@ import {
   CircleUser,
   CreditCard,
   Gem,
+  Gauge,
+  TrendingUp,
+  MapPin,
 } from 'lucide-react';
 import { StatusTag, DataTable } from '../../../../components/ui';
 import { WingRoleLabel } from './IslandGameIcon';
-import type {
-  CareerStaffSummary,
-  CareerRole,
-  CareerPeriod,
-  BananaTransactionCategory,
-  CareerProgressionConfig,
+import {
+  matchesCareerBranchFilter,
+  type CareerStaffSummary,
+  type CareerRole,
+  type CareerPeriod,
+  type CareerBranchFilter,
+  type BananaTransactionCategory,
+  type CareerProgressionConfig,
 } from '@mos-lab/shared';
 import { formatCareerRoleName } from '../career-path.constants';
 
@@ -49,6 +54,8 @@ export interface StaffCareerSelectorProps {
   lastSyncedAt?: string | null;
   activeRoleFilter?: string;
   onRoleFilterChange?: (role: string) => void;
+  activeBranchFilter?: CareerBranchFilter;
+  onBranchFilterChange?: (branch: CareerBranchFilter) => void;
   period?: CareerPeriod;
   onPeriodChange?: (period: CareerPeriod) => void;
   onSetRole?: (staffId: number, newRole: CareerRole) => Promise<void>;
@@ -81,6 +88,12 @@ const ROLE_TABS = [
   { key: 'FM', label: 'FM', fullLabel: 'Quản Lý Tầng FM' },
 ];
 
+const BRANCH_TABS: { key: CareerBranchFilter; label: string; fullLabel: string }[] = [
+  { key: 'ALL', label: 'Tất cả CN', fullLabel: 'Tất cả chi nhánh (Đề Thám & Estella Place)' },
+  { key: 'DE_THAM', label: 'Đề Thám', fullLabel: 'Chi nhánh Đề Thám (DT · ID 6)' },
+  { key: 'ESTELLA', label: 'Estella', fullLabel: 'Chi nhánh Estella Place (EP · ID 16)' },
+];
+
 const PERIOD_TABS: { key: CareerPeriod; label: string; fullLabel: string }[] = [
   {
     key: 'last_month',
@@ -105,6 +118,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   lastSyncedAt,
   activeRoleFilter = 'ALL',
   onRoleFilterChange,
+  activeBranchFilter = 'ALL',
+  onBranchFilterChange,
   period = 'last_30_days',
   onPeriodChange,
   onSetRole,
@@ -119,6 +134,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   config,
 }) => {
   const [internalRoleFilter, setInternalRoleFilter] = useState('ALL');
+  const [internalBranchFilter, setInternalBranchFilter] = useState<CareerBranchFilter>('ALL');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [internalMode, setInternalMode] = useState<CareerSelectorMode>(() => {
     if (typeof window !== 'undefined') {
@@ -157,6 +173,22 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     if (onRoleFilterChange) onRoleFilterChange(role);
     else setInternalRoleFilter(role);
   };
+
+  const currentBranchFilter: CareerBranchFilter = onBranchFilterChange ? activeBranchFilter : internalBranchFilter;
+  const setBranchFilter = (branch: CareerBranchFilter) => {
+    if (onBranchFilterChange) onBranchFilterChange(branch);
+    else setInternalBranchFilter(branch);
+  };
+
+  const branchCounts = useMemo(() => {
+    let dt = 0;
+    let ep = 0;
+    for (const s of staffList) {
+      if (matchesCareerBranchFilter(s, 'DE_THAM')) dt += 1;
+      else if (matchesCareerBranchFilter(s, 'ESTELLA')) ep += 1;
+    }
+    return { ALL: staffList.length, DE_THAM: dt, ESTELLA: ep };
+  }, [staffList]);
 
   const scrollRailRef = useRef<HTMLDivElement>(null);
 
@@ -230,8 +262,56 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     </div>
   );
 
+  const renderBranchFilter = (compact = false) => (
+    <div
+      role="group"
+      aria-label="Lọc theo chi nhánh"
+      className="inline-flex items-center gap-0.5 bg-slate-100/90 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200/80 dark:border-slate-700/70 shrink-0"
+    >
+      <MapPin className="w-3 h-3 text-slate-400 dark:text-slate-500 ml-1 mr-0.5 shrink-0" />
+      {BRANCH_TABS.map((tab) => {
+        const isActive = currentBranchFilter === tab.key;
+        const count = branchCounts[tab.key];
+        const activeClass =
+          tab.key === 'DE_THAM'
+            ? 'bg-cyan-600 text-white shadow-xs font-bold'
+            : tab.key === 'ESTELLA'
+              ? 'bg-violet-600 text-white shadow-xs font-bold'
+              : 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 shadow-xs font-bold';
+        return (
+          <Tooltip key={tab.key} title={tab.fullLabel}>
+            <button
+              type="button"
+              data-testid={`branch-filter-${tab.key.toLowerCase()}`}
+              onClick={() => setBranchFilter(tab.key)}
+              className={`px-2 py-0.5 rounded-md ${
+                compact ? 'text-[10px]' : 'text-[11px]'
+              } font-semibold transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap inline-flex items-center gap-1 tabular-nums ${
+                isActive
+                  ? activeClass
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/70'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={`text-[9px] px-1 rounded-full ${
+                  isActive
+                    ? 'bg-white/20 text-white dark:bg-slate-900/15 dark:text-inherit'
+                    : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+
   const filteredStaff = useMemo(() => {
     const list = staffList.filter((s) => {
+      if (!matchesCareerBranchFilter(s, currentBranchFilter)) return false;
       if (currentFilter === 'ALL') return true;
       if (currentFilter === 'KTV') return s.careerRole === 'KTV';
       if (currentFilter === 'CV') return s.careerRole === 'CV';
@@ -249,7 +329,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       if (diff !== 0) return diff;
       return (a.displayName || '').localeCompare(b.displayName || '');
     });
-  }, [staffList, currentFilter]);
+  }, [staffList, currentFilter, currentBranchFilter]);
 
   const selectedStaff = useMemo(() => {
     return staffList.find((s) => s.id === selectedStaffId) || null;
@@ -911,6 +991,113 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
         );
       },
     },
+    {
+      title: (
+        <Tooltip
+          title={`SPH (Services Per Hour): Số lượt làm mi hoàn tất (Full set + Dặm Combo + Dặm lẻ) / 1 Giờ công thực tế trong ${currentPeriodLabel.toLowerCase()}`}
+        >
+          <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-[11px] font-bold text-sky-700 dark:text-sky-300">
+            <Gauge className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <span>SPH</span>
+          </span>
+        </Tooltip>
+      ),
+      key: 'servicesPerHour',
+      dataIndex: 'servicesPerHour',
+      width: 78,
+      align: 'center',
+      sorter: (a, b) => (a.servicesPerHour ?? a.productivity?.servicesPerHour ?? 0) - (b.servicesPerHour ?? b.productivity?.servicesPerHour ?? 0),
+      render: (_, staff) => {
+        const prod = staff.productivity;
+        const sph = staff.servicesPerHour ?? prod?.servicesPerHour ?? 0;
+        const hours = staff.actualWorkingHours ?? prod?.actualWorkingHours ?? 0;
+        const totalSvc = staff.totalCompletedServices ?? prod?.totalCompletedServices ?? 0;
+        const fullSet = staff.fullSetCount ?? prod?.fullSetCount ?? 0;
+        const comboRetain = staff.comboRetainCount ?? prod?.comboRetainCount ?? 0;
+        const singleRetain = staff.singleRetainCount ?? prod?.singleRetainCount ?? 0;
+
+        if (hours <= 0) {
+          return (
+            <Tooltip title={`Chưa có dữ liệu giờ công ca trong ${currentPeriodLabel.toLowerCase()}`}>
+              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums border border-slate-200 dark:border-slate-700 text-slate-400">
+                —
+              </span>
+            </Tooltip>
+          );
+        }
+
+        const badgeClass =
+          sph >= 0.45
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
+            : sph >= 0.3
+              ? 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/25'
+              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25';
+
+        return (
+          <Tooltip
+            title={`Hiệu suất ${sph.toFixed(2)} lượt/giờ = ${totalSvc} lượt (${fullSet} Full set · ${comboRetain} Dặm Combo · ${singleRetain} Dặm lẻ) / ${hours}h ca`}
+          >
+            <span
+              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${badgeClass}`}
+            >
+              {sph.toFixed(2)}/h
+            </span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: (
+        <Tooltip
+          title={`Doanh thu / Giờ công (Revenue/Hour): Tổng doanh thu dịch vụ làm mi / Giờ công thực tế trong ${currentPeriodLabel.toLowerCase()}`}
+        >
+          <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>DT/h</span>
+          </span>
+        </Tooltip>
+      ),
+      key: 'revenuePerHour',
+      dataIndex: 'revenuePerHour',
+      width: 82,
+      align: 'center',
+      sorter: (a, b) => (a.revenuePerHour ?? a.productivity?.revenuePerHour ?? 0) - (b.revenuePerHour ?? b.productivity?.revenuePerHour ?? 0),
+      render: (_, staff) => {
+        const prod = staff.productivity;
+        const rph = staff.revenuePerHour ?? prod?.revenuePerHour ?? 0;
+        const hours = staff.actualWorkingHours ?? prod?.actualWorkingHours ?? 0;
+        const rev = staff.serviceRevenue ?? prod?.serviceRevenue ?? 0;
+
+        if (hours <= 0) {
+          return (
+            <Tooltip title={`Chưa có dữ liệu giờ công ca trong ${currentPeriodLabel.toLowerCase()}`}>
+              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums border border-slate-200 dark:border-slate-700 text-slate-400">
+                —
+              </span>
+            </Tooltip>
+          );
+        }
+
+        const badgeClass =
+          rph >= 180000
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
+            : rph >= 120000
+              ? 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/25'
+              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25';
+
+        return (
+          <Tooltip
+            title={`Doanh thu/giờ: ${rph.toLocaleString('vi-VN')}đ/h = ${rev.toLocaleString('vi-VN')}đ / ${hours}h ca`}
+          >
+            <span
+              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${badgeClass}`}
+            >
+              {Math.round(rph / 1000)}K/h
+            </span>
+          </Tooltip>
+        );
+      },
+    },
   ];
 
   if (currentMode === 'ultra_compact') {
@@ -927,6 +1114,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-500/30 tabular-nums">
               {filteredStaff.length} CV
             </span>
+
+            {renderBranchFilter(true)}
 
             {/* Inline Role Filter Chips */}
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 ml-1">
@@ -1025,10 +1214,14 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                         <span>{staff.displayName}</span>
                         {getRoleBadge(staff.careerRole, true)}
                       </div>
-                      <div className="text-[10px] text-slate-300">{getStatusLabel(overallStatus)}</div>
+                      <div className="text-[10px] text-slate-300">
+                        {staff.branchName ? `${staff.branchName} · ` : ''}
+                        {getStatusLabel(overallStatus)}
+                      </div>
                       <div className="text-[10px] font-mono text-amber-300 border-t border-white/10 pt-1">
-                        {staff.ordersCount || 0} mi · {tipRate}% tip · {getStaffComboPercent(staff)}% combo ·{' '}
-                        {balance.toLocaleString('vi-VN')} 🍌
+                        {staff.ordersCount || 0} mi ·{' '}
+                        {(staff.servicesPerHour ?? staff.productivity?.servicesPerHour ?? 0).toFixed(2)}/h · {tipRate}% tip ·{' '}
+                        {getStaffComboPercent(staff)}% combo · {balance.toLocaleString('vi-VN')} 🍌
                       </div>
                     </div>
                   }
@@ -1111,6 +1304,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-500/30 tabular-nums">
               {filteredStaff.length} CV
             </span>
+
+            {renderBranchFilter(true)}
 
             {/* Inline Role Filter Chips */}
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 ml-1">
@@ -1259,11 +1454,30 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                         {staff.displayName}
                       </span>
                       <span className="scale-90 origin-left shrink-0">{getRoleBadge(staff.careerRole, true)}</span>
+                      {staff.branchCode && (
+                        <span
+                          className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full border shrink-0 ${
+                            staff.branchCode === 'EP'
+                              ? 'bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/25'
+                              : 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25'
+                          }`}
+                        >
+                          {staff.branchCode}
+                        </span>
+                      )}
                     </div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-mono mt-0.5 whitespace-nowrap">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-mono mt-0.5 whitespace-nowrap tabular-nums">
                       <span className="font-semibold text-slate-700 dark:text-slate-300">
                         {staff.ordersCount || 0} mi
                       </span>
+                      {(staff.actualWorkingHours ?? staff.productivity?.actualWorkingHours ?? 0) > 0 && (
+                        <>
+                          <span>·</span>
+                          <span className="text-sky-600 dark:text-sky-400 font-bold">
+                            {(staff.servicesPerHour ?? staff.productivity?.servicesPerHour ?? 0).toFixed(2)}/h
+                          </span>
+                        </>
+                      )}
                       <span>·</span>
                       <span className="text-emerald-600 dark:text-emerald-400 font-bold">{tipRate}% tip</span>
                       <span>·</span>
@@ -1336,26 +1550,30 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
           </div>
         </div>
 
-        {/* Row 2: Full-width Role Filter Chips */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-          {ROLE_TABS.map((tab) => {
-            const isActive = currentFilter === tab.key;
-            return (
-              <Tooltip key={tab.key} title={tab.fullLabel}>
-                <button
-                  type="button"
-                  onClick={() => setFilter(tab.key)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 shrink-0 whitespace-nowrap ${
-                    isActive
-                      ? 'bg-rose-500 text-white shadow-xs font-bold'
-                      : 'bg-slate-100/90 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700/80'
-                  }`}
-                >
-                  <WingRoleLabel text={tab.label} />
-                </button>
-              </Tooltip>
-            );
-          })}
+        {/* Row 2: Branch Filter + Role Filter Chips */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 max-w-full flex-wrap">
+          {renderBranchFilter(false)}
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block shrink-0" />
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+            {ROLE_TABS.map((tab) => {
+              const isActive = currentFilter === tab.key;
+              return (
+                <Tooltip key={tab.key} title={tab.fullLabel}>
+                  <button
+                    type="button"
+                    onClick={() => setFilter(tab.key)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 shrink-0 whitespace-nowrap cursor-pointer ${
+                      isActive
+                        ? 'bg-rose-500 text-white shadow-xs font-bold'
+                        : 'bg-slate-100/90 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700/80'
+                    }`}
+                  >
+                    <WingRoleLabel text={tab.label} />
+                  </button>
+                </Tooltip>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -1368,7 +1586,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             rowKey="id"
             size="small"
             pagination={false}
-            scroll={{ y: 520 }}
+            stickyPrimaryColumn
+            scroll={{ x: 'max-content', y: 520 }}
             onRow={(record) => ({
               onClick: () => onSelectStaff(record.id),
               className: 'cursor-pointer group',
@@ -1641,6 +1860,23 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-slate-600 dark:text-slate-300">
               Combo: <strong>{getStaffComboPercent(selectedStaff)}%</strong>
+            </span>
+            <span className="text-slate-400">·</span>
+            <span className="tabular-nums text-sky-600 dark:text-sky-400 font-semibold">
+              SPH:{' '}
+              <strong>
+                {(selectedStaff.servicesPerHour ?? selectedStaff.productivity?.servicesPerHour ?? 0).toFixed(2)}/h
+              </strong>
+            </span>
+            <span className="text-slate-400">·</span>
+            <span className="tabular-nums text-emerald-600 dark:text-emerald-400 font-semibold">
+              DT/h:{' '}
+              <strong>
+                {Math.round(
+                  (selectedStaff.revenuePerHour ?? selectedStaff.productivity?.revenuePerHour ?? 0) / 1000
+                ).toLocaleString('vi-VN')}
+                K
+              </strong>
             </span>
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-amber-600 dark:text-amber-400 font-bold">

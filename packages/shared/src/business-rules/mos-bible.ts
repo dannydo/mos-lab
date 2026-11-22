@@ -2244,6 +2244,44 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'CAREER-SPH-001',
+    book: 'PEOPLE',
+    title:
+      'Career Path: Bộ lọc Chi nhánh (Đề Thám / Estella) và Chỉ số Hiệu suất Phục vụ theo Giờ công (SPH & Revenue/Hour)',
+    summary:
+      'Trang Lộ trình Thăng cấp (/dashboard/career-path) hỗ trợ lọc Chuyên Viên theo chi nhánh (ALL | DE_THAM | ESTELLA) và đo lường khoa học năng suất thực tế qua Chỉ số Hiệu suất Giờ (SPH - Services Per Hour) và Doanh thu/Giờ (Revenue/Hour) song hành cùng bộ 3 chỉ số đối soát chất lượng.',
+    commandments: [
+      'Bộ lọc Chi nhánh trên Career Path (ALL | DE_THAM [ID 6] | ESTELLA [ID 16]) phân loại chính xác hồ sơ năng lực theo salon mà Chuyên Viên phục vụ chính, giúp Ban Quản lý, HR và FM/CC theo dõi công bằng lộ trình lên CV🪶 và 🪶CV🪶 tại từng cơ sở.',
+      'Công thức Chỉ số Hiệu suất Giờ (SPH - Services Per Hour): SPH = Tổng lượt làm mi hoàn tất (Full set [Normal] + Dặm Combo [Retain combo] + Dặm lẻ [Retain non-combo]) / Tổng thời gian làm việc thực tế (Giờ công ca có check-in trong kỳ, fallback staff_payroll nếu chưa có log ca).',
+      'Chỉ số Doanh thu / Giờ công (Revenue/Hour): Tổng doanh thu dịch vụ làm mi hoàn tất (total_price + balance_price) / Tổng giờ công thực tế trong kỳ.',
+      'Bộ 3 chỉ số đối soát chất lượng (Quality Guardrails) đi kèm SPH để chống chạy tốc độ đánh đổi chất lượng: (1) Tốc độ & Năng suất (SPH & Revenue/Hour), (2) Tay nghề & Kỹ thuật (Tỷ lệ bảo hành Fix Rate hướng tới 0%, chuẩn ≤ 1.5%), (3) Sự hài lòng & Chân thành (HI / CSAT ≥ 70% & tỷ lệ tự chốt Combo trên tệp Not Combo Live).',
+    ],
+    rationale:
+      'Tuân thủ Chìa khóa thứ 4 (Khoa học) trong Điều răn MOS-002: đo lường khách quan tốc độ phục vụ thực tế trên mỗi giờ công tại từng chi nhánh mà vẫn giữ vững kỷ luật chất lượng tay nghề và trải nghiệm khách hàng.',
+    tags: [
+      'career-path',
+      'branch filter',
+      'DE_THAM',
+      'ESTELLA',
+      'SPH',
+      'Services Per Hour',
+      'Revenue Per Hour',
+      'hiệu suất giờ',
+      'quality guardrails',
+      'MOS-BUG-262',
+    ],
+    routeScopes: ['/dashboard/career-path'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-22',
+    sources: [
+      { label: 'Ticket MOS-BUG-262', reference: 'MOS-BUG-262' },
+      { label: 'Career Progression Types', reference: 'packages/shared/src/types/career-progression.ts' },
+      { label: 'Career Progression Service', reference: 'apps/api/src/modules/career/career.service.ts' },
+      { label: 'Career Path UI', reference: 'apps/web/app/dashboard/career-path/page.tsx' },
+    ],
+  },
+  {
     id: 'UI-008',
     book: 'SYSTEM',
     title:

@@ -5,6 +5,9 @@ import {
   StaffCareerStatus,
   CareerRole,
   CareerPeriod,
+  CareerBranchFilter,
+  StaffHourlyProductivity,
+  matchesCareerBranchFilter,
   CareerProgressionStatus,
   calculateComboBonus,
   CvPlusRewardSnapshot,
@@ -160,6 +163,15 @@ export function resolveCareerPeriodDates(period: CareerPeriod = 'last_30_days') 
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   };
+  const formatDateSql = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+  // For closed-month periods (last_month, last_3_months), periodEnd is 00:00:00 of the 1st of next month
+  const shiftEndDate =
+    period === 'last_month' || period === 'last_3_months'
+      ? new Date(periodEnd.getTime() - 24 * 60 * 60 * 1000)
+      : periodEnd;
 
   return {
     period: (period || 'last_30_days') as CareerPeriod,
@@ -168,10 +180,59 @@ export function resolveCareerPeriodDates(period: CareerPeriod = 'last_30_days') 
     periodEnd,
     periodStartSql: `'${formatSql(periodStart)}'`,
     periodEndSql: `'${formatSql(periodEnd)}'`,
+    shiftStartDateSql: `'${formatDateSql(periodStart)}'`,
+    shiftEndInclusiveSql: `'${formatDateSql(shiftEndDate)}'`,
     orders90dStart,
     orders90dEnd,
     orders90dStartSql: `'${formatSql(orders90dStart)}'`,
     orders90dEndSql: `'${formatSql(orders90dEnd)}'`,
+  };
+}
+
+/**
+ * Chuẩn hóa tính toán Hiệu suất Phục vụ theo Giờ công (SPH & Revenue/Hour) theo Điều răn CAREER-SPH-001:
+ * SPH = (Full set + Dặm Combo + Dặm lẻ) / Tổng giờ công ca thực tế trong kỳ
+ */
+export function computeHourlyProductivity(input: {
+  fullSetCount?: number;
+  comboRetainCount?: number;
+  singleRetainCount?: number;
+  serviceRevenue?: number;
+  shiftHours?: number;
+  payrollHours?: number;
+}): StaffHourlyProductivity {
+  const fullSetCount = Math.max(0, Math.round(Number(input.fullSetCount || 0)));
+  const comboRetainCount = Math.max(0, Math.round(Number(input.comboRetainCount || 0)));
+  const singleRetainCount = Math.max(0, Math.round(Number(input.singleRetainCount || 0)));
+  const totalCompletedServices = fullSetCount + comboRetainCount + singleRetainCount;
+  const serviceRevenue = Math.max(0, Math.round(Number(input.serviceRevenue || 0)));
+  const rawShiftHours = Math.max(0, Number(input.shiftHours || 0));
+  const rawPayrollHours = Math.max(0, Number(input.payrollHours || 0));
+
+  let actualWorkingHours = 0;
+  let workingHoursSource: StaffHourlyProductivity['workingHoursSource'] = 'NONE';
+  if (rawShiftHours > 0) {
+    actualWorkingHours = Number(rawShiftHours.toFixed(1));
+    workingHoursSource = 'SHIFT';
+  } else if (rawPayrollHours > 0) {
+    actualWorkingHours = Number(rawPayrollHours.toFixed(1));
+    workingHoursSource = 'PAYROLL';
+  }
+
+  const servicesPerHour =
+    actualWorkingHours > 0 ? Number((totalCompletedServices / actualWorkingHours).toFixed(2)) : 0;
+  const revenuePerHour = actualWorkingHours > 0 ? Math.round(serviceRevenue / actualWorkingHours) : 0;
+
+  return {
+    totalCompletedServices,
+    fullSetCount,
+    comboRetainCount,
+    singleRetainCount,
+    actualWorkingHours,
+    servicesPerHour,
+    serviceRevenue,
+    revenuePerHour,
+    workingHoursSource,
   };
 }
 
@@ -308,7 +369,7 @@ export class CareerProgressionService {
    */
   static async listStaff(
     fastify: FastifyInstance,
-    query?: { role?: string; search?: string; period?: CareerPeriod }
+    query?: { role?: string; search?: string; period?: CareerPeriod; branch?: CareerBranchFilter | string }
   ): Promise<any[]> {
     // 1. Lấy danh sách ID Chuyên Viên và CC hoạt động từ cấu hình (ACTIVE_CV_STAFF_CONFIG, ACTIVE_CC_STAFF_CONFIG)
     let activeCvLegacyIds: number[] = [];
@@ -385,6 +446,12 @@ export class CareerProgressionService {
     const hiMap: Record<number, number> = {};
     const staffPrimaryStoreMap: Record<number, number> = {};
     const profileStoreMap: Record<number, number> = {};
+    const productivitySvcMap: Record<
+      number,
+      { fullSetCount: number; comboRetainCount: number; singleRetainCount: number; serviceRevenue: number }
+    > = {};
+    const shiftHoursMap: Record<number, number> = {};
+    const payrollHoursMap: Record<number, number> = {};
     const branchTipStatsMap: Record<
       number,
       {
@@ -415,6 +482,9 @@ export class CareerProgressionService {
         staffStoreRows,
         periodStaffOrdersRows,
         ninetyDaysStaffOrdersRows,
+        productivitySvcRows,
+        shiftHoursRows,
+        payrollHoursRows,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
@@ -590,6 +660,69 @@ export class CareerProgressionService {
         `
           )
           .catch(() => []),
+        fastify.prisma.legacy
+          .$queryRawUnsafe<any[]>(
+            `
+          SELECT
+            os.assigned_staff_id,
+            COUNT(CASE WHEN os.service_type = 'Normal' THEN 1 END) as full_set_count,
+            COUNT(CASE WHEN os.service_type = 'Retain' AND COALESCE(os.user_service_type, '') = 'combo' THEN 1 END) as combo_retain_count,
+            COUNT(CASE WHEN os.service_type = 'Retain' AND COALESCE(os.user_service_type, '') != 'combo' THEN 1 END) as single_retain_count,
+            COALESCE(SUM(COALESCE(os.total_price, 0) + COALESCE(os.balance_price, 0)), 0) as service_revenue
+          FROM order_service os
+          JOIN \`order\` o ON o.id = os.order_id
+          WHERE o.order_state = 'Completed'
+            AND o.booking_date_start >= ${periodConfig.periodStartSql}
+            AND o.booking_date_start < ${periodConfig.periodEndSql}
+            AND os.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')
+            AND os.service_type IN ('Normal', 'Retain')
+          GROUP BY os.assigned_staff_id
+        `
+          )
+          .catch(() => []),
+        fastify.prisma.legacy
+          .$queryRawUnsafe<any[]>(
+            `
+          SELECT
+            sws.user_id,
+            ROUND(
+              COALESCE(
+                SUM(
+                  CASE
+                    WHEN sws.check_in_staff_task_id IS NOT NULL
+                    THEN GREATEST(
+                      0,
+                      TIMESTAMPDIFF(MINUTE, sws.start_time, sws.end_time) -
+                      COALESCE(TIMESTAMPDIFF(MINUTE, sws.start_break_time, sws.end_break_time), 0)
+                    )
+                    ELSE 0
+                  END
+                ),
+                0
+              ) / 60,
+              1
+            ) as shift_hours
+          FROM staff_working_shift sws
+          WHERE sws.date >= ${periodConfig.shiftStartDateSql}
+            AND sws.date <= ${periodConfig.shiftEndInclusiveSql}
+          GROUP BY sws.user_id
+        `
+          )
+          .catch(() => []),
+        fastify.prisma.legacy
+          .$queryRawUnsafe<any[]>(
+            `
+          SELECT
+            sp.user_id,
+            ROUND(COALESCE(SUM(sp.total_working_hour), 0), 1) as payroll_hours
+          FROM staff_payroll sp
+          WHERE sp.date >= ${periodConfig.shiftStartDateSql}
+            AND sp.date <= LAST_DAY(${periodConfig.shiftEndInclusiveSql})
+            AND sp.date < '3000-01-01'
+          GROUP BY sp.user_id
+        `
+          )
+          .catch(() => []),
       ]);
 
       const allOrderIdsToClassify = Array.from(
@@ -634,6 +767,35 @@ export class CareerProgressionService {
         balanceRows.forEach((r: any) => {
           if (r.user_id) {
             bananaBalancesMap[Number(r.user_id)] = Number(r.amount) || 0;
+          }
+        });
+      }
+
+      if (Array.isArray(productivitySvcRows)) {
+        productivitySvcRows.forEach((r: any) => {
+          if (r.assigned_staff_id) {
+            productivitySvcMap[Number(r.assigned_staff_id)] = {
+              fullSetCount: Number(r.full_set_count) || 0,
+              comboRetainCount: Number(r.combo_retain_count) || 0,
+              singleRetainCount: Number(r.single_retain_count) || 0,
+              serviceRevenue: Number(r.service_revenue) || 0,
+            };
+          }
+        });
+      }
+
+      if (Array.isArray(shiftHoursRows)) {
+        shiftHoursRows.forEach((r: any) => {
+          if (r.user_id) {
+            shiftHoursMap[Number(r.user_id)] = Number(r.shift_hours) || 0;
+          }
+        });
+      }
+
+      if (Array.isArray(payrollHoursRows)) {
+        payrollHoursRows.forEach((r: any) => {
+          if (r.user_id) {
+            payrollHoursMap[Number(r.user_id)] = Number(r.payroll_hours) || 0;
           }
         });
       }
@@ -872,6 +1034,15 @@ export class CareerProgressionService {
 
       const rawAvatar = staff.avatarUrl || (staff.legacyStaffId ? legacyAvatarMap.get(staff.legacyStaffId) : null);
       const avatarUrl = normalizeAvatarUrl(rawAvatar);
+      const prodRow = productivitySvcMap[legacyId];
+      const productivity = computeHourlyProductivity({
+        fullSetCount: prodRow?.fullSetCount ?? 0,
+        comboRetainCount: prodRow?.comboRetainCount ?? 0,
+        singleRetainCount: prodRow?.singleRetainCount ?? 0,
+        serviceRevenue: prodRow?.serviceRevenue ?? 0,
+        shiftHours: shiftHoursMap[legacyId] ?? 0,
+        payrollHours: payrollHoursMap[legacyId] ?? 0,
+      });
 
       return {
         id: staff.id,
@@ -890,6 +1061,15 @@ export class CareerProgressionService {
                 ? config.cvPlusToCvPlusPlus?.minOrders
                 : config.cvToCvPlus?.minOrders || config.cvToCc?.minOrders) ?? 330),
         period: periodConfig.period,
+        servicesPerHour: productivity.servicesPerHour,
+        revenuePerHour: productivity.revenuePerHour,
+        actualWorkingHours: productivity.actualWorkingHours,
+        totalCompletedServices: productivity.totalCompletedServices,
+        fullSetCount: productivity.fullSetCount,
+        comboRetainCount: productivity.comboRetainCount,
+        singleRetainCount: productivity.singleRetainCount,
+        serviceRevenue: productivity.serviceRevenue,
+        productivity,
         fixRate, // Bug trong kỳ được chọn
         totalTip,
         tipRatioAboveShop,
@@ -961,14 +1141,19 @@ export class CareerProgressionService {
       };
     });
 
-    // Filter by query role if specified
-    const filteredResult =
+    // Filter by query role and branch if specified
+    const roleFilteredResult =
       query?.role && query.role !== 'ALL'
         ? result.filter((s) => {
             if (query.role === 'CV') return ['KTV', 'CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole);
             return s.careerRole === query.role;
           })
         : result;
+
+    const filteredResult =
+      query?.branch && query.branch !== 'ALL'
+        ? roleFilteredResult.filter((s) => matchesCareerBranchFilter(s, query.branch))
+        : roleFilteredResult;
 
     // 1. Order by số bộ mi (ordersCount DESC) theo chuẩn nghiệp vụ, tie-break theo tên Chuyên Viên
     return filteredResult.sort((a, b) => {
@@ -1073,6 +1258,7 @@ export class CareerProgressionService {
     let payrollAllowanceAmount = 0;
     let payrollDate: string | null = null;
     let payrollMonthLabel: string | null = null;
+    let productivity: StaffHourlyProductivity = computeHourlyProductivity({});
 
     try {
       const [
@@ -1091,6 +1277,9 @@ export class CareerProgressionService {
         payrollRes,
         staffPeriodOrdersRes,
         staff90dOrdersRes,
+        staffProductivityRes,
+        staffShiftPeriodRes,
+        staffPayrollPeriodHoursRes,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
           `
@@ -1345,7 +1534,82 @@ export class CareerProgressionService {
             targetLegacyStaffId
           )
           .catch(() => []),
+        fastify.prisma.legacy
+          .$queryRawUnsafe<any[]>(
+            `
+          SELECT
+            COUNT(CASE WHEN os.service_type = 'Normal' THEN 1 END) as full_set_count,
+            COUNT(CASE WHEN os.service_type = 'Retain' AND COALESCE(os.user_service_type, '') = 'combo' THEN 1 END) as combo_retain_count,
+            COUNT(CASE WHEN os.service_type = 'Retain' AND COALESCE(os.user_service_type, '') != 'combo' THEN 1 END) as single_retain_count,
+            COALESCE(SUM(COALESCE(os.total_price, 0) + COALESCE(os.balance_price, 0)), 0) as service_revenue
+          FROM order_service os
+          JOIN \`order\` o ON o.id = os.order_id
+          WHERE os.assigned_staff_id = ?
+            AND o.order_state = 'Completed'
+            AND o.booking_date_start >= ${periodConfig.periodStartSql}
+            AND o.booking_date_start < ${periodConfig.periodEndSql}
+            AND os.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')
+            AND os.service_type IN ('Normal', 'Retain')
+        `,
+            targetLegacyStaffId
+          )
+          .catch(() => []),
+        fastify.prisma.legacy
+          .$queryRawUnsafe<any[]>(
+            `
+          SELECT
+            ROUND(
+              COALESCE(
+                SUM(
+                  CASE
+                    WHEN sws.check_in_staff_task_id IS NOT NULL
+                    THEN GREATEST(
+                      0,
+                      TIMESTAMPDIFF(MINUTE, sws.start_time, sws.end_time) -
+                      COALESCE(TIMESTAMPDIFF(MINUTE, sws.start_break_time, sws.end_break_time), 0)
+                    )
+                    ELSE 0
+                  END
+                ),
+                0
+              ) / 60,
+              1
+            ) as shift_hours
+          FROM staff_working_shift sws
+          WHERE sws.user_id = ?
+            AND sws.date >= ${periodConfig.shiftStartDateSql}
+            AND sws.date <= ${periodConfig.shiftEndInclusiveSql}
+        `,
+            targetLegacyStaffId
+          )
+          .catch(() => []),
+        fastify.prisma.legacy
+          .$queryRawUnsafe<any[]>(
+            `
+          SELECT
+            ROUND(COALESCE(SUM(sp.total_working_hour), 0), 1) as payroll_hours
+          FROM staff_payroll sp
+          WHERE sp.user_id = ?
+            AND sp.date >= ${periodConfig.shiftStartDateSql}
+            AND sp.date <= LAST_DAY(${periodConfig.shiftEndInclusiveSql})
+            AND sp.date < '3000-01-01'
+        `,
+            targetLegacyStaffId
+          )
+          .catch(() => []),
       ]);
+
+      const prodMetricsRow = staffProductivityRes?.[0];
+      const periodShiftHours = Number(staffShiftPeriodRes?.[0]?.shift_hours || 0);
+      const periodPayrollHours = Number(staffPayrollPeriodHoursRes?.[0]?.payroll_hours || 0);
+      productivity = computeHourlyProductivity({
+        fullSetCount: Number(prodMetricsRow?.full_set_count || 0),
+        comboRetainCount: Number(prodMetricsRow?.combo_retain_count || 0),
+        singleRetainCount: Number(prodMetricsRow?.single_retain_count || 0),
+        serviceRevenue: Number(prodMetricsRow?.service_revenue || 0),
+        shiftHours: periodShiftHours,
+        payrollHours: periodPayrollHours,
+      });
 
       if (payrollRes && payrollRes.length > 0) {
         const pr = payrollRes[0];
@@ -1909,6 +2173,12 @@ export class CareerProgressionService {
         facilityScore: 96,
         inventoryLossRate: 0.003,
         googleReviewsCount: 32,
+        servicesPerHour: productivity.servicesPerHour,
+        revenuePerHour: productivity.revenuePerHour,
+        actualWorkingHours: productivity.actualWorkingHours,
+        totalCompletedServices: productivity.totalCompletedServices,
+        serviceRevenue: productivity.serviceRevenue,
+        productivity,
         qaAudit,
       },
       qualifiedQuests: {

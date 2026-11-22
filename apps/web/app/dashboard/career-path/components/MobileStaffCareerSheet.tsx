@@ -18,13 +18,18 @@ import {
   Feather,
   Gem,
   Wallet,
+  Gauge,
+  TrendingUp,
+  MapPin,
 } from 'lucide-react';
 import { StatusTag } from '../../../../components/ui';
 import { WingRoleLabel, LashIcon } from './IslandGameIcon';
 import {
   normalizeCvFeatherRole,
+  matchesCareerBranchFilter,
   type CareerStaffSummary,
   type CareerRole,
+  type CareerBranchFilter,
   type CareerProgressionConfig,
 } from '@mos-lab/shared';
 
@@ -32,6 +37,8 @@ export interface MobileStaffCareerSheetProps {
   staffList: CareerStaffSummary[];
   selectedStaffId: number | null;
   onSelectStaff: (staffId: number) => void;
+  activeBranchFilter?: CareerBranchFilter;
+  onBranchFilterChange?: (branch: CareerBranchFilter) => void;
   config?: CareerProgressionConfig;
   onClose: () => void;
 }
@@ -48,18 +55,33 @@ const ROLE_TABS = [
   { key: 'FM', label: 'FM' },
 ];
 
+const BRANCH_TABS: { key: CareerBranchFilter; label: string }[] = [
+  { key: 'ALL', label: 'Tất cả CN' },
+  { key: 'DE_THAM', label: 'Đề Thám' },
+  { key: 'ESTELLA', label: 'Estella' },
+];
+
 export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
   staffList,
   selectedStaffId,
   onSelectStaff,
+  activeBranchFilter,
+  onBranchFilterChange,
   config,
   onClose,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeRoleFilter, setActiveRoleFilter] = useState('ALL');
+  const [internalBranchFilter, setInternalBranchFilter] = useState<CareerBranchFilter>('ALL');
   const [highlightedId, setHighlightedId] = useState<number | null>(selectedStaffId);
   const selectedRef = useRef<HTMLDivElement | null>(null);
   const listContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const currentBranchFilter: CareerBranchFilter = activeBranchFilter ?? internalBranchFilter;
+  const setBranchFilter = (branch: CareerBranchFilter) => {
+    if (onBranchFilterChange) onBranchFilterChange(branch);
+    else setInternalBranchFilter(branch);
+  };
 
   // Benchmarks from config
   const cvReq = config?.cvToCvPlus || config?.cvToCc;
@@ -258,10 +280,25 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
     });
   }, [staffList]);
 
+  // Branch-filtered base list for counts & role filtering
+  const branchScopedStaffList = useMemo(() => {
+    return baseStaffList.filter((s) => matchesCareerBranchFilter(s, currentBranchFilter));
+  }, [baseStaffList, currentBranchFilter]);
+
+  const branchCounts = useMemo(() => {
+    let dt = 0;
+    let ep = 0;
+    for (const s of baseStaffList) {
+      if (matchesCareerBranchFilter(s, 'DE_THAM')) dt += 1;
+      else if (matchesCareerBranchFilter(s, 'ESTELLA')) ep += 1;
+    }
+    return { ALL: baseStaffList.length, DE_THAM: dt, ESTELLA: ep };
+  }, [baseStaffList]);
+
   // Counts by role
   const roleCounts = useMemo(() => {
     const counts: Record<string, number> = {
-      ALL: baseStaffList.length,
+      ALL: branchScopedStaffList.length,
       KTV: 0,
       CV: 0,
       CV_PLUS: 0,
@@ -269,7 +306,7 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
       CC: 0,
       FM: 0,
     };
-    baseStaffList.forEach((s) => {
+    branchScopedStaffList.forEach((s) => {
       if (s.careerRole === 'CV') counts.CV++;
       else if (s.careerRole === 'CV_PLUS') counts.CV_PLUS++;
       else if (s.careerRole === 'CV_PLUS_PLUS') counts.CV_PLUS_PLUS++;
@@ -278,11 +315,11 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
       else if (s.careerRole === 'FM' || ['manager', 'fm'].includes((s.role || '').toLowerCase())) counts.FM++;
     });
     return counts;
-  }, [baseStaffList]);
+  }, [branchScopedStaffList]);
 
-  // Filtered by Search & Role (bảo đảm luôn order by số bộ mi ordersCount giảm dần)
+  // Filtered by Branch, Search & Role (bảo đảm luôn order by số bộ mi ordersCount giảm dần)
   const filteredStaff = useMemo(() => {
-    let result = baseStaffList;
+    let result = branchScopedStaffList;
 
     if (activeRoleFilter !== 'ALL') {
       result = result.filter((s) => {
@@ -315,7 +352,7 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
       if (diff !== 0) return diff;
       return (a.displayName || '').localeCompare(b.displayName || '');
     });
-  }, [baseStaffList, activeRoleFilter, searchQuery]);
+  }, [branchScopedStaffList, activeRoleFilter, searchQuery]);
 
   // Auto-scroll to selected staff when sheet opens
   useEffect(() => {
@@ -356,6 +393,48 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
               <X className="w-3 h-3" />
             </button>
           )}
+        </div>
+
+        {/* Branch Filter Tabs (Đề Thám / Estella) */}
+        <div
+          role="group"
+          aria-label="Lọc theo chi nhánh"
+          className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs font-bold pb-2"
+        >
+          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          {BRANCH_TABS.map((tab) => {
+            const isActive = currentBranchFilter === tab.key;
+            const count = branchCounts[tab.key];
+            const activeClass =
+              tab.key === 'DE_THAM'
+                ? 'bg-cyan-600 text-white shadow-xs font-black'
+                : tab.key === 'ESTELLA'
+                  ? 'bg-violet-600 text-white shadow-xs font-black'
+                  : 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 shadow-xs font-black';
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setBranchFilter(tab.key)}
+                className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1 tabular-nums ${
+                  isActive
+                    ? activeClass
+                    : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${
+                    isActive
+                      ? 'bg-white/20 text-white dark:bg-slate-900/15 dark:text-inherit'
+                      : 'bg-slate-200/80 dark:bg-slate-700/80 text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Role Filter Tabs (Horizontal Pill Rail) */}
@@ -614,6 +693,28 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Hourly Productivity Strip (SPH & Revenue/Hour) */}
+                {(staff.actualWorkingHours ?? staff.productivity?.actualWorkingHours ?? 0) > 0 && (
+                  <div className="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800/70 flex items-center justify-between gap-2 text-[10px] tabular-nums">
+                    <span className="inline-flex items-center gap-1 text-sky-700 dark:text-sky-300 font-bold">
+                      <Gauge className="w-3 h-3 text-sky-500 shrink-0" />
+                      <span>
+                        SPH: {(staff.servicesPerHour ?? staff.productivity?.servicesPerHour ?? 0).toFixed(2)} lượt/h
+                      </span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-bold">
+                      <TrendingUp className="w-3 h-3 text-emerald-500 shrink-0" />
+                      <span>
+                        DT/h:{' '}
+                        {Math.round(
+                          (staff.revenuePerHour ?? staff.productivity?.revenuePerHour ?? 0) / 1000
+                        ).toLocaleString('vi-VN')}
+                        K
+                      </span>
+                    </span>
+                  </div>
+                )}
               </div>
             );
           })

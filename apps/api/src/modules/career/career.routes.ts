@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { requireAuth, requireSuperAdmin } from '../../middlewares/auth.js';
-import { CareerProgressionConfig, CareerPeriod, isCvRole } from '@mos-lab/shared';
+import { CareerProgressionConfig, CareerPeriod, CareerBranchFilter, isCvRole } from '@mos-lab/shared';
 import { CareerProgressionService } from './career.service.js';
 
 export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
@@ -84,7 +84,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
    * Danh sách nhân viên tham gia lộ trình thăng tiến kèm chỉ số thực tế
    * GET /api/career/staff-list
    */
-  fastify.get<{ Querystring: { role?: string; search?: string; period?: CareerPeriod } }>(
+  fastify.get<{ Querystring: { role?: string; search?: string; period?: CareerPeriod; branch?: CareerBranchFilter | string } }>(
     '/career/staff-list',
     {
       preHandler: [requireAuth],

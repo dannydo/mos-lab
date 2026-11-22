@@ -10,7 +10,10 @@ import {
   type CareerStaffSummary,
   type CareerRole,
   type CareerPeriod,
+  type CareerBranchFilter,
   type BananaTransactionCategory,
+  matchesCareerBranchFilter,
+  normalizeCareerBranchFilter,
   isCanonicalSuperAdminIdentity,
   isCvRole,
   isSuperAdminRole,
@@ -33,6 +36,7 @@ export default function CareerPathPage() {
   const { themeMode } = useTheme();
   const searchParams = useSearchParams();
   const queryStaffId = searchParams.get('staffId');
+  const queryBranch = searchParams.get('branch');
   const [currentUser, setCurrentUser] = useState<{
     id?: number;
     role?: string;
@@ -77,6 +81,11 @@ export default function CareerPathPage() {
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [activeRoleFilter, setActiveRoleFilter] = useState<string>('ALL');
+  const [activeBranchFilter, setActiveBranchFilter] = useState<CareerBranchFilter>(() =>
+    normalizeCareerBranchFilter(queryBranch)
+  );
+  const activeBranchFilterRef = useRef<CareerBranchFilter>(activeBranchFilter);
+  activeBranchFilterRef.current = activeBranchFilter;
   const [selectedPeriod, setSelectedPeriod] = useState<CareerPeriod>('last_30_days');
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -193,15 +202,19 @@ export default function CareerPathPage() {
             ? sortedList.find((s) => s.id === currentStaffId || (s.legacyStaffId && s.legacyStaffId === currentStaffId))
             : null;
 
-          const cvPool = sortedList.filter((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole));
-          const targetPool = cvPool.length > 0 ? cvPool : sortedList;
+          const branchPool = sortedList.filter((s) => matchesCareerBranchFilter(s, activeBranchFilterRef.current));
+          const effectivePool = branchPool.length > 0 ? branchPool : sortedList;
+          const cvPool = effectivePool.filter((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole));
+          const targetPool = cvPool.length > 0 ? cvPool : effectivePool;
           const highestOrdersStaff = targetPool[0];
 
-          const defaultStaff =
-            queryStaff ||
-            (selectedStaffId ? sortedList.find((s) => s.id === selectedStaffId) : null) ||
-            ownStaff ||
-            highestOrdersStaff;
+          const selectedInBranch = selectedStaffId
+            ? effectivePool.find((s) => s.id === selectedStaffId)
+            : null;
+          const ownInBranch =
+            ownStaff && matchesCareerBranchFilter(ownStaff, activeBranchFilterRef.current) ? ownStaff : null;
+
+          const defaultStaff = queryStaff || selectedInBranch || ownInBranch || highestOrdersStaff;
 
           if (defaultStaff) {
             setSelectedStaffId(defaultStaff.id);
@@ -236,6 +249,27 @@ export default function CareerPathPage() {
     playSound('pop');
     setSelectedPeriod(newPeriod);
     loadData(newPeriod);
+  };
+
+  const handleBranchFilterChange = (newBranch: CareerBranchFilter) => {
+    playSound('pop');
+    setActiveBranchFilter(newBranch);
+    if (newBranch === 'ALL' || staffList.length === 0) return;
+
+    const currentSelected = staffList.find((s) => s.id === selectedStaffId);
+    if (currentSelected && matchesCareerBranchFilter(currentSelected, newBranch)) {
+      return;
+    }
+
+    const branchPool = staffList.filter((s) => matchesCareerBranchFilter(s, newBranch));
+    const cvBranchPool = branchPool.filter((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole));
+    const nextStaff = cvBranchPool[0] || branchPool[0];
+    if (nextStaff) {
+      setSelectedStaffId(nextStaff.id);
+      const defaultTarget = nextStaff.careerRole === 'CV_PLUS' ? 'CV_PLUS_PLUS' : 'CV_PLUS';
+      setSimulationTarget(defaultTarget);
+      fetchStaffProgression(nextStaff.id, false, defaultTarget, selectedPeriod);
+    }
   };
 
   useEffect(() => {
@@ -651,6 +685,8 @@ export default function CareerPathPage() {
             lastSyncedAt={lastSyncedAt}
             activeRoleFilter={activeRoleFilter}
             onRoleFilterChange={setActiveRoleFilter}
+            activeBranchFilter={activeBranchFilter}
+            onBranchFilterChange={handleBranchFilterChange}
             period={selectedPeriod}
             onPeriodChange={handlePeriodChange}
             onSetRole={isDanny ? handleSetRole : undefined}
@@ -794,6 +830,8 @@ export default function CareerPathPage() {
           config={safeConfig}
           staffList={staffList}
           selectedStaffId={selectedStaffId}
+          activeBranchFilter={activeBranchFilter}
+          onBranchFilterChange={handleBranchFilterChange}
           onSelectStaff={(id) => {
             handleSelectStaff(id);
           }}
