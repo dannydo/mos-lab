@@ -33,6 +33,8 @@ export function Screen03ConsultationMatrix({
   onAutoSaveDraft,
   isSimulationMode = false,
   isReadOnlyMentorView = false,
+  simPresetMode,
+  onSimJumpToStep,
   onSimFastForwardToUpsell,
   onSelectComboWallet,
 }: Screen03ConsultationMatrixProps) {
@@ -325,6 +327,8 @@ export function Screen03ConsultationMatrix({
           bookingId={booking?.id}
           isSimulationMode={isSimulationMode}
           isReadOnlyMentorView={isReadOnlyMentorView}
+          simPresetMode={simPresetMode}
+          onSimJumpToStep={onSimJumpToStep}
           simulationAttemptCount={booking?.simulationAttemptCount}
           onSimFastForwardToUpsell={onSimFastForwardToUpsell}
         />

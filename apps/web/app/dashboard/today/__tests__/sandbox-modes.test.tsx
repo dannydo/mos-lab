@@ -13,6 +13,7 @@ import {
 } from '../hooks/mockTodayData';
 import TodayStaffAttendance from '../components/TodayStaffAttendance';
 import { RevenueDetailModal } from '../components/RevenueDetailModal';
+import SandboxControlPanel from '../components/SandboxControlPanel';
 
 // Mock ant design message
 vi.mock('antd', async (importOriginal) => {
@@ -359,6 +360,84 @@ describe('mOS Dashboard Today — Sandbox Modes (MOS-FEAT-236)', () => {
 
       // Verify modal updates with transactions (both button and table cells match)
       expect(screen.getAllByText(/Combo 10 Tặng 6/i).length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe('Reopen Scope: Design Plan, Materials Checklist, Closing Uplift & Presets (PA #1, PA #2)', () => {
+    it('tracks design plan targets, material stock checks, closing rate uplift and preset saving', () => {
+      const { result } = renderHook(() => useTodaySandbox(), {
+        wrapper: ({ children }) => <TodaySandboxProvider>{children}</TodaySandboxProvider>,
+      });
+
+      // Design planning
+      const initialTarget = result.current.designPlanTotals.target;
+      act(() => {
+        result.current.updateDesignPlanTarget('plan-ultralight', 2);
+        result.current.incrementDesignPlanDone('plan-ultralight');
+      });
+      expect(result.current.designPlanTotals.target).toBe(initialTarget + 2);
+
+      // Materials checklist
+      const beforeReady = result.current.materialReadyCount;
+      act(() => {
+        result.current.toggleMaterialCheck('mat-fans');
+      });
+      expect(result.current.materialReadyCount).toBe(beforeReady + 1);
+
+      act(() => {
+        result.current.cycleMaterialStatus('mat-primer');
+      });
+      const primer = result.current.materialsChecklist.find((m) => m.id === 'mat-primer');
+      expect(primer?.status).toBe('sufficient');
+
+      // Closing rate uplift on Sales Combo + Product + Gift
+      const baseRate = result.current.closingRate;
+      act(() => {
+        result.current.simulateAddCombo({ name: 'Combo 10 Tặng 6', price: 5_900_000 });
+        result.current.simulateAddGift({ name: 'Quà tặng VIP', estimatedValue: 180_000 });
+      });
+      expect(result.current.closingRate).toBeGreaterThan(baseRate);
+      expect(result.current.closingUpliftPercent).toBeGreaterThan(0);
+
+      // Presets PA #1, PA #2 and custom PA #3
+      act(() => {
+        result.current.applyPreset('pa-2');
+      });
+      expect(result.current.mode).toBe('sales');
+      expect(result.current.activePresetId).toBe('pa-2');
+
+      act(() => {
+        result.current.saveCurrentAsPreset('Kịch bản test PA #3');
+      });
+      expect(result.current.presets.length).toBe(3);
+      expect(result.current.presets[2].code).toBe('PA #3');
+    });
+
+    it('renders SandboxControlPanel for Training Check-in/NVL and switches to Sales mode cleanly', () => {
+      const TestPanelWrapper = () => {
+        const sandbox = useTodaySandbox();
+        React.useEffect(() => {
+          sandbox.setMode('training');
+        }, []);
+        return <SandboxControlPanel />;
+      };
+
+      render(
+        <TodaySandboxProvider>
+          <TestPanelWrapper />
+        </TodaySandboxProvider>
+      );
+
+      // Training panels visible
+      expect(screen.getByText(/Giả lập Check-in · Bấm giờ · Check-out/i)).toBeInTheDocument();
+      expect(screen.getByText(/Kế hoạch thiết kế hôm nay/i)).toBeInTheDocument();
+      expect(screen.getByText(/Check nguyên vật liệu trước ca/i)).toBeInTheDocument();
+
+      // Switch to PA #2 (Sales)
+      fireEvent.click(screen.getByRole('button', { name: /PA #2/i }));
+      expect(screen.getByText(/Đồng hồ đo Tỉ lệ chốt dự kiến/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Chốt Combo 10 tặng 6/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Tặng Quà VIP/i })).toBeInTheDocument();
     });
   });
 });

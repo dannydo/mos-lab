@@ -17,8 +17,14 @@ import {
   setActiveServicingStep,
   setOfflineSyncSimulationNamespace,
 } from './offlineSync';
+import {
+  useIosSandboxPresets,
+  type IosSandboxPresetMode,
+  type IosSimMaterialCheckItem,
+} from './iosSandboxPresetConfig';
 
 export const IOS_SIM_MODE_SESSION_KEY = 'mos_ios_simulation_mode_active';
+export type { IosSandboxPresetMode, IosSimMaterialCheckItem };
 
 export function buildSimBookingMetaPayload(booking?: IosBookingItem | null) {
   if (!booking) return undefined;
@@ -91,6 +97,24 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
   const [attemptsByBookingId, setAttemptsByBookingId] = useState<Record<number, IosSimulationAttemptSummary[]>>({});
   const [simActionError, setSimActionError] = useState<string | null>(null);
   const [isSimActionBusy, setIsSimActionBusy] = useState<boolean>(false);
+  const { simPresetMode, selectSimPresetMode, simMaterialsChecklist, toggleSimMaterialCheck } = useIosSandboxPresets();
+
+  const handleSimJumpToStep = useCallback(
+    (targetStep: number, bookingIdOverride?: number) => {
+      if (!isSimulationMode || isReadOnlyMentorView) return;
+      const targetId = bookingIdOverride && bookingIdOverride > 0 ? bookingIdOverride : activeBooking?.id;
+      if (targetId && targetId > 0) {
+        setActiveBookingId(targetId);
+      }
+      if (targetStep >= 6 && targetStep <= 11) {
+        setActiveTab('task');
+      } else {
+        setActiveTab('booking');
+      }
+      setCurrentStep(targetStep);
+    },
+    [isSimulationMode, isReadOnlyMentorView, activeBooking?.id, setActiveBookingId, setActiveTab, setCurrentStep]
+  );
 
   // Synchronously namespace offline storage whenever simulation mode changes
   setOfflineSyncSimulationNamespace(isSimulationMode);
@@ -625,6 +649,11 @@ export function useIosSimulationMode(params: UseIosSimulationModeParams) {
     simActionError,
     setSimActionError,
     isSimActionBusy,
+    simPresetMode,
+    selectSimPresetMode,
+    simMaterialsChecklist,
+    toggleSimMaterialCheck,
+    handleSimJumpToStep,
     toggleSimulationMode,
     selectMenteeStaffId,
     loadAttemptsForBooking,

@@ -3,6 +3,8 @@ import type { ActiveActorProfile } from '../../../state/useIosAppState';
 
 export type ConsultationSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
+import type { IosSandboxPresetMode } from '../../../state/useIosSimulationMode';
+
 export interface ConsultationSavedAttributes {
   style: string;
   curl: string;
@@ -66,6 +68,8 @@ export interface Screen03ConsultationMatrixProps {
   ) => Promise<any> | void;
   isSimulationMode?: boolean;
   isReadOnlyMentorView?: boolean;
+  simPresetMode?: IosSandboxPresetMode;
+  onSimJumpToStep?: (step: number, bookingId?: number) => void;
   onSimFastForwardToUpsell?: (bookingId: number) => void;
   onSelectComboWallet?: (params: {
     targetBookingId?: number;
