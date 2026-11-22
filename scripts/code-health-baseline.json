@@ -5,7 +5,6 @@
   "maxDotAgentsMdBytes": 1500,
   "files": {
     "apps/api/src/modules/ai/ai.service.ts": 1225,
-    "apps/api/src/modules/ai/routes.ts": 802,
     "apps/api/src/modules/allocation/allocation.service.ts": 1024,
     "apps/api/src/modules/bible/bible.service.ts": 924,
     "apps/api/src/modules/bug-reports/inbox-implementation.service.ts": 4123,
@@ -28,7 +27,6 @@
     "apps/api/src/modules/kpi/services/bk-game.service.ts": 1275,
     "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts": 867,
     "apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts": 869,
-    "apps/api/src/modules/kpi/services/telesale-target-config.service.ts": 718,
     "apps/api/src/modules/kpi/services/telesale-tv-celebration.service.ts": 1313,
     "apps/api/src/modules/post-hub/post-hub.service.ts": 1070,
     "apps/api/src/modules/qa-shop/qa-shop.service.ts": 1157,
@@ -161,7 +159,6 @@
     "apps/web/config/sidebar.config.tsx": 702,
     "packages/shared/src/catalog/combo-expiry.ts": 1009,
     "packages/shared/src/theme/tokens.ts": 1312,
-    "packages/shared/src/types/academy-talent-assessment.ts": 795,
     "packages/shared/src/types/customer.ts": 858
   }
 }

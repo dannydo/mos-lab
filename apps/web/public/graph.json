@@ -5684,13 +5684,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/ag-task-bridge/chat/next",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/ai/routes.ts",
+      "filePath": "apps/api/src/modules/ai/routes/ag-task-bridge.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/ag-task-bridge/chat/next",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 312
+        "line": 20
       }
     },
     {
@@ -5698,13 +5698,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/ai/avatar-score",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/ai/routes.ts",
+      "filePath": "apps/api/src/modules/ai/routes/avatar-ai.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/ai/avatar-score",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 439
+        "line": 14
       }
     },
     {
@@ -5712,13 +5712,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/ai/avatar-nudge-message",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/ai/routes.ts",
+      "filePath": "apps/api/src/modules/ai/routes/avatar-ai.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/ai/avatar-nudge-message",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 584
+        "line": 159
       }
     },
     {
@@ -15789,203 +15789,11 @@
       }
     },
     {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentMode",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentMode",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentMode",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentAssessmentStatus",
-      "type": "SharedType",
-      "label": "AcademyTalentAssessmentStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentAssessmentStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentStatus",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentTierKey",
-      "type": "SharedType",
-      "label": "AcademyTalentTierKey",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentTierKey",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentTier",
-      "type": "SharedType",
-      "label": "AcademyTalentTier",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentTier",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentLadderTierConfiguration",
-      "type": "SharedType",
-      "label": "AcademyTalentLadderTierConfiguration",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentLadderTierConfiguration",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentLadderConfiguration",
-      "type": "SharedType",
-      "label": "AcademyTalentLadderConfiguration",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentLadderConfiguration",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UpdateAcademyTalentLadderConfigurationRequest",
-      "type": "SharedType",
-      "label": "UpdateAcademyTalentLadderConfigurationRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UpdateAcademyTalentLadderConfigurationRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentLadderConfigurationActionResponse",
-      "type": "SharedType",
-      "label": "AcademyTalentLadderConfigurationActionResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentLadderConfigurationActionResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentAssessmentScores",
-      "type": "SharedType",
-      "label": "AcademyTalentAssessmentScores",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentAssessmentScores",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentAssessmentResult",
-      "type": "SharedType",
-      "label": "AcademyTalentAssessmentResult",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentAssessmentResult",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentInstructor",
-      "type": "SharedType",
-      "label": "AcademyTalentInstructor",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentInstructor",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentInstructorSnapshot",
-      "type": "SharedType",
-      "label": "AcademyTalentInstructorSnapshot",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentInstructorSnapshot",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:ListAcademyTalentInstructorsResponse",
-      "type": "SharedType",
-      "label": "ListAcademyTalentInstructorsResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "ListAcademyTalentInstructorsResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UpsertAcademyTalentInstructorRequest",
-      "type": "SharedType",
-      "label": "UpsertAcademyTalentInstructorRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UpsertAcademyTalentInstructorRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentInstructorActionResponse",
-      "type": "SharedType",
-      "label": "AcademyTalentInstructorActionResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentInstructorActionResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
       "id": "type:@mos-lab/shared:AcademyTalentCourseSnapshot",
       "type": "SharedType",
       "label": "AcademyTalentCourseSnapshot",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AcademyTalentCourseSnapshot",
@@ -15997,7 +15805,7 @@
       "type": "SharedType",
       "label": "AcademyTalentAddOnKind",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AcademyTalentAddOnKind",
@@ -16009,7 +15817,7 @@
       "type": "SharedType",
       "label": "AcademyTalentAddOnSnapshot",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AcademyTalentAddOnSnapshot",
@@ -16021,7 +15829,7 @@
       "type": "SharedType",
       "label": "AcademyTalentAssessmentQuote",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AcademyTalentAssessmentQuote",
@@ -16033,214 +15841,10 @@
       "type": "SharedType",
       "label": "AcademyTalentInvoiceSnapshot",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AcademyTalentInvoiceSnapshot",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentMethod",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentMethod",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentMethod",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentRecord",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentRecord",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentRecord",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentSummary",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentSummary",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentSummary",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentManagementStatus",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentManagementStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentManagementStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentManagementRow",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentManagementRow",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentManagementRow",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentManagementSummary",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentManagementSummary",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentManagementSummary",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:ListAcademyTalentPaymentManagementParams",
-      "type": "SharedType",
-      "label": "ListAcademyTalentPaymentManagementParams",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "ListAcademyTalentPaymentManagementParams",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:ListAcademyTalentPaymentManagementResponse",
-      "type": "SharedType",
-      "label": "ListAcademyTalentPaymentManagementResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "ListAcademyTalentPaymentManagementResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceActorRole",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentTraceActorRole",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentTraceActorRole",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentTraceStaff",
-      "type": "SharedType",
-      "label": "AcademyTalentTraceStaff",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentTraceStaff",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceActor",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentTraceActor",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentTraceActor",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceEventType",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentTraceEventType",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentTraceEventType",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceEvent",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentTraceEvent",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentTraceEvent",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceFlagCode",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentTraceFlagCode",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentTraceFlagCode",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceFlag",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentTraceFlag",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentTraceFlag",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentTrace",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentTrace",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentTrace",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceResponse",
-      "type": "SharedType",
-      "label": "AcademyTalentPaymentTraceResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AcademyTalentPaymentTraceResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -16249,7 +15853,7 @@
       "type": "SharedType",
       "label": "AcademyTalentAssessment",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AcademyTalentAssessment",
@@ -16261,7 +15865,7 @@
       "type": "SharedType",
       "label": "CreateAcademyTalentAssessmentRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CreateAcademyTalentAssessmentRequest",
@@ -16273,7 +15877,7 @@
       "type": "SharedType",
       "label": "UpdateAcademyTalentAssessmentRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UpdateAcademyTalentAssessmentRequest",
@@ -16285,7 +15889,7 @@
       "type": "SharedType",
       "label": "RecordAcademyTalentPaymentRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "RecordAcademyTalentPaymentRequest",
@@ -16297,7 +15901,7 @@
       "type": "SharedType",
       "label": "PreviewAcademyTalentAssessmentQuoteRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PreviewAcademyTalentAssessmentQuoteRequest",
@@ -16309,7 +15913,7 @@
       "type": "SharedType",
       "label": "PreviewAcademyTalentAssessmentQuoteResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PreviewAcademyTalentAssessmentQuoteResponse",
@@ -16321,7 +15925,7 @@
       "type": "SharedType",
       "label": "AcademyTalentAssessmentActionResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AcademyTalentAssessmentActionResponse",
@@ -16333,7 +15937,7 @@
       "type": "SharedType",
       "label": "ListAcademyTalentAssessmentsResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ListAcademyTalentAssessmentsResponse",
@@ -16345,7 +15949,7 @@
       "type": "SharedType",
       "label": "AcademyCourseSelectOptionInput",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-course-helpers.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AcademyCourseSelectOptionInput",
@@ -16357,10 +15961,406 @@
       "type": "SharedType",
       "label": "AcademyCourseSelectOption",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-course-helpers.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "AcademyCourseSelectOption",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentMethod",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentMethod",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentMethod",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentRecord",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentRecord",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentRecord",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentSummary",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentManagementStatus",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentManagementStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentManagementStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentManagementRow",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentManagementRow",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentManagementRow",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentManagementSummary",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentManagementSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentManagementSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ListAcademyTalentPaymentManagementParams",
+      "type": "SharedType",
+      "label": "ListAcademyTalentPaymentManagementParams",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ListAcademyTalentPaymentManagementParams",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ListAcademyTalentPaymentManagementResponse",
+      "type": "SharedType",
+      "label": "ListAcademyTalentPaymentManagementResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ListAcademyTalentPaymentManagementResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceActorRole",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentTraceActorRole",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentTraceActorRole",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentTraceStaff",
+      "type": "SharedType",
+      "label": "AcademyTalentTraceStaff",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentTraceStaff",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceActor",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentTraceActor",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentTraceActor",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceEventType",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentTraceEventType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentTraceEventType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceEvent",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentTraceEvent",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentTraceEvent",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceFlagCode",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentTraceFlagCode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentTraceFlagCode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceFlag",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentTraceFlag",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentTraceFlag",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentTrace",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentTrace",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentTrace",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentTraceResponse",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentTraceResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentTraceResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentMode",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentMode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentMode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentAssessmentStatus",
+      "type": "SharedType",
+      "label": "AcademyTalentAssessmentStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentAssessmentStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentPaymentStatus",
+      "type": "SharedType",
+      "label": "AcademyTalentPaymentStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentPaymentStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentTierKey",
+      "type": "SharedType",
+      "label": "AcademyTalentTierKey",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentTierKey",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentTier",
+      "type": "SharedType",
+      "label": "AcademyTalentTier",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentTier",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentLadderTierConfiguration",
+      "type": "SharedType",
+      "label": "AcademyTalentLadderTierConfiguration",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentLadderTierConfiguration",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentLadderConfiguration",
+      "type": "SharedType",
+      "label": "AcademyTalentLadderConfiguration",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentLadderConfiguration",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateAcademyTalentLadderConfigurationRequest",
+      "type": "SharedType",
+      "label": "UpdateAcademyTalentLadderConfigurationRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateAcademyTalentLadderConfigurationRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentLadderConfigurationActionResponse",
+      "type": "SharedType",
+      "label": "AcademyTalentLadderConfigurationActionResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentLadderConfigurationActionResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentAssessmentScores",
+      "type": "SharedType",
+      "label": "AcademyTalentAssessmentScores",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentAssessmentScores",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentAssessmentResult",
+      "type": "SharedType",
+      "label": "AcademyTalentAssessmentResult",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentAssessmentResult",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentInstructor",
+      "type": "SharedType",
+      "label": "AcademyTalentInstructor",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentInstructor",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentInstructorSnapshot",
+      "type": "SharedType",
+      "label": "AcademyTalentInstructorSnapshot",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentInstructorSnapshot",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ListAcademyTalentInstructorsResponse",
+      "type": "SharedType",
+      "label": "ListAcademyTalentInstructorsResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ListAcademyTalentInstructorsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpsertAcademyTalentInstructorRequest",
+      "type": "SharedType",
+      "label": "UpsertAcademyTalentInstructorRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpsertAcademyTalentInstructorRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AcademyTalentInstructorActionResponse",
+      "type": "SharedType",
+      "label": "AcademyTalentInstructorActionResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AcademyTalentInstructorActionResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -41896,6 +41896,58 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ai/routes/ag-task-bridge.routes.ts",
+      "type": "File",
+      "label": "ag-task-bridge.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/routes/ag-task-bridge.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5506,
+        "lineCount": 130,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/routes/ai-chat-sessions.routes.ts",
+      "type": "File",
+      "label": "ai-chat-sessions.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/routes/ai-chat-sessions.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5528,
+        "lineCount": 145,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/routes/avatar-ai.routes.ts",
+      "type": "File",
+      "label": "avatar-ai.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/routes/avatar-ai.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 23672,
+        "lineCount": 377,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/routes/voice-chat.routes.ts",
+      "type": "File",
+      "label": "voice-chat.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/routes/voice-chat.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6679,
+        "lineCount": 155,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ai/routes.test.ts",
       "type": "File",
       "label": "routes.test.ts",
@@ -41916,8 +41968,8 @@
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 41183,
-        "lineCount": 802,
+        "sizeBytes": 566,
+        "lineCount": 13,
         "ext": ".ts"
       }
     },
@@ -47174,6 +47226,45 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/services/telesale-target-config/config-helpers.ts",
+      "type": "File",
+      "label": "config-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/telesale-target-config/config-helpers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2098,
+        "lineCount": 75,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/telesale-target-config/team-staff-resolver.ts",
+      "type": "File",
+      "label": "team-staff-resolver.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/telesale-target-config/team-staff-resolver.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6517,
+        "lineCount": 189,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/telesale-target-config/workdays-pacing.ts",
+      "type": "File",
+      "label": "workdays-pacing.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/telesale-target-config/workdays-pacing.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7402,
+        "lineCount": 209,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts",
       "type": "File",
       "label": "telesale-target-config.service.ts",
@@ -47181,8 +47272,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target-config.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 25632,
-        "lineCount": 718,
+        "sizeBytes": 11661,
+        "lineCount": 329,
         "ext": ".ts"
       }
     },
@@ -60928,6 +61019,58 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
+      "type": "File",
+      "label": "talent-assessment.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-assessment.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 6296,
+        "lineCount": 186,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/academy-talent-assessment/talent-course-helpers.ts",
+      "type": "File",
+      "label": "talent-course-helpers.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-course-helpers.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 5357,
+        "lineCount": 157,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "type": "File",
+      "label": "talent-payment-trace.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-payment-trace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 5836,
+        "lineCount": 184,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "type": "File",
+      "label": "talent-scoring.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/academy-talent-assessment/talent-scoring.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 9077,
+        "lineCount": 284,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/academy-talent-assessment.ts",
       "type": "File",
       "label": "academy-talent-assessment.ts",
@@ -60935,8 +61078,8 @@
       "filePath": "packages/shared/src/types/academy-talent-assessment.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 26042,
-        "lineCount": 795,
+        "sizeBytes": 539,
+        "lineCount": 13,
         "ext": ".ts"
       }
     },
@@ -69985,118 +70128,6 @@
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentPaymentMode:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentPaymentMode",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentAssessmentStatus:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentAssessmentStatus",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentPaymentStatus:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentPaymentStatus",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentTierKey:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentTierKey",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentTier:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentTier",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentLadderTierConfiguration:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentLadderTierConfiguration",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentLadderConfiguration:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentLadderConfiguration",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:UpdateAcademyTalentLadderConfigurationRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UpdateAcademyTalentLadderConfigurationRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentLadderConfigurationActionResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentLadderConfigurationActionResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentAssessmentScores:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentAssessmentScores",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentAssessmentResult:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentAssessmentResult",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentInstructor:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentInstructor",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentInstructorSnapshot:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentInstructorSnapshot",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:ListAcademyTalentInstructorsResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:ListAcademyTalentInstructorsResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:UpsertAcademyTalentInstructorRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UpsertAcademyTalentInstructorRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentInstructorActionResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentInstructorActionResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
       "id": "edge:type:@mos-lab/shared:AcademyTalentCourseSnapshot:ws:packages/shared",
       "source": "type:@mos-lab/shared:AcademyTalentCourseSnapshot",
       "target": "ws:packages/shared",
@@ -70127,6 +70158,76 @@
     {
       "id": "edge:type:@mos-lab/shared:AcademyTalentInvoiceSnapshot:ws:packages/shared",
       "source": "type:@mos-lab/shared:AcademyTalentInvoiceSnapshot",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AcademyTalentAssessment:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentAssessment",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateAcademyTalentAssessmentRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateAcademyTalentAssessmentRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdateAcademyTalentAssessmentRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateAcademyTalentAssessmentRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:RecordAcademyTalentPaymentRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:RecordAcademyTalentPaymentRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PreviewAcademyTalentAssessmentQuoteRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PreviewAcademyTalentAssessmentQuoteRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PreviewAcademyTalentAssessmentQuoteResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PreviewAcademyTalentAssessmentQuoteResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AcademyTalentAssessmentActionResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentAssessmentActionResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ListAcademyTalentAssessmentsResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ListAcademyTalentAssessmentsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AcademyCourseSelectOptionInput:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyCourseSelectOptionInput",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AcademyCourseSelectOption:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyCourseSelectOption",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -70251,71 +70352,113 @@
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentAssessment:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentAssessment",
+      "id": "edge:type:@mos-lab/shared:AcademyTalentPaymentMode:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentPaymentMode",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:CreateAcademyTalentAssessmentRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:CreateAcademyTalentAssessmentRequest",
+      "id": "edge:type:@mos-lab/shared:AcademyTalentAssessmentStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentAssessmentStatus",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:UpdateAcademyTalentAssessmentRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UpdateAcademyTalentAssessmentRequest",
+      "id": "edge:type:@mos-lab/shared:AcademyTalentPaymentStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentPaymentStatus",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:RecordAcademyTalentPaymentRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:RecordAcademyTalentPaymentRequest",
+      "id": "edge:type:@mos-lab/shared:AcademyTalentTierKey:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentTierKey",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:PreviewAcademyTalentAssessmentQuoteRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PreviewAcademyTalentAssessmentQuoteRequest",
+      "id": "edge:type:@mos-lab/shared:AcademyTalentTier:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentTier",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:PreviewAcademyTalentAssessmentQuoteResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PreviewAcademyTalentAssessmentQuoteResponse",
+      "id": "edge:type:@mos-lab/shared:AcademyTalentLadderTierConfiguration:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentLadderTierConfiguration",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:AcademyTalentAssessmentActionResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyTalentAssessmentActionResponse",
+      "id": "edge:type:@mos-lab/shared:AcademyTalentLadderConfiguration:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentLadderConfiguration",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:ListAcademyTalentAssessmentsResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:ListAcademyTalentAssessmentsResponse",
+      "id": "edge:type:@mos-lab/shared:UpdateAcademyTalentLadderConfigurationRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateAcademyTalentLadderConfigurationRequest",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:AcademyCourseSelectOptionInput:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyCourseSelectOptionInput",
+      "id": "edge:type:@mos-lab/shared:AcademyTalentLadderConfigurationActionResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentLadderConfigurationActionResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:AcademyCourseSelectOption:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AcademyCourseSelectOption",
+      "id": "edge:type:@mos-lab/shared:AcademyTalentAssessmentScores:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentAssessmentScores",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AcademyTalentAssessmentResult:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentAssessmentResult",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AcademyTalentInstructor:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentInstructor",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AcademyTalentInstructorSnapshot:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentInstructorSnapshot",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ListAcademyTalentInstructorsResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ListAcademyTalentInstructorsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpsertAcademyTalentInstructorRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpsertAcademyTalentInstructorRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AcademyTalentInstructorActionResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AcademyTalentInstructorActionResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -88773,15 +88916,29 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/ai/routes.test.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/ai/routes.test.ts",
+      "id": "edge:file:apps/api/src/modules/ai/routes/ag-task-bridge.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/routes/ag-task-bridge.routes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/ai/routes.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/ai/routes.ts",
+      "id": "edge:file:apps/api/src/modules/ai/routes/ai-chat-sessions.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/routes/ai-chat-sessions.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ai/routes/avatar-ai.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/routes/avatar-ai.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ai/routes.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/routes.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -90973,6 +91130,27 @@
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target/overview-today-feeds.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/services/telesale-target/overview-today-feeds.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target-config/config-helpers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target-config/config-helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target-config/team-staff-resolver.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target-config/team-staff-resolver.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target-config/workdays-pacing.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target-config/workdays-pacing.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -95857,8 +96035,8 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/ai/routes.ts:prisma:crm:CrmAiChatMessage",
-      "source": "file:apps/api/src/modules/ai/routes.ts",
+      "id": "edge:file:apps/api/src/modules/ai/routes/ag-task-bridge.routes.ts:prisma:crm:CrmAiChatMessage",
+      "source": "file:apps/api/src/modules/ai/routes/ag-task-bridge.routes.ts",
       "target": "prisma:crm:CrmAiChatMessage",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
@@ -98104,9 +98282,23 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target-config/team-staff-resolver.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target-config/team-staff-resolver.ts",
       "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target-config/team-staff-resolver.ts:prisma:crm:CrmTeam",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target-config/team-staff-resolver.ts",
+      "target": "prisma:crm:CrmTeam",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target-config/workdays-pacing.ts:prisma:crm:CrmHolidayPeriod",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target-config/workdays-pacing.ts",
+      "target": "prisma:crm:CrmHolidayPeriod",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -98114,20 +98306,6 @@
       "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts:prisma:crm:CrmConfig",
       "source": "file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts",
       "target": "prisma:crm:CrmConfig",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts:prisma:crm:CrmTeam",
-      "source": "file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts",
-      "target": "prisma:crm:CrmTeam",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts:prisma:crm:CrmHolidayPeriod",
-      "source": "file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts",
-      "target": "prisma:crm:CrmHolidayPeriod",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -129360,8 +129538,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4831,
-    "totalEdges": 9562,
+    "totalNodes": 4842,
+    "totalEdges": 9567,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -129370,14 +129548,14 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 547,
-      "File": 1670
+      "File": 1681
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 613,
       "USES_TOKEN": 549,
-      "IMPORTS": 987,
+      "IMPORTS": 992,
       "QUERIES_MODEL": 532,
       "API_CALL": 4336
     },
@@ -130566,21 +130744,21 @@
     {
       "method": "GET",
       "path": "/api/ag-task-bridge/chat/next",
-      "filePath": "apps/api/src/modules/ai/routes.ts",
+      "filePath": "apps/api/src/modules/ai/routes/ag-task-bridge.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "ai"
     },
     {
       "method": "POST",
       "path": "/api/ai/avatar-score",
-      "filePath": "apps/api/src/modules/ai/routes.ts",
+      "filePath": "apps/api/src/modules/ai/routes/avatar-ai.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "ai"
     },
     {
       "method": "POST",
       "path": "/api/ai/avatar-nudge-message",
-      "filePath": "apps/api/src/modules/ai/routes.ts",
+      "filePath": "apps/api/src/modules/ai/routes/avatar-ai.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "ai"
     },
