@@ -12060,7 +12060,7 @@
         "path": "/api/notifications",
         "module": "notifications",
         "handler": "inlineHandler",
-        "line": 627
+        "line": 16
       }
     },
     {
@@ -12074,21 +12074,7 @@
         "path": "/api/notifications/read",
         "module": "notifications",
         "handler": "inlineHandler",
-        "line": 676
-      }
-    },
-    {
-      "id": "route:POST:/api/omicall/webhook",
-      "type": "FastifyRoute",
-      "label": "POST /api/omicall/webhook",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
-      "metadata": {
-        "method": "POST",
-        "path": "/api/omicall/webhook",
-        "module": "omicall",
-        "handler": "inlineHandler",
-        "line": 12
+        "line": 65
       }
     },
     {
@@ -12096,13 +12082,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/omicall/config",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/omicall/config",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 193
+        "line": 10
       }
     },
     {
@@ -12110,13 +12096,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/omicall/config",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/omicall/config",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 231
+        "line": 48
       }
     },
     {
@@ -12124,27 +12110,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/omicall/sip-config",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/omicall/sip-config",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 279
-      }
-    },
-    {
-      "id": "route:GET:/api/omicall/logs/latest",
-      "type": "FastifyRoute",
-      "label": "GET /api/omicall/logs/latest",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/omicall/logs/latest",
-        "module": "omicall",
-        "handler": "inlineHandler",
-        "line": 336
+        "line": 96
       }
     },
     {
@@ -12152,55 +12124,13 @@
       "type": "FastifyRoute",
       "label": "DELETE /api/omicall/config/:staffId",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "metadata": {
         "method": "DELETE",
         "path": "/api/omicall/config/:staffId",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 417
-      }
-    },
-    {
-      "id": "route:GET:/api/omicall/logs",
-      "type": "FastifyRoute",
-      "label": "GET /api/omicall/logs",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/omicall/logs",
-        "module": "omicall",
-        "handler": "inlineHandler",
-        "line": 442
-      }
-    },
-    {
-      "id": "route:GET:/api/omicall/logs/:id/play",
-      "type": "FastifyRoute",
-      "label": "GET /api/omicall/logs/:id/play",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/omicall/logs/:id/play",
-        "module": "omicall",
-        "handler": "inlineHandler",
-        "line": 536
-      }
-    },
-    {
-      "id": "route:POST:/api/omicall/logs/:id/verify",
-      "type": "FastifyRoute",
-      "label": "POST /api/omicall/logs/:id/verify",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
-      "metadata": {
-        "method": "POST",
-        "path": "/api/omicall/logs/:id/verify",
-        "module": "omicall",
-        "handler": "preHandler",
-        "line": 592
+        "line": 153
       }
     },
     {
@@ -12208,13 +12138,83 @@
       "type": "FastifyRoute",
       "label": "GET /api/omicall/diagnostic",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/omicall/diagnostic",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 691
+        "line": 178
+      }
+    },
+    {
+      "id": "route:GET:/api/omicall/logs/latest",
+      "type": "FastifyRoute",
+      "label": "GET /api/omicall/logs/latest",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/omicall/logs/latest",
+        "module": "omicall",
+        "handler": "inlineHandler",
+        "line": 8
+      }
+    },
+    {
+      "id": "route:GET:/api/omicall/logs",
+      "type": "FastifyRoute",
+      "label": "GET /api/omicall/logs",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/omicall/logs",
+        "module": "omicall",
+        "handler": "inlineHandler",
+        "line": 89
+      }
+    },
+    {
+      "id": "route:GET:/api/omicall/logs/:id/play",
+      "type": "FastifyRoute",
+      "label": "GET /api/omicall/logs/:id/play",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/omicall/logs/:id/play",
+        "module": "omicall",
+        "handler": "inlineHandler",
+        "line": 183
+      }
+    },
+    {
+      "id": "route:POST:/api/omicall/logs/:id/verify",
+      "type": "FastifyRoute",
+      "label": "POST /api/omicall/logs/:id/verify",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/omicall/logs/:id/verify",
+        "module": "omicall",
+        "handler": "preHandler",
+        "line": 239
+      }
+    },
+    {
+      "id": "route:POST:/api/omicall/webhook",
+      "type": "FastifyRoute",
+      "label": "POST /api/omicall/webhook",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/omicall/webhook",
+        "module": "omicall",
+        "handler": "inlineHandler",
+        "line": 7
       }
     },
     {
@@ -12914,7 +12914,7 @@
         "path": "/api/plans",
         "module": "plans",
         "handler": "inlineHandler",
-        "line": 9
+        "line": 8
       }
     },
     {
@@ -12928,35 +12928,7 @@
         "path": "/api/plans/today",
         "module": "plans",
         "handler": "inlineHandler",
-        "line": 113
-      }
-    },
-    {
-      "id": "route:GET:/api/plans/weekly",
-      "type": "FastifyRoute",
-      "label": "GET /api/plans/weekly",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/plans/routes/plan-crud.routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/plans/weekly",
-        "module": "plans",
-        "handler": "inlineHandler",
-        "line": 137
-      }
-    },
-    {
-      "id": "route:GET:/api/plans/suggest",
-      "type": "FastifyRoute",
-      "label": "GET /api/plans/suggest",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/plans/routes/plan-crud.routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/plans/suggest",
-        "module": "plans",
-        "handler": "inlineHandler",
-        "line": 362
+        "line": 119
       }
     },
     {
@@ -12970,7 +12942,35 @@
         "path": "/api/plans/:id/confirm",
         "module": "plans",
         "handler": "inlineHandler",
-        "line": 638
+        "line": 154
+      }
+    },
+    {
+      "id": "route:GET:/api/plans/suggest",
+      "type": "FastifyRoute",
+      "label": "GET /api/plans/suggest",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/plans/routes/plan-suggest.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/plans/suggest",
+        "module": "plans",
+        "handler": "inlineHandler",
+        "line": 10
+      }
+    },
+    {
+      "id": "route:GET:/api/plans/weekly",
+      "type": "FastifyRoute",
+      "label": "GET /api/plans/weekly",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/plans/routes/plan-weekly.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/plans/weekly",
+        "module": "plans",
+        "handler": "inlineHandler",
+        "line": 8
       }
     },
     {
@@ -13296,115 +13296,17 @@
       }
     },
     {
-      "id": "route:GET:/api/sms/templates",
-      "type": "FastifyRoute",
-      "label": "GET /api/sms/templates",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/sms/templates",
-        "module": "sms",
-        "handler": "inlineHandler",
-        "line": 41
-      }
-    },
-    {
-      "id": "route:POST:/api/sms/templates",
-      "type": "FastifyRoute",
-      "label": "POST /api/sms/templates",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "metadata": {
-        "method": "POST",
-        "path": "/api/sms/templates",
-        "module": "sms",
-        "handler": "preHandler",
-        "line": 70
-      }
-    },
-    {
-      "id": "route:DELETE:/api/sms/templates/:id",
-      "type": "FastifyRoute",
-      "label": "DELETE /api/sms/templates/:id",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "metadata": {
-        "method": "DELETE",
-        "path": "/api/sms/templates/:id",
-        "module": "sms",
-        "handler": "preHandler",
-        "line": 144
-      }
-    },
-    {
-      "id": "route:GET:/api/sms/booking-templates",
-      "type": "FastifyRoute",
-      "label": "GET /api/sms/booking-templates",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/sms/booking-templates",
-        "module": "sms",
-        "handler": "inlineHandler",
-        "line": 204
-      }
-    },
-    {
-      "id": "route:POST:/api/sms/booking-templates",
-      "type": "FastifyRoute",
-      "label": "POST /api/sms/booking-templates",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "metadata": {
-        "method": "POST",
-        "path": "/api/sms/booking-templates",
-        "module": "sms",
-        "handler": "inlineHandler",
-        "line": 233
-      }
-    },
-    {
-      "id": "route:DELETE:/api/sms/booking-templates/:id",
-      "type": "FastifyRoute",
-      "label": "DELETE /api/sms/booking-templates/:id",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "metadata": {
-        "method": "DELETE",
-        "path": "/api/sms/booking-templates/:id",
-        "module": "sms",
-        "handler": "inlineHandler",
-        "line": 292
-      }
-    },
-    {
-      "id": "route:POST:/api/sms/booking-templates/reset",
-      "type": "FastifyRoute",
-      "label": "POST /api/sms/booking-templates/reset",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "metadata": {
-        "method": "POST",
-        "path": "/api/sms/booking-templates/reset",
-        "module": "sms",
-        "handler": "inlineHandler",
-        "line": 334
-      }
-    },
-    {
       "id": "route:GET:/api/sms/history/:customerId",
       "type": "FastifyRoute",
       "label": "GET /api/sms/history/:customerId",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
+      "filePath": "apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/sms/history/:customerId",
         "module": "sms",
         "handler": "inlineHandler",
-        "line": 354
+        "line": 82
       }
     },
     {
@@ -13412,13 +13314,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/sms/user-url/:customerId",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
+      "filePath": "apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/sms/user-url/:customerId",
         "module": "sms",
         "handler": "inlineHandler",
-        "line": 448
+        "line": 176
       }
     },
     {
@@ -13426,13 +13328,111 @@
       "type": "FastifyRoute",
       "label": "POST /api/sms/send",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
+      "filePath": "apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/sms/send",
         "module": "sms",
         "handler": "preHandler",
-        "line": 480
+        "line": 208
+      }
+    },
+    {
+      "id": "route:GET:/api/sms/templates",
+      "type": "FastifyRoute",
+      "label": "GET /api/sms/templates",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/sms/templates",
+        "module": "sms",
+        "handler": "inlineHandler",
+        "line": 39
+      }
+    },
+    {
+      "id": "route:POST:/api/sms/templates",
+      "type": "FastifyRoute",
+      "label": "POST /api/sms/templates",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/sms/templates",
+        "module": "sms",
+        "handler": "preHandler",
+        "line": 68
+      }
+    },
+    {
+      "id": "route:DELETE:/api/sms/templates/:id",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/sms/templates/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/sms/templates/:id",
+        "module": "sms",
+        "handler": "preHandler",
+        "line": 142
+      }
+    },
+    {
+      "id": "route:GET:/api/sms/booking-templates",
+      "type": "FastifyRoute",
+      "label": "GET /api/sms/booking-templates",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/sms/booking-templates",
+        "module": "sms",
+        "handler": "inlineHandler",
+        "line": 202
+      }
+    },
+    {
+      "id": "route:POST:/api/sms/booking-templates",
+      "type": "FastifyRoute",
+      "label": "POST /api/sms/booking-templates",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/sms/booking-templates",
+        "module": "sms",
+        "handler": "inlineHandler",
+        "line": 231
+      }
+    },
+    {
+      "id": "route:DELETE:/api/sms/booking-templates/:id",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/sms/booking-templates/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/sms/booking-templates/:id",
+        "module": "sms",
+        "handler": "inlineHandler",
+        "line": 290
+      }
+    },
+    {
+      "id": "route:POST:/api/sms/booking-templates/reset",
+      "type": "FastifyRoute",
+      "label": "POST /api/sms/booking-templates/reset",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/sms/booking-templates/reset",
+        "module": "sms",
+        "handler": "inlineHandler",
+        "line": 332
       }
     },
     {
@@ -22189,7 +22189,7 @@
       "type": "SharedType",
       "label": "CareerRole",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CareerRole",
@@ -22201,7 +22201,7 @@
       "type": "SharedType",
       "label": "CareerPeriod",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CareerPeriod",
@@ -22213,7 +22213,7 @@
       "type": "SharedType",
       "label": "CareerProgressionStatus",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CareerProgressionStatus",
@@ -22225,7 +22225,7 @@
       "type": "SharedType",
       "label": "CvToCvPlusRequirements",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CvToCvPlusRequirements",
@@ -22237,7 +22237,7 @@
       "type": "SharedType",
       "label": "CvToCcRequirements",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CvToCcRequirements",
@@ -22249,7 +22249,7 @@
       "type": "SharedType",
       "label": "CvPlusToCvPlusPlusRequirements",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CvPlusToCvPlusPlusRequirements",
@@ -22261,7 +22261,7 @@
       "type": "SharedType",
       "label": "CvPlusPlusToFmRequirements",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CvPlusPlusToFmRequirements",
@@ -22273,7 +22273,7 @@
       "type": "SharedType",
       "label": "CcToFmRequirements",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CcToFmRequirements",
@@ -22285,7 +22285,7 @@
       "type": "SharedType",
       "label": "FmToChoRequirements",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "FmToChoRequirements",
@@ -22297,7 +22297,7 @@
       "type": "SharedType",
       "label": "MaintenanceAndDemotionRules",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MaintenanceAndDemotionRules",
@@ -22309,7 +22309,7 @@
       "type": "SharedType",
       "label": "CompensationPackageConfig",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CompensationPackageConfig",
@@ -22321,7 +22321,7 @@
       "type": "SharedType",
       "label": "ChoToBossRequirements",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ChoToBossRequirements",
@@ -22333,7 +22333,7 @@
       "type": "SharedType",
       "label": "CareerRewardRates",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CareerRewardRates",
@@ -22345,7 +22345,7 @@
       "type": "SharedType",
       "label": "CareerProgressionConfig",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CareerProgressionConfig",
@@ -22357,7 +22357,7 @@
       "type": "SharedType",
       "label": "CareerStaffSummary",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-status.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CareerStaffSummary",
@@ -22369,7 +22369,7 @@
       "type": "SharedType",
       "label": "StaffCareerStatus",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-status.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "StaffCareerStatus",
@@ -22381,7 +22381,7 @@
       "type": "SharedType",
       "label": "BananaTransactionCategory",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-status.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "BananaTransactionCategory",
@@ -22393,7 +22393,7 @@
       "type": "SharedType",
       "label": "BananaTransactionItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-status.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "BananaTransactionItem",
@@ -22405,7 +22405,7 @@
       "type": "SharedType",
       "label": "BananaTransactionResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-status.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "BananaTransactionResponse",
@@ -22417,7 +22417,7 @@
       "type": "SharedType",
       "label": "CvPlusComboDetail",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-status.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CvPlusComboDetail",
@@ -22429,7 +22429,7 @@
       "type": "SharedType",
       "label": "CvPlusRewardSnapshot",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-status.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CvPlusRewardSnapshot",
@@ -22441,7 +22441,7 @@
       "type": "SharedType",
       "label": "CvPlusSimulationSummaryResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/career-progression.ts",
+      "filePath": "packages/shared/src/types/career-progression/career-status.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CvPlusSimulationSummaryResponse",
@@ -42956,8 +42956,8 @@
       "filePath": "apps/api/src/modules/cash-flow/cash-flow.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 26809,
-        "lineCount": 757,
+        "sizeBytes": 2900,
+        "lineCount": 106,
         "ext": ".ts"
       }
     },
@@ -42984,6 +42984,45 @@
       "metadata": {
         "sizeBytes": 11766,
         "lineCount": 348,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/cash-flow/service/cash-flow-entries.service.ts",
+      "type": "File",
+      "label": "cash-flow-entries.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/cash-flow/service/cash-flow-entries.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10909,
+        "lineCount": 333,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/cash-flow/service/cash-flow-forecast.service.ts",
+      "type": "File",
+      "label": "cash-flow-forecast.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/cash-flow/service/cash-flow-forecast.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11715,
+        "lineCount": 326,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/cash-flow/service/cash-flow-mappers.ts",
+      "type": "File",
+      "label": "cash-flow-mappers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/cash-flow/service/cash-flow-mappers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3110,
+        "lineCount": 110,
         "ext": ".ts"
       }
     },
@@ -47337,8 +47376,60 @@
       "filePath": "apps/api/src/modules/notifications/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27007,
-        "lineCount": 747,
+        "sizeBytes": 5172,
+        "lineCount": 136,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/notifications/service/notification-chat.collector.ts",
+      "type": "File",
+      "label": "notification-chat.collector.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/notifications/service/notification-chat.collector.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11140,
+        "lineCount": 274,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/notifications/service/notification-feed.service.ts",
+      "type": "File",
+      "label": "notification-feed.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/notifications/service/notification-feed.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2759,
+        "lineCount": 71,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/notifications/service/notification-inbox.collector.ts",
+      "type": "File",
+      "label": "notification-inbox.collector.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/notifications/service/notification-inbox.collector.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5825,
+        "lineCount": 187,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/notifications/service/notification-state.ts",
+      "type": "File",
+      "label": "notification-state.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/notifications/service/notification-state.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4035,
+        "lineCount": 122,
         "ext": ".ts"
       }
     },
@@ -47382,6 +47473,45 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
+      "type": "File",
+      "label": "omicall-config.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7835,
+        "lineCount": 206,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "type": "File",
+      "label": "omicall-logs.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 12380,
+        "lineCount": 336,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts",
+      "type": "File",
+      "label": "omicall-webhook.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7345,
+        "lineCount": 186,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/omicall/routes.ts",
       "type": "File",
       "label": "routes.ts",
@@ -47389,8 +47519,8 @@
       "filePath": "apps/api/src/modules/omicall/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27175,
-        "lineCount": 719,
+        "sizeBytes": 473,
+        "lineCount": 11,
         "ext": ".ts"
       }
     },
@@ -47883,7 +48013,7 @@
       "filePath": "apps/api/src/modules/pilot/pilot-ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15676,
+        "sizeBytes": 15681,
         "lineCount": 345,
         "ext": ".ts"
       }
@@ -47909,8 +48039,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 97094,
-        "lineCount": 2743,
+        "sizeBytes": 13625,
+        "lineCount": 428,
         "ext": ".ts"
       }
     },
@@ -47967,6 +48097,110 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/pilot/service/pilot-assessment.service.ts",
+      "type": "File",
+      "label": "pilot-assessment.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/pilot/service/pilot-assessment.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9477,
+        "lineCount": 297,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/pilot/service/pilot-core.ts",
+      "type": "File",
+      "label": "pilot-core.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/pilot/service/pilot-core.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 12904,
+        "lineCount": 396,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/pilot/service/pilot-material-sop.service.ts",
+      "type": "File",
+      "label": "pilot-material-sop.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/pilot/service/pilot-material-sop.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 16997,
+        "lineCount": 430,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/pilot/service/pilot-materials.service.ts",
+      "type": "File",
+      "label": "pilot-materials.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/pilot/service/pilot-materials.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9425,
+        "lineCount": 291,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/pilot/service/pilot-session-flow.service.ts",
+      "type": "File",
+      "label": "pilot-session-flow.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/pilot/service/pilot-session-flow.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7111,
+        "lineCount": 234,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/pilot/service/pilot-sessions.service.ts",
+      "type": "File",
+      "label": "pilot-sessions.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/pilot/service/pilot-sessions.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15688,
+        "lineCount": 479,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/pilot/service/pilot-sop-prep.service.ts",
+      "type": "File",
+      "label": "pilot-sop-prep.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/pilot/service/pilot-sop-prep.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9322,
+        "lineCount": 289,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/pilot/service/pilot-sop-steps.service.ts",
+      "type": "File",
+      "label": "pilot-sop-steps.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/pilot/service/pilot-sop-steps.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13969,
+        "lineCount": 429,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/plans/routes/plan-crud.routes.ts",
       "type": "File",
       "label": "plan-crud.routes.ts",
@@ -47974,8 +48208,34 @@
       "filePath": "apps/api/src/modules/plans/routes/plan-crud.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 24921,
-        "lineCount": 714,
+        "sizeBytes": 7560,
+        "lineCount": 237,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/plans/routes/plan-suggest.routes.ts",
+      "type": "File",
+      "label": "plan-suggest.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/plans/routes/plan-suggest.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11956,
+        "lineCount": 297,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/plans/routes/plan-weekly.routes.ts",
+      "type": "File",
+      "label": "plan-weekly.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/plans/routes/plan-weekly.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8861,
+        "lineCount": 243,
         "ext": ".ts"
       }
     },
@@ -47987,8 +48247,8 @@
       "filePath": "apps/api/src/modules/plans/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27794,
-        "lineCount": 765,
+        "sizeBytes": 445,
+        "lineCount": 11,
         "ext": ".ts"
       }
     },
@@ -48136,6 +48396,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
+      "type": "File",
+      "label": "sms-messaging.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 12000,
+        "lineCount": 336,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "type": "File",
+      "label": "sms-templates.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11383,
+        "lineCount": 351,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/sms/routes.ts",
       "type": "File",
       "label": "routes.ts",
@@ -48143,8 +48429,8 @@
       "filePath": "apps/api/src/modules/sms/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23117,
-        "lineCount": 682,
+        "sizeBytes": 345,
+        "lineCount": 9,
         "ext": ".ts"
       }
     },
@@ -60928,6 +61214,45 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/career-progression/career-defaults.ts",
+      "type": "File",
+      "label": "career-defaults.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/career-progression/career-defaults.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 9591,
+        "lineCount": 199,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/career-progression/career-requirements.types.ts",
+      "type": "File",
+      "label": "career-requirements.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 14301,
+        "lineCount": 274,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/career-progression/career-status.types.ts",
+      "type": "File",
+      "label": "career-status.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/career-progression/career-status.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 7563,
+        "lineCount": 269,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/career-progression.ts",
       "type": "File",
       "label": "career-progression.ts",
@@ -60935,8 +61260,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 31178,
-        "lineCount": 733,
+        "sizeBytes": 185,
+        "lineCount": 4,
         "ext": ".ts"
       }
     },
@@ -61916,6 +62241,32 @@
       }
     },
     {
+      "id": "file:packages/shared/src/utils/chat-checklist/checklist-parser.ts",
+      "type": "File",
+      "label": "checklist-parser.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/utils/chat-checklist/checklist-parser.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 13831,
+        "lineCount": 410,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/utils/chat-checklist/checklist-summarizer.ts",
+      "type": "File",
+      "label": "checklist-summarizer.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/utils/chat-checklist/checklist-summarizer.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 11484,
+        "lineCount": 305,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/utils/chat-checklist-summarizer.ts",
       "type": "File",
       "label": "chat-checklist-summarizer.ts",
@@ -61923,8 +62274,8 @@
       "filePath": "packages/shared/src/utils/chat-checklist-summarizer.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 24731,
-        "lineCount": 697,
+        "sizeBytes": 425,
+        "lineCount": 14,
         "ext": ".ts"
       }
     },
@@ -67730,13 +68081,6 @@
       "label": "REGISTERED_IN"
     },
     {
-      "id": "edge:route:POST:/api/omicall/webhook:ws:apps/api",
-      "source": "route:POST:/api/omicall/webhook",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
       "id": "edge:route:GET:/api/omicall/config:ws:apps/api",
       "source": "route:GET:/api/omicall/config",
       "target": "ws:apps/api",
@@ -67758,15 +68102,22 @@
       "label": "REGISTERED_IN"
     },
     {
-      "id": "edge:route:GET:/api/omicall/logs/latest:ws:apps/api",
-      "source": "route:GET:/api/omicall/logs/latest",
+      "id": "edge:route:DELETE:/api/omicall/config/:staffId:ws:apps/api",
+      "source": "route:DELETE:/api/omicall/config/:staffId",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
     },
     {
-      "id": "edge:route:DELETE:/api/omicall/config/:staffId:ws:apps/api",
-      "source": "route:DELETE:/api/omicall/config/:staffId",
+      "id": "edge:route:GET:/api/omicall/diagnostic:ws:apps/api",
+      "source": "route:GET:/api/omicall/diagnostic",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/omicall/logs/latest:ws:apps/api",
+      "source": "route:GET:/api/omicall/logs/latest",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -67793,8 +68144,8 @@
       "label": "REGISTERED_IN"
     },
     {
-      "id": "edge:route:GET:/api/omicall/diagnostic:ws:apps/api",
-      "source": "route:GET:/api/omicall/diagnostic",
+      "id": "edge:route:POST:/api/omicall/webhook:ws:apps/api",
+      "source": "route:POST:/api/omicall/webhook",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -68157,8 +68508,8 @@
       "label": "REGISTERED_IN"
     },
     {
-      "id": "edge:route:GET:/api/plans/weekly:ws:apps/api",
-      "source": "route:GET:/api/plans/weekly",
+      "id": "edge:route:PUT:/api/plans/:id/confirm:ws:apps/api",
+      "source": "route:PUT:/api/plans/:id/confirm",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -68171,8 +68522,8 @@
       "label": "REGISTERED_IN"
     },
     {
-      "id": "edge:route:PUT:/api/plans/:id/confirm:ws:apps/api",
-      "source": "route:PUT:/api/plans/:id/confirm",
+      "id": "edge:route:GET:/api/plans/weekly:ws:apps/api",
+      "source": "route:GET:/api/plans/weekly",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -68339,6 +68690,27 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/sms/history/:customerId:ws:apps/api",
+      "source": "route:GET:/api/sms/history/:customerId",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/sms/user-url/:customerId:ws:apps/api",
+      "source": "route:GET:/api/sms/user-url/:customerId",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/sms/send:ws:apps/api",
+      "source": "route:POST:/api/sms/send",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:GET:/api/sms/templates:ws:apps/api",
       "source": "route:GET:/api/sms/templates",
       "target": "ws:apps/api",
@@ -68383,27 +68755,6 @@
     {
       "id": "edge:route:POST:/api/sms/booking-templates/reset:ws:apps/api",
       "source": "route:POST:/api/sms/booking-templates/reset",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:GET:/api/sms/history/:customerId:ws:apps/api",
-      "source": "route:GET:/api/sms/history/:customerId",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:GET:/api/sms/user-url/:customerId:ws:apps/api",
-      "source": "route:GET:/api/sms/user-url/:customerId",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:POST:/api/sms/send:ws:apps/api",
-      "source": "route:POST:/api/sms/send",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -88835,6 +89186,27 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/cash-flow/service/cash-flow-entries.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/cash-flow/service/cash-flow-entries.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/service/cash-flow-forecast.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/cash-flow/service/cash-flow-forecast.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/service/cash-flow-mappers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/cash-flow/service/cash-flow-mappers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/catalog/routes/catalog-route-helpers.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/catalog/routes/catalog-route-helpers.ts",
       "target": "ws:packages/shared",
@@ -90690,6 +91062,34 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/notifications/service/notification-chat.collector.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/notifications/service/notification-chat.collector.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/notifications/service/notification-feed.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/notifications/service/notification-feed.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/notifications/service/notification-inbox.collector.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/notifications/service/notification-inbox.collector.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/notifications/service/notification-state.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/notifications/service/notification-state.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/omicall/omicall-access.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/omicall/omicall-access.test.ts",
       "target": "ws:packages/shared",
@@ -90697,8 +91097,8 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/omicall/routes.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/omicall/routes.ts",
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -90837,6 +91237,62 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-assessment.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-assessment.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-core.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-core.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-material-sop.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-material-sop.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-materials.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-materials.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-session-flow.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-session-flow.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-sessions.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-sessions.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-sop-prep.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-sop-prep.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-sop-steps.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-sop-steps.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/post-hub/post-hub.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/post-hub/post-hub.service.ts",
       "target": "ws:packages/shared",
@@ -90886,8 +91342,15 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/sms/routes.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/sms/routes.ts",
+      "id": "edge:file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/sms/routes/sms-templates.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/sms/routes/sms-templates.routes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -95961,29 +96424,43 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:prisma:crm:CrmCashAccount",
-      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "id": "edge:file:apps/api/src/modules/cash-flow/service/cash-flow-entries.service.ts:prisma:crm:CrmCashAccount",
+      "source": "file:apps/api/src/modules/cash-flow/service/cash-flow-entries.service.ts",
       "target": "prisma:crm:CrmCashAccount",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:prisma:crm:CrmCashFlowEntry",
-      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "id": "edge:file:apps/api/src/modules/cash-flow/service/cash-flow-entries.service.ts:prisma:crm:CrmCashFlowEntry",
+      "source": "file:apps/api/src/modules/cash-flow/service/cash-flow-entries.service.ts",
       "target": "prisma:crm:CrmCashFlowEntry",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:prisma:crm:CrmCashFlowAudit",
-      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "id": "edge:file:apps/api/src/modules/cash-flow/service/cash-flow-entries.service.ts:prisma:crm:CrmCashFlowAudit",
+      "source": "file:apps/api/src/modules/cash-flow/service/cash-flow-entries.service.ts",
       "target": "prisma:crm:CrmCashFlowAudit",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:prisma:legacy:order",
-      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "id": "edge:file:apps/api/src/modules/cash-flow/service/cash-flow-forecast.service.ts:prisma:crm:CrmCashAccount",
+      "source": "file:apps/api/src/modules/cash-flow/service/cash-flow-forecast.service.ts",
+      "target": "prisma:crm:CrmCashAccount",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/service/cash-flow-forecast.service.ts:prisma:crm:CrmCashFlowEntry",
+      "source": "file:apps/api/src/modules/cash-flow/service/cash-flow-forecast.service.ts",
+      "target": "prisma:crm:CrmCashFlowEntry",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/service/cash-flow-forecast.service.ts:prisma:legacy:order",
+      "source": "file:apps/api/src/modules/cash-flow/service/cash-flow-forecast.service.ts",
       "target": "prisma:legacy:order",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
@@ -97795,30 +98272,37 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/notifications/routes.ts:prisma:crm:CrmStaff",
+      "id": "edge:file:apps/api/src/modules/notifications/routes.ts:prisma:crm:CrmBugReportNotification",
       "source": "file:apps/api/src/modules/notifications/routes.ts",
+      "target": "prisma:crm:CrmBugReportNotification",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/notifications/service/notification-feed.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/notifications/service/notification-feed.service.ts",
       "target": "prisma:crm:CrmStaff",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/notifications/routes.ts:prisma:crm:CrmConfig",
-      "source": "file:apps/api/src/modules/notifications/routes.ts",
-      "target": "prisma:crm:CrmConfig",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/notifications/routes.ts:prisma:crm:CrmBugReport",
-      "source": "file:apps/api/src/modules/notifications/routes.ts",
+      "id": "edge:file:apps/api/src/modules/notifications/service/notification-inbox.collector.ts:prisma:crm:CrmBugReport",
+      "source": "file:apps/api/src/modules/notifications/service/notification-inbox.collector.ts",
       "target": "prisma:crm:CrmBugReport",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/notifications/routes.ts:prisma:crm:CrmBugReportNotification",
-      "source": "file:apps/api/src/modules/notifications/routes.ts",
+      "id": "edge:file:apps/api/src/modules/notifications/service/notification-inbox.collector.ts:prisma:crm:CrmBugReportNotification",
+      "source": "file:apps/api/src/modules/notifications/service/notification-inbox.collector.ts",
       "target": "prisma:crm:CrmBugReportNotification",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/notifications/service/notification-state.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/notifications/service/notification-state.ts",
+      "target": "prisma:crm:CrmConfig",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -97830,44 +98314,65 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/omicall/routes.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/omicall/routes.ts",
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "target": "prisma:crm:CrmStaff",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/omicall/routes.ts:prisma:crm:CrmCallLog",
-      "source": "file:apps/api/src/modules/omicall/routes.ts",
-      "target": "prisma:crm:CrmCallLog",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/omicall/routes.ts:prisma:crm:CrmOmicallLog",
-      "source": "file:apps/api/src/modules/omicall/routes.ts",
-      "target": "prisma:crm:CrmOmicallLog",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/omicall/routes.ts:prisma:crm:CrmOmicallConfig",
-      "source": "file:apps/api/src/modules/omicall/routes.ts",
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts:prisma:crm:CrmOmicallConfig",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "target": "prisma:crm:CrmOmicallConfig",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/omicall/routes.ts:prisma:legacy:user_contact",
-      "source": "file:apps/api/src/modules/omicall/routes.ts",
-      "target": "prisma:legacy:user_contact",
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts:prisma:crm:CrmOmicallLog",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "target": "prisma:crm:CrmOmicallLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts:prisma:legacy:user_profile",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "target": "prisma:legacy:user_profile",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/omicall/routes.ts:prisma:legacy:user_profile",
-      "source": "file:apps/api/src/modules/omicall/routes.ts",
-      "target": "prisma:legacy:user_profile",
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts:prisma:crm:CrmCallLog",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts",
+      "target": "prisma:crm:CrmCallLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts:prisma:crm:CrmOmicallLog",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts",
+      "target": "prisma:crm:CrmOmicallLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts:prisma:crm:CrmOmicallConfig",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts",
+      "target": "prisma:crm:CrmOmicallConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts:prisma:legacy:user_contact",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts",
+      "target": "prisma:legacy:user_contact",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
     },
@@ -97935,51 +98440,100 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmConfig",
-      "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
-      "target": "prisma:crm:CrmConfig",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotSession",
-      "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-assessment.service.ts:prisma:crm:CrmPilotSession",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-assessment.service.ts",
       "target": "prisma:crm:CrmPilotSession",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotMaterial",
-      "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-assessment.service.ts:prisma:crm:CrmPilotAssessmentCriterion",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-assessment.service.ts",
+      "target": "prisma:crm:CrmPilotAssessmentCriterion",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-core.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-core.ts",
+      "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-material-sop.service.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-material-sop.service.ts",
+      "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-materials.service.ts:prisma:crm:CrmPilotSession",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-materials.service.ts",
+      "target": "prisma:crm:CrmPilotSession",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-materials.service.ts:prisma:crm:CrmPilotMaterial",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-materials.service.ts",
       "target": "prisma:crm:CrmPilotMaterial",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmStockInventory",
-      "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-materials.service.ts:prisma:crm:CrmStockInventory",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-materials.service.ts",
       "target": "prisma:crm:CrmStockInventory",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotSopStep",
-      "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-session-flow.service.ts:prisma:crm:CrmPilotSession",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-session-flow.service.ts",
+      "target": "prisma:crm:CrmPilotSession",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-sessions.service.ts:prisma:crm:CrmPilotSession",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-sessions.service.ts",
+      "target": "prisma:crm:CrmPilotSession",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-sessions.service.ts:prisma:crm:CrmPilotMaterial",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-sessions.service.ts",
+      "target": "prisma:crm:CrmPilotMaterial",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-sop-prep.service.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-sop-prep.service.ts",
+      "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-sop-steps.service.ts:prisma:crm:CrmPilotSession",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-sop-steps.service.ts",
+      "target": "prisma:crm:CrmPilotSession",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-sop-steps.service.ts:prisma:crm:CrmPilotSopStep",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-sop-steps.service.ts",
       "target": "prisma:crm:CrmPilotSopStep",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotSessionStep",
-      "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
+      "id": "edge:file:apps/api/src/modules/pilot/service/pilot-sop-steps.service.ts:prisma:crm:CrmPilotSessionStep",
+      "source": "file:apps/api/src/modules/pilot/service/pilot-sop-steps.service.ts",
       "target": "prisma:crm:CrmPilotSessionStep",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/pilot/pilot.service.ts:prisma:crm:CrmPilotAssessmentCriterion",
-      "source": "file:apps/api/src/modules/pilot/pilot.service.ts",
-      "target": "prisma:crm:CrmPilotAssessmentCriterion",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -97987,13 +98541,6 @@
       "id": "edge:file:apps/api/src/modules/plans/routes/plan-crud.routes.ts:prisma:crm:CrmDailyPlan",
       "source": "file:apps/api/src/modules/plans/routes/plan-crud.routes.ts",
       "target": "prisma:crm:CrmDailyPlan",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/plans/routes/plan-crud.routes.ts:prisma:crm:CrmCallLog",
-      "source": "file:apps/api/src/modules/plans/routes/plan-crud.routes.ts",
-      "target": "prisma:crm:CrmCallLog",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -98012,29 +98559,36 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/plans/routes.ts:prisma:crm:CrmDailyPlan",
-      "source": "file:apps/api/src/modules/plans/routes.ts",
+      "id": "edge:file:apps/api/src/modules/plans/routes/plan-suggest.routes.ts:prisma:crm:CrmDailyPlan",
+      "source": "file:apps/api/src/modules/plans/routes/plan-suggest.routes.ts",
       "target": "prisma:crm:CrmDailyPlan",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/plans/routes.ts:prisma:crm:CrmCallLog",
-      "source": "file:apps/api/src/modules/plans/routes.ts",
+      "id": "edge:file:apps/api/src/modules/plans/routes/plan-suggest.routes.ts:prisma:crm:CrmCustomerAssignment",
+      "source": "file:apps/api/src/modules/plans/routes/plan-suggest.routes.ts",
+      "target": "prisma:crm:CrmCustomerAssignment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/plans/routes/plan-weekly.routes.ts:prisma:crm:CrmDailyPlan",
+      "source": "file:apps/api/src/modules/plans/routes/plan-weekly.routes.ts",
+      "target": "prisma:crm:CrmDailyPlan",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/plans/routes/plan-weekly.routes.ts:prisma:crm:CrmCallLog",
+      "source": "file:apps/api/src/modules/plans/routes/plan-weekly.routes.ts",
       "target": "prisma:crm:CrmCallLog",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/plans/routes.ts:prisma:crm:CrmStaffKpi",
-      "source": "file:apps/api/src/modules/plans/routes.ts",
-      "target": "prisma:crm:CrmStaffKpi",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/plans/routes.ts:prisma:crm:CrmCustomerAssignment",
-      "source": "file:apps/api/src/modules/plans/routes.ts",
+      "id": "edge:file:apps/api/src/modules/plans/routes/plan-weekly.routes.ts:prisma:crm:CrmCustomerAssignment",
+      "source": "file:apps/api/src/modules/plans/routes/plan-weekly.routes.ts",
       "target": "prisma:crm:CrmCustomerAssignment",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
@@ -98082,60 +98636,60 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/sms/routes.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/sms/routes.ts",
+      "id": "edge:file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "target": "prisma:crm:CrmStaff",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/sms/routes.ts:prisma:crm:CrmDailyPlan",
-      "source": "file:apps/api/src/modules/sms/routes.ts",
+      "id": "edge:file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts:prisma:crm:CrmDailyPlan",
+      "source": "file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "target": "prisma:crm:CrmDailyPlan",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/sms/routes.ts:prisma:crm:CrmCallLog",
-      "source": "file:apps/api/src/modules/sms/routes.ts",
+      "id": "edge:file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts:prisma:crm:CrmCallLog",
+      "source": "file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "target": "prisma:crm:CrmCallLog",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/sms/routes.ts:prisma:crm:CrmConfig",
-      "source": "file:apps/api/src/modules/sms/routes.ts",
-      "target": "prisma:crm:CrmConfig",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/sms/routes.ts:prisma:legacy:user_contact",
-      "source": "file:apps/api/src/modules/sms/routes.ts",
+      "id": "edge:file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts:prisma:legacy:user_contact",
+      "source": "file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "target": "prisma:legacy:user_contact",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/sms/routes.ts:prisma:legacy:user_profile",
-      "source": "file:apps/api/src/modules/sms/routes.ts",
+      "id": "edge:file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts:prisma:legacy:user_profile",
+      "source": "file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "target": "prisma:legacy:user_profile",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/sms/routes.ts:prisma:legacy:user_sms",
-      "source": "file:apps/api/src/modules/sms/routes.ts",
+      "id": "edge:file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts:prisma:legacy:user_sms",
+      "source": "file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "target": "prisma:legacy:user_sms",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/sms/routes.ts:prisma:legacy:user_url",
-      "source": "file:apps/api/src/modules/sms/routes.ts",
+      "id": "edge:file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts:prisma:legacy:user_url",
+      "source": "file:apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "target": "prisma:legacy:user_url",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/sms/routes/sms-templates.routes.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/staff/routes.ts:prisma:crm:CrmStaff",
@@ -111809,13 +112363,6 @@
       "label": "CALLS campaigns.update"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/omicall/webhook",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:POST:/api/omicall/webhook",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/omicall/config",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/omicall/config",
@@ -111837,16 +112384,23 @@
       "label": "CALLS campaigns.update"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/omicall/logs/latest",
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/omicall/config/:staffId",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/omicall/logs/latest",
+      "target": "route:DELETE:/api/omicall/config/:staffId",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/omicall/config/:staffId",
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/omicall/diagnostic",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:DELETE:/api/omicall/config/:staffId",
+      "target": "route:GET:/api/omicall/diagnostic",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/omicall/logs/latest",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/omicall/logs/latest",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -111872,9 +112426,9 @@
       "label": "CALLS campaigns.update"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/omicall/diagnostic",
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/omicall/webhook",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/omicall/diagnostic",
+      "target": "route:POST:/api/omicall/webhook",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -112236,9 +112790,9 @@
       "label": "CALLS campaigns.update"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/plans/weekly",
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/plans/:id/confirm",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/plans/weekly",
+      "target": "route:PUT:/api/plans/:id/confirm",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -112250,9 +112804,9 @@
       "label": "CALLS campaigns.update"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/plans/:id/confirm",
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/plans/weekly",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:PUT:/api/plans/:id/confirm",
+      "target": "route:GET:/api/plans/weekly",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -112418,6 +112972,27 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/sms/history/:customerId",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/sms/history/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/sms/user-url/:customerId",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/sms/user-url/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/sms/send",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/sms/send",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/sms/templates",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/sms/templates",
@@ -112463,27 +113038,6 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/sms/booking-templates/reset",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/sms/booking-templates/reset",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/sms/history/:customerId",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/sms/history/:customerId",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/sms/user-url/:customerId",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/sms/user-url/:customerId",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/sms/send",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:POST:/api/sms/send",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -117248,13 +117802,6 @@
       "label": "CALLS campaigns.delete"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/omicall/webhook",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:POST:/api/omicall/webhook",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/omicall/config",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/omicall/config",
@@ -117276,18 +117823,25 @@
       "label": "CALLS campaigns.delete"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/omicall/logs/latest",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/omicall/logs/latest",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/omicall/config/:staffId",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:DELETE:/api/omicall/config/:staffId",
       "type": "API_CALL",
       "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/omicall/diagnostic",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/omicall/diagnostic",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/omicall/logs/latest",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/omicall/logs/latest",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
     },
     {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/omicall/logs",
@@ -117311,9 +117865,9 @@
       "label": "CALLS campaigns.delete"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/omicall/diagnostic",
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/omicall/webhook",
       "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/omicall/diagnostic",
+      "target": "route:POST:/api/omicall/webhook",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -117675,9 +118229,9 @@
       "label": "CALLS campaigns.delete"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/plans/weekly",
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/plans/:id/confirm",
       "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/plans/weekly",
+      "target": "route:PUT:/api/plans/:id/confirm",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -117689,9 +118243,9 @@
       "label": "CALLS campaigns.delete"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/plans/:id/confirm",
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/plans/weekly",
       "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:PUT:/api/plans/:id/confirm",
+      "target": "route:GET:/api/plans/weekly",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -117857,6 +118411,27 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/sms/history/:customerId",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/sms/history/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/sms/user-url/:customerId",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/sms/user-url/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/sms/send",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/sms/send",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/sms/templates",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/sms/templates",
@@ -117902,27 +118477,6 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/sms/booking-templates/reset",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/sms/booking-templates/reset",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/sms/history/:customerId",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/sms/history/:customerId",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/sms/user-url/:customerId",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/sms/user-url/:customerId",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/sms/send",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:POST:/api/sms/send",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -118599,13 +119153,6 @@
       "label": "CALLS omicall.deleteConfig"
     },
     {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/omicall/webhook",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/omicall/webhook",
-      "type": "API_CALL",
-      "label": "CALLS omicall.listLogs"
-    },
-    {
       "id": "edge:page:/dashboard/omicall:route:GET:/api/omicall/config",
       "source": "page:/dashboard/omicall",
       "target": "route:GET:/api/omicall/config",
@@ -118627,18 +119174,25 @@
       "label": "CALLS omicall.listLogs"
     },
     {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/omicall/logs/latest",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/omicall/logs/latest",
-      "type": "API_CALL",
-      "label": "CALLS omicall.listLogs"
-    },
-    {
       "id": "edge:page:/dashboard/omicall:route:DELETE:/api/omicall/config/:staffId",
       "source": "page:/dashboard/omicall",
       "target": "route:DELETE:/api/omicall/config/:staffId",
       "type": "API_CALL",
       "label": "CALLS staff.list"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:GET:/api/omicall/diagnostic",
+      "source": "page:/dashboard/omicall",
+      "target": "route:GET:/api/omicall/diagnostic",
+      "type": "API_CALL",
+      "label": "CALLS omicall.listLogs"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:GET:/api/omicall/logs/latest",
+      "source": "page:/dashboard/omicall",
+      "target": "route:GET:/api/omicall/logs/latest",
+      "type": "API_CALL",
+      "label": "CALLS omicall.listLogs"
     },
     {
       "id": "edge:page:/dashboard/omicall:route:GET:/api/omicall/logs",
@@ -118662,9 +119216,9 @@
       "label": "CALLS omicall.listLogs"
     },
     {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/omicall/diagnostic",
+      "id": "edge:page:/dashboard/omicall:route:POST:/api/omicall/webhook",
       "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/omicall/diagnostic",
+      "target": "route:POST:/api/omicall/webhook",
       "type": "API_CALL",
       "label": "CALLS omicall.listLogs"
     },
@@ -119341,9 +119895,9 @@
       "label": "CALLS plans.getWeekly"
     },
     {
-      "id": "edge:page:/dashboard/plans:route:GET:/api/plans/weekly",
+      "id": "edge:page:/dashboard/plans:route:PUT:/api/plans/:id/confirm",
       "source": "page:/dashboard/plans",
-      "target": "route:GET:/api/plans/weekly",
+      "target": "route:PUT:/api/plans/:id/confirm",
       "type": "API_CALL",
       "label": "CALLS plans.getWeekly"
     },
@@ -119355,9 +119909,9 @@
       "label": "CALLS plans.getWeekly"
     },
     {
-      "id": "edge:page:/dashboard/plans:route:PUT:/api/plans/:id/confirm",
+      "id": "edge:page:/dashboard/plans:route:GET:/api/plans/weekly",
       "source": "page:/dashboard/plans",
-      "target": "route:PUT:/api/plans/:id/confirm",
+      "target": "route:GET:/api/plans/weekly",
       "type": "API_CALL",
       "label": "CALLS plans.getWeekly"
     },
@@ -126243,13 +126797,6 @@
       "label": "CALLS teams.update"
     },
     {
-      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/omicall/webhook",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:POST:/api/omicall/webhook",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/omicall/config",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/omicall/config",
@@ -126271,16 +126818,23 @@
       "label": "CALLS teams.update"
     },
     {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/omicall/logs/latest",
+      "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/omicall/config/:staffId",
       "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/omicall/logs/latest",
+      "target": "route:DELETE:/api/omicall/config/:staffId",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
     {
-      "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/omicall/config/:staffId",
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/omicall/diagnostic",
       "source": "page:/dashboard/staff/teams",
-      "target": "route:DELETE:/api/omicall/config/:staffId",
+      "target": "route:GET:/api/omicall/diagnostic",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/omicall/logs/latest",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/omicall/logs/latest",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -126306,9 +126860,9 @@
       "label": "CALLS teams.update"
     },
     {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/omicall/diagnostic",
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/omicall/webhook",
       "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/omicall/diagnostic",
+      "target": "route:POST:/api/omicall/webhook",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -126670,9 +127224,9 @@
       "label": "CALLS teams.update"
     },
     {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/plans/weekly",
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/plans/:id/confirm",
       "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/plans/weekly",
+      "target": "route:PUT:/api/plans/:id/confirm",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -126684,9 +127238,9 @@
       "label": "CALLS teams.update"
     },
     {
-      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/plans/:id/confirm",
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/plans/weekly",
       "source": "page:/dashboard/staff/teams",
-      "target": "route:PUT:/api/plans/:id/confirm",
+      "target": "route:GET:/api/plans/weekly",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -126852,6 +127406,27 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/sms/history/:customerId",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/sms/history/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/sms/user-url/:customerId",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/sms/user-url/:customerId",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/sms/send",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/sms/send",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/sms/templates",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/sms/templates",
@@ -126897,27 +127472,6 @@
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/sms/booking-templates/reset",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/sms/booking-templates/reset",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/sms/history/:customerId",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/sms/history/:customerId",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/sms/user-url/:customerId",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/sms/user-url/:customerId",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/sms/send",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:POST:/api/sms/send",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -128806,8 +129360,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4804,
-    "totalEdges": 9533,
+    "totalNodes": 4831,
+    "totalEdges": 9562,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -128816,18 +129370,18 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 547,
-      "File": 1643
+      "File": 1670
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 613,
       "USES_TOKEN": 549,
-      "IMPORTS": 971,
-      "QUERIES_MODEL": 519,
+      "IMPORTS": 987,
+      "QUERIES_MODEL": 532,
       "API_CALL": 4336
     },
-    "fastifyRouteCount": 782,
+    "fastifyRouteCount": 777,
     "prismaModelCount": 183,
     "nextPageCount": 66,
     "sharedTypeCount": 1573
@@ -133209,72 +133763,72 @@
       "moduleName": "notifications"
     },
     {
-      "method": "POST",
-      "path": "/api/omicall/webhook",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "omicall"
-    },
-    {
       "method": "GET",
       "path": "/api/omicall/config",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "handler": "preHandler",
       "moduleName": "omicall"
     },
     {
       "method": "POST",
       "path": "/api/omicall/config",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "handler": "preHandler",
       "moduleName": "omicall"
     },
     {
       "method": "GET",
       "path": "/api/omicall/sip-config",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "omicall"
-    },
-    {
-      "method": "GET",
-      "path": "/api/omicall/logs/latest",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "omicall"
     },
     {
       "method": "DELETE",
       "path": "/api/omicall/config/:staffId",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
-      "handler": "preHandler",
-      "moduleName": "omicall"
-    },
-    {
-      "method": "GET",
-      "path": "/api/omicall/logs",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "omicall"
-    },
-    {
-      "method": "GET",
-      "path": "/api/omicall/logs/:id/play",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "omicall"
-    },
-    {
-      "method": "POST",
-      "path": "/api/omicall/logs/:id/verify",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "handler": "preHandler",
       "moduleName": "omicall"
     },
     {
       "method": "GET",
       "path": "/api/omicall/diagnostic",
-      "filePath": "apps/api/src/modules/omicall/routes.ts",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "omicall"
+    },
+    {
+      "method": "GET",
+      "path": "/api/omicall/logs/latest",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "omicall"
+    },
+    {
+      "method": "GET",
+      "path": "/api/omicall/logs",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "omicall"
+    },
+    {
+      "method": "GET",
+      "path": "/api/omicall/logs/:id/play",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "omicall"
+    },
+    {
+      "method": "POST",
+      "path": "/api/omicall/logs/:id/verify",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "handler": "preHandler",
+      "moduleName": "omicall"
+    },
+    {
+      "method": "POST",
+      "path": "/api/omicall/webhook",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "omicall"
     },
@@ -133636,20 +134190,6 @@
       "moduleName": "plans"
     },
     {
-      "method": "GET",
-      "path": "/api/plans/weekly",
-      "filePath": "apps/api/src/modules/plans/routes/plan-crud.routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "plans"
-    },
-    {
-      "method": "GET",
-      "path": "/api/plans/suggest",
-      "filePath": "apps/api/src/modules/plans/routes/plan-crud.routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "plans"
-    },
-    {
       "method": "PUT",
       "path": "/api/plans/:id/confirm",
       "filePath": "apps/api/src/modules/plans/routes/plan-crud.routes.ts",
@@ -133657,37 +134197,16 @@
       "moduleName": "plans"
     },
     {
-      "method": "POST",
-      "path": "/api/plans",
-      "filePath": "apps/api/src/modules/plans/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "plans"
-    },
-    {
       "method": "GET",
-      "path": "/api/plans/today",
-      "filePath": "apps/api/src/modules/plans/routes.ts",
+      "path": "/api/plans/suggest",
+      "filePath": "apps/api/src/modules/plans/routes/plan-suggest.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "plans"
     },
     {
       "method": "GET",
       "path": "/api/plans/weekly",
-      "filePath": "apps/api/src/modules/plans/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "plans"
-    },
-    {
-      "method": "GET",
-      "path": "/api/plans/suggest",
-      "filePath": "apps/api/src/modules/plans/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "plans"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/plans/:id/confirm",
-      "filePath": "apps/api/src/modules/plans/routes.ts",
+      "filePath": "apps/api/src/modules/plans/routes/plan-weekly.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "plans"
     },
@@ -133854,72 +134373,72 @@
     },
     {
       "method": "GET",
-      "path": "/api/sms/templates",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "sms"
-    },
-    {
-      "method": "POST",
-      "path": "/api/sms/templates",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "handler": "preHandler",
-      "moduleName": "sms"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/sms/templates/:id",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "handler": "preHandler",
-      "moduleName": "sms"
-    },
-    {
-      "method": "GET",
-      "path": "/api/sms/booking-templates",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "sms"
-    },
-    {
-      "method": "POST",
-      "path": "/api/sms/booking-templates",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "sms"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/sms/booking-templates/:id",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "sms"
-    },
-    {
-      "method": "POST",
-      "path": "/api/sms/booking-templates/reset",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "sms"
-    },
-    {
-      "method": "GET",
       "path": "/api/sms/history/:customerId",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
+      "filePath": "apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "sms"
     },
     {
       "method": "GET",
       "path": "/api/sms/user-url/:customerId",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
+      "filePath": "apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "sms"
     },
     {
       "method": "POST",
       "path": "/api/sms/send",
-      "filePath": "apps/api/src/modules/sms/routes.ts",
+      "filePath": "apps/api/src/modules/sms/routes/sms-messaging.routes.ts",
       "handler": "preHandler",
+      "moduleName": "sms"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sms/templates",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "sms"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sms/templates",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "handler": "preHandler",
+      "moduleName": "sms"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/sms/templates/:id",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "handler": "preHandler",
+      "moduleName": "sms"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sms/booking-templates",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "sms"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sms/booking-templates",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "sms"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/sms/booking-templates/:id",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "sms"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sms/booking-templates/reset",
+      "filePath": "apps/api/src/modules/sms/routes/sms-templates.routes.ts",
+      "handler": "inlineHandler",
       "moduleName": "sms"
     },
     {

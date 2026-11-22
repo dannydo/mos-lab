@@ -14,7 +14,6 @@
     "apps/api/src/modules/campaigns/services/campaign-customer.service.ts": 1091,
     "apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts": 2601,
     "apps/api/src/modules/career/career.service.ts": 3111,
-    "apps/api/src/modules/cash-flow/cash-flow.service.ts": 757,
     "apps/api/src/modules/customers/routes/appointments.routes.ts": 1333,
     "apps/api/src/modules/customers/routes/booking.routes.ts": 1432,
     "apps/api/src/modules/customers/routes/customer-allocation.routes.ts": 971,
@@ -163,8 +162,6 @@
     "packages/shared/src/catalog/combo-expiry.ts": 1009,
     "packages/shared/src/theme/tokens.ts": 1312,
     "packages/shared/src/types/academy-talent-assessment.ts": 795,
-    "packages/shared/src/types/career-progression.ts": 733,
-    "packages/shared/src/types/customer.ts": 858,
-    "packages/shared/src/utils/chat-checklist-summarizer.ts": 697
+    "packages/shared/src/types/customer.ts": 858
   }
 }
