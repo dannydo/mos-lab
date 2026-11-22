@@ -9,7 +9,6 @@
     "apps/web/app/dashboard/academy-leads/campaigns/[slug]/page.tsx": 798,
     "apps/web/app/dashboard/academy-leads/components/AcademyTalentWorkshopDrawer.tsx": 3045,
     "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantOverlays.tsx": 989,
-    "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopQuizManager.tsx": 741,
     "apps/web/app/dashboard/academy-leads/page.tsx": 818,
     "apps/web/app/dashboard/academy-leads/payments/page.tsx": 865,
     "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/page.tsx": 805,
@@ -27,7 +26,6 @@
     "apps/web/app/dashboard/catalog/components/CatalogBranchTab.tsx": 775,
     "apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx": 1150,
     "apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx": 1652,
-    "apps/web/app/dashboard/cc/components/CcTipTab.tsx": 763,
     "apps/web/app/dashboard/cskh/components/TicketDetailDrawer.tsx": 825,
     "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx": 1185,
     "apps/web/app/dashboard/customers/components/CustomerFilters.tsx": 1477,
@@ -76,7 +74,6 @@
     "apps/web/app/payroll-adjustment-lab/page.tsx": 897,
     "apps/web/components/avatar/AvatarCropModal.tsx": 840,
     "apps/web/components/CallLogModal.tsx": 826,
-    "apps/web/components/campaign/CampaignTouchpointCell.tsx": 760,
     "apps/web/components/campaign/SharedPoolHistoryRecoveryDrawer.tsx": 888,
     "apps/web/components/cc-thu-nhap/modals/CcPaystubDetailModal.tsx": 918,
     "apps/web/components/customer-detail/components/BookingsTab.tsx": 1030,
@@ -93,13 +90,11 @@
     "apps/web/components/mos-chat/mobile/MosChatMobileInbox.tsx": 901,
     "apps/web/components/mos-chat/mobile/MosChatMobileMessageItem.tsx": 916,
     "apps/web/components/mos-chat/mobile/MosChatMobileTaskDetailSheet.tsx": 828,
-    "apps/web/components/mos-chat/workflows/MosChatWorkflowModals.tsx": 758,
     "apps/web/components/notification-center/HeaderNotificationCenter.tsx": 1030,
     "apps/web/components/profile/UnifiedProfileSheet.tsx": 853,
     "apps/web/components/qa-shop/hooks/useQaShopState.ts": 866,
     "apps/web/components/sms/SMSModal.tsx": 799,
     "apps/web/components/telesales/components/TelesalesBackFace.tsx": 832,
-    "apps/web/components/telesales/components/TelesalesFrontFace.tsx": 754,
     "apps/web/components/ui/MermaidViewer.tsx": 1102
   }
 }

@@ -35481,6 +35481,78 @@
       }
     },
     {
+      "id": "uicomp:TouchpointPillBadge",
+      "type": "UIComponent",
+      "label": "<TouchpointPillBadge />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/campaign-touchpoint-cell/TouchpointPillBadge.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TouchpointPillBadge",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TouchpointPopoverContent",
+      "type": "UIComponent",
+      "label": "<TouchpointPopoverContent />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/campaign-touchpoint-cell/TouchpointPopoverContent.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TouchpointPopoverContent",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TouchpointTooltipContent",
+      "type": "UIComponent",
+      "label": "<TouchpointTooltipContent />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/campaign-touchpoint-cell/TouchpointTooltipContent.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TouchpointTooltipContent",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:touchpoint-cell-types",
+      "type": "UIComponent",
+      "label": "<touchpoint-cell-types />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/campaign-touchpoint-cell/touchpoint-cell-types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "touchpoint-cell-types",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:touchpoint-cell-utils",
+      "type": "UIComponent",
+      "label": "<touchpoint-cell-utils />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/campaign-touchpoint-cell/touchpoint-cell-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "touchpoint-cell-utils",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useTouchpointCellState",
+      "type": "UIComponent",
+      "label": "<useTouchpointCellState />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/campaign-touchpoint-cell/useTouchpointCellState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useTouchpointCellState",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:CampaignBatchModals",
       "type": "UIComponent",
       "label": "<CampaignBatchModals />",
@@ -39633,6 +39705,126 @@
       }
     },
     {
+      "id": "uicomp:MosChatSaveThreadWorkflowModal",
+      "type": "UIComponent",
+      "label": "<MosChatSaveThreadWorkflowModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/workflows/mos-chat-workflow-modals/MosChatSaveThreadWorkflowModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatSaveThreadWorkflowModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatTriggerWorkflowModal",
+      "type": "UIComponent",
+      "label": "<MosChatTriggerWorkflowModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/workflows/mos-chat-workflow-modals/MosChatTriggerWorkflowModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatTriggerWorkflowModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TriggerWorkflowFinanceFields",
+      "type": "UIComponent",
+      "label": "<TriggerWorkflowFinanceFields />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/workflows/mos-chat-workflow-modals/TriggerWorkflowFinanceFields.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TriggerWorkflowFinanceFields",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TriggerWorkflowInventoryFields",
+      "type": "UIComponent",
+      "label": "<TriggerWorkflowInventoryFields />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/workflows/mos-chat-workflow-modals/TriggerWorkflowInventoryFields.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TriggerWorkflowInventoryFields",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TriggerWorkflowStepActorsSection",
+      "type": "UIComponent",
+      "label": "<TriggerWorkflowStepActorsSection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/workflows/mos-chat-workflow-modals/TriggerWorkflowStepActorsSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TriggerWorkflowStepActorsSection",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:WorkflowModalShell",
+      "type": "UIComponent",
+      "label": "<WorkflowModalShell />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/workflows/mos-chat-workflow-modals/WorkflowModalShell.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "WorkflowModalShell",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useSaveThreadWorkflowForm",
+      "type": "UIComponent",
+      "label": "<useSaveThreadWorkflowForm />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/workflows/mos-chat-workflow-modals/useSaveThreadWorkflowForm.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useSaveThreadWorkflowForm",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useTriggerWorkflowForm",
+      "type": "UIComponent",
+      "label": "<useTriggerWorkflowForm />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/workflows/mos-chat-workflow-modals/useTriggerWorkflowForm.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useTriggerWorkflowForm",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:workflowModalTypes",
+      "type": "UIComponent",
+      "label": "<workflowModalTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/workflows/mos-chat-workflow-modals/workflowModalTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "workflowModalTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:workflowModalUtils",
+      "type": "UIComponent",
+      "label": "<workflowModalUtils />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/workflows/mos-chat-workflow-modals/workflowModalUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "workflowModalUtils",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:HeaderNotificationCenter",
       "type": "UIComponent",
       "label": "<HeaderNotificationCenter />",
@@ -40313,6 +40505,90 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "TelesalesFrontFace",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TelesalesDonutChart",
+      "type": "UIComponent",
+      "label": "<TelesalesDonutChart />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telesales/components/telesales-front-face/TelesalesDonutChart.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TelesalesDonutChart",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TelesalesFrontHeader",
+      "type": "UIComponent",
+      "label": "<TelesalesFrontHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telesales/components/telesales-front-face/TelesalesFrontHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TelesalesFrontHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TelesalesLeaderboard",
+      "type": "UIComponent",
+      "label": "<TelesalesLeaderboard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telesales/components/telesales-front-face/TelesalesLeaderboard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TelesalesLeaderboard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TelesalesMetricGrid",
+      "type": "UIComponent",
+      "label": "<TelesalesMetricGrid />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telesales/components/telesales-front-face/TelesalesMetricGrid.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TelesalesMetricGrid",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TelesalesTimelineTrack",
+      "type": "UIComponent",
+      "label": "<TelesalesTimelineTrack />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telesales/components/telesales-front-face/TelesalesTimelineTrack.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TelesalesTimelineTrack",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:frontFaceVisualConfig",
+      "type": "UIComponent",
+      "label": "<frontFaceVisualConfig />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telesales/components/telesales-front-face/frontFaceVisualConfig.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "frontFaceVisualConfig",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:telesalesFrontFaceTypes",
+      "type": "UIComponent",
+      "label": "<telesalesFrontFaceTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telesales/components/telesales-front-face/telesalesFrontFaceTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "telesalesFrontFaceTypes",
         "isPrimitive": false
       }
     },
@@ -53679,8 +53955,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopQuizManager.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30012,
-        "lineCount": 741,
+        "sizeBytes": 4385,
+        "lineCount": 126,
         "ext": ".tsx"
       }
     },
@@ -53928,6 +54204,84 @@
       "metadata": {
         "sizeBytes": 1126,
         "lineCount": 20,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuestionEditorDrawer.tsx",
+      "type": "File",
+      "label": "QuestionEditorDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuestionEditorDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7320,
+        "lineCount": 175,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuizEditorModal.tsx",
+      "type": "File",
+      "label": "QuizEditorModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuizEditorModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2345,
+        "lineCount": 76,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuizHeaderActions.tsx",
+      "type": "File",
+      "label": "QuizHeaderActions.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuizHeaderActions.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3233,
+        "lineCount": 100,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuizQuestionList.tsx",
+      "type": "File",
+      "label": "QuizQuestionList.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuizQuestionList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8317,
+        "lineCount": 185,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/quiz-manager-utils.ts",
+      "type": "File",
+      "label": "quiz-manager-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/quiz-manager-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4117,
+        "lineCount": 129,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/useAcademyWorkshopQuizManager.ts",
+      "type": "File",
+      "label": "useAcademyWorkshopQuizManager.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/useAcademyWorkshopQuizManager.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7720,
+        "lineCount": 246,
         "ext": ".ts"
       }
     },
@@ -56019,8 +56373,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29999,
-        "lineCount": 763,
+        "sizeBytes": 2920,
+        "lineCount": 104,
         "ext": ".tsx"
       }
     },
@@ -56216,6 +56570,110 @@
       "metadata": {
         "sizeBytes": 14332,
         "lineCount": 432,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipDetailSection.tsx",
+      "type": "File",
+      "label": "CcTipDetailSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipDetailSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4702,
+        "lineCount": 140,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipLeaderboardMobileList.tsx",
+      "type": "File",
+      "label": "CcTipLeaderboardMobileList.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipLeaderboardMobileList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3580,
+        "lineCount": 84,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipLeaderboardSection.tsx",
+      "type": "File",
+      "label": "CcTipLeaderboardSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipLeaderboardSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2976,
+        "lineCount": 98,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipSummaryCards.tsx",
+      "type": "File",
+      "label": "CcTipSummaryCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipSummaryCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5876,
+        "lineCount": 155,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/cc-tip-utils.ts",
+      "type": "File",
+      "label": "cc-tip-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-tip-tab/cc-tip-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3591,
+        "lineCount": 116,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/ccTipDetailColumns.tsx",
+      "type": "File",
+      "label": "ccTipDetailColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-tip-tab/ccTipDetailColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4846,
+        "lineCount": 147,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/ccTipLeaderboardColumns.tsx",
+      "type": "File",
+      "label": "ccTipLeaderboardColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-tip-tab/ccTipLeaderboardColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7105,
+        "lineCount": 198,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/useCcTipData.ts",
+      "type": "File",
+      "label": "useCcTipData.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-tip-tab/useCcTipData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4975,
+        "lineCount": 169,
         "ext": ".ts"
       }
     },
@@ -86141,6 +86599,90 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:TouchpointPillBadge:ws:apps/web",
+      "source": "uicomp:TouchpointPillBadge",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TouchpointPillBadge:token:color:primary",
+      "source": "uicomp:TouchpointPillBadge",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TouchpointPopoverContent:ws:apps/web",
+      "source": "uicomp:TouchpointPopoverContent",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TouchpointPopoverContent:token:color:primary",
+      "source": "uicomp:TouchpointPopoverContent",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TouchpointTooltipContent:ws:apps/web",
+      "source": "uicomp:TouchpointTooltipContent",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TouchpointTooltipContent:token:color:primary",
+      "source": "uicomp:TouchpointTooltipContent",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:touchpoint-cell-types:ws:apps/web",
+      "source": "uicomp:touchpoint-cell-types",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:touchpoint-cell-types:token:color:primary",
+      "source": "uicomp:touchpoint-cell-types",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:touchpoint-cell-utils:ws:apps/web",
+      "source": "uicomp:touchpoint-cell-utils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:touchpoint-cell-utils:token:color:primary",
+      "source": "uicomp:touchpoint-cell-utils",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useTouchpointCellState:ws:apps/web",
+      "source": "uicomp:useTouchpointCellState",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useTouchpointCellState:token:color:primary",
+      "source": "uicomp:useTouchpointCellState",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:CampaignBatchModals:ws:apps/web",
       "source": "uicomp:CampaignBatchModals",
       "target": "ws:apps/web",
@@ -90985,6 +91527,146 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatSaveThreadWorkflowModal:ws:apps/web",
+      "source": "uicomp:MosChatSaveThreadWorkflowModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatSaveThreadWorkflowModal:token:color:primary",
+      "source": "uicomp:MosChatSaveThreadWorkflowModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatTriggerWorkflowModal:ws:apps/web",
+      "source": "uicomp:MosChatTriggerWorkflowModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatTriggerWorkflowModal:token:color:primary",
+      "source": "uicomp:MosChatTriggerWorkflowModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TriggerWorkflowFinanceFields:ws:apps/web",
+      "source": "uicomp:TriggerWorkflowFinanceFields",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TriggerWorkflowFinanceFields:token:color:primary",
+      "source": "uicomp:TriggerWorkflowFinanceFields",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TriggerWorkflowInventoryFields:ws:apps/web",
+      "source": "uicomp:TriggerWorkflowInventoryFields",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TriggerWorkflowInventoryFields:token:color:primary",
+      "source": "uicomp:TriggerWorkflowInventoryFields",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TriggerWorkflowStepActorsSection:ws:apps/web",
+      "source": "uicomp:TriggerWorkflowStepActorsSection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TriggerWorkflowStepActorsSection:token:color:primary",
+      "source": "uicomp:TriggerWorkflowStepActorsSection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:WorkflowModalShell:ws:apps/web",
+      "source": "uicomp:WorkflowModalShell",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:WorkflowModalShell:token:color:primary",
+      "source": "uicomp:WorkflowModalShell",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useSaveThreadWorkflowForm:ws:apps/web",
+      "source": "uicomp:useSaveThreadWorkflowForm",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useSaveThreadWorkflowForm:token:color:primary",
+      "source": "uicomp:useSaveThreadWorkflowForm",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useTriggerWorkflowForm:ws:apps/web",
+      "source": "uicomp:useTriggerWorkflowForm",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useTriggerWorkflowForm:token:color:primary",
+      "source": "uicomp:useTriggerWorkflowForm",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:workflowModalTypes:ws:apps/web",
+      "source": "uicomp:workflowModalTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:workflowModalTypes:token:color:primary",
+      "source": "uicomp:workflowModalTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:workflowModalUtils:ws:apps/web",
+      "source": "uicomp:workflowModalUtils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:workflowModalUtils:token:color:primary",
+      "source": "uicomp:workflowModalUtils",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:HeaderNotificationCenter:ws:apps/web",
       "source": "uicomp:HeaderNotificationCenter",
       "target": "ws:apps/web",
@@ -91778,6 +92460,104 @@
     {
       "id": "edge:uicomp:TelesalesFrontFace:token:color:primary",
       "source": "uicomp:TelesalesFrontFace",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TelesalesDonutChart:ws:apps/web",
+      "source": "uicomp:TelesalesDonutChart",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TelesalesDonutChart:token:color:primary",
+      "source": "uicomp:TelesalesDonutChart",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TelesalesFrontHeader:ws:apps/web",
+      "source": "uicomp:TelesalesFrontHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TelesalesFrontHeader:token:color:primary",
+      "source": "uicomp:TelesalesFrontHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TelesalesLeaderboard:ws:apps/web",
+      "source": "uicomp:TelesalesLeaderboard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TelesalesLeaderboard:token:color:primary",
+      "source": "uicomp:TelesalesLeaderboard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TelesalesMetricGrid:ws:apps/web",
+      "source": "uicomp:TelesalesMetricGrid",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TelesalesMetricGrid:token:color:primary",
+      "source": "uicomp:TelesalesMetricGrid",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TelesalesTimelineTrack:ws:apps/web",
+      "source": "uicomp:TelesalesTimelineTrack",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TelesalesTimelineTrack:token:color:primary",
+      "source": "uicomp:TelesalesTimelineTrack",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:frontFaceVisualConfig:ws:apps/web",
+      "source": "uicomp:frontFaceVisualConfig",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:frontFaceVisualConfig:token:color:primary",
+      "source": "uicomp:frontFaceVisualConfig",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:telesalesFrontFaceTypes:ws:apps/web",
+      "source": "uicomp:telesalesFrontFaceTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:telesalesFrontFaceTypes:token:color:primary",
+      "source": "uicomp:telesalesFrontFaceTypes",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -97369,6 +98149,41 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuestionEditorDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuestionEditorDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuizHeaderActions.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuizHeaderActions.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuizQuestionList.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/QuizQuestionList.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/quiz-manager-utils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/quiz-manager-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/useAcademyWorkshopQuizManager.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-quiz-manager/useAcademyWorkshopQuizManager.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/academy-leads/components/useAcademyTalentLadderConfiguration.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/academy-leads/components/useAcademyTalentLadderConfiguration.ts",
       "target": "ws:packages/shared",
@@ -98265,13 +99080,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/cc/components/CcTipTab.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/cc/components/CcTipTab.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/cc/components/CcXoayTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/CcXoayTab.tsx",
       "target": "ws:packages/shared",
@@ -98351,6 +99159,62 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cc/components/cc-thuong/useCcThuongData.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/cc-thuong/useCcThuongData.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipDetailSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipDetailSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipLeaderboardMobileList.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipLeaderboardMobileList.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipLeaderboardSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipLeaderboardSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipSummaryCards.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipSummaryCards.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-tip-tab/cc-tip-utils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/cc-tip-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-tip-tab/ccTipDetailColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/ccTipDetailColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-tip-tab/ccTipLeaderboardColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/ccTipLeaderboardColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-tip-tab/useCcTipData.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/useCcTipData.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -135541,8 +136405,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5132,
-    "totalEdges": 9890,
+    "totalNodes": 5169,
+    "totalEdges": 9948,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -135550,15 +136414,15 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 575,
-      "File": 1943
+      "UIComponent": 598,
+      "File": 1957
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 641,
-      "USES_TOKEN": 577,
-      "IMPORTS": 1189,
+      "RENDERS": 664,
+      "USES_TOKEN": 600,
+      "IMPORTS": 1201,
       "QUERIES_MODEL": 602,
       "API_CALL": 4336
     },
