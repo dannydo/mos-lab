@@ -1,27 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Tooltip, Popover, Avatar, theme } from 'antd';
-import {
-  Sparkles,
-  ImagePlus,
-  Film,
-  HardDrive,
-  UserRoundPlus,
-  AlarmClockPlus,
-  AtSign,
-  FilePenLine,
-  X,
-  Plus,
-  SmilePlus,
-  SendHorizontal,
-  Eye,
-  Zap,
-  Paperclip,
-  Bot,
-  Activity,
-  CornerDownLeft,
-} from 'lucide-react';
+import { Avatar, theme } from 'antd';
+import { Sparkles, X } from 'lucide-react';
 import type {
   MosChatConversation,
   MosChatMessage,
@@ -30,8 +11,9 @@ import type {
   SafeAny,
 } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID, AI_QUICK_PROMPTS } from '../constants/chat-constants';
-import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
 import { cleanQuotedText } from '../utils/quoteUtils';
+import { MosChatComposerMobile } from './MosChatComposerMobile';
+import { MosChatComposerDesktop } from './MosChatComposerDesktop';
 
 /**
  * Zero-thrash textarea auto-resizer:
@@ -142,14 +124,14 @@ export interface MosChatComposerProps {
   composerHasTextListenerRef?: React.MutableRefObject<((hasText: boolean) => void) | null>;
   mentionRenderKey?: string;
   replyingToMessage?: MosChatMessage | null;
-  setReplyingToMessage?: React.Dispatch<React.SetStateAction<MosChatMessage | null>> | ((msg: MosChatMessage | null) => void);
+  setReplyingToMessage?:
+    React.Dispatch<React.SetStateAction<MosChatMessage | null>> | ((msg: MosChatMessage | null) => void);
 }
 
 export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
   ({
     isMobile,
     activeConversation,
-    currentUser,
     canUseAiCopilot,
     isStrictDannySuperAdmin,
     aiThinkingActive,
@@ -162,7 +144,6 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
     composerHasText,
     updateComposerText,
     setComposerText,
-    composerCursorPos,
     setComposerCursorPos,
     composerInputRef,
     stagedAttachments,
@@ -362,850 +343,100 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
         )}
 
         {isMobile ? (
-          <div className="flex flex-col gap-2">
-            {/* Quick action grid drawer on mobile */}
-            {mobileActionOpen && (
-              <div
-                className="p-3 rounded-2xl grid grid-cols-3 gap-2.5 transition-all shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150"
-                style={{
-                  background: surfaceRaised,
-                  border: `1px solid ${borderStrong}`,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerFilePicker('main');
-                    setMobileActionOpen(false);
-                  }}
-                  className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform"
-                >
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 overflow-hidden shrink-0">
-                    <ImagePlus size={16} />
-                  </div>
-                  <span
-                    className="text-[10.5px] font-medium text-center leading-tight"
-                    style={{ color: token.colorText }}
-                  >
-                    Gửi ảnh
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    uploadTargetRef.current = { scope: 'main' };
-                    setDriveLinkModalOpen(true);
-                    setMobileActionOpen(false);
-                  }}
-                  className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform"
-                >
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-500/10 text-amber-400 border border-amber-500/20 overflow-hidden shrink-0">
-                    <HardDrive size={16} />
-                  </div>
-                  <span
-                    className="text-[10.5px] font-medium text-center leading-tight"
-                    style={{ color: token.colorText }}
-                  >
-                    Drive
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (handleOpenCustomerPicker) {
-                      handleOpenCustomerPicker();
-                    } else if (handleSendQuickCustomerCard) {
-                      handleSendQuickCustomerCard();
-                    }
-                    setMobileActionOpen(false);
-                  }}
-                  className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform"
-                >
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center bg-blue-500/10 text-blue-400 border border-blue-500/20 overflow-hidden shrink-0">
-                    <UserRoundPlus size={16} />
-                  </div>
-                  <span
-                    className="text-[10.5px] font-medium text-center leading-tight"
-                    style={{ color: token.colorText }}
-                  >
-                    Thẻ khách
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    openTaskModalFromMessage(null);
-                    setMobileActionOpen(false);
-                  }}
-                  className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform"
-                >
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-400/15 text-[#d4a84b] border border-[#d4a84b]/30 overflow-hidden shrink-0">
-                    <AlarmClockPlus size={16} />
-                  </div>
-                  <span
-                    className="text-[10.5px] font-medium text-center leading-tight"
-                    style={{ color: token.colorText }}
-                  >
-                    Giao việc
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setComposerText((prev) => {
-                      const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
-                      setTimeout(() => {
-                        composerInputRef.current?.focus();
-                        const len = next.length;
-                        composerInputRef.current?.setSelectionRange(len, len);
-                        checkForMentionTrigger(next, len, 'main');
-                      }, 20);
-                      return next;
-                    });
-                    setMobileActionOpen(false);
-                  }}
-                  className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform"
-                >
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center bg-sky-500/10 text-sky-400 border border-sky-500/20 overflow-hidden shrink-0">
-                    <AtSign size={16} />
-                  </div>
-                  <span
-                    className="text-[10.5px] font-medium text-center leading-tight"
-                    style={{ color: token.colorText }}
-                  >
-                    Nhắc tên
-                  </span>
-                </button>
-
-                {canUseAiCopilot && activeConversation?.id !== AI_COPILOT_CONV_ID && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setComposerText((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
-                      setMobileActionOpen(false);
-                      composerInputRef.current?.focus();
-                    }}
-                    className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform"
-                  >
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center bg-purple-500/15 text-purple-400 border border-purple-500/30 overflow-hidden shrink-0 font-black text-[11px]">
-                      MAI
-                    </div>
-                    <span
-                      className="text-[10.5px] font-medium text-center leading-tight"
-                      style={{ color: token.colorText }}
-                    >
-                      Gọi @MAI
-                    </span>
-                  </button>
-                )}
-
-                {/* CKEditor Mobile Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRichEditorModalState({
-                      open: true,
-                      scope: 'main',
-                      title: 'Soạn thảo phong phú (CKEditor)',
-                    });
-                    setMobileActionOpen(false);
-                  }}
-                  className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform"
-                >
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-500/15 text-amber-400 border border-amber-500/30 overflow-hidden shrink-0">
-                    <FilePenLine size={16} />
-                  </div>
-                  <span
-                    className="text-[10.5px] font-medium text-center leading-tight"
-                    style={{ color: token.colorText }}
-                  >
-                    CKEditor
-                  </span>
-                </button>
-              </div>
-            )}
-
-            {/* Apple Notes Style Format Toolbar for Mobile */}
-            {formatBarOpenMain && renderAppleNotesFormatToolbar('main')}
-
-            {/* Mobile Main Row */}
-            <div className="flex items-center gap-1.5">
-              {/* [+] Action expander button */}
-              <button
-                type="button"
-                aria-label={mobileActionOpen ? 'Đóng tiện ích đính kèm' : 'Mở tiện ích đính kèm'}
-                onClick={() => setMobileActionOpen((prev) => !prev)}
-                className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm overflow-hidden"
-                style={{
-                  background: mobileActionOpen ? '#d4a84b' : surfaceRaised,
-                  border: `1px solid ${mobileActionOpen ? '#d4a84b' : borderStrong}`,
-                  color: mobileActionOpen ? '#000' : token.colorTextSecondary,
-                }}
-              >
-                {mobileActionOpen ? <X size={15} /> : <Plus size={15} />}
-              </button>
-
-              {/* [Aa] Apple Notes Format Button for Mobile */}
-              <button
-                type="button"
-                aria-label="Định dạng chữ Apple Notes"
-                onClick={() => setFormatBarOpenMain((prev) => !prev)}
-                className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm overflow-hidden"
-                style={{
-                  background: formatBarOpenMain ? '#d4a84b' : surfaceRaised,
-                  border: `1px solid ${formatBarOpenMain ? '#d4a84b' : borderStrong}`,
-                  color: formatBarOpenMain ? '#000' : token.colorTextSecondary,
-                }}
-              >
-                <span className="font-serif font-bold text-[13px] tracking-tight">Aa</span>
-              </button>
-
-              {/* Text Input Pill with Floating @Mention Autocomplete */}
-              <div
-                className="relative flex-1 min-h-[38px] max-h-[120px] rounded-2xl px-3 py-1 flex items-center gap-1.5"
-                style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
-              >
-                {renderMentionAutocompleteDropdown('main')}
-
-                <textarea
-                  ref={composerInputRef}
-                  rows={1}
-                  defaultValue={composerTextRef.current}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const nextHasText = val.trim().length > 0;
-                    if (nextHasText !== localHasText) {
-                      setLocalHasText(nextHasText);
-                    }
-                    updateComposerText(val);
-                    syncTextareaHeightSmart(e.target, 120, prevLenRef, 42);
-                    checkForMentionTrigger(val, e.target.selectionStart ?? val.length, 'main');
-                  }}
-                  onClick={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    checkForMentionTrigger(target.value, target.selectionStart ?? target.value.length, 'main');
-                  }}
-                  onKeyUp={(e) => {
-                    if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Backspace', 'Delete'].includes(e.key)) {
-                      const target = e.target as HTMLTextAreaElement;
-                      checkForMentionTrigger(target.value, target.selectionStart ?? target.value.length, 'main');
-                    }
-                  }}
-                  onPaste={(e) => handleClipboardPaste(e, 'main')}
-                  onCompositionStart={() => {
-                    isComposingRef.current = true;
-                  }}
-                  onCompositionEnd={() => {
-                    lastCompositionEndMsRef.current = Date.now();
-                    setTimeout(() => {
-                      isComposingRef.current = false;
-                    }, 50);
-                  }}
-                  onKeyDown={(e) => {
-                    if (handleMentionKeyDown(e, 'main')) return;
-                    if (e.key === 'Escape' && replyingToMessage) {
-                      e.preventDefault();
-                      setReplyingToMessage?.(null);
-                      return;
-                    }
-                    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
-                      e.preventDefault();
-                      handleApplyFormat('bold', 'main');
-                      return;
-                    }
-                    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
-                      e.preventDefault();
-                      handleApplyFormat('italic', 'main');
-                      return;
-                    }
-                    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
-                      e.preventDefault();
-                      handleApplyFormat('underline', 'main');
-                      return;
-                    }
-                    if (e.key === 'Enter' && e.shiftKey) {
-                      const el = e.currentTarget;
-                      const currentText = el.value;
-                      const smart = handleSmartListEnterKey(
-                        currentText,
-                        el.selectionStart ?? currentText.length,
-                        el.selectionEnd ?? currentText.length
-                      );
-                      if (smart?.handled) {
-                        e.preventDefault();
-                        updateComposerText(smart.nextText);
-                        setComposerCursorPos(smart.nextCursor);
-                        setTimeout(() => {
-                          el.focus();
-                          el.setSelectionRange(smart.nextCursor, smart.nextCursor);
-                        }, 0);
-                        return;
-                      }
-                      return;
-                    }
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      if (
-                        e.nativeEvent.isComposing ||
-                        isComposingRef.current ||
-                        e.keyCode === 229 ||
-                        Date.now() - lastCompositionEndMsRef.current < 60
-                      ) {
-                        return;
-                      }
-                      // Khi đang trong danh sách tự động (•, 1., - [ ]), cho phép Enter tiếp tục danh sách
-                      const el = e.currentTarget;
-                      const currentText = el.value;
-                      const smart = handleSmartListEnterKey(
-                        currentText,
-                        el.selectionStart ?? currentText.length,
-                        el.selectionEnd ?? currentText.length
-                      );
-                      if (smart?.handled) {
-                        e.preventDefault();
-                        updateComposerText(smart.nextText);
-                        setComposerCursorPos(smart.nextCursor);
-                        setTimeout(() => {
-                          el.focus();
-                          el.setSelectionRange(smart.nextCursor, smart.nextCursor);
-                        }, 0);
-                        return;
-                      }
-                      e.preventDefault();
-                      handleSendMain();
-                    }
-                  }}
-                  placeholder="Nhắn tin... (Shift+Enter để xuống dòng)"
-                  className="flex-1 bg-transparent border-0 outline-none focus:outline-none focus-visible:outline-none text-[13.5px] resize-none leading-relaxed py-1"
-                  style={{ color: token.colorText, maxHeight: 110, outline: 'none', boxShadow: 'none' }}
-                />
-
-                {/* Quick Xuống dòng (Shift+Enter) button on mobile */}
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    const el = composerInputRef.current;
-                    if (!el) return;
-                    const currentText = el.value;
-                    const isFocused = typeof document !== 'undefined' && document.activeElement === el;
-                    const start = isFocused ? (el.selectionStart ?? currentText.length) : currentText.length;
-                    const end = isFocused ? (el.selectionEnd ?? currentText.length) : currentText.length;
-                    const smart = handleSmartListEnterKey(currentText, start, end);
-                    if (smart?.handled) {
-                      updateComposerText(smart.nextText);
-                      setComposerCursorPos(smart.nextCursor);
-                      setTimeout(() => {
-                        el.focus();
-                        el.setSelectionRange(smart.nextCursor, smart.nextCursor);
-                      }, 0);
-                    } else {
-                      const next = currentText.substring(0, start) + '\n' + currentText.substring(end);
-                      updateComposerText(next);
-                      setComposerCursorPos(start + 1);
-                      setTimeout(() => {
-                        el.focus();
-                        el.setSelectionRange(start + 1, start + 1);
-                      }, 0);
-                    }
-                  }}
-                  className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 active:scale-95"
-                  style={{ color: token.colorTextSecondary }}
-                  aria-label="Xuống dòng (Shift+Enter)"
-                  title="Xuống dòng (Shift+Enter)"
-                >
-                  <CornerDownLeft size={14} />
-                </button>
-
-                <Popover
-                  trigger="click"
-                  placement="topRight"
-                  open={openStickerPopoverKey === 'composer:main:mobile'}
-                  onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:main:mobile' : null)}
-                  content={
-                    openStickerPopoverKey === 'composer:main:mobile' ? renderComposerEmojiPickerContent('main') : null
-                  }
-                >
-                  <button
-                    type="button"
-                    aria-label="Chèn biểu tượng cảm xúc Wings"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const key = 'composer:main:mobile';
-                      setOpenStickerPopoverKey((prev) => (prev === key ? null : key));
-                    }}
-                    className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 active:scale-95"
-                    style={{ color: token.colorTextSecondary }}
-                  >
-                    <SmilePlus size={16} />
-                  </button>
-                </Popover>
-              </div>
-
-              {/* Send Button */}
-              <button
-                type="button"
-                aria-label="Gửi tin nhắn"
-                onClick={handleSendMain}
-                className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm overflow-hidden"
-                style={{
-                  background:
-                    effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard ? '#d4a84b' : surfaceRaised,
-                  border: `1px solid ${effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard ? '#d4a84b' : borderStrong}`,
-                  color:
-                    effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard
-                      ? '#000'
-                      : token.colorTextSecondary,
-                }}
-              >
-                <SendHorizontal size={14} />
-              </button>
-            </div>
-          </div>
+          <MosChatComposerMobile
+            token={token}
+            activeConversation={activeConversation}
+            canUseAiCopilot={canUseAiCopilot}
+            surfaceRaised={surfaceRaised}
+            borderStrong={borderStrong}
+            mobileActionOpen={mobileActionOpen}
+            setMobileActionOpen={setMobileActionOpen}
+            formatBarOpenMain={formatBarOpenMain}
+            setFormatBarOpenMain={setFormatBarOpenMain}
+            openStickerPopoverKey={openStickerPopoverKey}
+            setOpenStickerPopoverKey={setOpenStickerPopoverKey}
+            localHasText={localHasText}
+            setLocalHasText={setLocalHasText}
+            effectiveHasText={effectiveHasText}
+            prevLenRef={prevLenRef}
+            composerTextRef={composerTextRef}
+            updateComposerText={updateComposerText}
+            setComposerText={setComposerText}
+            setComposerCursorPos={setComposerCursorPos}
+            composerInputRef={composerInputRef}
+            stagedAttachments={stagedAttachments}
+            stagedCustomerCard={stagedCustomerCard}
+            replyingToMessage={replyingToMessage}
+            setReplyingToMessage={setReplyingToMessage}
+            handleSendMain={handleSendMain}
+            triggerFilePicker={triggerFilePicker}
+            handleSendQuickCustomerCard={handleSendQuickCustomerCard}
+            handleOpenCustomerPicker={handleOpenCustomerPicker}
+            openTaskModalFromMessage={openTaskModalFromMessage}
+            checkForMentionTrigger={checkForMentionTrigger}
+            handleClipboardPaste={handleClipboardPaste}
+            handleMentionKeyDown={handleMentionKeyDown}
+            handleApplyFormat={handleApplyFormat}
+            renderMentionAutocompleteDropdown={renderMentionAutocompleteDropdown}
+            renderAppleNotesFormatToolbar={renderAppleNotesFormatToolbar}
+            renderComposerEmojiPickerContent={renderComposerEmojiPickerContent}
+            setDriveLinkModalOpen={setDriveLinkModalOpen}
+            uploadTargetRef={uploadTargetRef}
+            setRichEditorModalState={setRichEditorModalState}
+            isComposingRef={isComposingRef}
+            lastCompositionEndMsRef={lastCompositionEndMsRef}
+          />
         ) : (
-          /* Desktop Layout: Spacious, 2-Tier Modern Google Chat Workspace Composer Card */
-          <div className="space-y-1.5">
-            <div
-              className="relative rounded-2xl px-3.5 pt-2.5 pb-2 flex flex-col transition-all shadow-sm focus-within:shadow-md focus-within:border-[#d4a84b]/60"
-              style={{
-                background: surfaceRaised,
-                border: `1px solid ${borderStrong}`,
-              }}
-            >
-              {renderMentionAutocompleteDropdown('main')}
-
-              {/* Inline Compact Format Toolbar */}
-              {formatBarOpenMain && renderAppleNotesFormatToolbar('main', 'inline')}
-
-              {/* Top: Live Preview or 100% Full-Width Textarea */}
-              {isPreviewModeMain ? (
-                <div
-                  className="w-full min-h-[58px] max-h-[220px] overflow-y-auto px-1 py-1 rounded-lg select-text mb-1"
-                  style={{ color: token.colorText }}
-                >
-                  <div className="flex items-center justify-between pb-1 mb-2 border-b border-amber-500/20 text-[11px] font-bold text-amber-500">
-                    <div className="flex items-center gap-1.5">
-                      <Eye size={13} />
-                      <span>Đang xem trước trực quan (WYSIWYG)</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsPreviewModeMain(false)}
-                      className="text-[11px] px-2 py-0.5 rounded bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 font-medium transition-colors cursor-pointer"
-                    >
-                      Quay lại chỉnh sửa
-                    </button>
-                  </div>
-                  {composerTextRef.current.trim() ? (
-                    <div className="prose max-w-none text-[13.5px]">
-                      {renderRichTextMessage(composerTextRef.current, false)}
-                    </div>
-                  ) : (
-                    <div className="text-zinc-500 text-[12px] italic py-2">
-                      Chưa có nội dung để xem trước... Nhập văn bản để xem hiển thị định dạng.
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <textarea
-                  ref={composerInputRef}
-                  rows={1}
-                  defaultValue={composerTextRef.current}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const cur = e.target.selectionStart ?? val.length;
-                    const nextHasText = val.trim().length > 0;
-                    if (nextHasText !== localHasText) {
-                      setLocalHasText(nextHasText);
-                    }
-                    updateComposerText(val);
-                    setComposerCursorPos(cur);
-                    syncTextareaHeightSmart(e.target, 180, prevLenRef, 46);
-                    checkForMentionTrigger(val, cur, 'main');
-                  }}
-                  onClick={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    const cur = target.selectionStart ?? target.value.length;
-                    setComposerCursorPos(cur);
-                    checkForMentionTrigger(target.value, cur, 'main');
-                  }}
-                  onKeyUp={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    const cur = target.selectionStart ?? target.value.length;
-                    setComposerCursorPos(cur);
-                    if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Backspace', 'Delete'].includes(e.key)) {
-                      checkForMentionTrigger(target.value, cur, 'main');
-                    }
-                  }}
-                  onPaste={(e) => handleClipboardPaste(e, 'main')}
-                  onCompositionStart={() => {
-                    isComposingRef.current = true;
-                  }}
-                  onCompositionEnd={() => {
-                    lastCompositionEndMsRef.current = Date.now();
-                    setTimeout(() => {
-                      isComposingRef.current = false;
-                    }, 50);
-                  }}
-                  onKeyDown={(e) => {
-                    if (handleMentionKeyDown(e, 'main')) return;
-                    if (e.key === 'Escape' && replyingToMessage) {
-                      e.preventDefault();
-                      setReplyingToMessage?.(null);
-                      return;
-                    }
-                    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
-                      e.preventDefault();
-                      handleApplyFormat('bold', 'main');
-                      return;
-                    }
-                    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
-                      e.preventDefault();
-                      handleApplyFormat('italic', 'main');
-                      return;
-                    }
-                    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
-                      e.preventDefault();
-                      handleApplyFormat('underline', 'main');
-                      return;
-                    }
-                    if (e.key === 'Enter' && e.shiftKey) {
-                      const el = e.currentTarget;
-                      const currentText = el.value;
-                      const smart = handleSmartListEnterKey(
-                        currentText,
-                        el.selectionStart ?? currentText.length,
-                        el.selectionEnd ?? currentText.length
-                      );
-                      if (smart.handled) {
-                        e.preventDefault();
-                        updateComposerText(smart.nextText);
-                        setComposerCursorPos(smart.nextCursor);
-                        setTimeout(() => {
-                          el.focus();
-                          el.setSelectionRange(smart.nextCursor, smart.nextCursor);
-                        }, 0);
-                        return;
-                      }
-                    }
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      if (
-                        e.nativeEvent.isComposing ||
-                        isComposingRef.current ||
-                        e.keyCode === 229 ||
-                        Date.now() - lastCompositionEndMsRef.current < 60
-                      ) {
-                        return;
-                      }
-                      e.preventDefault();
-                      handleSendMain();
-                    }
-                  }}
-                  placeholder={
-                    activeConversation?.id === AI_COPILOT_CONV_ID
-                      ? 'Hỏi MAI, Paste hình (⌘V) hoặc yêu cầu phân tích khách hàng... (Shift+Enter để xuống dòng)'
-                      : canUseAiCopilot
-                        ? 'Nhắn tin, gõ @MAI để gọi mOS AI, Paste hình (⌘V)... (Shift+Enter để xuống dòng)'
-                        : 'Nhắn tin, Paste hình (⌘V) hoặc dán link Google Drive... (Shift+Enter để xuống dòng)'
-                  }
-                  className="w-full bg-transparent border-0 outline-none focus:outline-none focus-visible:outline-none text-[13.5px] resize-none leading-relaxed px-0.5 py-1 min-h-[42px]"
-                  style={{ color: token.colorText, maxHeight: 180, outline: 'none', boxShadow: 'none' }}
-                />
-              )}
-
-              {/* Bottom Toolbar: Action Icons on Left, Send Button on Right */}
-              <div
-                className="flex items-center justify-between gap-2 pt-1.5 mt-1 border-t"
-                style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)' }}
-              >
-                <div className="flex items-center gap-1 flex-wrap">
-                  {/* [Aa] Inline Quick-Type Format Bar Toggle */}
-                  <Tooltip title="Thanh định dạng gọn gõ nhanh (B, I, U, Màu chữ, Danh sách •)">
-                    <button
-                      type="button"
-                      aria-label="Định dạng chữ Apple Notes"
-                      onClick={() => setFormatBarOpenMain((prev) => !prev)}
-                      className="w-7 h-7 rounded-lg inline-flex flex-col items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-all"
-                      style={{
-                        background: formatBarOpenMain ? 'rgba(236, 72, 153, 0.18)' : 'transparent',
-                        color: formatBarOpenMain ? '#f472b6' : token.colorTextSecondary,
-                        border: formatBarOpenMain ? '1px solid rgba(236, 72, 153, 0.35)' : 'none',
-                      }}
-                    >
-                      <span className="font-serif font-bold text-[12px] leading-none tracking-tight">Aa</span>
-                      <span
-                        className="w-3.5 h-[2px] rounded-full mt-0.5"
-                        style={{
-                          background: formatBarOpenMain ? '#f472b6' : 'currentColor',
-                          opacity: 0.75,
-                        }}
-                      />
-                    </button>
-                  </Tooltip>
-
-                  {/* [⚡ Gọn] Compact Quick-Type Editor Button */}
-                  <Tooltip title="Mở Bản gọn (Type nhanh) — Nhấn Enter tự động xuống dòng dấu • như Google Chat">
-                    <button
-                      type="button"
-                      aria-label="Mở trình soạn thảo Bản gọn Type nhanh"
-                      onClick={() => {
-                        setRichEditorModalState({
-                          open: true,
-                          scope: 'main',
-                          title: 'Soạn thảo phong phú (CKEditor)',
-                          initialMode: 'compact',
-                        });
-                      }}
-                      className="h-7 px-2 rounded-lg inline-flex items-center gap-1 hover:bg-pink-500/15 cursor-pointer transition-colors text-[11px] font-bold text-pink-400 border border-pink-500/30"
-                    >
-                      <Zap size={12} />
-                      <span className="hidden xl:inline">Bản gọn</span>
-                    </button>
-                  </Tooltip>
-
-                  {/* [CKEditor] Full Studio Rich Editor Modal Button */}
-                  <Tooltip title="Mở rộng trình soạn thảo phong phú (CKEditor Mode) với mẫu văn bản & bảng biểu">
-                    <button
-                      type="button"
-                      aria-label="Mở trình soạn thảo phong phú CKEditor"
-                      onClick={() => {
-                        setRichEditorModalState({
-                          open: true,
-                          scope: 'main',
-                          title: 'Soạn thảo phong phú (CKEditor)',
-                          initialMode: 'split',
-                        });
-                      }}
-                      className="h-7 px-2 rounded-lg inline-flex items-center gap-1 hover:bg-amber-500/15 cursor-pointer transition-colors text-[11px] font-bold text-amber-500 border border-amber-500/30"
-                    >
-                      <FilePenLine size={13} />
-                      <span className="hidden xl:inline">CKEditor</span>
-                    </button>
-                  </Tooltip>
-
-                  <Tooltip
-                    title={
-                      openStickerPopoverKey === 'composer:main:desktop' ? undefined : 'Chèn biểu tượng cảm xúc Wings'
-                    }
-                  >
-                    <Popover
-                      trigger="click"
-                      placement="topRight"
-                      zIndex={1500}
-                      destroyOnHidden
-                      open={openStickerPopoverKey === 'composer:main:desktop'}
-                      onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:main:desktop' : null)}
-                      content={renderComposerEmojiPickerContent('main')}
-                    >
-                      <button
-                        type="button"
-                        aria-label="Chèn biểu tượng cảm xúc Wings"
-                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
-                        style={{ color: token.colorTextSecondary }}
-                      >
-                        <SmilePlus size={16} />
-                      </button>
-                    </Popover>
-                  </Tooltip>
-
-                  <Tooltip title="Đính kèm tệp tin & tài liệu (PDF, Excel, Word, ZIP...)">
-                    <button
-                      type="button"
-                      aria-label="Đính kèm tệp tin & tài liệu"
-                      onClick={() => triggerFilePicker('main')}
-                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
-                      style={{ color: token.colorTextSecondary }}
-                    >
-                      <Paperclip size={16} />
-                    </button>
-                  </Tooltip>
-
-                  <Tooltip title="Tải hình từ Ổ đĩa / Google Drive Desktop hoặc Paste ảnh (⌘V)">
-                    <button
-                      type="button"
-                      aria-label="Tải hình từ ổ đĩa hoặc Google Drive"
-                      onClick={() => triggerFilePicker('main')}
-                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
-                      style={{ color: token.colorTextSecondary }}
-                    >
-                      <ImagePlus size={16} />
-                    </button>
-                  </Tooltip>
-
-                  {/* [Film] Đính kèm Video vào khung chat (MOS-CHAT-VIDEO) */}
-                  <Tooltip title="Đính kèm video (MP4, WebM, MOV tối đa 50MB)">
-                    <button
-                      type="button"
-                      aria-label="Đính kèm video"
-                      onClick={() => triggerFilePicker('main')}
-                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors text-amber-500 hover:text-amber-400"
-                    >
-                      <Film size={16} />
-                    </button>
-                  </Tooltip>
-
-                  <Tooltip title="Đính kèm hình từ link Google Drive">
-                    <button
-                      type="button"
-                      aria-label="Đính kèm hình từ link Google Drive"
-                      onClick={() => {
-                        uploadTargetRef.current = { scope: 'main' };
-                        setDriveLinkModalOpen(true);
-                      }}
-                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
-                      style={{ color: token.colorTextSecondary }}
-                    >
-                      <HardDrive size={16} />
-                    </button>
-                  </Tooltip>
-
-                  <Tooltip title="Đính kèm thẻ Khách hàng / Booking mOS">
-                    <button
-                      type="button"
-                      aria-label="Đính kèm thẻ Khách hàng"
-                      onClick={handleOpenCustomerPicker || handleSendQuickCustomerCard}
-                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
-                      style={{ color: stagedCustomerCard ? '#d4a84b' : token.colorTextSecondary }}
-                    >
-                      <UserRoundPlus size={16} />
-                    </button>
-                  </Tooltip>
-
-                  {canUseAiCopilot && activeConversation?.id !== AI_COPILOT_CONV_ID && (
-                    <Tooltip title="Gọi @MAI để mOS AI phân tích & trả lời công khai vào nhóm này">
-                      <button
-                        type="button"
-                        aria-label="Gọi @MAI trong nhóm"
-                        onClick={() => {
-                          setComposerText((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
-                          composerInputRef.current?.focus();
-                        }}
-                        className="h-7 px-2 rounded-lg inline-flex items-center justify-center gap-1 hover:bg-purple-500/15 cursor-pointer transition-colors text-[11px] font-black"
-                        style={{ color: '#a78bfa' }}
-                      >
-                        <Bot size={15} />
-                        <span>@MAI</span>
-                      </button>
-                    </Tooltip>
-                  )}
-
-                  <Tooltip title="Nhắc tên đồng nghiệp (@)">
-                    <button
-                      type="button"
-                      aria-label="Nhắc tên đồng nghiệp"
-                      onClick={() => {
-                        setComposerText((prev) => {
-                          const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
-                          setTimeout(() => {
-                            composerInputRef.current?.focus();
-                            const len = next.length;
-                            composerInputRef.current?.setSelectionRange(len, len);
-                            checkForMentionTrigger(next, len, 'main');
-                          }, 20);
-                          return next;
-                        });
-                      }}
-                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
-                      style={{ color: token.colorTextSecondary }}
-                    >
-                      <AtSign size={16} />
-                    </button>
-                  </Tooltip>
-
-                  <Tooltip
-                    title={
-                      isUrgentSend
-                        ? 'Đang bật chế độ khẩn cấp (Buzz): Nhấp để tắt'
-                        : 'Bật chế độ khẩn cấp (Buzz): Gửi và tự động phát âm thanh thông báo @MAI đến người được tag'
-                    }
-                  >
-                    <button
-                      type="button"
-                      aria-label="Chế độ khẩn cấp"
-                      onClick={() => setIsUrgentSend((prev) => !prev)}
-                      className={`h-7 px-2 rounded-lg inline-flex items-center gap-1 text-[11px] font-extrabold cursor-pointer transition-all ${
-                        isUrgentSend
-                          ? 'bg-amber-500 text-slate-950 shadow-sm ring-1 ring-amber-400 font-black'
-                          : 'hover:bg-amber-500/15 text-amber-500/80 border border-amber-500/30'
-                      }`}
-                    >
-                      <Zap size={13} className={isUrgentSend ? 'animate-bounce' : ''} />
-                      <span>Khẩn cấp</span>
-                    </button>
-                  </Tooltip>
-
-                  <Tooltip title="Giao Task & Cài nhắc hẹn mới">
-                    <button
-                      type="button"
-                      aria-label="Giao Task & Cài nhắc hẹn mới"
-                      onClick={() => openTaskModalFromMessage(null)}
-                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer transition-colors"
-                      style={{ color: '#d4a84b' }}
-                    >
-                      <AlarmClockPlus size={16} />
-                    </button>
-                  </Tooltip>
-
-                  {/* Super Admin Only: [⚡ Quy trình] Trigger Button */}
-                  {isStrictDannySuperAdmin && activeConversation?.id !== AI_COPILOT_CONV_ID && (
-                    <Tooltip title="⚡ Khởi tạo Quy trình Sống (/tam-ung, /kiem-kho, /tao-quy-trinh) — Chỉ dành cho Super Admin">
-                      <button
-                        type="button"
-                        aria-label="Khởi tạo Quy trình Sống"
-                        onClick={() => {
-                          setInitialWorkflowCode('WF_CASH_ADVANCE');
-                          setTriggerWorkflowModalOpen(true);
-                        }}
-                        className="h-7 px-2 rounded-lg inline-flex items-center gap-1 text-[11px] font-extrabold hover:bg-blue-500/15 cursor-pointer transition-colors"
-                        style={{
-                          color: '#60a5fa',
-                          border: '1px solid rgba(59, 130, 246, 0.35)',
-                        }}
-                      >
-                        <Activity size={13} />
-                        <span>⚡ Quy trình</span>
-                      </button>
-                    </Tooltip>
-                  )}
-                </div>
-
-                {/* Send button with hint */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <span
-                    className="text-[11px] select-none hidden sm:inline"
-                    style={{ color: token.colorTextQuaternary }}
-                  >
-                    Enter gửi · Shift+Enter xuống dòng
-                  </span>
-                  <Tooltip title="Gửi tin nhắn (Enter)">
-                    <button
-                      type="button"
-                      aria-label="Gửi tin nhắn"
-                      onClick={handleSendMain}
-                      className="w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer shadow-sm active:scale-95 transition-all"
-                      style={{
-                        background:
-                          effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard
-                            ? '#d4a84b'
-                            : isDark
-                              ? 'rgba(255, 255, 255, 0.08)'
-                              : 'rgba(0, 0, 0, 0.06)',
-                        color:
-                          effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard
-                            ? '#000'
-                            : token.colorTextQuaternary,
-                      }}
-                    >
-                      <SendHorizontal size={15} />
-                    </button>
-                  </Tooltip>
-                </div>
-              </div>
-            </div>
-          </div>
+          <MosChatComposerDesktop
+            token={token}
+            isDark={isDark}
+            activeConversation={activeConversation}
+            canUseAiCopilot={canUseAiCopilot}
+            isStrictDannySuperAdmin={isStrictDannySuperAdmin}
+            surfaceRaised={surfaceRaised}
+            borderStrong={borderStrong}
+            formatBarOpenMain={formatBarOpenMain}
+            setFormatBarOpenMain={setFormatBarOpenMain}
+            isPreviewModeMain={isPreviewModeMain}
+            setIsPreviewModeMain={setIsPreviewModeMain}
+            openStickerPopoverKey={openStickerPopoverKey}
+            setOpenStickerPopoverKey={setOpenStickerPopoverKey}
+            localHasText={localHasText}
+            setLocalHasText={setLocalHasText}
+            effectiveHasText={effectiveHasText}
+            prevLenRef={prevLenRef}
+            composerTextRef={composerTextRef}
+            updateComposerText={updateComposerText}
+            setComposerText={setComposerText}
+            setComposerCursorPos={setComposerCursorPos}
+            composerInputRef={composerInputRef}
+            stagedAttachments={stagedAttachments}
+            stagedCustomerCard={stagedCustomerCard}
+            isUrgentSend={isUrgentSend}
+            setIsUrgentSend={setIsUrgentSend}
+            replyingToMessage={replyingToMessage}
+            setReplyingToMessage={setReplyingToMessage}
+            handleSendMain={handleSendMain}
+            triggerFilePicker={triggerFilePicker}
+            handleSendQuickCustomerCard={handleSendQuickCustomerCard}
+            handleOpenCustomerPicker={handleOpenCustomerPicker}
+            openTaskModalFromMessage={openTaskModalFromMessage}
+            checkForMentionTrigger={checkForMentionTrigger}
+            handleClipboardPaste={handleClipboardPaste}
+            handleMentionKeyDown={handleMentionKeyDown}
+            handleApplyFormat={handleApplyFormat}
+            renderMentionAutocompleteDropdown={renderMentionAutocompleteDropdown}
+            renderAppleNotesFormatToolbar={renderAppleNotesFormatToolbar}
+            renderComposerEmojiPickerContent={renderComposerEmojiPickerContent}
+            renderRichTextMessage={renderRichTextMessage}
+            setDriveLinkModalOpen={setDriveLinkModalOpen}
+            uploadTargetRef={uploadTargetRef}
+            setTriggerWorkflowModalOpen={setTriggerWorkflowModalOpen}
+            setInitialWorkflowCode={setInitialWorkflowCode}
+            setRichEditorModalState={setRichEditorModalState}
+            isComposingRef={isComposingRef}
+            lastCompositionEndMsRef={lastCompositionEndMsRef}
+          />
         )}
       </div>
     );
