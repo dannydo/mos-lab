@@ -38853,6 +38853,102 @@
       }
     },
     {
+      "id": "uicomp:MermaidCardBody",
+      "type": "UIComponent",
+      "label": "<MermaidCardBody />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mos-chat-mermaid-block/MermaidCardBody.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MermaidCardBody",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MermaidCardToolbar",
+      "type": "UIComponent",
+      "label": "<MermaidCardToolbar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mos-chat-mermaid-block/MermaidCardToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MermaidCardToolbar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MermaidZoomModal",
+      "type": "UIComponent",
+      "label": "<MermaidZoomModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mos-chat-mermaid-block/MermaidZoomModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MermaidZoomModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MermaidZoomModalToolbar",
+      "type": "UIComponent",
+      "label": "<MermaidZoomModalToolbar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mos-chat-mermaid-block/MermaidZoomModalToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MermaidZoomModalToolbar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:mermaidBlockTypes",
+      "type": "UIComponent",
+      "label": "<mermaidBlockTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mos-chat-mermaid-block/mermaidBlockTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mermaidBlockTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:mermaidBlockUtils",
+      "type": "UIComponent",
+      "label": "<mermaidBlockUtils />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mos-chat-mermaid-block/mermaidBlockUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mermaidBlockUtils",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMermaidRenderer",
+      "type": "UIComponent",
+      "label": "<useMermaidRenderer />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mos-chat-mermaid-block/useMermaidRenderer.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMermaidRenderer",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMermaidZoomPan",
+      "type": "UIComponent",
+      "label": "<useMermaidZoomPan />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mos-chat-mermaid-block/useMermaidZoomPan.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMermaidZoomPan",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:mos-chat-stickers",
       "type": "UIComponent",
       "label": "<mos-chat-stickers />",
@@ -54122,6 +54218,58 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/LeadInlineCells.tsx",
+      "type": "File",
+      "label": "LeadInlineCells.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/LeadInlineCells.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4107,
+        "lineCount": 154,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/LeadManagerSummary.tsx",
+      "type": "File",
+      "label": "LeadManagerSummary.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/LeadManagerSummary.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3978,
+        "lineCount": 107,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/lead-manager-utils.ts",
+      "type": "File",
+      "label": "lead-manager-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/lead-manager-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4075,
+        "lineCount": 121,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/leadManagerColumns.tsx",
+      "type": "File",
+      "label": "leadManagerColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/leadManagerColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15096,
+        "lineCount": 387,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.test.ts",
       "type": "File",
       "label": "lead-manager.helpers.test.ts",
@@ -54142,8 +54290,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27435,
-        "lineCount": 735,
+        "sizeBytes": 770,
+        "lineCount": 20,
         "ext": ".tsx"
       }
     },
@@ -55884,8 +56032,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcXoayTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27487,
-        "lineCount": 746,
+        "sizeBytes": 3486,
+        "lineCount": 123,
         "ext": ".tsx"
       }
     },
@@ -56068,6 +56216,97 @@
       "metadata": {
         "sizeBytes": 14332,
         "lineCount": 432,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/CcXoayBonusCell.tsx",
+      "type": "File",
+      "label": "CcXoayBonusCell.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-xoay-tab/CcXoayBonusCell.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4108,
+        "lineCount": 111,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/CcXoayCapBanner.tsx",
+      "type": "File",
+      "label": "CcXoayCapBanner.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-xoay-tab/CcXoayCapBanner.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1613,
+        "lineCount": 45,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/CcXoaySummaryCards.tsx",
+      "type": "File",
+      "label": "CcXoaySummaryCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-xoay-tab/CcXoaySummaryCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6122,
+        "lineCount": 168,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/CcXoayTableHeader.tsx",
+      "type": "File",
+      "label": "CcXoayTableHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-xoay-tab/CcXoayTableHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1742,
+        "lineCount": 53,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/cc-xoay-utils.ts",
+      "type": "File",
+      "label": "cc-xoay-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-xoay-tab/cc-xoay-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6369,
+        "lineCount": 199,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/ccXoayColumns.tsx",
+      "type": "File",
+      "label": "ccXoayColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-xoay-tab/ccXoayColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7837,
+        "lineCount": 241,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/useCcXoayState.ts",
+      "type": "File",
+      "label": "useCcXoayState.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-xoay-tab/useCcXoayState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2299,
+        "lineCount": 75,
         "ext": ".ts"
       }
     },
@@ -57951,8 +58190,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/IphonePracticalExamRubric.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 35443,
-        "lineCount": 753,
+        "sizeBytes": 3999,
+        "lineCount": 122,
         "ext": ".tsx"
       }
     },
@@ -58282,6 +58521,110 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/CertSignConfirmModal.tsx",
+      "type": "File",
+      "label": "CertSignConfirmModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/CertSignConfirmModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3470,
+        "lineCount": 87,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/ExamBottomBar.tsx",
+      "type": "File",
+      "label": "ExamBottomBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/ExamBottomBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2549,
+        "lineCount": 61,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/ExamStickyHeader.tsx",
+      "type": "File",
+      "label": "ExamStickyHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/ExamStickyHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3357,
+        "lineCount": 87,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/ExaminerNotesCard.tsx",
+      "type": "File",
+      "label": "ExaminerNotesCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/ExaminerNotesCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1587,
+        "lineCount": 49,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/MacroPhotoCaptureCard.tsx",
+      "type": "File",
+      "label": "MacroPhotoCaptureCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/MacroPhotoCaptureCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3849,
+        "lineCount": 112,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/RubricStageCard.tsx",
+      "type": "File",
+      "label": "RubricStageCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/RubricStageCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3400,
+        "lineCount": 83,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/rubric-config.ts",
+      "type": "File",
+      "label": "rubric-config.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/rubric-config.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6534,
+        "lineCount": 184,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/useIphonePracticalExam.ts",
+      "type": "File",
+      "label": "useIphonePracticalExam.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/iphone-practical-exam-rubric/useIphonePracticalExam.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3698,
+        "lineCount": 118,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-session/PilotQuickMaterialModal.tsx",
       "type": "File",
       "label": "PilotQuickMaterialModal.tsx",
@@ -58601,8 +58944,8 @@
       "filePath": "apps/web/app/dashboard/schedule-calendar/components/MultiDayColumnView.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30311,
-        "lineCount": 748,
+        "sizeBytes": 4715,
+        "lineCount": 146,
         "ext": ".tsx"
       }
     },
@@ -58746,6 +59089,97 @@
       "metadata": {
         "sizeBytes": 9155,
         "lineCount": 255,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/AppointmentCardItem.tsx",
+      "type": "File",
+      "label": "AppointmentCardItem.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/AppointmentCardItem.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4495,
+        "lineCount": 117,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/AppointmentCardPopover.tsx",
+      "type": "File",
+      "label": "AppointmentCardPopover.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/AppointmentCardPopover.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3625,
+        "lineCount": 96,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/DayColumnHeader.tsx",
+      "type": "File",
+      "label": "DayColumnHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/DayColumnHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4105,
+        "lineCount": 104,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/TimeSlotRow.tsx",
+      "type": "File",
+      "label": "TimeSlotRow.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/TimeSlotRow.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6651,
+        "lineCount": 148,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/multiDayColumnUtils.ts",
+      "type": "File",
+      "label": "multiDayColumnUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/multiDayColumnUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9732,
+        "lineCount": 278,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/types.ts",
+      "type": "File",
+      "label": "types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1699,
+        "lineCount": 71,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/useMultiDayDragDrop.ts",
+      "type": "File",
+      "label": "useMultiDayDragDrop.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/useMultiDayDragDrop.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2730,
+        "lineCount": 93,
         "ext": ".ts"
       }
     },
@@ -89641,6 +90075,118 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MermaidCardBody:ws:apps/web",
+      "source": "uicomp:MermaidCardBody",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MermaidCardBody:token:color:primary",
+      "source": "uicomp:MermaidCardBody",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MermaidCardToolbar:ws:apps/web",
+      "source": "uicomp:MermaidCardToolbar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MermaidCardToolbar:token:color:primary",
+      "source": "uicomp:MermaidCardToolbar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MermaidZoomModal:ws:apps/web",
+      "source": "uicomp:MermaidZoomModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MermaidZoomModal:token:color:primary",
+      "source": "uicomp:MermaidZoomModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MermaidZoomModalToolbar:ws:apps/web",
+      "source": "uicomp:MermaidZoomModalToolbar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MermaidZoomModalToolbar:token:color:primary",
+      "source": "uicomp:MermaidZoomModalToolbar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mermaidBlockTypes:ws:apps/web",
+      "source": "uicomp:mermaidBlockTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mermaidBlockTypes:token:color:primary",
+      "source": "uicomp:mermaidBlockTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mermaidBlockUtils:ws:apps/web",
+      "source": "uicomp:mermaidBlockUtils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mermaidBlockUtils:token:color:primary",
+      "source": "uicomp:mermaidBlockUtils",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMermaidRenderer:ws:apps/web",
+      "source": "uicomp:useMermaidRenderer",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMermaidRenderer:token:color:primary",
+      "source": "uicomp:useMermaidRenderer",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMermaidZoomPan:ws:apps/web",
+      "source": "uicomp:useMermaidZoomPan",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMermaidZoomPan:token:color:primary",
+      "source": "uicomp:useMermaidZoomPan",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:mos-chat-stickers:ws:apps/web",
       "source": "uicomp:mos-chat-stickers",
       "target": "ws:apps/web",
@@ -96942,15 +97488,29 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.test.ts:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.test.ts",
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/LeadManagerSummary.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/LeadManagerSummary.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.tsx",
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/lead-manager-utils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/lead-manager-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/leadManagerColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager-helpers/leadManagerColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.test.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/lead-manager/lead-manager.helpers.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -97791,6 +98351,41 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cc/components/cc-thuong/useCcThuongData.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/cc-thuong/useCcThuongData.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-xoay-tab/CcXoayBonusCell.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/CcXoayBonusCell.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-xoay-tab/CcXoaySummaryCards.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/CcXoaySummaryCards.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-xoay-tab/cc-xoay-utils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/cc-xoay-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-xoay-tab/ccXoayColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/ccXoayColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-xoay-tab/useCcXoayState.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/useCcXoayState.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -98790,13 +99385,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/schedule-calendar/components/MultiDayColumnView.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/schedule-calendar/components/MultiDayColumnView.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/schedule-calendar/components/ScheduleListView.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/schedule-calendar/components/ScheduleListView.tsx",
       "target": "ws:packages/shared",
@@ -98820,6 +99408,55 @@
     {
       "id": "edge:file:apps/web/app/dashboard/schedule-calendar/components/cv-drawer/cvDrawerUtils.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/schedule-calendar/components/cv-drawer/cvDrawerUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/AppointmentCardItem.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/AppointmentCardItem.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/AppointmentCardPopover.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/AppointmentCardPopover.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/DayColumnHeader.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/DayColumnHeader.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/TimeSlotRow.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/TimeSlotRow.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/multiDayColumnUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/multiDayColumnUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/types.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/types.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/useMultiDayDragDrop.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/schedule-calendar/components/multi-day-column-view/useMultiDayDragDrop.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -134904,8 +135541,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5098,
-    "totalEdges": 9861,
+    "totalNodes": 5132,
+    "totalEdges": 9890,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -134913,15 +135550,15 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 567,
-      "File": 1917
+      "UIComponent": 575,
+      "File": 1943
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 633,
-      "USES_TOKEN": 569,
-      "IMPORTS": 1176,
+      "RENDERS": 641,
+      "USES_TOKEN": 577,
+      "IMPORTS": 1189,
       "QUERIES_MODEL": 602,
       "API_CALL": 4336
     },
