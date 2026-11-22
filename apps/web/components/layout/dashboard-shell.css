@@ -1,0 +1,635 @@
+/* Dashboard Shell, Sidebar Rail, Flyout Menu & Avatar Breathing Styles */
+
+/* Compact persistent nav rail, never used for mobile navigation. */
+.dashboard-shell .ant-layout-sider-collapsed {
+  flex: 0 0 56px !important;
+  max-width: 56px !important;
+  min-width: 56px !important;
+  width: 56px !important;
+}
+
+.ant-layout-sider-collapsed .ant-menu-item,
+.ant-layout-sider-collapsed .ant-menu-submenu-title {
+  padding-inline: 0 !important;
+  margin-inline: 3px !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.ant-layout-sider-collapsed .ant-menu-item .anticon,
+.ant-layout-sider-collapsed .ant-menu-submenu-title .anticon {
+  margin-inline: 0 !important;
+  font-size: 16px !important;
+}
+
+.ant-layout-sider-collapsed .ant-menu-submenu-title .ant-menu-submenu-arrow {
+  display: none !important;
+}
+
+/* Keep root labels available to assistive technology while preventing
+   them from escaping the compact rail. The direct-child selectors are
+   intentional: flyout labels remain visible inside the Sider portal. */
+.dashboard-sider.ant-layout-sider-collapsed .antd-custom-menu > .ant-menu-item > .ant-menu-title-content,
+.dashboard-sider.ant-layout-sider-collapsed
+  .antd-custom-menu
+  > .ant-menu-submenu
+  > .ant-menu-submenu-title
+  > .ant-menu-title-content {
+  margin-inline-start: 0 !important;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px !important;
+  overflow: hidden;
+  position: absolute !important;
+  white-space: nowrap;
+  width: 1px !important;
+}
+
+.antd-custom-menu .ant-menu-item,
+.antd-custom-menu .ant-menu-submenu-title {
+  height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  line-height: 1.25 !important;
+  margin-block: 2px !important;
+  margin-inline: 4px !important;
+  border-radius: 8px !important;
+}
+
+.antd-custom-menu .ant-menu-item-group-list > .ant-menu-item,
+.antd-custom-menu .ant-menu-item-group-list > .ant-menu-submenu > .ant-menu-submenu-title {
+  padding-inline: 10px !important;
+}
+
+.antd-custom-menu .ant-menu-title-content {
+  display: flex !important;
+  align-items: center !important;
+  min-width: 0;
+  line-height: 1.25 !important;
+}
+
+.antd-custom-menu .ant-menu-item .anticon,
+.antd-custom-menu .ant-menu-submenu-title .anticon {
+  font-size: 15px !important;
+  line-height: 1 !important;
+}
+
+.antd-custom-menu .ant-menu-submenu-title .ant-menu-submenu-arrow {
+  margin-top: 0 !important;
+  inset-inline-end: 10px !important;
+}
+
+.antd-custom-menu .sidebar-menu-chevron {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.dark-theme .antd-custom-menu .ant-menu-submenu > .ant-menu-submenu-title {
+  color: rgba(255, 255, 255, 0.76) !important;
+  background-color: rgba(255, 255, 255, 0.025) !important;
+  font-weight: 600;
+}
+
+.light-theme .antd-custom-menu .ant-menu-submenu > .ant-menu-submenu-title {
+  color: rgba(0, 0, 0, 0.72) !important;
+  background-color: rgba(0, 0, 0, 0.025) !important;
+  font-weight: 600;
+}
+
+.dark-theme .antd-custom-menu .ant-menu-submenu-open > .ant-menu-submenu-title {
+  color: var(--mos-sidebar-submenu-open-text, var(--mos-accent, #e6c77a)) !important;
+  background-color: var(--mos-sidebar-submenu-open-bg, var(--mos-focus-ring, rgba(212, 168, 75, 0.1))) !important;
+}
+
+.light-theme .antd-custom-menu .ant-menu-submenu-open > .ant-menu-submenu-title {
+  color: var(--mos-sidebar-submenu-open-text, var(--mos-accent, #855b0e)) !important;
+  background-color: var(--mos-sidebar-submenu-open-bg, var(--mos-focus-ring, rgba(212, 168, 75, 0.1))) !important;
+}
+
+.dark-theme .antd-custom-menu .ant-menu-submenu-title:hover {
+  color: var(--mos-sidebar-hover-text, var(--mos-accent, #d4a84b)) !important;
+  background-color: var(--mos-sidebar-hover-bg, var(--mos-focus-ring, rgba(212, 168, 75, 0.13))) !important;
+}
+
+.light-theme .antd-custom-menu .ant-menu-submenu-title:hover {
+  color: var(--mos-sidebar-hover-text, var(--mos-accent, #d4a84b)) !important;
+  background-color: var(--mos-sidebar-hover-bg, var(--mos-focus-ring, rgba(212, 168, 75, 0.09))) !important;
+}
+
+.antd-custom-menu .ant-menu-item-group-title {
+  margin: 8px 0 3px !important;
+  padding: 0 4px !important;
+}
+
+.antd-custom-menu .ant-menu-item-group-list {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.antd-custom-menu .sidebar-group-title {
+  align-items: center;
+  border-radius: 8px;
+  display: flex;
+  font-size: 9px;
+  gap: 8px;
+  justify-content: space-between;
+  letter-spacing: 0.075em;
+  min-height: 28px;
+  padding: 0 8px;
+  width: 100%;
+}
+
+.dark-theme .antd-custom-menu .sidebar-group-title:hover,
+.dark-theme .antd-custom-menu .sidebar-group-title[aria-expanded='false'] {
+  background: rgba(255, 255, 255, 0.045) !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.light-theme .antd-custom-menu .sidebar-group-title:hover,
+.light-theme .antd-custom-menu .sidebar-group-title[aria-expanded='false'] {
+  background: rgba(0, 0, 0, 0.04) !important;
+  color: rgba(0, 0, 0, 0.78) !important;
+}
+
+.antd-custom-menu .sidebar-group-title:focus-visible {
+  box-shadow: 0 0 0 2px var(--mos-focus-ring);
+  outline: none;
+}
+
+.antd-custom-menu .sidebar-group-title__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.antd-custom-menu .sidebar-group-title__meta {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 5px;
+}
+
+.antd-custom-menu .sidebar-group-title__count {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  height: 17px;
+  justify-content: center;
+  letter-spacing: 0;
+  min-width: 17px;
+  padding-inline: 4px;
+}
+
+.dark-theme .antd-custom-menu .sidebar-group-title__count {
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.light-theme .antd-custom-menu .sidebar-group-title__count {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.antd-custom-menu .sidebar-menu-parent-label,
+.antd-custom-menu .sidebar-menu-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.antd-custom-menu .sidebar-menu-label--with-badge {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  overflow: visible;
+  width: 100%;
+}
+
+.antd-custom-menu .sidebar-menu-label__content {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.antd-custom-menu .sidebar-menu-label__badge {
+  align-items: center;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: none;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 700;
+  height: 18px;
+  justify-content: center;
+  line-height: 18px;
+  min-width: 18px;
+  padding-inline: 6px;
+  white-space: nowrap;
+}
+
+.antd-custom-menu .ant-menu-sub.ant-menu-inline {
+  background: transparent !important;
+  margin: 2px 7px 5px 20px !important;
+  padding: 1px 0 1px 7px !important;
+}
+
+.dark-theme .antd-custom-menu .ant-menu-sub.ant-menu-inline {
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.light-theme .antd-custom-menu .ant-menu-sub.ant-menu-inline {
+  border-inline-start: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.antd-custom-menu .ant-menu-sub.ant-menu-inline > .ant-menu-item,
+.antd-custom-menu .ant-menu-sub.ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title {
+  font-size: 12px !important;
+  height: 32px !important;
+  margin-inline: 0 !important;
+  padding-inline: 9px !important;
+}
+
+.antd-custom-menu .ant-menu-sub.ant-menu-inline > .ant-menu-item .anticon,
+.antd-custom-menu .ant-menu-sub.ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title .anticon {
+  font-size: 13px !important;
+}
+
+.antd-custom-menu .sidebar-menu-entry--nested {
+  position: relative;
+}
+
+.antd-custom-menu .sidebar-menu-entry--nested::before {
+  border-radius: 999px;
+  content: '';
+  height: 3px;
+  inset-inline-start: -9px;
+  position: absolute;
+  width: 3px;
+}
+
+.dark-theme .antd-custom-menu .sidebar-menu-entry--nested::before {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.light-theme .antd-custom-menu .sidebar-menu-entry--nested::before {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.antd-custom-menu .sidebar-menu-entry--nested.ant-menu-item-selected::before {
+  background: var(--mos-sidebar-active-bg, #d4a84b);
+  height: 18px;
+  width: 3px;
+}
+
+.antd-custom-menu .sidebar-menu-live-label {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+  min-width: 0;
+  width: 100%;
+}
+
+.antd-custom-menu .sidebar-menu-live-dot {
+  background: #10b981;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  height: 6px;
+  width: 6px;
+}
+
+.dashboard-mobile-nav .antd-custom-menu .sidebar-group-title {
+  min-height: 40px;
+}
+
+.dashboard-mobile-nav .antd-custom-menu .ant-menu-item,
+.dashboard-mobile-nav .antd-custom-menu .ant-menu-submenu-title,
+.dashboard-mobile-nav .antd-custom-menu .ant-menu-sub.ant-menu-inline > .ant-menu-item {
+  height: 44px !important;
+}
+
+/* The compact navigation is a purpose-built rail rather than a
+   squeezed inline menu. Only top-level destinations are rendered. */
+.sidebar-compact-nav {
+  padding: 6px 0 12px;
+  width: 100%;
+}
+
+.sidebar-compact-list {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.sidebar-compact-item {
+  height: 40px;
+  margin: 3px 0;
+  width: 40px;
+}
+
+.sidebar-rail-action {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  padding: 0;
+  position: relative;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
+  width: 40px;
+}
+
+.dark-theme .sidebar-rail-action {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.light-theme .sidebar-rail-action {
+  color: rgba(15, 23, 42, 0.68);
+}
+
+.dark-theme .sidebar-rail-action:hover {
+  background: var(--mos-sidebar-hover-bg, rgba(212, 168, 75, 0.14));
+  color: var(--mos-sidebar-hover-text, var(--mos-accent, #d4a84b));
+  transform: translateY(-1px);
+}
+
+.light-theme .sidebar-rail-action:hover {
+  background: var(--mos-sidebar-hover-bg, rgba(212, 168, 75, 0.1));
+  color: var(--mos-sidebar-hover-text, var(--mos-accent, #d4a84b));
+  transform: translateY(-1px);
+}
+
+.sidebar-rail-action:focus-visible {
+  box-shadow: 0 0 0 2px var(--mos-focus-ring);
+  outline: none;
+}
+
+.sidebar-rail-action--active {
+  box-shadow: inset 3px 0 0 var(--mos-sidebar-active-bg, var(--mos-accent, #d4a84b));
+  color: var(--mos-sidebar-active-bg, var(--mos-accent, #d4a84b));
+}
+
+.dark-theme .sidebar-rail-action--active {
+  background: var(--mos-sidebar-hover-bg, rgba(212, 168, 75, 0.18));
+}
+
+.light-theme .sidebar-rail-action--active {
+  background: var(--mos-sidebar-hover-bg, rgba(212, 168, 75, 0.13));
+}
+
+.sidebar-rail-action__icon {
+  align-items: center;
+  display: inline-flex;
+  font-size: 17px;
+  justify-content: center;
+  line-height: 1;
+}
+
+.sidebar-rail-action__icon .anticon,
+.sidebar-rail-action__icon .mos-app-icon {
+  color: inherit;
+  font-size: 17px;
+  height: 17px;
+  margin: 0;
+  width: 17px;
+}
+
+.sidebar-rail-action__submenu-indicator {
+  inset-inline-end: 2px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition:
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.dark-theme .sidebar-rail-action__submenu-indicator {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.light-theme .sidebar-rail-action__submenu-indicator {
+  color: rgba(15, 23, 42, 0.42);
+}
+
+.sidebar-rail-action:hover .sidebar-rail-action__submenu-indicator,
+.sidebar-rail-action--active .sidebar-rail-action__submenu-indicator {
+  color: var(--mos-sidebar-active-bg, var(--mos-accent, #d4a84b));
+  transform: translate(1px, -50%);
+}
+
+.sidebar-rail-divider {
+  flex: 0 0 1px;
+  height: 1px;
+  margin: 7px 0;
+  width: 24px;
+}
+
+.dark-theme .sidebar-rail-divider {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.light-theme .sidebar-rail-divider {
+  background: rgba(15, 23, 42, 0.13);
+}
+
+/* Compact submenus open as labelled flyouts. This restores hierarchy
+   without forcing chevrons or text into the rail itself. */
+.sidebar-rail-flyout.ant-menu-submenu-popup {
+  padding-inline-start: 6px;
+}
+
+.sidebar-rail-flyout .ant-popover-inner {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.sidebar-rail-flyout .ant-popover-inner-content {
+  padding: 0 !important;
+}
+
+.sidebar-rail-flyout .sidebar-rail-flyout-menu,
+.sidebar-rail-flyout.ant-menu-submenu-popup > .ant-menu {
+  border-radius: 12px !important;
+  min-width: 224px;
+  padding: 6px !important;
+}
+
+.dark-theme .sidebar-rail-flyout .sidebar-rail-flyout-menu,
+.dark-theme .sidebar-rail-flyout.ant-menu-submenu-popup > .ant-menu {
+  background: #111827 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+}
+
+.light-theme .sidebar-rail-flyout .sidebar-rail-flyout-menu,
+.light-theme .sidebar-rail-flyout.ant-menu-submenu-popup > .ant-menu {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.13);
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.18);
+}
+
+.sidebar-rail-flyout .sidebar-rail-flyout-group > .ant-menu-item-group-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  line-height: 1.25;
+  padding: 8px 10px 6px !important;
+  text-transform: uppercase;
+}
+
+.dark-theme .sidebar-rail-flyout .sidebar-rail-flyout-group > .ant-menu-item-group-title {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.light-theme .sidebar-rail-flyout .sidebar-rail-flyout-group > .ant-menu-item-group-title {
+  color: rgba(15, 23, 42, 0.56) !important;
+}
+
+.sidebar-rail-flyout .ant-menu-item,
+.sidebar-rail-flyout .ant-menu-submenu-title {
+  align-items: center;
+  border-radius: 8px !important;
+  display: flex;
+  height: 38px !important;
+  justify-content: flex-start !important;
+  margin: 2px !important;
+  padding-inline: 10px !important;
+  text-align: start !important;
+  width: calc(100% - 4px) !important;
+}
+
+.dark-theme .sidebar-rail-flyout .ant-menu-item,
+.dark-theme .sidebar-rail-flyout .ant-menu-submenu-title {
+  color: rgba(255, 255, 255, 0.86) !important;
+}
+
+.light-theme .sidebar-rail-flyout .ant-menu-item,
+.light-theme .sidebar-rail-flyout .ant-menu-submenu-title {
+  color: rgba(15, 23, 42, 0.88) !important;
+}
+
+.sidebar-rail-flyout .ant-menu-title-content {
+  clip: auto !important;
+  clip-path: none !important;
+  color: inherit !important;
+  display: flex !important;
+  flex: 1 1 150px !important;
+  height: auto !important;
+  margin-inline-start: 10px !important;
+  min-width: 150px !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  position: static !important;
+  transform: none !important;
+  visibility: visible !important;
+  white-space: nowrap;
+  width: auto !important;
+}
+
+.sidebar-rail-flyout .sidebar-menu-label {
+  clip: auto !important;
+  clip-path: none !important;
+  color: inherit !important;
+  display: block !important;
+  height: auto !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  position: static !important;
+  transform: none !important;
+  visibility: visible !important;
+  width: 100% !important;
+}
+
+.dark-theme .sidebar-rail-flyout .ant-menu-item-selected {
+  background: var(--mos-sidebar-hover-bg, var(--mos-focus-ring, rgba(212, 168, 75, 0.18))) !important;
+  color: var(--mos-sidebar-submenu-open-text, var(--mos-accent, #e6c77a)) !important;
+}
+
+.light-theme .sidebar-rail-flyout .ant-menu-item-selected {
+  background: var(--mos-sidebar-hover-bg, var(--mos-focus-ring, rgba(212, 168, 75, 0.13))) !important;
+  color: var(--mos-sidebar-submenu-open-text, var(--mos-accent, #855b0e)) !important;
+}
+
+.sidebar-rail-flyout .sidebar-menu-entry--nested::before {
+  display: none;
+}
+
+/* Override Ant Design sidebar menu hover/select colors */
+.antd-custom-menu .ant-menu-item-selected {
+  background-color: var(--mos-sidebar-active-bg, var(--mos-accent, #d4a84b)) !important;
+}
+
+.antd-custom-menu .ant-menu-item-selected .ant-menu-title-content,
+.antd-custom-menu .ant-menu-item-selected .anticon {
+  color: var(--mos-sidebar-active-text, var(--mos-accent-contrast, #000000)) !important;
+}
+
+/* Keep contrast text color on selected item hover */
+.antd-custom-menu .ant-menu-item-selected:hover,
+.antd-custom-menu .ant-menu-item-selected:hover .ant-menu-title-content,
+.antd-custom-menu .ant-menu-item-selected:hover .anticon {
+  color: var(--mos-sidebar-active-text, var(--mos-accent-contrast, #000000)) !important;
+  background-color: var(--mos-sidebar-active-bg, var(--mos-accent, #d4a84b)) !important;
+}
+
+/* Hover styles for normal items */
+.dark-theme .antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover {
+  background-color: var(--mos-sidebar-hover-bg, var(--mos-focus-ring, rgba(212, 168, 75, 0.15))) !important;
+}
+
+.light-theme .antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover {
+  background-color: var(--mos-sidebar-hover-bg, var(--mos-focus-ring, rgba(212, 168, 75, 0.08))) !important;
+}
+
+.antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover .ant-menu-title-content,
+.antd-custom-menu .ant-menu-item:not(.ant-menu-item-selected):hover .anticon {
+  color: var(--mos-sidebar-hover-text, var(--mos-accent, #d4a84b)) !important;
+}
+
+/* Show toggle button on sidebar hover */
+.ant-layout-sider:hover + .sidebar-toggle-container .sidebar-toggle-btn,
+.sidebar-toggle-container:hover .sidebar-toggle-btn {
+  opacity: 1 !important;
+  transform: scale(1.04);
+}
+
+/* Hide OmiCall LiveTalk chat widget and its warning alerts */
+#omi_nvd,
+#omiLiveTalk,
+[id^='omi_'],
+[class*='omi-lt-'] {
+  display: none !important;
+}
+
+/* Avatar gentle breathing animation */
+@keyframes avatarBreath {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.avatar-breath {
+  animation: avatarBreath 3s infinite ease-in-out;
+}

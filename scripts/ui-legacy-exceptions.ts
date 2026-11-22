@@ -18,12 +18,6 @@ export const LEGACY_UI_EXCEPTIONS: readonly LegacyUiException[] = [
     allowedAntdImports: ['Modal'],
   },
   {
-    path: 'app/dashboard/layout.tsx',
-    reason: 'The responsive navigation drawer is being consolidated into the dashboard shell adapter.',
-    sunset: '2026-12-31',
-    allowedAntdImports: ['Drawer'],
-  },
-  {
     path: 'app/dashboard/page.tsx',
     reason: 'The operational-home status and legacy icon set migrate with the dashboard-shell wave.',
     sunset: '2026-12-31',

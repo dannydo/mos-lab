@@ -8280,7 +8280,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1494
+        "line": 1512
       }
     },
     {
@@ -8294,7 +8294,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1589
+        "line": 1607
       }
     },
     {
@@ -8308,7 +8308,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1680
+        "line": 1698
       }
     },
     {
@@ -8322,7 +8322,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1763
+        "line": 1781
       }
     },
     {
@@ -8336,7 +8336,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1789
+        "line": 1807
       }
     },
     {
@@ -8350,7 +8350,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1884
+        "line": 1902
       }
     },
     {
@@ -8364,7 +8364,7 @@
         "path": "/api/chat/upload-file",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1894
+        "line": 1912
       }
     },
     {
@@ -8378,7 +8378,7 @@
         "path": "/api/chat/upload-video",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1904
+        "line": 1922
       }
     },
     {
@@ -8392,7 +8392,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1973
+        "line": 1991
       }
     },
     {
@@ -8406,7 +8406,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2132
+        "line": 2150
       }
     },
     {
@@ -8420,7 +8420,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2137
+        "line": 2155
       }
     },
     {
@@ -8434,7 +8434,21 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2142
+        "line": 2160
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/messages/forward",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/messages/forward",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/messages/forward",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 2330
       }
     },
     {
@@ -8448,7 +8462,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2312
+        "line": 2678
       }
     },
     {
@@ -8462,7 +8476,7 @@
         "path": "/api/chat/threads/:messageId/extract-checklist",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2474
+        "line": 2840
       }
     },
     {
@@ -8476,7 +8490,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2529
+        "line": 2895
       }
     },
     {
@@ -8490,7 +8504,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2689
+        "line": 3055
       }
     },
     {
@@ -8504,7 +8518,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2798
+        "line": 3164
       }
     },
     {
@@ -8518,7 +8532,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2846
+        "line": 3212
       }
     },
     {
@@ -8532,7 +8546,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2952
+        "line": 3318
       }
     },
     {
@@ -8546,7 +8560,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3051
+        "line": 3417
       }
     },
     {
@@ -8560,7 +8574,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3158
+        "line": 3524
       }
     },
     {
@@ -8574,7 +8588,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3309
+        "line": 3675
       }
     },
     {
@@ -8588,7 +8602,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3617
+        "line": 3983
       }
     },
     {
@@ -8602,7 +8616,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3967
+        "line": 4333
       }
     },
     {
@@ -8616,7 +8630,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4018
+        "line": 4384
       }
     },
     {
@@ -8630,7 +8644,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4215
+        "line": 4581
       }
     },
     {
@@ -8644,7 +8658,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4299
+        "line": 4665
       }
     },
     {
@@ -8658,7 +8672,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4359
+        "line": 4725
       }
     },
     {
@@ -8672,7 +8686,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4403
+        "line": 4769
       }
     },
     {
@@ -8686,7 +8700,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4486
+        "line": 4852
       }
     },
     {
@@ -8700,7 +8714,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4592
+        "line": 4958
       }
     },
     {
@@ -8714,7 +8728,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4667
+        "line": 5033
       }
     },
     {
@@ -8728,7 +8742,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4773
+        "line": 5139
       }
     },
     {
@@ -8742,7 +8756,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4889
+        "line": 5255
       }
     },
     {
@@ -8756,7 +8770,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4991
+        "line": 5357
       }
     },
     {
@@ -8770,7 +8784,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5062
+        "line": 5428
       }
     },
     {
@@ -8784,7 +8798,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5085
+        "line": 5451
       }
     },
     {
@@ -8798,7 +8812,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5266
+        "line": 5632
       }
     },
     {
@@ -8812,7 +8826,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5443
+        "line": 5809
       }
     },
     {
@@ -8826,7 +8840,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5545
+        "line": 5911
       }
     },
     {
@@ -8840,7 +8854,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5558
+        "line": 5924
       }
     },
     {
@@ -8854,7 +8868,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5625
+        "line": 5991
       }
     },
     {
@@ -8868,7 +8882,7 @@
         "path": "/api/chat/messages/search",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5690
+        "line": 6056
       }
     },
     {
@@ -8882,7 +8896,7 @@
         "path": "/api/chat/calls/active",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 6081
+        "line": 6447
       }
     },
     {
@@ -8896,7 +8910,7 @@
         "path": "/api/chat/push/config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 6438
+        "line": 6804
       }
     },
     {
@@ -28941,6 +28955,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:MosChatForwardedMetadata",
+      "type": "SharedType",
+      "label": "MosChatForwardedMetadata",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatForwardedMetadata",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:MosChatThreadReply",
       "type": "SharedType",
       "label": "MosChatThreadReply",
@@ -29573,6 +29599,42 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MoveMosChatThreadItemResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ForwardMosChatMessageRequest",
+      "type": "SharedType",
+      "label": "ForwardMosChatMessageRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ForwardMosChatMessageRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ForwardMosChatMessageResultItem",
+      "type": "SharedType",
+      "label": "ForwardMosChatMessageResultItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ForwardMosChatMessageResultItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ForwardMosChatMessageResponse",
+      "type": "SharedType",
+      "label": "ForwardMosChatMessageResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ForwardMosChatMessageResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -35661,6 +35723,30 @@
       }
     },
     {
+      "id": "uicomp:DashboardHeaderBar",
+      "type": "UIComponent",
+      "label": "<DashboardHeaderBar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/DashboardHeaderBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "DashboardHeaderBar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:DashboardSidebarShell",
+      "type": "UIComponent",
+      "label": "<DashboardSidebarShell />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/DashboardSidebarShell.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "DashboardSidebarShell",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:HeaderLeftToolbar",
       "type": "UIComponent",
       "label": "<HeaderLeftToolbar />",
@@ -35733,6 +35819,18 @@
       }
     },
     {
+      "id": "uicomp:DashboardLayoutShell.test",
+      "type": "UIComponent",
+      "label": "<DashboardLayoutShell.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/__tests__/DashboardLayoutShell.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "DashboardLayoutShell.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:HeaderRoleQuickSwitch.test",
       "type": "UIComponent",
       "label": "<HeaderRoleQuickSwitch.test />",
@@ -35753,6 +35851,42 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "UserProfileDropdown.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useDashboardAuthAndGuard",
+      "type": "UIComponent",
+      "label": "<useDashboardAuthAndGuard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/useDashboardAuthAndGuard.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useDashboardAuthAndGuard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useDashboardChatShell",
+      "type": "UIComponent",
+      "label": "<useDashboardChatShell />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/useDashboardChatShell.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useDashboardChatShell",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useDashboardHeaderPolling",
+      "type": "UIComponent",
+      "label": "<useDashboardHeaderPolling />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/useDashboardHeaderPolling.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useDashboardHeaderPolling",
         "isPrimitive": false
       }
     },
@@ -36149,6 +36283,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatDockedWindows.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatForwardFeature.test",
+      "type": "UIComponent",
+      "label": "<MosChatForwardFeature.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatForwardFeature.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatForwardFeature.test",
         "isPrimitive": false
       }
     },
@@ -36641,6 +36787,30 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatFilesPane",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatForwardModal",
+      "type": "UIComponent",
+      "label": "<MosChatForwardModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MosChatForwardModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatForwardModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatForwardedHeader",
+      "type": "UIComponent",
+      "label": "<MosChatForwardedHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MosChatForwardedHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatForwardedHeader",
         "isPrimitive": false
       }
     },
@@ -39423,8 +39593,8 @@
       "filePath": "apps/api/src/modules/ai/ai-session-access.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4206,
-        "lineCount": 106,
+        "sizeBytes": 4224,
+        "lineCount": 109,
         "ext": ".ts"
       }
     },
@@ -40378,6 +40548,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/catalog/wings-combo-catalog.test.ts",
+      "type": "File",
+      "label": "wings-combo-catalog.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/catalog/wings-combo-catalog.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3714,
+        "lineCount": 110,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/chat/chat-access.service.ts",
       "type": "File",
       "label": "chat-access.service.ts",
@@ -40491,6 +40674,32 @@
       "metadata": {
         "sizeBytes": 19428,
         "lineCount": 517,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-forward.service.ts",
+      "type": "File",
+      "label": "chat-forward.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-forward.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8473,
+        "lineCount": 263,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-forward.test.ts",
+      "type": "File",
+      "label": "chat-forward.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-forward.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13485,
+        "lineCount": 398,
         "ext": ".ts"
       }
     },
@@ -40632,8 +40841,8 @@
       "filePath": "apps/api/src/modules/chat/chat-repository.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 54325,
-        "lineCount": 1434,
+        "sizeBytes": 55101,
+        "lineCount": 1456,
         "ext": ".ts"
       }
     },
@@ -40801,8 +41010,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 256942,
-        "lineCount": 6698,
+        "sizeBytes": 272622,
+        "lineCount": 7064,
         "ext": ".ts"
       }
     },
@@ -49927,8 +50136,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 75856,
-        "lineCount": 1913,
+        "sizeBytes": 11680,
+        "lineCount": 283,
         "ext": ".tsx"
       }
     },
@@ -54893,8 +55102,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18610,
-        "lineCount": 457,
+        "sizeBytes": 18935,
+        "lineCount": 464,
         "ext": ".ts"
       }
     },
@@ -55465,8 +55674,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 206003,
-        "lineCount": 2526,
+        "sizeBytes": 207165,
+        "lineCount": 2547,
         "ext": ".ts"
       }
     },
@@ -55497,6 +55706,266 @@
       }
     },
     {
+      "id": "file:packages/shared/src/catalog/wings-combo/accounting.ts",
+      "type": "File",
+      "label": "accounting.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/accounting.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 18681,
+        "lineCount": 448,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/classic-volume.data.ts",
+      "type": "File",
+      "label": "classic-volume.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/classic-volume.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 12741,
+        "lineCount": 396,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/flawless-mink-rules.data.ts",
+      "type": "File",
+      "label": "flawless-mink-rules.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/flawless-mink-rules.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 8956,
+        "lineCount": 355,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/flawless-mink.data.ts",
+      "type": "File",
+      "label": "flawless-mink.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/flawless-mink.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 12073,
+        "lineCount": 306,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/hyperlight-2x.data.ts",
+      "type": "File",
+      "label": "hyperlight-2x.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/hyperlight-2x.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 13519,
+        "lineCount": 414,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/hyperlight-3x.data.ts",
+      "type": "File",
+      "label": "hyperlight-3x.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/hyperlight-3x.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 13518,
+        "lineCount": 414,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/hyperlight-4x.data.ts",
+      "type": "File",
+      "label": "hyperlight-4x.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/hyperlight-4x.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 13522,
+        "lineCount": 414,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/hyperlight-5x.data.ts",
+      "type": "File",
+      "label": "hyperlight-5x.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/hyperlight-5x.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 13550,
+        "lineCount": 414,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/index.ts",
+      "type": "File",
+      "label": "index.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/index.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 1627,
+        "lineCount": 42,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/ivylight-3l.data.ts",
+      "type": "File",
+      "label": "ivylight-3l.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/ivylight-3l.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 11478,
+        "lineCount": 352,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/ivylight-4l.data.ts",
+      "type": "File",
+      "label": "ivylight-4l.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/ivylight-4l.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 11791,
+        "lineCount": 358,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/ivylight-5l.data.ts",
+      "type": "File",
+      "label": "ivylight-5l.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/ivylight-5l.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 11810,
+        "lineCount": 358,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/ultralight-3d.data.ts",
+      "type": "File",
+      "label": "ultralight-3d.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/ultralight-3d.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 12659,
+        "lineCount": 376,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/ultralight-4d.data.ts",
+      "type": "File",
+      "label": "ultralight-4d.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/ultralight-4d.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 12671,
+        "lineCount": 376,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/ultralight-5d.data.ts",
+      "type": "File",
+      "label": "ultralight-5d.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/ultralight-5d.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 12684,
+        "lineCount": 376,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/data/vvip-and-derived.data.ts",
+      "type": "File",
+      "label": "vvip-and-derived.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/data/vvip-and-derived.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 4868,
+        "lineCount": 130,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/family.ts",
+      "type": "File",
+      "label": "family.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/family.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 10715,
+        "lineCount": 347,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/fiber.ts",
+      "type": "File",
+      "label": "fiber.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/fiber.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 13806,
+        "lineCount": 309,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/matcher.ts",
+      "type": "File",
+      "label": "matcher.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/matcher.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 15318,
+        "lineCount": 400,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/catalog/wings-combo/types.ts",
+      "type": "File",
+      "label": "types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/catalog/wings-combo/types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 7140,
+        "lineCount": 253,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/catalog/wings-combo-catalog.ts",
       "type": "File",
       "label": "wings-combo-catalog.ts",
@@ -55504,8 +55973,8 @@
       "filePath": "packages/shared/src/catalog/wings-combo-catalog.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 239803,
-        "lineCount": 6738,
+        "sizeBytes": 754,
+        "lineCount": 23,
         "ext": ".ts"
       }
     },
@@ -55660,8 +56129,8 @@
       "filePath": "packages/shared/src/types/ai-assistant.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3174,
-        "lineCount": 126,
+        "sizeBytes": 3173,
+        "lineCount": 125,
         "ext": ".ts"
       }
     },
@@ -56206,8 +56675,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 34864,
-        "lineCount": 1318,
+        "sizeBytes": 36226,
+        "lineCount": 1365,
         "ext": ".ts"
       }
     },
@@ -60500,6 +60969,13 @@
     {
       "id": "edge:route:POST:/api/chat/messages:ws:apps/api",
       "source": "route:POST:/api/chat/messages",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/messages/forward:ws:apps/api",
+      "source": "route:POST:/api/chat/messages/forward",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -71887,6 +72363,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:MosChatForwardedMetadata:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatForwardedMetadata",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:MosChatThreadReply:ws:packages/shared",
       "source": "type:@mos-lab/shared:MosChatThreadReply",
       "target": "ws:packages/shared",
@@ -72253,6 +72736,27 @@
     {
       "id": "edge:type:@mos-lab/shared:MoveMosChatThreadItemResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:MoveMosChatThreadItemResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ForwardMosChatMessageRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ForwardMosChatMessageRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ForwardMosChatMessageResultItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ForwardMosChatMessageResultItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ForwardMosChatMessageResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ForwardMosChatMessageResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -76689,6 +77193,34 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:DashboardHeaderBar:ws:apps/web",
+      "source": "uicomp:DashboardHeaderBar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:DashboardHeaderBar:token:color:primary",
+      "source": "uicomp:DashboardHeaderBar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:DashboardSidebarShell:ws:apps/web",
+      "source": "uicomp:DashboardSidebarShell",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:DashboardSidebarShell:token:color:primary",
+      "source": "uicomp:DashboardSidebarShell",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:HeaderLeftToolbar:ws:apps/web",
       "source": "uicomp:HeaderLeftToolbar",
       "target": "ws:apps/web",
@@ -76773,6 +77305,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:DashboardLayoutShell.test:ws:apps/web",
+      "source": "uicomp:DashboardLayoutShell.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:DashboardLayoutShell.test:token:color:primary",
+      "source": "uicomp:DashboardLayoutShell.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:HeaderRoleQuickSwitch.test:ws:apps/web",
       "source": "uicomp:HeaderRoleQuickSwitch.test",
       "target": "ws:apps/web",
@@ -76796,6 +77342,48 @@
     {
       "id": "edge:uicomp:UserProfileDropdown.test:token:color:primary",
       "source": "uicomp:UserProfileDropdown.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useDashboardAuthAndGuard:ws:apps/web",
+      "source": "uicomp:useDashboardAuthAndGuard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useDashboardAuthAndGuard:token:color:primary",
+      "source": "uicomp:useDashboardAuthAndGuard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useDashboardChatShell:ws:apps/web",
+      "source": "uicomp:useDashboardChatShell",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useDashboardChatShell:token:color:primary",
+      "source": "uicomp:useDashboardChatShell",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useDashboardHeaderPolling:ws:apps/web",
+      "source": "uicomp:useDashboardHeaderPolling",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useDashboardHeaderPolling:token:color:primary",
+      "source": "uicomp:useDashboardHeaderPolling",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -77258,6 +77846,20 @@
     {
       "id": "edge:uicomp:MosChatDockedWindows.test:token:color:primary",
       "source": "uicomp:MosChatDockedWindows.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatForwardFeature.test:ws:apps/web",
+      "source": "uicomp:MosChatForwardFeature.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatForwardFeature.test:token:color:primary",
+      "source": "uicomp:MosChatForwardFeature.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -77832,6 +78434,34 @@
     {
       "id": "edge:uicomp:MosChatFilesPane:token:color:primary",
       "source": "uicomp:MosChatFilesPane",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatForwardModal:ws:apps/web",
+      "source": "uicomp:MosChatForwardModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatForwardModal:token:color:primary",
+      "source": "uicomp:MosChatForwardModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatForwardedHeader:ws:apps/web",
+      "source": "uicomp:MosChatForwardedHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatForwardedHeader:token:color:primary",
+      "source": "uicomp:MosChatForwardedHeader",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -80868,6 +81498,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/catalog/wings-combo-catalog.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/catalog/wings-combo-catalog.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/chat/chat-access.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-access.service.ts",
       "target": "ws:packages/shared",
@@ -80912,6 +81549,20 @@
     {
       "id": "edge:file:apps/api/src/modules/chat/chat-format.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-format.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-forward.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-forward.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-forward.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-forward.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -89604,6 +90255,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/chat:route:POST:/api/chat/messages/forward",
+      "source": "page:/chat",
+      "target": "route:POST:/api/chat/messages/forward",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/chat:route:POST:/api/chat/threads/:messageId/extract-checklist",
       "source": "page:/chat",
       "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
@@ -94623,6 +95281,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/chat/messages/forward",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/chat/messages/forward",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:POST:/api/chat/threads/:messageId/extract-checklist",
       "source": "page:/dashboard/architecture",
       "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
@@ -97426,6 +98091,13 @@
       "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/messages",
       "source": "page:/dashboard/design-system",
       "target": "route:POST:/api/chat/messages",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/messages/forward",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/chat/messages/forward",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -100905,6 +101577,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/messages",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/chat/messages",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/messages/forward",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/chat/messages/forward",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -106365,6 +107044,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/messages",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/chat/messages",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/messages/forward",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/chat/messages/forward",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -112018,6 +112704,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/chat/messages/forward",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/chat/messages/forward",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/chat/threads/:messageId/extract-checklist",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
@@ -115402,6 +116095,13 @@
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/messages",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/chat/messages",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/messages/forward",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/chat/messages/forward",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -118990,6 +119690,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/wings-garden:route:POST:/api/chat/messages/forward",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/chat/messages/forward",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/wings-garden:route:POST:/api/chat/threads/:messageId/extract-checklist",
       "source": "page:/wings-garden",
       "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
@@ -119831,31 +120538,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 4374,
-    "totalEdges": 9023,
+    "totalNodes": 4411,
+    "totalEdges": 9057,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
-      "FastifyRoute": 780,
+      "FastifyRoute": 781,
       "Component": 66,
-      "SharedType": 1569,
+      "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 387,
-      "File": 1374
+      "UIComponent": 396,
+      "File": 1397
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1764,
-      "HANDLES_ROUTE": 780,
-      "RENDERS": 453,
-      "USES_TOKEN": 389,
-      "IMPORTS": 797,
+      "EXPORTS": 1768,
+      "HANDLES_ROUTE": 781,
+      "RENDERS": 462,
+      "USES_TOKEN": 398,
+      "IMPORTS": 800,
       "QUERIES_MODEL": 438,
-      "API_CALL": 4402
+      "API_CALL": 4410
     },
-    "fastifyRouteCount": 785,
+    "fastifyRouteCount": 786,
     "prismaModelCount": 183,
     "nextPageCount": 66,
-    "sharedTypeCount": 1569
+    "sharedTypeCount": 1573
   },
   "routes": [
     {
@@ -122409,6 +123116,13 @@
     {
       "method": "POST",
       "path": "/api/chat/messages",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/messages/forward",
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "chat"
