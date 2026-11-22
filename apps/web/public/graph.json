@@ -35745,6 +35745,30 @@
       }
     },
     {
+      "id": "uicomp:TimelineBookingCard",
+      "type": "UIComponent",
+      "label": "<TimelineBookingCard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/components/timeline-view/TimelineBookingCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TimelineBookingCard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:timeline-view-utils",
+      "type": "UIComponent",
+      "label": "<timeline-view-utils />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/components/timeline-view/timeline-view-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "timeline-view-utils",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:useCustomerDetail",
       "type": "UIComponent",
       "label": "<useCustomerDetail />",
@@ -40097,6 +40121,66 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MobileThemeSheet.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ThemeStudioImageExtractorTab",
+      "type": "UIComponent",
+      "label": "<ThemeStudioImageExtractorTab />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/theme/theme-studio/ThemeStudioImageExtractorTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ThemeStudioImageExtractorTab",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ThemeStudioLiveBoardTab",
+      "type": "UIComponent",
+      "label": "<ThemeStudioLiveBoardTab />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/theme/theme-studio/ThemeStudioLiveBoardTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ThemeStudioLiveBoardTab",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ThemeStudioPresetsTab",
+      "type": "UIComponent",
+      "label": "<ThemeStudioPresetsTab />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/theme/theme-studio/ThemeStudioPresetsTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ThemeStudioPresetsTab",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ThemeStudioSmartPasteTab",
+      "type": "UIComponent",
+      "label": "<ThemeStudioSmartPasteTab />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/theme/theme-studio/ThemeStudioSmartPasteTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ThemeStudioSmartPasteTab",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:theme-studio-utils",
+      "type": "UIComponent",
+      "label": "<theme-studio-utils />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/theme/theme-studio/theme-studio-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "theme-studio-utils",
         "isPrimitive": false
       }
     },
@@ -53577,8 +53661,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcLeaderboardCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28266,
-        "lineCount": 651,
+        "sizeBytes": 7006,
+        "lineCount": 188,
         "ext": ".tsx"
       }
     },
@@ -53684,6 +53768,45 @@
         "sizeBytes": 2738,
         "lineCount": 88,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-leaderboard/CcLeaderboardMobileList.tsx",
+      "type": "File",
+      "label": "CcLeaderboardMobileList.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-leaderboard/CcLeaderboardMobileList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7127,
+        "lineCount": 154,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-leaderboard/cc-leaderboard-columns.tsx",
+      "type": "File",
+      "label": "cc-leaderboard-columns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-leaderboard/cc-leaderboard-columns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12307,
+        "lineCount": 299,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-leaderboard/cc-leaderboard-utils.ts",
+      "type": "File",
+      "label": "cc-leaderboard-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-leaderboard/cc-leaderboard-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2968,
+        "lineCount": 88,
+        "ext": ".ts"
       }
     },
     {
@@ -83240,6 +83363,34 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:TimelineBookingCard:ws:apps/web",
+      "source": "uicomp:TimelineBookingCard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TimelineBookingCard:token:color:primary",
+      "source": "uicomp:TimelineBookingCard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:timeline-view-utils:ws:apps/web",
+      "source": "uicomp:timeline-view-utils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:timeline-view-utils:token:color:primary",
+      "source": "uicomp:timeline-view-utils",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:useCustomerDetail:ws:apps/web",
       "source": "uicomp:useCustomerDetail",
       "target": "ws:apps/web",
@@ -88317,6 +88468,76 @@
     {
       "id": "edge:uicomp:MobileThemeSheet.test:token:color:primary",
       "source": "uicomp:MobileThemeSheet.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ThemeStudioImageExtractorTab:ws:apps/web",
+      "source": "uicomp:ThemeStudioImageExtractorTab",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ThemeStudioImageExtractorTab:token:color:primary",
+      "source": "uicomp:ThemeStudioImageExtractorTab",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ThemeStudioLiveBoardTab:ws:apps/web",
+      "source": "uicomp:ThemeStudioLiveBoardTab",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ThemeStudioLiveBoardTab:token:color:primary",
+      "source": "uicomp:ThemeStudioLiveBoardTab",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ThemeStudioPresetsTab:ws:apps/web",
+      "source": "uicomp:ThemeStudioPresetsTab",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ThemeStudioPresetsTab:token:color:primary",
+      "source": "uicomp:ThemeStudioPresetsTab",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ThemeStudioSmartPasteTab:ws:apps/web",
+      "source": "uicomp:ThemeStudioSmartPasteTab",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ThemeStudioSmartPasteTab:token:color:primary",
+      "source": "uicomp:ThemeStudioSmartPasteTab",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:theme-studio-utils:ws:apps/web",
+      "source": "uicomp:theme-studio-utils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:theme-studio-utils:token:color:primary",
+      "source": "uicomp:theme-studio-utils",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -93749,6 +93970,27 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cc/components/CcXoayTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/CcXoayTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-leaderboard/CcLeaderboardMobileList.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-leaderboard/CcLeaderboardMobileList.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-leaderboard/cc-leaderboard-columns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-leaderboard/cc-leaderboard-columns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-leaderboard/cc-leaderboard-utils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-leaderboard/cc-leaderboard-utils.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -130323,8 +130565,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4883,
-    "totalEdges": 9603,
+    "totalNodes": 4893,
+    "totalEdges": 9620,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -130332,15 +130574,15 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 547,
-      "File": 1722
+      "UIComponent": 554,
+      "File": 1725
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 613,
-      "USES_TOKEN": 549,
-      "IMPORTS": 1019,
+      "RENDERS": 620,
+      "USES_TOKEN": 556,
+      "IMPORTS": 1022,
       "QUERIES_MODEL": 541,
       "API_CALL": 4336
     },

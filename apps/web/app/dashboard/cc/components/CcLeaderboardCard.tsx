@@ -1,16 +1,21 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { Card, Table, Tag, theme, Space, Tooltip } from 'antd';
-import { TrophyOutlined, FilterOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { useMemo } from 'react';
+import { Card, Table, theme } from 'antd';
+import { TrophyOutlined, FilterOutlined } from '@ant-design/icons';
 import { CircleCheck, CircleX, TriangleAlert } from 'lucide-react';
-import dayjs, { Dayjs } from 'dayjs';
-import { CcLeaderboardEntry, calculateWheelBonusCap, themeTokens, calculateFractionToday } from '@mos-lab/shared';
+import { Dayjs } from 'dayjs';
+import { CcLeaderboardEntry, themeTokens } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
-import CcAvatar from './CcAvatar';
-import { AppIcon, MobileRecordList } from '~/components/ui';
+import { AppIcon } from '~/components/ui';
 import { useResponsiveTier, useViewportSize } from '~/hooks/useResponsiveTier';
-import { formatCompactVND } from '../../../../lib/format-utils';
+import { buildCcLeaderboardColumns } from './cc-leaderboard/cc-leaderboard-columns';
+import { CcLeaderboardMobileList } from './cc-leaderboard/CcLeaderboardMobileList';
+import {
+  computeCapSummary,
+  computeElapsedRatioPercent,
+  computeMaxBarValue,
+} from './cc-leaderboard/cc-leaderboard-utils';
 
 interface CcLeaderboardCardProps {
   leaderboard: CcLeaderboardEntry[];
@@ -19,40 +24,6 @@ interface CcLeaderboardCardProps {
   onSelectConsultant?: (consultantName: string) => void;
   dateRange?: [Dayjs, Dayjs];
   comparisonMode?: 'month' | 'week' | 'day';
-}
-
-const fmtVnd = (v: number) => Math.round(v).toLocaleString('vi-VN');
-
-function calculateProjectedCcXoay(
-  checkinCount: number,
-  currentBonus: number,
-  ratio: number,
-  monthlyDailyBonus?: number
-): number {
-  if (ratio <= 0) return currentBonus;
-  const safeRatio = Math.max(0.001, Math.min(1.0, ratio));
-  if (checkinCount <= 0 && currentBonus <= 0) return 0;
-
-  const nHat = checkinCount > 0 ? Math.round(checkinCount / safeRatio) : 0;
-  if (nHat <= 0) return currentBonus;
-
-  let c = 3.65;
-  if (checkinCount >= 4 && currentBonus > 0) {
-    const rawC = (currentBonus - 45 * checkinCount) / (checkinCount * (checkinCount - 1));
-    if (!isNaN(rawC) && rawC >= 1.5 && rawC <= 8.0) {
-      c = rawC;
-    }
-  }
-
-  const rawProjected = Math.max(currentBonus, Math.round(c * nHat * (nHat - 1) + 45 * nHat));
-
-  if (monthlyDailyBonus && monthlyDailyBonus > 0) {
-    const projectedDailyBonus = Math.round(monthlyDailyBonus / safeRatio);
-    const maxAllowed = Math.round(projectedDailyBonus * 1.5);
-    return Math.min(rawProjected, maxAllowed);
-  }
-
-  return rawProjected;
 }
 
 export default function CcLeaderboardCard({
@@ -80,350 +51,28 @@ export default function CcLeaderboardCard({
   const isMonthMode = comparisonMode === 'month';
   const isDayMode = comparisonMode === 'day';
 
-  const elapsedRatioPercent = useMemo(() => {
-    const now = dayjs();
-    const currentHour = now.hour();
-    const fractionToday = calculateFractionToday(currentHour);
-
-    const start = dateRange?.[0]
-      ? dayjs(dateRange[0])
-      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
-    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
-
-    if (now.isBefore(start, 'day')) return 0.1;
-    if (now.isAfter(end, 'day')) return 100;
-
-    const totalDays = end.diff(start, 'day') + 1;
-    const daysPassed = now.diff(start, 'day');
-    const elapsedDays = daysPassed + fractionToday;
-    const r = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
-    return Math.round(r * 1000) / 10;
-  }, [dateRange, comparisonMode]);
+  const elapsedRatioPercent = useMemo(
+    () => computeElapsedRatioPercent(dateRange, comparisonMode),
+    [dateRange, comparisonMode]
+  );
 
   const isPastPeriod = elapsedRatioPercent >= 100;
   const ratio = (elapsedRatioPercent || 100) / 100;
 
   // Max bar reference for proportional widths
-  const maxBarValue = useMemo(() => {
-    if (!leaderboard?.length) return 1;
-    return Math.max(
-      ...leaderboard.map((cc) => {
-        const d = cc.monthlyDailyBonus || 0;
-        const w = cc.monthlyWheelBonus || 0;
-        const cap = calculateWheelBonusCap(d, w);
-        return Math.max(cap.maxWheelBonusAllowed, cap.rawWheelBonus, cap.monthlyDailyBonus);
-      }),
-      1
-    );
-  }, [leaderboard]);
+  const maxBarValue = useMemo(() => computeMaxBarValue(leaderboard), [leaderboard]);
 
-  const columns = [
-    {
-      title: 'Hạng',
-      dataIndex: 'rank',
-      key: 'rank',
-      width: 50,
-      align: 'center' as const,
-      render: (rank: number) => {
-        if (rank === 1) return <span style={{ fontSize: '16px' }}>🥇</span>;
-        if (rank === 2) return <span style={{ fontSize: '16px' }}>🥈</span>;
-        if (rank === 3) return <span style={{ fontSize: '16px' }}>🥉</span>;
-        return <span className="tabular-nums font-medium text-slate-500 text-[11px]">#{rank}</span>;
-      },
-    },
-    {
-      title: 'CC',
-      dataIndex: 'displayName',
-      key: 'displayName',
-      width: 160,
-      render: (name: string, record: CcLeaderboardEntry) => {
-        const isSelected = selectedConsultant === name;
-        return (
-          <Space className="cursor-pointer group whitespace-nowrap" size={6}>
-            <CcAvatar name={name} src={record.avatar} isSelected={isSelected} size={28} />
-            <div className="flex items-center gap-1 whitespace-nowrap">
-              <span
-                className={`font-semibold text-xs transition-colors ${
-                  isSelected ? 'text-amber-400 underline underline-offset-2' : 'hover:text-amber-400'
-                }`}
-                style={{ color: isSelected ? undefined : token.colorText }}
-              >
-                {name}
-              </span>
-              {isSelected && <CheckCircleOutlined className="text-amber-400 text-[10px]" />}
-            </div>
-          </Space>
-        );
-      },
-    },
-    {
-      title: (
-        <Tooltip title="Level CC = ⌊Điểm / 100⌋ + 1. Reset mỗi đầu tháng.">
-          <span className="cursor-help">Lv / Điểm</span>
-        </Tooltip>
-      ),
-      key: 'levelAndPoints',
-      align: 'center' as const,
-      width: 100,
-      render: (_: unknown, record: CcLeaderboardEntry) => {
-        const lvl = record.level || Math.floor((record.totalPointsAccu || 0) / 100) + 1;
-        const projectedPoints = Math.round((record.totalPointsAccu || 0) / (ratio || 1));
-        const projectedLevel = Math.floor(projectedPoints / 100) + 1;
-        return (
-          <div className="flex flex-col items-center gap-0.5">
-            <span className="tabular-nums font-semibold text-[11px] text-amber-700 dark:text-amber-400 border border-amber-500/30 px-1.5 py-px rounded-full leading-tight">
-              Lv.{lvl}
-            </span>
-            <span className="tabular-nums text-[10px] text-emerald-600 dark:text-emerald-400/80">
-              {(record.totalPointsAccu || 0).toLocaleString('vi-VN')} pts
-            </span>
-            {!isDayMode && !isPastPeriod && (
-              <span className="tabular-nums text-[9px] text-emerald-700 dark:text-emerald-400 font-medium">
-                🔮 ~{projectedPoints.toLocaleString('vi-VN')}p (Lv.{projectedLevel})
-              </span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: (
-        <Tooltip title="Lượt khách phục vụ / Lượt dịch vụ thực hiện">
-          <span className="cursor-help">Khách / DV</span>
-        </Tooltip>
-      ),
-      key: 'checkinAndServices',
-      align: 'center' as const,
-      width: 80,
-      render: (_: unknown, record: CcLeaderboardEntry) => {
-        const projectedCheckins = Math.round((record.totalCheckins || 0) / (ratio || 1));
-        const projectedServices = Math.round((record.totalServices || 0) / (ratio || 1));
-        return (
-          <div className="flex flex-col items-center">
-            <span className="tabular-nums text-xs">
-              <span className="font-semibold" style={{ color: token.colorText }}>
-                {record.totalCheckins}
-              </span>
-              <span className="text-slate-400 mx-0.5">/</span>
-              <span className="text-slate-500 dark:text-slate-400">{record.totalServices || 0}</span>
-            </span>
-            {!isDayMode && !isPastPeriod && (
-              <span className="tabular-nums text-[9px] text-slate-400">
-                🔮 ~{projectedCheckins}/{projectedServices}
-              </span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: (
-        <Tooltip title="Tổng thưởng CC Xoay (Level × 65đ). Khi vượt 1.5× CC Daily Bonus, chỉ nhận mức trần.">
-          <span className="cursor-help">CC Xoay</span>
-        </Tooltip>
-      ),
-      dataIndex: 'totalConsultantBonus',
-      key: 'totalConsultantBonus',
-      align: 'right' as const,
-      width: 130,
-      render: (_val: number, record: CcLeaderboardEntry) => {
-        const daily = record.monthlyDailyBonus || 0;
-        const wheel = record.monthlyWheelBonus || 0;
-        const cap = calculateWheelBonusCap(daily, wheel);
-        const isHardcapped = cap.capStatus === 'HARDCAPPED';
-        const effective = cap.effectiveWheelBonus;
-        const projectedBonus = isMonthMode
-          ? calculateProjectedCcXoay(record.totalCheckins, cap.rawWheelBonus, ratio, daily)
-          : 0;
-
-        if (isHardcapped && cap.rawWheelBonus > cap.maxWheelBonusAllowed) {
-          // Over cap: show raw amount crossed out + actual received amount
-          return (
-            <Tooltip
-              title={
-                <div className="text-xs">
-                  <div className="text-rose-300 font-bold">⛔ Vượt trần 1.5×</div>
-                  <div>Thưởng gốc: {fmtVnd(cap.rawWheelBonus)} đ</div>
-                  <div className="text-emerald-300 font-bold">Chỉ nhận: {fmtVnd(effective)} đ</div>
-                  {isMonthMode && !isPastPeriod && <div>Dự kiến về đích: {fmtVnd(projectedBonus)} đ</div>}
-                </div>
-              }
-            >
-              <div className="flex flex-col items-end cursor-help">
-                <span className="tabular-nums text-[10px] text-rose-400 line-through opacity-60">
-                  {fmtVnd(cap.rawWheelBonus)} đ
-                </span>
-                <span className="tabular-nums font-bold text-xs text-rose-500">{fmtVnd(effective)} đ</span>
-                {isMonthMode && !isPastPeriod && (
-                  <span className="tabular-nums font-semibold text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">
-                    🔮 ~{formatCompactVND(projectedBonus)}
-                  </span>
-                )}
-              </div>
-            </Tooltip>
-          );
-        }
-
-        return (
-          <div className="flex flex-col items-end">
-            <span className="tabular-nums font-bold text-xs text-amber-700 dark:text-amber-400">
-              {fmtVnd(cap.rawWheelBonus || 0)} đ
-            </span>
-            {isMonthMode && !isPastPeriod && (
-              <span className="tabular-nums font-semibold text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">
-                🔮 ~{formatCompactVND(projectedBonus)}
-              </span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: (
-        <Tooltip
-          title={
-            <div className="text-xs">
-              <div className="font-bold mb-1">Tỷ lệ CC Xoay / CC Daily Bonus</div>
-              <div>100% = CC Xoay bằng CC Daily Bonus</div>
-              <div className="text-rose-300">150% = Trần tối đa (1.5×)</div>
-            </div>
-          }
-        >
-          <span className="cursor-help">Hardcap</span>
-        </Tooltip>
-      ),
-      key: 'hardcapInline',
-      width: 240,
-      render: (_: unknown, record: CcLeaderboardEntry) => {
-        const daily = record.monthlyDailyBonus || 0;
-        const wheel = record.monthlyWheelBonus || 0;
-        const cap = calculateWheelBonusCap(daily, wheel);
-
-        const dailyBarW = maxBarValue > 0 ? (cap.monthlyDailyBonus / maxBarValue) * 100 : 0;
-        const wheelBarW = maxBarValue > 0 ? (cap.rawWheelBonus / maxBarValue) * 100 : 0;
-        const hardcapLinePos = maxBarValue > 0 ? (cap.maxWheelBonusAllowed / maxBarValue) * 100 : 0;
-
-        const isHardcapped = cap.capStatus === 'HARDCAPPED';
-        const isWarning = cap.capStatus === 'WARNING';
-        const pct = cap.wheelCapPercent;
-        const remaining = Math.max(0, cap.maxWheelBonusAllowed - cap.rawWheelBonus);
-
-        return (
-          <Tooltip
-            placement="left"
-            title={
-              <div className="text-xs space-y-0.5">
-                <div
-                  className="font-bold"
-                  style={{ color: isHardcapped ? '#ff4d4f' : isWarning ? '#faad14' : '#52c41a' }}
-                >
-                  {isHardcapped ? '⛔ Đạt trần 1.5×' : isWarning ? '⚠️ Sắp chạm trần' : '✅ An toàn'}
-                </div>
-                <div>
-                  Daily Bonus: <strong>{fmtVnd(daily)} đ</strong>
-                </div>
-                <div>
-                  Xoay Bonus: <strong>{fmtVnd(wheel)} đ</strong>
-                </div>
-                <div>
-                  Trần 1.5×: <strong>{fmtVnd(cap.maxWheelBonusAllowed)} đ</strong>
-                </div>
-                {!isHardcapped && remaining > 0 && (
-                  <div className="text-emerald-300">
-                    Còn <strong>{fmtVnd(remaining)} đ</strong> trước trần
-                  </div>
-                )}
-              </div>
-            }
-          >
-            <div className="relative cursor-help" style={{ height: 28 }}>
-              {/* Daily Bonus bar with label */}
-              <div className="absolute top-0 left-0 h-[12px] flex items-center w-full">
-                <Tooltip title="Daily Combo Sales Bonus" placement="top">
-                  <span className="text-[9px] mr-1 cursor-help select-none" style={{ lineHeight: 1 }}>
-                    🅒
-                  </span>
-                </Tooltip>
-                <div className="flex-1 h-full relative">
-                  <div
-                    className="h-full rounded-sm transition-all duration-500"
-                    style={{
-                      width: `${Math.max(dailyBarW, 0.5)}%`,
-                      background: 'linear-gradient(90deg, #52c41a, #73d13d)',
-                      minWidth: daily > 0 ? '2px' : '0',
-                      opacity: 0.85,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Xoay Bonus bar with label + % at tail */}
-              <div className="absolute top-[14px] left-0 h-[12px] flex items-center w-full">
-                <Tooltip title="Vòng Xoay Bonus" placement="bottom">
-                  <span className="text-[9px] mr-1 cursor-help select-none" style={{ lineHeight: 1 }}>
-                    🅧
-                  </span>
-                </Tooltip>
-                <div className="flex-1 h-full flex items-center">
-                  <div
-                    className="h-full rounded-sm transition-all duration-500"
-                    style={{
-                      width: `${Math.max(wheelBarW, 0.5)}%`,
-                      background: isHardcapped
-                        ? 'linear-gradient(90deg, #ff4d4f, #ff7875)'
-                        : 'linear-gradient(90deg, #faad14, #ffc53d)',
-                      minWidth: wheel > 0 ? '2px' : '0',
-                      opacity: 0.85,
-                    }}
-                  />
-                  <span
-                    className={`ml-1 tabular-nums font-bold text-[9px] whitespace-nowrap ${
-                      isHardcapped ? 'text-rose-500' : isWarning ? 'text-amber-500' : 'text-emerald-500/80'
-                    }`}
-                  >
-                    {pct}%
-                  </span>
-                </div>
-              </div>
-
-              {/* Hardcap 1.5x dashed line + label */}
-              {cap.maxWheelBonusAllowed > 0 && (
-                <div
-                  className="absolute top-0 h-full"
-                  style={{
-                    left: `${Math.min(hardcapLinePos, 98)}%`,
-                    zIndex: 10,
-                  }}
-                >
-                  <div className="absolute top-0 h-full" style={{ borderLeft: '1.5px dashed #ff4d4f', opacity: 0.5 }} />
-                  <span
-                    className="absolute text-[7px] font-bold text-rose-500/70 whitespace-nowrap"
-                    style={{ top: -10, left: -8 }}
-                  >
-                    150%
-                  </span>
-                </div>
-              )}
-            </div>
-          </Tooltip>
-        );
-      },
-    },
-  ];
+  const columns = buildCcLeaderboardColumns({
+    selectedConsultant,
+    isMonthMode,
+    isDayMode,
+    isPastPeriod,
+    ratio,
+    maxBarValue,
+  });
 
   // Summary counts
-  const capSummary = useMemo(() => {
-    let hardcapped = 0,
-      warning = 0,
-      normal = 0;
-    leaderboard.forEach((cc) => {
-      const s = calculateWheelBonusCap(cc.monthlyDailyBonus || 0, cc.monthlyWheelBonus || 0).capStatus;
-      if (s === 'HARDCAPPED') hardcapped++;
-      else if (s === 'WARNING') warning++;
-      else normal++;
-    });
-    return { hardcapped, warning, normal };
-  }, [leaderboard]);
+  const capSummary = useMemo(() => computeCapSummary(leaderboard), [leaderboard]);
 
   return (
     <Card
@@ -498,128 +147,16 @@ export default function CcLeaderboardCard({
       </div>
 
       {showMobileCards ? (
-        <div className="!p-1.5 cc-xoay-mobile-list-shell">
-          <MobileRecordList
-            className="cc-xoay-mobile-record-list !gap-1.5"
-            recordClassName="!rounded-lg !p-2"
-            records={leaderboard}
-            loading={loading}
-            getKey={(record) => String(record.consultantId)}
-            getRecordClassName={(record) =>
-              selectedConsultant === record.displayName ? 'bg-amber-500/10 ring-1 ring-amber-400/60' : ''
-            }
-            renderRecord={(record) => {
-              const isSelected = selectedConsultant === record.displayName;
-              const cap = calculateWheelBonusCap(record.monthlyDailyBonus || 0, record.monthlyWheelBonus || 0);
-              const level = record.level || Math.floor((record.totalPointsAccu || 0) / 100) + 1;
-              const dailyBonus = Math.max(0, record.monthlyDailyBonus || 0);
-              const rawWheelBonus = Math.max(0, cap.rawWheelBonus);
-              const chartMax = Math.max(cap.maxWheelBonusAllowed, dailyBonus, rawWheelBonus, 1);
-              const dailyBarPercent = Math.min(100, Math.round((dailyBonus / chartMax) * 100));
-              const wheelBarPercent = Math.min(100, Math.round((rawWheelBonus / chartMax) * 100));
-              return (
-                <button
-                  type="button"
-                  className="w-full min-w-0 text-left"
-                  aria-pressed={isSelected}
-                  onClick={() => onSelectConsultant?.(record.displayName)}
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="w-5 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
-                      {record.rank === 1
-                        ? '🥇'
-                        : record.rank === 2
-                          ? '🥈'
-                          : record.rank === 3
-                            ? '🥉'
-                            : `#${record.rank}`}
-                    </span>
-                    <CcAvatar name={record.displayName} src={record.avatar} isSelected={isSelected} size={28} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-semibold" style={{ color: token.colorText }}>
-                        {record.displayName}
-                      </div>
-                      <div className="text-xs text-slate-400">
-                        Lv.{level} · {(record.totalPointsAccu || 0).toLocaleString('vi-VN')} pts
-                      </div>
-                    </div>
-                    <span className="shrink-0 text-xs text-amber-400">{isSelected ? 'Đang lọc' : 'Xem'}</span>
-                  </div>
-                  <dl className="mt-2 grid grid-cols-3 gap-1.5 border-t border-slate-200 pt-2 dark:border-slate-800">
-                    <div className="min-w-0">
-                      <dt className="text-[10px] text-slate-500">Khách / DV</dt>
-                      <dd className="truncate text-sm font-bold tabular-nums text-sky-400">
-                        {record.totalCheckins}/{record.totalServices || 0}
-                      </dd>
-                      {!isDayMode && !isPastPeriod && (
-                        <div className="text-[10px] text-slate-400 font-medium tabular-nums">
-                          🔮 ~{Math.round((record.totalCheckins || 0) / (ratio || 1))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <dt className="text-[10px] text-slate-500">Daily</dt>
-                      <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
-                        {fmtVnd(dailyBonus)} đ
-                      </dd>
-                      {!isDayMode && !isPastPeriod && (
-                        <div className="text-[10px] text-emerald-400/80 font-medium tabular-nums">
-                          🔮 ~{formatCompactVND(Math.round(dailyBonus / (ratio || 1)))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <dt className="text-[10px] text-slate-500">Xoay</dt>
-                      <dd
-                        className={`truncate text-sm font-bold tabular-nums ${cap.capStatus === 'HARDCAPPED' ? 'text-rose-400' : 'text-amber-400'}`}
-                      >
-                        {fmtVnd(cap.effectiveWheelBonus)} đ
-                      </dd>
-                      {isMonthMode && !isPastPeriod && (
-                        <div className="text-[10px] text-emerald-400 font-medium tabular-nums">
-                          🔮 ~
-                          {formatCompactVND(
-                            calculateProjectedCcXoay(record.totalCheckins, cap.rawWheelBonus, ratio, dailyBonus)
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </dl>
-                  <div
-                    className="cc-xoay-mobile-performance mt-1.5 space-y-1"
-                    role="img"
-                    aria-label={`Biểu đồ thưởng: Daily ${fmtVnd(dailyBonus)} đồng, Xoay ${fmtVnd(cap.effectiveWheelBonus)} đồng trên trần ${fmtVnd(cap.maxWheelBonusAllowed)} đồng`}
-                  >
-                    <div className="flex items-center gap-2 text-[10px] tabular-nums">
-                      <span className="w-9 shrink-0 text-slate-500">Daily</span>
-                      <span className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-                        <span
-                          className="absolute inset-y-0 left-0 rounded-full bg-emerald-400"
-                          style={{ width: `${dailyBarPercent}%` }}
-                        />
-                      </span>
-                      <span className="w-8 shrink-0 text-right text-emerald-400">{dailyBarPercent}%</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] tabular-nums">
-                      <span className="w-9 shrink-0 text-slate-500">Xoay</span>
-                      <span className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-                        <span
-                          className={`absolute inset-y-0 left-0 rounded-full ${cap.capStatus === 'HARDCAPPED' ? 'bg-rose-400' : 'bg-amber-400'}`}
-                          style={{ width: `${wheelBarPercent}%` }}
-                        />
-                      </span>
-                      <span
-                        className={`w-8 shrink-0 text-right ${cap.capStatus === 'HARDCAPPED' ? 'text-rose-400' : 'text-amber-400'}`}
-                      >
-                        {wheelBarPercent}%
-                      </span>
-                    </div>
-                  </div>
-                </button>
-              );
-            }}
-          />
-        </div>
+        <CcLeaderboardMobileList
+          leaderboard={leaderboard}
+          loading={loading}
+          selectedConsultant={selectedConsultant}
+          onSelectConsultant={onSelectConsultant}
+          isDayMode={isDayMode}
+          isMonthMode={isMonthMode}
+          isPastPeriod={isPastPeriod}
+          ratio={ratio}
+        />
       ) : (
         <Table
           dataSource={leaderboard}
