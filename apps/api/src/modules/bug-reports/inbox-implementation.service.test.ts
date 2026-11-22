@@ -2477,6 +2477,16 @@ test('commit and deploy checkpoints succeed when STAFF comments arrive after Gat
   const coreChanged = { ...readyWithPostComments, description: 'Changed ticket scope after approval.' };
   assert.equal(resolveInboxImplementationCheckpointGate(coreChanged).eligible, false);
 
+  const reopenedAfterDefer = {
+    ...readyWithPostComments,
+    triageNote: 'Mở lại ticket sau thời gian tạm hoãn',
+  };
+  assert.equal(resolveInboxImplementationCheckpointGate(reopenedAfterDefer).eligible, true);
+  assert.equal(
+    resolveInboxImplementationCheckpointGate({ ...reopenedAfterDefer, description: 'Altered scope.' }).eligible,
+    false
+  );
+
   const agJob = {
     id: 'ag-drift-job',
     reportId: 16,

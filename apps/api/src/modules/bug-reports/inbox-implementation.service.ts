@@ -403,20 +403,27 @@ export function resolveInboxImplementationCheckpointGate(source: GateSource) {
     }
   }
 
-  for (const subset of candidates) {
-    const candidateVersion = inboxImplementationSourceVersion({
-      ...source,
-      comments: subset,
-    });
-    if (candidateVersion === approvedVersion) {
-      const plan = inboxImplementationCurrentPlan(source, approvedVersion);
-      if (plan) {
-        return {
-          ...gate,
-          eligible: true,
-          sourceVersion: approvedVersion,
-          plan,
-        };
+  const baseTriageNote = source.triageNote ?? null;
+  const triageCandidates: Array<string | null> =
+    baseTriageNote === 'Mở lại ticket sau thời gian tạm hoãn' ? [baseTriageNote, null] : [baseTriageNote];
+
+  for (const triageNote of triageCandidates) {
+    for (const subset of candidates) {
+      const candidateVersion = inboxImplementationSourceVersion({
+        ...source,
+        triageNote,
+        comments: subset,
+      });
+      if (candidateVersion === approvedVersion) {
+        const plan = inboxImplementationCurrentPlan(source, approvedVersion);
+        if (plan) {
+          return {
+            ...gate,
+            eligible: true,
+            sourceVersion: approvedVersion,
+            plan,
+          };
+        }
       }
     }
   }
