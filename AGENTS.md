@@ -94,4 +94,5 @@ Read **only** the guide(s) relevant to the files you are modifying:
 | `/api/ios` Backend (MySQL/CRM repo, batch SQL, simulation isolation, Legacy PHP step sync)                       | [apps/api/src/modules/ios/AGENTS.md](apps/api/src/modules/ios/AGENTS.md)                 |
 | `/api/chat` Backend (15 route plugins, relational write-through, locks, SSE & access guards)                     | [apps/api/src/modules/chat/AGENTS.md](apps/api/src/modules/chat/AGENTS.md)               |
 | mOS Chat Frontend (`MosGoogleChatPortal`, 21 hooks, `shared/` headless hooks, `mobile/` & Desktop UI slices)     | [apps/web/components/mos-chat/AGENTS.md](apps/web/components/mos-chat/AGENTS.md)         |
+| mOS Mission / Bug Inbox API & Workers (`bug-report.service`, `routes/`, timing, health, classifier)              | [apps/api/src/modules/bug-reports/AGENTS.md](apps/api/src/modules/bug-reports/AGENTS.md) |
 | Voice Chat, Hột Mít & 5 background daemons                                                                       | [docs/VOICE_SYSTEM_ARCHITECTURE.md](docs/VOICE_SYSTEM_ARCHITECTURE.md)                   |
