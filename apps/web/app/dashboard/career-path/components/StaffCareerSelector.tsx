@@ -26,6 +26,7 @@ import {
   CircleUser,
   CreditCard,
   Gem,
+  MapPin,
 } from 'lucide-react';
 import { StatusTag, DataTable } from '../../../../components/ui';
 import { WingRoleLabel } from './IslandGameIcon';
@@ -36,7 +37,12 @@ import type {
   BananaTransactionCategory,
   CareerProgressionConfig,
 } from '@mos-lab/shared';
-import { formatCareerRoleName } from '../career-path.constants';
+import {
+  formatCareerRoleName,
+  buildCareerBranchOptions,
+  matchesCareerRoleFilter,
+  matchesCareerBranchFilter,
+} from '../career-path.constants';
 
 export type CareerSelectorMode = 'ultra_compact' | 'cards' | 'table';
 
@@ -49,6 +55,8 @@ export interface StaffCareerSelectorProps {
   lastSyncedAt?: string | null;
   activeRoleFilter?: string;
   onRoleFilterChange?: (role: string) => void;
+  activeBranchFilter?: string;
+  onBranchFilterChange?: (branch: string) => void;
   period?: CareerPeriod;
   onPeriodChange?: (period: CareerPeriod) => void;
   onSetRole?: (staffId: number, newRole: CareerRole) => Promise<void>;
@@ -105,6 +113,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   lastSyncedAt,
   activeRoleFilter = 'ALL',
   onRoleFilterChange,
+  activeBranchFilter = 'ALL',
+  onBranchFilterChange,
   period = 'last_30_days',
   onPeriodChange,
   onSetRole,
@@ -119,6 +129,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   config,
 }) => {
   const [internalRoleFilter, setInternalRoleFilter] = useState('ALL');
+  const [internalBranchFilter, setInternalBranchFilter] = useState('ALL');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [internalMode, setInternalMode] = useState<CareerSelectorMode>(() => {
     if (typeof window !== 'undefined') {
@@ -156,6 +167,12 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   const setFilter = (role: string) => {
     if (onRoleFilterChange) onRoleFilterChange(role);
     else setInternalRoleFilter(role);
+  };
+
+  const currentBranchFilter = onBranchFilterChange ? activeBranchFilter : internalBranchFilter;
+  const setBranchFilter = (branch: string) => {
+    if (onBranchFilterChange) onBranchFilterChange(branch);
+    else setInternalBranchFilter(branch);
   };
 
   const scrollRailRef = useRef<HTMLDivElement>(null);
@@ -230,18 +247,68 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     </div>
   );
 
+  const branchOptions = useMemo(() => buildCareerBranchOptions(staffList, currentFilter), [staffList, currentFilter]);
+
+  const renderBranchFilter = (compact = false) => {
+    if (branchOptions.length <= 1) return null;
+
+    return (
+      <div
+        className="flex items-center gap-0.5 bg-slate-100/80 dark:bg-slate-800/60 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 overflow-x-auto no-scrollbar shrink-0 max-w-full"
+        role="group"
+        aria-label="Lọc theo chi nhánh"
+      >
+        <span className="inline-flex items-center gap-1 px-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400 shrink-0 select-none">
+          <MapPin className="w-3 h-3 text-rose-500 dark:text-rose-400" />
+          {!compact && <span className="hidden xl:inline">Chi nhánh:</span>}
+        </span>
+        {branchOptions.map((branch) => {
+          const isActive = currentBranchFilter === branch.key;
+          const label = branch.key === 'ALL' ? 'Tất cả' : branch.label;
+          return (
+            <Tooltip
+              key={branch.key}
+              title={
+                branch.key === 'ALL'
+                  ? `Tất cả chi nhánh (${branch.count} nhân sự)`
+                  : `Chi nhánh ${branch.label} (${branch.count} nhân sự)`
+              }
+            >
+              <button
+                type="button"
+                data-testid={`branch-filter-${branch.key}`}
+                aria-pressed={isActive}
+                onClick={() => setBranchFilter(branch.key)}
+                className={`inline-flex items-center justify-center gap-1 rounded-md font-semibold transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap tabular-nums leading-none ${
+                  compact ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-[11px]'
+                } ${
+                  isActive
+                    ? 'bg-rose-500 text-white shadow-xs font-bold'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/70'
+                }`}
+              >
+                <span>{label}</span>
+                <span
+                  className={`text-[9px] px-1 py-0.5 rounded-full font-mono leading-none ${
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-200/90 dark:bg-slate-700/80 text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  {branch.count}
+                </span>
+              </button>
+            </Tooltip>
+          );
+        })}
+      </div>
+    );
+  };
+
   const filteredStaff = useMemo(() => {
-    const list = staffList.filter((s) => {
-      if (currentFilter === 'ALL') return true;
-      if (currentFilter === 'KTV') return s.careerRole === 'KTV';
-      if (currentFilter === 'CV') return s.careerRole === 'CV';
-      if (currentFilter === 'CV_PLUS') return s.careerRole === 'CV_PLUS';
-      if (currentFilter === 'CV_PLUS_PLUS') return s.careerRole === 'CV_PLUS_PLUS';
-      if (currentFilter === 'CC') return s.careerRole === 'CC' || (s.role || '').toLowerCase() === 'cc';
-      if (currentFilter === 'FM')
-        return s.careerRole === 'FM' || ['manager', 'fm'].includes((s.role || '').toLowerCase());
-      return true;
-    });
+    const list = staffList.filter(
+      (s) => matchesCareerRoleFilter(s, currentFilter) && matchesCareerBranchFilter(s, currentBranchFilter)
+    );
 
     // 1. Luôn sắp xếp danh sách theo số bộ mi (ordersCount) giảm dần (DESC)
     return [...list].sort((a, b) => {
@@ -249,7 +316,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       if (diff !== 0) return diff;
       return (a.displayName || '').localeCompare(b.displayName || '');
     });
-  }, [staffList, currentFilter]);
+  }, [staffList, currentFilter, currentBranchFilter]);
 
   const selectedStaff = useMemo(() => {
     return staffList.find((s) => s.id === selectedStaffId) || null;
@@ -949,6 +1016,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                 );
               })}
             </div>
+
+            {renderBranchFilter(true)}
           </div>
 
           {/* Right: Period Chips, Scroll Arrows & 3-Way Mode Switcher */}
@@ -1133,6 +1202,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                 );
               })}
             </div>
+
+            {renderBranchFilter(true)}
           </div>
 
           {/* Right: Period Chips, Scroll Arrows & 3-Way Mode Switcher */}
@@ -1336,26 +1407,29 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
           </div>
         </div>
 
-        {/* Row 2: Full-width Role Filter Chips */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-          {ROLE_TABS.map((tab) => {
-            const isActive = currentFilter === tab.key;
-            return (
-              <Tooltip key={tab.key} title={tab.fullLabel}>
-                <button
-                  type="button"
-                  onClick={() => setFilter(tab.key)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 shrink-0 whitespace-nowrap ${
-                    isActive
-                      ? 'bg-rose-500 text-white shadow-xs font-bold'
-                      : 'bg-slate-100/90 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700/80'
-                  }`}
-                >
-                  <WingRoleLabel text={tab.label} />
-                </button>
-              </Tooltip>
-            );
-          })}
+        {/* Row 2: Role Filter Chips (Left) + Branch Filter Chips (Right) */}
+        <div className="flex items-center justify-between gap-2 flex-wrap py-0.5">
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-full">
+            {ROLE_TABS.map((tab) => {
+              const isActive = currentFilter === tab.key;
+              return (
+                <Tooltip key={tab.key} title={tab.fullLabel}>
+                  <button
+                    type="button"
+                    onClick={() => setFilter(tab.key)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 shrink-0 whitespace-nowrap cursor-pointer ${
+                      isActive
+                        ? 'bg-rose-500 text-white shadow-xs font-bold'
+                        : 'bg-slate-100/90 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700/80'
+                    }`}
+                  >
+                    <WingRoleLabel text={tab.label} />
+                  </button>
+                </Tooltip>
+              );
+            })}
+          </div>
+          {renderBranchFilter(false)}
         </div>
       </div>
 

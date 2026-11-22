@@ -18,6 +18,7 @@ import {
   Feather,
   Gem,
   Wallet,
+  MapPin,
 } from 'lucide-react';
 import { StatusTag } from '../../../../components/ui';
 import { WingRoleLabel, LashIcon } from './IslandGameIcon';
@@ -27,12 +28,15 @@ import {
   type CareerRole,
   type CareerProgressionConfig,
 } from '@mos-lab/shared';
+import { buildCareerBranchOptions, matchesCareerBranchFilter, matchesCareerRoleFilter } from '../career-path.constants';
 
 export interface MobileStaffCareerSheetProps {
   staffList: CareerStaffSummary[];
   selectedStaffId: number | null;
   onSelectStaff: (staffId: number) => void;
   config?: CareerProgressionConfig;
+  activeBranchFilter?: string;
+  onBranchFilterChange?: (branch: string) => void;
   onClose: () => void;
 }
 
@@ -53,10 +57,18 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
   selectedStaffId,
   onSelectStaff,
   config,
+  activeBranchFilter = 'ALL',
+  onBranchFilterChange,
   onClose,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeRoleFilter, setActiveRoleFilter] = useState('ALL');
+  const [internalBranchFilter, setInternalBranchFilter] = useState('ALL');
+  const currentBranchFilter = onBranchFilterChange ? activeBranchFilter : internalBranchFilter;
+  const setBranchFilter = (branch: string) => {
+    if (onBranchFilterChange) onBranchFilterChange(branch);
+    else setInternalBranchFilter(branch);
+  };
   const [highlightedId, setHighlightedId] = useState<number | null>(selectedStaffId);
   const selectedRef = useRef<HTMLDivElement | null>(null);
   const listContainerRef = useRef<HTMLDivElement | null>(null);
@@ -258,10 +270,16 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
     });
   }, [staffList]);
 
-  // Counts by role
+  const branchOptions = useMemo(
+    () => buildCareerBranchOptions(baseStaffList, activeRoleFilter),
+    [baseStaffList, activeRoleFilter]
+  );
+
+  // Counts by role (scoped by active branch filter)
   const roleCounts = useMemo(() => {
+    const branchScoped = baseStaffList.filter((s) => matchesCareerBranchFilter(s, currentBranchFilter));
     const counts: Record<string, number> = {
-      ALL: baseStaffList.length,
+      ALL: branchScoped.length,
       KTV: 0,
       CV: 0,
       CV_PLUS: 0,
@@ -269,7 +287,7 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
       CC: 0,
       FM: 0,
     };
-    baseStaffList.forEach((s) => {
+    branchScoped.forEach((s) => {
       if (s.careerRole === 'CV') counts.CV++;
       else if (s.careerRole === 'CV_PLUS') counts.CV_PLUS++;
       else if (s.careerRole === 'CV_PLUS_PLUS') counts.CV_PLUS_PLUS++;
@@ -278,20 +296,13 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
       else if (s.careerRole === 'FM' || ['manager', 'fm'].includes((s.role || '').toLowerCase())) counts.FM++;
     });
     return counts;
-  }, [baseStaffList]);
+  }, [baseStaffList, currentBranchFilter]);
 
-  // Filtered by Search & Role (bảo đảm luôn order by số bộ mi ordersCount giảm dần)
+  // Filtered by Search, Role & Branch (bảo đảm luôn order by số bộ mi ordersCount giảm dần)
   const filteredStaff = useMemo(() => {
-    let result = baseStaffList;
-
-    if (activeRoleFilter !== 'ALL') {
-      result = result.filter((s) => {
-        if (activeRoleFilter === 'CC') return s.careerRole === 'CC' || (s.role || '').toLowerCase() === 'cc';
-        if (activeRoleFilter === 'FM')
-          return s.careerRole === 'FM' || ['manager', 'fm'].includes((s.role || '').toLowerCase());
-        return s.careerRole === activeRoleFilter;
-      });
-    }
+    let result = baseStaffList.filter(
+      (s) => matchesCareerRoleFilter(s, activeRoleFilter) && matchesCareerBranchFilter(s, currentBranchFilter)
+    );
 
     if (searchQuery.trim()) {
       const featherRole = normalizeCvFeatherRole(searchQuery);
@@ -315,7 +326,7 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
       if (diff !== 0) return diff;
       return (a.displayName || '').localeCompare(b.displayName || '');
     });
-  }, [baseStaffList, activeRoleFilter, searchQuery]);
+  }, [baseStaffList, activeRoleFilter, currentBranchFilter, searchQuery]);
 
   // Auto-scroll to selected staff when sheet opens
   useEffect(() => {
@@ -402,6 +413,48 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
             );
           })}
         </div>
+
+        {/* Branch Filter Pills */}
+        {branchOptions.length > 1 && (
+          <div
+            className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 mt-1.5 border-t border-slate-100 dark:border-slate-800/70"
+            role="group"
+            aria-label="Lọc theo chi nhánh"
+          >
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500 shrink-0">
+              <MapPin className="w-3 h-3 text-rose-500" />
+            </span>
+            {branchOptions.map((branch) => {
+              const isActive = currentBranchFilter === branch.key;
+              const label = branch.key === 'ALL' ? 'Tất cả chi nhánh' : branch.label;
+              return (
+                <button
+                  key={branch.key}
+                  type="button"
+                  data-testid={`mobile-branch-filter-${branch.key}`}
+                  aria-pressed={isActive}
+                  onClick={() => setBranchFilter(branch.key)}
+                  className={`inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer tabular-nums leading-none ${
+                    isActive
+                      ? 'bg-rose-500 text-white shadow-xs font-black'
+                      : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>{label}</span>
+                  <span
+                    className={`text-[9px] px-1.5 py-0.5 rounded-full font-mono leading-none ${
+                      isActive
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200/80 dark:bg-slate-700/80 text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    {branch.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 📜 SCROLLABLE VERTICAL CARDS LIST */}

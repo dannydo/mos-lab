@@ -77,6 +77,7 @@ export default function CareerPathPage() {
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [activeRoleFilter, setActiveRoleFilter] = useState<string>('ALL');
+  const [activeBranchFilter, setActiveBranchFilter] = useState<string>('ALL');
   const [selectedPeriod, setSelectedPeriod] = useState<CareerPeriod>('last_30_days');
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -651,6 +652,8 @@ export default function CareerPathPage() {
             lastSyncedAt={lastSyncedAt}
             activeRoleFilter={activeRoleFilter}
             onRoleFilterChange={setActiveRoleFilter}
+            activeBranchFilter={activeBranchFilter}
+            onBranchFilterChange={setActiveBranchFilter}
             period={selectedPeriod}
             onPeriodChange={handlePeriodChange}
             onSetRole={isDanny ? handleSetRole : undefined}
@@ -794,6 +797,8 @@ export default function CareerPathPage() {
           config={safeConfig}
           staffList={staffList}
           selectedStaffId={selectedStaffId}
+          activeBranchFilter={activeBranchFilter}
+          onBranchFilterChange={setActiveBranchFilter}
           onSelectStaff={(id) => {
             handleSelectStaff(id);
           }}
