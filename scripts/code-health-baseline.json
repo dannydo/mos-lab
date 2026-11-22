@@ -44,7 +44,6 @@
     "apps/api/src/modules/staff/routes.ts": 1708,
     "apps/api/src/modules/teams/team.service.ts": 870,
     "apps/api/src/modules/telesale-competency/telesale-competency.service.ts": 1326,
-    "apps/api/src/modules/wings-garden/wings-garden.service.ts": 1368,
     "apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx": 2290,
     "apps/web/app/dashboard/academy-leads/campaigns/[slug]/page.tsx": 798,
     "apps/web/app/dashboard/academy-leads/components/AcademyTalentWorkshopDrawer.tsx": 3045,
@@ -176,7 +175,6 @@
     "packages/shared/src/types/customer.ts": 858,
     "packages/shared/src/types/menu-access.ts": 984,
     "packages/shared/src/types/pilot.ts": 1085,
-    "packages/shared/src/types/wings-garden.ts": 1148,
     "packages/shared/src/utils/chat-checklist-summarizer.ts": 697
   }
 }

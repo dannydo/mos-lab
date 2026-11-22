@@ -3332,13 +3332,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/access",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/access",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 129
+        "line": 18
       }
     },
     {
@@ -3346,13 +3346,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/staff",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/staff",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 134
+        "line": 23
       }
     },
     {
@@ -3360,13 +3360,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/campaigns",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/campaigns",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 145
+        "line": 34
       }
     },
     {
@@ -3374,13 +3374,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/campaigns",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/campaigns",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 159
+        "line": 48
       }
     },
     {
@@ -3388,13 +3388,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/campaigns/sidebar",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/campaigns/sidebar",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 174
+        "line": 63
       }
     },
     {
@@ -3402,13 +3402,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/campaigns/slug/:slug",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/campaigns/slug/:slug",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 183
+        "line": 72
       }
     },
     {
@@ -3416,13 +3416,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/campaigns/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/campaigns/:id",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 192
+        "line": 81
       }
     },
     {
@@ -3430,13 +3430,13 @@
       "type": "FastifyRoute",
       "label": "PUT /api/academy-sales/campaigns/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "PUT",
         "path": "/api/academy-sales/campaigns/:id",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 203
+        "line": 92
       }
     },
     {
@@ -3444,13 +3444,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/campaigns/:id/status",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/campaigns/:id/status",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 219
+        "line": 108
       }
     },
     {
@@ -3458,13 +3458,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/campaigns/:id/archive",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/campaigns/:id/archive",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 231
+        "line": 120
       }
     },
     {
@@ -3472,13 +3472,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/campaigns/:id/clone",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/campaigns/:id/clone",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 242
+        "line": 131
       }
     },
     {
@@ -3486,13 +3486,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/campaigns/:id/restore",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/campaigns/:id/restore",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 253
+        "line": 142
       }
     },
     {
@@ -3500,13 +3500,13 @@
       "type": "FastifyRoute",
       "label": "DELETE /api/academy-sales/campaigns/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "DELETE",
         "path": "/api/academy-sales/campaigns/:id",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 264
+        "line": 153
       }
     },
     {
@@ -3514,13 +3514,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/campaigns/:id/leads",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/campaigns/:id/leads",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 275
+        "line": 164
       }
     },
     {
@@ -3528,13 +3528,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/campaigns/:id/leads",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/campaigns/:id/leads",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 291
+        "line": 180
       }
     },
     {
@@ -3542,13 +3542,13 @@
       "type": "FastifyRoute",
       "label": "DELETE /api/academy-sales/campaigns/:id/leads/:leadId",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "DELETE",
         "path": "/api/academy-sales/campaigns/:id/leads/:leadId",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 309
+        "line": 198
       }
     },
     {
@@ -3556,13 +3556,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/campaigns/:id/leads/:leadId/touchpoints/:touchpointId",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/campaigns/:id/leads/:leadId/touchpoints/:touchpointId",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 330
+        "line": 219
       }
     },
     {
@@ -3570,13 +3570,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/campaigns/:id/stats",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/campaigns/:id/stats",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 352
+        "line": 241
       }
     },
     {
@@ -3584,13 +3584,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/leads",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/leads",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 363
+        "line": 22
       }
     },
     {
@@ -3598,13 +3598,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/calendar",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/calendar",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 372
+        "line": 31
       }
     },
     {
@@ -3612,209 +3612,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/leads",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/leads",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 386
-      }
-    },
-    {
-      "id": "route:GET:/api/academy-sales/talent-instructors/manage",
-      "type": "FastifyRoute",
-      "label": "GET /api/academy-sales/talent-instructors/manage",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/academy-sales/talent-instructors/manage",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 401
-      }
-    },
-    {
-      "id": "route:POST:/api/academy-sales/talent-instructors",
-      "type": "FastifyRoute",
-      "label": "POST /api/academy-sales/talent-instructors",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "POST",
-        "path": "/api/academy-sales/talent-instructors",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 410
-      }
-    },
-    {
-      "id": "route:PUT:/api/academy-sales/talent-instructors/:id",
-      "type": "FastifyRoute",
-      "label": "PUT /api/academy-sales/talent-instructors/:id",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "PUT",
-        "path": "/api/academy-sales/talent-instructors/:id",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 426
-      }
-    },
-    {
-      "id": "route:GET:/api/academy-sales/talent-instructors",
-      "type": "FastifyRoute",
-      "label": "GET /api/academy-sales/talent-instructors",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/academy-sales/talent-instructors",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 442
-      }
-    },
-    {
-      "id": "route:GET:/api/academy-sales/talent-ladder",
-      "type": "FastifyRoute",
-      "label": "GET /api/academy-sales/talent-ladder",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/academy-sales/talent-ladder",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 452
-      }
-    },
-    {
-      "id": "route:PUT:/api/academy-sales/talent-ladder",
-      "type": "FastifyRoute",
-      "label": "PUT /api/academy-sales/talent-ladder",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "PUT",
-        "path": "/api/academy-sales/talent-ladder",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 462
-      }
-    },
-    {
-      "id": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
-      "type": "FastifyRoute",
-      "label": "GET /api/academy-sales/leads/:id/talent-assessments",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/academy-sales/leads/:id/talent-assessments",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 479
-      }
-    },
-    {
-      "id": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "type": "FastifyRoute",
-      "label": "POST /api/academy-sales/leads/:id/talent-assessments/preview",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "POST",
-        "path": "/api/academy-sales/leads/:id/talent-assessments/preview",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 492
-      }
-    },
-    {
-      "id": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
-      "type": "FastifyRoute",
-      "label": "POST /api/academy-sales/leads/:id/talent-assessments",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "POST",
-        "path": "/api/academy-sales/leads/:id/talent-assessments",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 512
-      }
-    },
-    {
-      "id": "route:PUT:/api/academy-sales/talent-assessments/:id",
-      "type": "FastifyRoute",
-      "label": "PUT /api/academy-sales/talent-assessments/:id",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "PUT",
-        "path": "/api/academy-sales/talent-assessments/:id",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 528
-      }
-    },
-    {
-      "id": "route:POST:/api/academy-sales/talent-assessments/:id/print",
-      "type": "FastifyRoute",
-      "label": "POST /api/academy-sales/talent-assessments/:id/print",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "POST",
-        "path": "/api/academy-sales/talent-assessments/:id/print",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 544
-      }
-    },
-    {
-      "id": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
-      "type": "FastifyRoute",
-      "label": "POST /api/academy-sales/talent-assessments/:id/payments",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "POST",
-        "path": "/api/academy-sales/talent-assessments/:id/payments",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 555
-      }
-    },
-    {
-      "id": "route:GET:/api/academy-sales/talent-payments",
-      "type": "FastifyRoute",
-      "label": "GET /api/academy-sales/talent-payments",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/academy-sales/talent-payments",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 576
-      }
-    },
-    {
-      "id": "route:GET:/api/academy-sales/talent-payments/:id/trace",
-      "type": "FastifyRoute",
-      "label": "GET /api/academy-sales/talent-payments/:id/trace",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/academy-sales/talent-payments/:id/trace",
-        "module": "academy-sales",
-        "handler": "inlineHandler",
-        "line": 590
+        "line": 45
       }
     },
     {
@@ -3822,13 +3626,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/leads/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/leads/:id",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 605
+        "line": 58
       }
     },
     {
@@ -3836,13 +3640,13 @@
       "type": "FastifyRoute",
       "label": "PUT /api/academy-sales/leads/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "PUT",
         "path": "/api/academy-sales/leads/:id",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 616
+        "line": 69
       }
     },
     {
@@ -3850,13 +3654,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/leads/:id/activities",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/leads/:id/activities",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 631
+        "line": 84
       }
     },
     {
@@ -3864,13 +3668,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/leads/:id/no-show",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/leads/:id/no-show",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 646
+        "line": 99
       }
     },
     {
@@ -3878,13 +3682,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/follow-ups",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/follow-ups",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 661
+        "line": 114
       }
     },
     {
@@ -3892,13 +3696,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/follow-ups",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/follow-ups",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 675
+        "line": 128
       }
     },
     {
@@ -3906,13 +3710,13 @@
       "type": "FastifyRoute",
       "label": "PUT /api/academy-sales/follow-ups/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "PUT",
         "path": "/api/academy-sales/follow-ups/:id",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 688
+        "line": 141
       }
     },
     {
@@ -3920,13 +3724,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/playbooks",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/playbooks",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 703
+        "line": 156
       }
     },
     {
@@ -3934,13 +3738,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/playbooks",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/playbooks",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 711
+        "line": 164
       }
     },
     {
@@ -3948,13 +3752,13 @@
       "type": "FastifyRoute",
       "label": "PUT /api/academy-sales/playbooks/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "PUT",
         "path": "/api/academy-sales/playbooks/:id",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 724
+        "line": 177
       }
     },
     {
@@ -3962,13 +3766,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/academy-sales/courses",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/academy-sales/courses",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 739
+        "line": 192
       }
     },
     {
@@ -3976,13 +3780,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/courses",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/courses",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 747
+        "line": 200
       }
     },
     {
@@ -3990,13 +3794,13 @@
       "type": "FastifyRoute",
       "label": "PUT /api/academy-sales/courses/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "PUT",
         "path": "/api/academy-sales/courses/:id",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 760
+        "line": 213
       }
     },
     {
@@ -4004,13 +3808,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/import/supabase",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/import/supabase",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 775
+        "line": 228
       }
     },
     {
@@ -4018,13 +3822,209 @@
       "type": "FastifyRoute",
       "label": "POST /api/academy-sales/sync/pancake",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/academy-sales/sync/pancake",
         "module": "academy-sales",
         "handler": "inlineHandler",
-        "line": 791
+        "line": 244
+      }
+    },
+    {
+      "id": "route:GET:/api/academy-sales/talent-instructors/manage",
+      "type": "FastifyRoute",
+      "label": "GET /api/academy-sales/talent-instructors/manage",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/academy-sales/talent-instructors/manage",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 27
+      }
+    },
+    {
+      "id": "route:POST:/api/academy-sales/talent-instructors",
+      "type": "FastifyRoute",
+      "label": "POST /api/academy-sales/talent-instructors",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/academy-sales/talent-instructors",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 36
+      }
+    },
+    {
+      "id": "route:PUT:/api/academy-sales/talent-instructors/:id",
+      "type": "FastifyRoute",
+      "label": "PUT /api/academy-sales/talent-instructors/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/academy-sales/talent-instructors/:id",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 52
+      }
+    },
+    {
+      "id": "route:GET:/api/academy-sales/talent-instructors",
+      "type": "FastifyRoute",
+      "label": "GET /api/academy-sales/talent-instructors",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/academy-sales/talent-instructors",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 68
+      }
+    },
+    {
+      "id": "route:GET:/api/academy-sales/talent-ladder",
+      "type": "FastifyRoute",
+      "label": "GET /api/academy-sales/talent-ladder",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/academy-sales/talent-ladder",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 79
+      }
+    },
+    {
+      "id": "route:PUT:/api/academy-sales/talent-ladder",
+      "type": "FastifyRoute",
+      "label": "PUT /api/academy-sales/talent-ladder",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/academy-sales/talent-ladder",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 90
+      }
+    },
+    {
+      "id": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "FastifyRoute",
+      "label": "GET /api/academy-sales/leads/:id/talent-assessments",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/academy-sales/leads/:id/talent-assessments",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 107
+      }
+    },
+    {
+      "id": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "type": "FastifyRoute",
+      "label": "POST /api/academy-sales/leads/:id/talent-assessments/preview",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/academy-sales/leads/:id/talent-assessments/preview",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 120
+      }
+    },
+    {
+      "id": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "FastifyRoute",
+      "label": "POST /api/academy-sales/leads/:id/talent-assessments",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/academy-sales/leads/:id/talent-assessments",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 140
+      }
+    },
+    {
+      "id": "route:PUT:/api/academy-sales/talent-assessments/:id",
+      "type": "FastifyRoute",
+      "label": "PUT /api/academy-sales/talent-assessments/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/academy-sales/talent-assessments/:id",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 156
+      }
+    },
+    {
+      "id": "route:POST:/api/academy-sales/talent-assessments/:id/print",
+      "type": "FastifyRoute",
+      "label": "POST /api/academy-sales/talent-assessments/:id/print",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/academy-sales/talent-assessments/:id/print",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 172
+      }
+    },
+    {
+      "id": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
+      "type": "FastifyRoute",
+      "label": "POST /api/academy-sales/talent-assessments/:id/payments",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/academy-sales/talent-assessments/:id/payments",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 183
+      }
+    },
+    {
+      "id": "route:GET:/api/academy-sales/talent-payments",
+      "type": "FastifyRoute",
+      "label": "GET /api/academy-sales/talent-payments",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/academy-sales/talent-payments",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 204
+      }
+    },
+    {
+      "id": "route:GET:/api/academy-sales/talent-payments/:id/trace",
+      "type": "FastifyRoute",
+      "label": "GET /api/academy-sales/talent-payments/:id/trace",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/academy-sales/talent-payments/:id/trace",
+        "module": "academy-sales",
+        "handler": "inlineHandler",
+        "line": 218
       }
     },
     {
@@ -33565,7 +33565,7 @@
       "type": "SharedType",
       "label": "WingsGardenCategory",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenCategory",
@@ -33577,7 +33577,7 @@
       "type": "SharedType",
       "label": "WingsGardenPayMethod",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenPayMethod",
@@ -33589,7 +33589,7 @@
       "type": "SharedType",
       "label": "WingsGardenWarehouseId",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenWarehouseId",
@@ -33601,7 +33601,7 @@
       "type": "SharedType",
       "label": "WingsGardenPreviewRole",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenPreviewRole",
@@ -33613,7 +33613,7 @@
       "type": "SharedType",
       "label": "WingsGardenChestKind",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenChestKind",
@@ -33625,7 +33625,7 @@
       "type": "SharedType",
       "label": "WingsGardenPerkKind",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenPerkKind",
@@ -33637,7 +33637,7 @@
       "type": "SharedType",
       "label": "WingsGardenWarehouseMeta",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenWarehouseMeta",
@@ -33649,7 +33649,7 @@
       "type": "SharedType",
       "label": "WingsGardenSkuConfig",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenSkuConfig",
@@ -33661,7 +33661,7 @@
       "type": "SharedType",
       "label": "WingsGardenWingTier",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenWingTier",
@@ -33673,7 +33673,7 @@
       "type": "SharedType",
       "label": "WingsGardenChestConfig",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenChestConfig",
@@ -33685,7 +33685,7 @@
       "type": "SharedType",
       "label": "WingsGardenFeatherRuleTrigger",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenFeatherRuleTrigger",
@@ -33697,7 +33697,7 @@
       "type": "SharedType",
       "label": "WingsGardenClaimMode",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenClaimMode",
@@ -33709,7 +33709,7 @@
       "type": "SharedType",
       "label": "WingsGardenMilestoneTier",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenMilestoneTier",
@@ -33721,7 +33721,7 @@
       "type": "SharedType",
       "label": "WingsGardenFeatherRule",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenFeatherRule",
@@ -33733,7 +33733,7 @@
       "type": "SharedType",
       "label": "WingsGardenPendingClaim",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenPendingClaim",
@@ -33745,7 +33745,7 @@
       "type": "SharedType",
       "label": "WingsGardenDailyQuestProgress",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenDailyQuestProgress",
@@ -33757,7 +33757,7 @@
       "type": "SharedType",
       "label": "WingsGardenQrStageRecord",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenQrStageRecord",
@@ -33769,7 +33769,7 @@
       "type": "SharedType",
       "label": "WingsGardenEconomyPreview",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenEconomyPreview",
@@ -33781,7 +33781,7 @@
       "type": "SharedType",
       "label": "WingsGardenConfig",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenConfig",
@@ -33793,7 +33793,7 @@
       "type": "SharedType",
       "label": "WingsGardenPerkCard",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenPerkCard",
@@ -33805,7 +33805,7 @@
       "type": "SharedType",
       "label": "WingsGardenWallet",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenWallet",
@@ -33817,7 +33817,7 @@
       "type": "SharedType",
       "label": "WingsGardenItemTimelineEntry",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenItemTimelineEntry",
@@ -33829,7 +33829,7 @@
       "type": "SharedType",
       "label": "WingsGardenOverlayItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenOverlayItem",
@@ -33841,7 +33841,7 @@
       "type": "SharedType",
       "label": "WingsGardenUsedRecord",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenUsedRecord",
@@ -33853,7 +33853,7 @@
       "type": "SharedType",
       "label": "WingsGardenAirshipOrder",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenAirshipOrder",
@@ -33865,7 +33865,7 @@
       "type": "SharedType",
       "label": "WingsGardenDarkCloud",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenDarkCloud",
@@ -33877,7 +33877,7 @@
       "type": "SharedType",
       "label": "WingsGardenLedgerEntry",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenLedgerEntry",
@@ -33889,7 +33889,7 @@
       "type": "SharedType",
       "label": "WingsGardenIslandState",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenIslandState",
@@ -33901,7 +33901,7 @@
       "type": "SharedType",
       "label": "WingsGardenLegacyQrLookup",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenLegacyQrLookup",
@@ -33913,7 +33913,7 @@
       "type": "SharedType",
       "label": "WingsGardenLiveSampleQr",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenLiveSampleQr",
@@ -33925,7 +33925,7 @@
       "type": "SharedType",
       "label": "WingsGardenMandatorySkuStatus",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenMandatorySkuStatus",
@@ -33937,7 +33937,7 @@
       "type": "SharedType",
       "label": "WingsGardenMandatoryCoverage",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenMandatoryCoverage",
@@ -33949,7 +33949,7 @@
       "type": "SharedType",
       "label": "WingsGardenLegacyWarehouseCounts",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenLegacyWarehouseCounts",
@@ -33961,7 +33961,7 @@
       "type": "SharedType",
       "label": "WingsGardenReportsSummary",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenReportsSummary",
@@ -33973,7 +33973,7 @@
       "type": "SharedType",
       "label": "WingsGardenStateResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenStateResponse",
@@ -33985,7 +33985,7 @@
       "type": "SharedType",
       "label": "WingsGardenActionType",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenActionType",
@@ -33997,7 +33997,7 @@
       "type": "SharedType",
       "label": "WingsGardenActionRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenActionRequest",
@@ -34009,7 +34009,7 @@
       "type": "SharedType",
       "label": "WingsGardenActionResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/wings-garden.ts",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "WingsGardenActionResponse",
@@ -40980,8 +40980,8 @@
       "filePath": "apps/api/src/modules/academy-sales/academy-campaign.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 51237,
-        "lineCount": 1238,
+        "sizeBytes": 1744,
+        "lineCount": 50,
         "ext": ".ts"
       }
     },
@@ -41019,8 +41019,8 @@
       "filePath": "apps/api/src/modules/academy-sales/academy-sales.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 47345,
-        "lineCount": 1185,
+        "sizeBytes": 1924,
+        "lineCount": 63,
         "ext": ".ts"
       }
     },
@@ -41090,6 +41090,58 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-access.ts",
+      "type": "File",
+      "label": "academy-campaign-access.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/campaigns/academy-campaign-access.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7294,
+        "lineCount": 191,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-crud.service.ts",
+      "type": "File",
+      "label": "academy-campaign-crud.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/campaigns/academy-campaign-crud.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15447,
+        "lineCount": 392,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-helpers.ts",
+      "type": "File",
+      "label": "academy-campaign-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/campaigns/academy-campaign-helpers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15592,
+        "lineCount": 379,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-leads.service.ts",
+      "type": "File",
+      "label": "academy-campaign-leads.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/campaigns/academy-campaign-leads.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13282,
+        "lineCount": 349,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/academy-sales/pancake-sync.service.test.ts",
       "type": "File",
       "label": "pancake-sync.service.test.ts",
@@ -41116,6 +41168,58 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
+      "type": "File",
+      "label": "academy-campaigns.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9679,
+        "lineCount": 252,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
+      "type": "File",
+      "label": "academy-leads-and-catalog.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10009,
+        "lineCount": 257,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/routes/academy-sales-route-helpers.ts",
+      "type": "File",
+      "label": "academy-sales-route-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-sales-route-helpers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3637,
+        "lineCount": 88,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "type": "File",
+      "label": "academy-talent.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9136,
+        "lineCount": 233,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/academy-sales/routes.ts",
       "type": "File",
       "label": "routes.ts",
@@ -41123,8 +41227,60 @@
       "filePath": "apps/api/src/modules/academy-sales/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 31569,
-        "lineCount": 804,
+        "sizeBytes": 825,
+        "lineCount": 16,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/sales/academy-followups-and-catalog.service.ts",
+      "type": "File",
+      "label": "academy-followups-and-catalog.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/sales/academy-followups-and-catalog.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10542,
+        "lineCount": 235,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/sales/academy-leads.service.ts",
+      "type": "File",
+      "label": "academy-leads.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/sales/academy-leads.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 19548,
+        "lineCount": 507,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/sales/academy-sales-helpers.ts",
+      "type": "File",
+      "label": "academy-sales-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/sales/academy-sales-helpers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11071,
+        "lineCount": 316,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/sales/academy-sales-mappers.ts",
+      "type": "File",
+      "label": "academy-sales-mappers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/sales/academy-sales-mappers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6669,
+        "lineCount": 184,
         "ext": ".ts"
       }
     },
@@ -41253,8 +41409,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 48553,
-        "lineCount": 1168,
+        "sizeBytes": 7219,
+        "lineCount": 237,
         "ext": ".ts"
       }
     },
@@ -41279,8 +41435,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 38173,
-        "lineCount": 957,
+        "sizeBytes": 3667,
+        "lineCount": 108,
         "ext": ".ts"
       }
     },
@@ -41331,8 +41487,112 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 124835,
-        "lineCount": 3073,
+        "sizeBytes": 6819,
+        "lineCount": 173,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts",
+      "type": "File",
+      "label": "workshop-game-runtime.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 12384,
+        "lineCount": 292,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/live/workshop-live-helpers.ts",
+      "type": "File",
+      "label": "workshop-live-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/live/workshop-live-helpers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5273,
+        "lineCount": 137,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/live/workshop-live-state.service.ts",
+      "type": "File",
+      "label": "workshop-live-state.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/live/workshop-live-state.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11230,
+        "lineCount": 282,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/live/workshop-quiz-authoring.service.ts",
+      "type": "File",
+      "label": "workshop-quiz-authoring.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/live/workshop-quiz-authoring.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 17452,
+        "lineCount": 423,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/live/workshop-realtime-hub.ts",
+      "type": "File",
+      "label": "workshop-realtime-hub.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/live/workshop-realtime-hub.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2233,
+        "lineCount": 62,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/public/workshop-public-helpers.ts",
+      "type": "File",
+      "label": "workshop-public-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/public/workshop-public-helpers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11851,
+        "lineCount": 323,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/public/workshop-public-lobby.service.ts",
+      "type": "File",
+      "label": "workshop-public-lobby.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/public/workshop-public-lobby.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7766,
+        "lineCount": 221,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/public/workshop-public-registration.service.ts",
+      "type": "File",
+      "label": "workshop-public-registration.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/public/workshop-public-registration.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 17317,
+        "lineCount": 408,
         "ext": ".ts"
       }
     },
@@ -41437,6 +41697,123 @@
       "metadata": {
         "sizeBytes": 979,
         "lineCount": 18,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/service/workshop-agenda-and-menu.service.ts",
+      "type": "File",
+      "label": "workshop-agenda-and-menu.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/service/workshop-agenda-and-menu.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13135,
+        "lineCount": 348,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/service/workshop-clone.service.ts",
+      "type": "File",
+      "label": "workshop-clone.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/service/workshop-clone.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11095,
+        "lineCount": 320,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/service/workshop-core.service.ts",
+      "type": "File",
+      "label": "workshop-core.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/service/workshop-core.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8702,
+        "lineCount": 191,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/service/workshop-crud.service.ts",
+      "type": "File",
+      "label": "workshop-crud.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/service/workshop-crud.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13317,
+        "lineCount": 338,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts",
+      "type": "File",
+      "label": "workshop-equipment-and-designs.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 22067,
+        "lineCount": 532,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/service/workshop-helpers.ts",
+      "type": "File",
+      "label": "workshop-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/service/workshop-helpers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15808,
+        "lineCount": 419,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/service/workshop-mappers.ts",
+      "type": "File",
+      "label": "workshop-mappers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/service/workshop-mappers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 17027,
+        "lineCount": 410,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts",
+      "type": "File",
+      "label": "workshop-participant-ops.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10190,
+        "lineCount": 265,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-workshops/service/workshop-participants.service.ts",
+      "type": "File",
+      "label": "workshop-participants.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-workshops/service/workshop-participants.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15403,
+        "lineCount": 416,
         "ext": ".ts"
       }
     },
@@ -48032,6 +48409,71 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/wings-garden/service/wings-garden-earn-actions.ts",
+      "type": "File",
+      "label": "wings-garden-earn-actions.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/wings-garden/service/wings-garden-earn-actions.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10660,
+        "lineCount": 275,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/wings-garden/service/wings-garden-progression-actions.ts",
+      "type": "File",
+      "label": "wings-garden-progression-actions.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/wings-garden/service/wings-garden-progression-actions.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11208,
+        "lineCount": 271,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/wings-garden/service/wings-garden-scan-actions.ts",
+      "type": "File",
+      "label": "wings-garden-scan-actions.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/wings-garden/service/wings-garden-scan-actions.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9939,
+        "lineCount": 276,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/wings-garden/service/wings-garden-seeds.ts",
+      "type": "File",
+      "label": "wings-garden-seeds.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/wings-garden/service/wings-garden-seeds.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8585,
+        "lineCount": 265,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/wings-garden/service/wings-garden-state.ts",
+      "type": "File",
+      "label": "wings-garden-state.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/wings-garden/service/wings-garden-state.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8634,
+        "lineCount": 242,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/wings-garden/wings-garden-legacy.service.ts",
       "type": "File",
       "label": "wings-garden-legacy.service.ts",
@@ -48078,8 +48520,8 @@
       "filePath": "apps/api/src/modules/wings-garden/wings-garden.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 51689,
-        "lineCount": 1368,
+        "sizeBytes": 10695,
+        "lineCount": 354,
         "ext": ".ts"
       }
     },
@@ -61214,6 +61656,58 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/wings-garden/wings-garden-default-skus.ts",
+      "type": "File",
+      "label": "wings-garden-default-skus.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden-default-skus.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 10152,
+        "lineCount": 387,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/wings-garden/wings-garden-defaults.ts",
+      "type": "File",
+      "label": "wings-garden-defaults.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden-defaults.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 6060,
+        "lineCount": 202,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/wings-garden/wings-garden-helpers.ts",
+      "type": "File",
+      "label": "wings-garden-helpers.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden-helpers.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 5823,
+        "lineCount": 142,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/wings-garden/wings-garden.types.ts",
+      "type": "File",
+      "label": "wings-garden.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/wings-garden/wings-garden.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 10936,
+        "lineCount": 438,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/wings-garden.ts",
       "type": "File",
       "label": "wings-garden.ts",
@@ -61221,8 +61715,8 @@
       "filePath": "packages/shared/src/types/wings-garden.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 32272,
-        "lineCount": 1148,
+        "sizeBytes": 167,
+        "lineCount": 4,
         "ext": ".ts"
       }
     },
@@ -62813,104 +63307,6 @@
       "label": "REGISTERED_IN"
     },
     {
-      "id": "edge:route:GET:/api/academy-sales/talent-instructors/manage:ws:apps/api",
-      "source": "route:GET:/api/academy-sales/talent-instructors/manage",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:POST:/api/academy-sales/talent-instructors:ws:apps/api",
-      "source": "route:POST:/api/academy-sales/talent-instructors",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:PUT:/api/academy-sales/talent-instructors/:id:ws:apps/api",
-      "source": "route:PUT:/api/academy-sales/talent-instructors/:id",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:GET:/api/academy-sales/talent-instructors:ws:apps/api",
-      "source": "route:GET:/api/academy-sales/talent-instructors",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:GET:/api/academy-sales/talent-ladder:ws:apps/api",
-      "source": "route:GET:/api/academy-sales/talent-ladder",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:PUT:/api/academy-sales/talent-ladder:ws:apps/api",
-      "source": "route:PUT:/api/academy-sales/talent-ladder",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:GET:/api/academy-sales/leads/:id/talent-assessments:ws:apps/api",
-      "source": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview:ws:apps/api",
-      "source": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:POST:/api/academy-sales/leads/:id/talent-assessments:ws:apps/api",
-      "source": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:PUT:/api/academy-sales/talent-assessments/:id:ws:apps/api",
-      "source": "route:PUT:/api/academy-sales/talent-assessments/:id",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:POST:/api/academy-sales/talent-assessments/:id/print:ws:apps/api",
-      "source": "route:POST:/api/academy-sales/talent-assessments/:id/print",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:POST:/api/academy-sales/talent-assessments/:id/payments:ws:apps/api",
-      "source": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:GET:/api/academy-sales/talent-payments:ws:apps/api",
-      "source": "route:GET:/api/academy-sales/talent-payments",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:GET:/api/academy-sales/talent-payments/:id/trace:ws:apps/api",
-      "source": "route:GET:/api/academy-sales/talent-payments/:id/trace",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
       "id": "edge:route:GET:/api/academy-sales/leads/:id:ws:apps/api",
       "source": "route:GET:/api/academy-sales/leads/:id",
       "target": "ws:apps/api",
@@ -63011,6 +63407,104 @@
     {
       "id": "edge:route:POST:/api/academy-sales/sync/pancake:ws:apps/api",
       "source": "route:POST:/api/academy-sales/sync/pancake",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/academy-sales/talent-instructors/manage:ws:apps/api",
+      "source": "route:GET:/api/academy-sales/talent-instructors/manage",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/academy-sales/talent-instructors:ws:apps/api",
+      "source": "route:POST:/api/academy-sales/talent-instructors",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/academy-sales/talent-instructors/:id:ws:apps/api",
+      "source": "route:PUT:/api/academy-sales/talent-instructors/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/academy-sales/talent-instructors:ws:apps/api",
+      "source": "route:GET:/api/academy-sales/talent-instructors",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/academy-sales/talent-ladder:ws:apps/api",
+      "source": "route:GET:/api/academy-sales/talent-ladder",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/academy-sales/talent-ladder:ws:apps/api",
+      "source": "route:PUT:/api/academy-sales/talent-ladder",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/academy-sales/leads/:id/talent-assessments:ws:apps/api",
+      "source": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview:ws:apps/api",
+      "source": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/academy-sales/leads/:id/talent-assessments:ws:apps/api",
+      "source": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/academy-sales/talent-assessments/:id:ws:apps/api",
+      "source": "route:PUT:/api/academy-sales/talent-assessments/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/academy-sales/talent-assessments/:id/print:ws:apps/api",
+      "source": "route:POST:/api/academy-sales/talent-assessments/:id/print",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/academy-sales/talent-assessments/:id/payments:ws:apps/api",
+      "source": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/academy-sales/talent-payments:ws:apps/api",
+      "source": "route:GET:/api/academy-sales/talent-payments",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/academy-sales/talent-payments/:id/trace:ws:apps/api",
+      "source": "route:GET:/api/academy-sales/talent-payments/:id/trace",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -87348,22 +87842,8 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-campaign.service.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/academy-sales/academy-campaign.service.ts",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/api/src/modules/academy-sales/academy-import.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/academy-sales/academy-import.service.ts",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-sales.service.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/academy-sales/academy-sales.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -87397,8 +87877,71 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-sales/routes.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/academy-sales/routes.ts",
+      "id": "edge:file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-crud.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-crud.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-helpers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-leads.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-leads.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/sales/academy-followups-and-catalog.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/sales/academy-followups-and-catalog.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/sales/academy-leads.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/sales/academy-leads.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/sales/academy-sales-helpers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/sales/academy-sales-helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/sales/academy-sales-mappers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/sales/academy-sales-mappers.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -87502,8 +88045,57 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-live-helpers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-live-helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-live-state.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-live-state.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-quiz-authoring.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-quiz-authoring.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-realtime-hub.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-realtime-hub.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/public/workshop-public-helpers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/public/workshop-public-helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/public/workshop-public-lobby.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/public/workshop-public-lobby.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/public/workshop-public-registration.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/public/workshop-public-registration.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -87546,6 +88138,69 @@
     {
       "id": "edge:file:apps/api/src/modules/academy-workshops/routes/workshop-templates.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/academy-workshops/routes/workshop-templates.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-agenda-and-menu.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-agenda-and-menu.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-clone.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-clone.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-core.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-core.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-crud.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-crud.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-helpers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-mappers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-mappers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-participants.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-participants.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -90164,6 +90819,41 @@
     {
       "id": "edge:file:apps/api/src/modules/wings-garden/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/wings-garden/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/wings-garden/service/wings-garden-earn-actions.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/wings-garden/service/wings-garden-earn-actions.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/wings-garden/service/wings-garden-progression-actions.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/wings-garden/service/wings-garden-progression-actions.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/wings-garden/service/wings-garden-scan-actions.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/wings-garden/service/wings-garden-scan-actions.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/wings-garden/service/wings-garden-seeds.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/wings-garden/service/wings-garden-seeds.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/wings-garden/service/wings-garden-state.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/wings-garden/service/wings-garden-state.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -93928,55 +94618,6 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-campaign.service.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/academy-sales/academy-campaign.service.ts",
-      "target": "prisma:crm:CrmStaff",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-campaign.service.ts:prisma:crm:CrmTeamMember",
-      "source": "file:apps/api/src/modules/academy-sales/academy-campaign.service.ts",
-      "target": "prisma:crm:CrmTeamMember",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-campaign.service.ts:prisma:crm:CrmAcademyLead",
-      "source": "file:apps/api/src/modules/academy-sales/academy-campaign.service.ts",
-      "target": "prisma:crm:CrmAcademyLead",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-campaign.service.ts:prisma:crm:CrmAcademyCampaign",
-      "source": "file:apps/api/src/modules/academy-sales/academy-campaign.service.ts",
-      "target": "prisma:crm:CrmAcademyCampaign",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-campaign.service.ts:prisma:crm:CrmAcademyCampaignLead",
-      "source": "file:apps/api/src/modules/academy-sales/academy-campaign.service.ts",
-      "target": "prisma:crm:CrmAcademyCampaignLead",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-campaign.service.ts:prisma:crm:CrmAcademyCampaignTouchpoint",
-      "source": "file:apps/api/src/modules/academy-sales/academy-campaign.service.ts",
-      "target": "prisma:crm:CrmAcademyCampaignTouchpoint",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-campaign.service.ts:prisma:crm:CrmAcademyCampaignTouchpointLog",
-      "source": "file:apps/api/src/modules/academy-sales/academy-campaign.service.ts",
-      "target": "prisma:crm:CrmAcademyCampaignTouchpointLog",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
       "id": "edge:file:apps/api/src/modules/academy-sales/academy-import.service.ts:prisma:crm:CrmStaff",
       "source": "file:apps/api/src/modules/academy-sales/academy-import.service.ts",
       "target": "prisma:crm:CrmStaff",
@@ -94019,48 +94660,6 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-sales.service.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/academy-sales/academy-sales.service.ts",
-      "target": "prisma:crm:CrmStaff",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-sales.service.ts:prisma:crm:CrmTeamMember",
-      "source": "file:apps/api/src/modules/academy-sales/academy-sales.service.ts",
-      "target": "prisma:crm:CrmTeamMember",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-sales.service.ts:prisma:crm:CrmAcademyLead",
-      "source": "file:apps/api/src/modules/academy-sales/academy-sales.service.ts",
-      "target": "prisma:crm:CrmAcademyLead",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-sales.service.ts:prisma:crm:CrmAcademyFollowUpTask",
-      "source": "file:apps/api/src/modules/academy-sales/academy-sales.service.ts",
-      "target": "prisma:crm:CrmAcademyFollowUpTask",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-sales.service.ts:prisma:crm:CrmAcademyPlaybook",
-      "source": "file:apps/api/src/modules/academy-sales/academy-sales.service.ts",
-      "target": "prisma:crm:CrmAcademyPlaybook",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-sales.service.ts:prisma:crm:CrmAcademyCourse",
-      "source": "file:apps/api/src/modules/academy-sales/academy-sales.service.ts",
-      "target": "prisma:crm:CrmAcademyCourse",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
       "id": "edge:file:apps/api/src/modules/academy-sales/academy-talent-ladder-configuration.service.ts:prisma:crm:CrmConfig",
       "source": "file:apps/api/src/modules/academy-sales/academy-talent-ladder-configuration.service.ts",
       "target": "prisma:crm:CrmConfig",
@@ -94075,9 +94674,128 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-access.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-access.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-access.ts:prisma:crm:CrmTeamMember",
+      "source": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-access.ts",
+      "target": "prisma:crm:CrmTeamMember",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-access.ts:prisma:crm:CrmAcademyLead",
+      "source": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-access.ts",
+      "target": "prisma:crm:CrmAcademyLead",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-access.ts:prisma:crm:CrmAcademyCampaign",
+      "source": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-access.ts",
+      "target": "prisma:crm:CrmAcademyCampaign",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-access.ts:prisma:crm:CrmAcademyCampaignLead",
+      "source": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-access.ts",
+      "target": "prisma:crm:CrmAcademyCampaignLead",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-crud.service.ts:prisma:crm:CrmAcademyCampaign",
+      "source": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-crud.service.ts",
+      "target": "prisma:crm:CrmAcademyCampaign",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-leads.service.ts:prisma:crm:CrmAcademyCampaignLead",
+      "source": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-leads.service.ts",
+      "target": "prisma:crm:CrmAcademyCampaignLead",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-leads.service.ts:prisma:crm:CrmAcademyCampaignTouchpoint",
+      "source": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-leads.service.ts",
+      "target": "prisma:crm:CrmAcademyCampaignTouchpoint",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-leads.service.ts:prisma:crm:CrmAcademyCampaignTouchpointLog",
+      "source": "file:apps/api/src/modules/academy-sales/campaigns/academy-campaign-leads.service.ts",
+      "target": "prisma:crm:CrmAcademyCampaignTouchpointLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/academy-sales/pancake-sync.service.ts:prisma:crm:CrmAcademyLead",
       "source": "file:apps/api/src/modules/academy-sales/pancake-sync.service.ts",
       "target": "prisma:crm:CrmAcademyLead",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/sales/academy-followups-and-catalog.service.ts:prisma:crm:CrmAcademyFollowUpTask",
+      "source": "file:apps/api/src/modules/academy-sales/sales/academy-followups-and-catalog.service.ts",
+      "target": "prisma:crm:CrmAcademyFollowUpTask",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/sales/academy-followups-and-catalog.service.ts:prisma:crm:CrmAcademyPlaybook",
+      "source": "file:apps/api/src/modules/academy-sales/sales/academy-followups-and-catalog.service.ts",
+      "target": "prisma:crm:CrmAcademyPlaybook",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/sales/academy-followups-and-catalog.service.ts:prisma:crm:CrmAcademyCourse",
+      "source": "file:apps/api/src/modules/academy-sales/sales/academy-followups-and-catalog.service.ts",
+      "target": "prisma:crm:CrmAcademyCourse",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/sales/academy-leads.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/academy-sales/sales/academy-leads.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/sales/academy-leads.service.ts:prisma:crm:CrmAcademyLead",
+      "source": "file:apps/api/src/modules/academy-sales/sales/academy-leads.service.ts",
+      "target": "prisma:crm:CrmAcademyLead",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/sales/academy-leads.service.ts:prisma:crm:CrmAcademyFollowUpTask",
+      "source": "file:apps/api/src/modules/academy-sales/sales/academy-leads.service.ts",
+      "target": "prisma:crm:CrmAcademyFollowUpTask",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/sales/academy-sales-helpers.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/academy-sales/sales/academy-sales-helpers.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/sales/academy-sales-helpers.ts:prisma:crm:CrmTeamMember",
+      "source": "file:apps/api/src/modules/academy-sales/sales/academy-sales-helpers.ts",
+      "target": "prisma:crm:CrmTeamMember",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -94173,62 +94891,6 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts:prisma:crm:CrmAcademyTalentAssessment",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts",
-      "target": "prisma:crm:CrmAcademyTalentAssessment",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts:prisma:crm:CrmAcademyWorkshop",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshop",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts:prisma:crm:CrmAcademyWorkshopParticipant",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopParticipant",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts:prisma:crm:CrmAcademyWorkshopAgendaItem",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopAgendaItem",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts:prisma:crm:CrmAcademyWorkshopQuiz",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopQuiz",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts:prisma:crm:CrmAcademyWorkshopQuizQuestion",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopQuizQuestion",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts:prisma:crm:CrmAcademyWorkshopAnswer",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopAnswer",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts:prisma:crm:CrmAcademyWorkshopReward",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopReward",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
       "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop-menu-template.service.ts:prisma:crm:CrmAcademyWorkshopMenuTemplate",
       "source": "file:apps/api/src/modules/academy-workshops/academy-workshop-menu-template.service.ts",
       "target": "prisma:crm:CrmAcademyWorkshopMenuTemplate",
@@ -94236,121 +94898,107 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts:prisma:crm:CrmAcademyWorkshop",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshop",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts:prisma:crm:CrmAcademyWorkshopParticipant",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts:prisma:crm:CrmAcademyWorkshopParticipant",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts",
       "target": "prisma:crm:CrmAcademyWorkshopParticipant",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmStaff",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts:prisma:crm:CrmAcademyWorkshopQuiz",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopQuiz",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmConfig",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmConfig",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts:prisma:crm:CrmAcademyWorkshopQuizQuestion",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopQuizQuestion",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyLead",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmAcademyLead",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts:prisma:crm:CrmAcademyWorkshopAnswer",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopAnswer",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyFollowUpTask",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmAcademyFollowUpTask",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts:prisma:crm:CrmAcademyWorkshopReward",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-game-runtime.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopReward",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyInstructor",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmAcademyInstructor",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-live-state.service.ts:prisma:crm:CrmAcademyTalentAssessment",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-live-state.service.ts",
+      "target": "prisma:crm:CrmAcademyTalentAssessment",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyCampaign",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmAcademyCampaign",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyWorkshop",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-live-state.service.ts:prisma:crm:CrmAcademyWorkshop",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-live-state.service.ts",
       "target": "prisma:crm:CrmAcademyWorkshop",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyWorkshopParticipant",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-live-state.service.ts:prisma:crm:CrmAcademyWorkshopParticipant",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-live-state.service.ts",
       "target": "prisma:crm:CrmAcademyWorkshopParticipant",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyWorkshopMenuItem",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopMenuItem",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-live-state.service.ts:prisma:crm:CrmAcademyWorkshopAgendaItem",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-live-state.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopAgendaItem",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyWorkshopEquipmentPackage",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopEquipmentPackage",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-quiz-authoring.service.ts:prisma:crm:CrmAcademyWorkshopQuiz",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-quiz-authoring.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopQuiz",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyWorkshopEquipmentPackageImage",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopEquipmentPackageImage",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/live/workshop-quiz-authoring.service.ts:prisma:crm:CrmAcademyWorkshopQuizQuestion",
+      "source": "file:apps/api/src/modules/academy-workshops/live/workshop-quiz-authoring.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopQuizQuestion",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyWorkshopDesignItem",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopDesignItem",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/public/workshop-public-lobby.service.ts:prisma:crm:CrmAcademyWorkshop",
+      "source": "file:apps/api/src/modules/academy-workshops/public/workshop-public-lobby.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshop",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyWorkshopDesignItemImage",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopDesignItemImage",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/public/workshop-public-lobby.service.ts:prisma:crm:CrmAcademyWorkshopParticipant",
+      "source": "file:apps/api/src/modules/academy-workshops/public/workshop-public-lobby.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopParticipant",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyWorkshopFeePayment",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopFeePayment",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/public/workshop-public-registration.service.ts:prisma:crm:CrmAcademyWorkshop",
+      "source": "file:apps/api/src/modules/academy-workshops/public/workshop-public-registration.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshop",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts:prisma:crm:CrmAcademyWorkshopPhoto",
-      "source": "file:apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopPhoto",
+      "id": "edge:file:apps/api/src/modules/academy-workshops/public/workshop-public-registration.service.ts:prisma:crm:CrmAcademyWorkshopParticipant",
+      "source": "file:apps/api/src/modules/academy-workshops/public/workshop-public-registration.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopParticipant",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -94364,6 +95012,153 @@
     {
       "id": "edge:file:apps/api/src/modules/academy-workshops/public.routes.ts:prisma:crm:CrmAcademyWorkshopParticipant",
       "source": "file:apps/api/src/modules/academy-workshops/public.routes.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopParticipant",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-agenda-and-menu.service.ts:prisma:crm:CrmAcademyWorkshop",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-agenda-and-menu.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshop",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-agenda-and-menu.service.ts:prisma:crm:CrmAcademyWorkshopMenuItem",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-agenda-and-menu.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopMenuItem",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-clone.service.ts:prisma:crm:CrmAcademyCampaign",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-clone.service.ts",
+      "target": "prisma:crm:CrmAcademyCampaign",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-core.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-core.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-core.service.ts:prisma:crm:CrmAcademyCampaign",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-core.service.ts",
+      "target": "prisma:crm:CrmAcademyCampaign",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-core.service.ts:prisma:crm:CrmAcademyWorkshop",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-core.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshop",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-core.service.ts:prisma:crm:CrmAcademyWorkshopParticipant",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-core.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopParticipant",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-crud.service.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-crud.service.ts",
+      "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-crud.service.ts:prisma:crm:CrmAcademyWorkshop",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-crud.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshop",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts:prisma:crm:CrmAcademyWorkshop",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshop",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts:prisma:crm:CrmAcademyWorkshopEquipmentPackage",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopEquipmentPackage",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts:prisma:crm:CrmAcademyWorkshopEquipmentPackageImage",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopEquipmentPackageImage",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts:prisma:crm:CrmAcademyWorkshopDesignItem",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopDesignItem",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts:prisma:crm:CrmAcademyWorkshopDesignItemImage",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-equipment-and-designs.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopDesignItemImage",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts:prisma:crm:CrmAcademyFollowUpTask",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts",
+      "target": "prisma:crm:CrmAcademyFollowUpTask",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts:prisma:crm:CrmAcademyInstructor",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts",
+      "target": "prisma:crm:CrmAcademyInstructor",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts:prisma:crm:CrmAcademyWorkshopParticipant",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopParticipant",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts:prisma:crm:CrmAcademyWorkshopFeePayment",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopFeePayment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts:prisma:crm:CrmAcademyWorkshopPhoto",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-participant-ops.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopPhoto",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-participants.service.ts:prisma:crm:CrmAcademyLead",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-participants.service.ts",
+      "target": "prisma:crm:CrmAcademyLead",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-workshops/service/workshop-participants.service.ts:prisma:crm:CrmAcademyWorkshopParticipant",
+      "source": "file:apps/api/src/modules/academy-workshops/service/workshop-participants.service.ts",
       "target": "prisma:crm:CrmAcademyWorkshopParticipant",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
@@ -97218,8 +98013,8 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/wings-garden/wings-garden.service.ts:prisma:crm:CrmConfig",
-      "source": "file:apps/api/src/modules/wings-garden/wings-garden.service.ts",
+      "id": "edge:file:apps/api/src/modules/wings-garden/service/wings-garden-state.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/wings-garden/service/wings-garden-state.ts",
       "target": "prisma:crm:CrmConfig",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
@@ -99696,27 +100491,6 @@
       "label": "CALLS academySales.updateLead"
     },
     {
-      "id": "edge:page:/dashboard/academy-leads/lead-manager:route:GET:/api/academy-sales/leads/:id/talent-assessments",
-      "source": "page:/dashboard/academy-leads/lead-manager",
-      "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
-      "type": "API_CALL",
-      "label": "CALLS academySales.updateLead"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/lead-manager:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "source": "page:/dashboard/academy-leads/lead-manager",
-      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "type": "API_CALL",
-      "label": "CALLS academySales.updateLead"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/lead-manager:route:POST:/api/academy-sales/leads/:id/talent-assessments",
-      "source": "page:/dashboard/academy-leads/lead-manager",
-      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
-      "type": "API_CALL",
-      "label": "CALLS academySales.updateLead"
-    },
-    {
       "id": "edge:page:/dashboard/academy-leads/lead-manager:route:GET:/api/academy-sales/leads/:id",
       "source": "page:/dashboard/academy-leads/lead-manager",
       "target": "route:GET:/api/academy-sales/leads/:id",
@@ -99741,6 +100515,27 @@
       "id": "edge:page:/dashboard/academy-leads/lead-manager:route:POST:/api/academy-sales/leads/:id/no-show",
       "source": "page:/dashboard/academy-leads/lead-manager",
       "target": "route:POST:/api/academy-sales/leads/:id/no-show",
+      "type": "API_CALL",
+      "label": "CALLS academySales.updateLead"
+    },
+    {
+      "id": "edge:page:/dashboard/academy-leads/lead-manager:route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "source": "page:/dashboard/academy-leads/lead-manager",
+      "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "API_CALL",
+      "label": "CALLS academySales.updateLead"
+    },
+    {
+      "id": "edge:page:/dashboard/academy-leads/lead-manager:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "source": "page:/dashboard/academy-leads/lead-manager",
+      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "type": "API_CALL",
+      "label": "CALLS academySales.updateLead"
+    },
+    {
+      "id": "edge:page:/dashboard/academy-leads/lead-manager:route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "source": "page:/dashboard/academy-leads/lead-manager",
+      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
       "type": "API_CALL",
       "label": "CALLS academySales.updateLead"
     },
@@ -106472,104 +107267,6 @@
       "label": "CALLS campaigns.update"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/talent-instructors/manage",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/talent-instructors/manage",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/academy-sales/talent-instructors",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/talent-instructors",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/academy-sales/talent-instructors/:id",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:PUT:/api/academy-sales/talent-instructors/:id",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/talent-instructors",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/talent-instructors",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/talent-ladder",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/talent-ladder",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/academy-sales/talent-ladder",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:PUT:/api/academy-sales/talent-ladder",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/leads/:id/talent-assessments",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/academy-sales/leads/:id/talent-assessments",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/academy-sales/talent-assessments/:id",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:PUT:/api/academy-sales/talent-assessments/:id",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/academy-sales/talent-assessments/:id/print",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/talent-assessments/:id/print",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/academy-sales/talent-assessments/:id/payments",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/talent-payments",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/talent-payments",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/talent-payments/:id/trace",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/talent-payments/:id/trace",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/leads/:id",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/academy-sales/leads/:id",
@@ -106671,6 +107368,104 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/academy-sales/sync/pancake",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/academy-sales/sync/pancake",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/talent-instructors/manage",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/academy-sales/talent-instructors/manage",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/academy-sales/talent-instructors",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/academy-sales/talent-instructors",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/academy-sales/talent-instructors/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/academy-sales/talent-instructors/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/talent-instructors",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/academy-sales/talent-instructors",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/talent-ladder",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/academy-sales/talent-ladder",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/academy-sales/talent-ladder",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/academy-sales/talent-ladder",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/academy-sales/talent-assessments/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/academy-sales/talent-assessments/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/academy-sales/talent-assessments/:id/print",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/academy-sales/talent-assessments/:id/print",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/academy-sales/talent-assessments/:id/payments",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/talent-payments",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/academy-sales/talent-payments",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/talent-payments/:id/trace",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/academy-sales/talent-payments/:id/trace",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -111911,104 +112706,6 @@
       "label": "CALLS campaigns.delete"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/talent-instructors/manage",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/academy-sales/talent-instructors/manage",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/talent-instructors",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:POST:/api/academy-sales/talent-instructors",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/academy-sales/talent-instructors/:id",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:PUT:/api/academy-sales/talent-instructors/:id",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/talent-instructors",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/academy-sales/talent-instructors",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/talent-ladder",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/academy-sales/talent-ladder",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/academy-sales/talent-ladder",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:PUT:/api/academy-sales/talent-ladder",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/leads/:id/talent-assessments",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/leads/:id/talent-assessments",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/academy-sales/talent-assessments/:id",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:PUT:/api/academy-sales/talent-assessments/:id",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/talent-assessments/:id/print",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:POST:/api/academy-sales/talent-assessments/:id/print",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/talent-assessments/:id/payments",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/talent-payments",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/academy-sales/talent-payments",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/talent-payments/:id/trace",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/academy-sales/talent-payments/:id/trace",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/leads/:id",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/academy-sales/leads/:id",
@@ -112110,6 +112807,104 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/sync/pancake",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/academy-sales/sync/pancake",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/talent-instructors/manage",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/academy-sales/talent-instructors/manage",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/talent-instructors",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/academy-sales/talent-instructors",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/academy-sales/talent-instructors/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/academy-sales/talent-instructors/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/talent-instructors",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/academy-sales/talent-instructors",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/talent-ladder",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/academy-sales/talent-ladder",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/academy-sales/talent-ladder",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/academy-sales/talent-ladder",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/academy-sales/talent-assessments/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/academy-sales/talent-assessments/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/talent-assessments/:id/print",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/academy-sales/talent-assessments/:id/print",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/academy-sales/talent-assessments/:id/payments",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/talent-payments",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/academy-sales/talent-payments",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/academy-sales/talent-payments/:id/trace",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/academy-sales/talent-payments/:id/trace",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -120906,104 +121701,6 @@
       "label": "CALLS teams.update"
     },
     {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/talent-instructors/manage",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/academy-sales/talent-instructors/manage",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/academy-sales/talent-instructors",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:POST:/api/academy-sales/talent-instructors",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/academy-sales/talent-instructors/:id",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:PUT:/api/academy-sales/talent-instructors/:id",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/talent-instructors",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/academy-sales/talent-instructors",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/talent-ladder",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/academy-sales/talent-ladder",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/academy-sales/talent-ladder",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:PUT:/api/academy-sales/talent-ladder",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/leads/:id/talent-assessments",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/academy-sales/leads/:id/talent-assessments",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/academy-sales/talent-assessments/:id",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:PUT:/api/academy-sales/talent-assessments/:id",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/academy-sales/talent-assessments/:id/print",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:POST:/api/academy-sales/talent-assessments/:id/print",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/academy-sales/talent-assessments/:id/payments",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/talent-payments",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/academy-sales/talent-payments",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/talent-payments/:id/trace",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/academy-sales/talent-payments/:id/trace",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/leads/:id",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/academy-sales/leads/:id",
@@ -121105,6 +121802,104 @@
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/academy-sales/sync/pancake",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/academy-sales/sync/pancake",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/talent-instructors/manage",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/academy-sales/talent-instructors/manage",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/academy-sales/talent-instructors",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/academy-sales/talent-instructors",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/academy-sales/talent-instructors/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/academy-sales/talent-instructors/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/talent-instructors",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/academy-sales/talent-instructors",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/talent-ladder",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/academy-sales/talent-ladder",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/academy-sales/talent-ladder",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/academy-sales/talent-ladder",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/academy-sales/talent-assessments/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/academy-sales/talent-assessments/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/academy-sales/talent-assessments/:id/print",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/academy-sales/talent-assessments/:id/print",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/academy-sales/talent-assessments/:id/payments",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/talent-payments",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/academy-sales/talent-payments",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/academy-sales/talent-payments/:id/trace",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/academy-sales/talent-payments/:id/trace",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -127697,8 +128492,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4751,
-    "totalEdges": 9473,
+    "totalNodes": 4789,
+    "totalEdges": 9516,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -127707,15 +128502,15 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 547,
-      "File": 1590
+      "File": 1628
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 613,
       "USES_TOKEN": 549,
-      "IMPORTS": 938,
-      "QUERIES_MODEL": 492,
+      "IMPORTS": 966,
+      "QUERIES_MODEL": 507,
       "API_CALL": 4336
     },
     "fastifyRouteCount": 782,
@@ -127727,350 +128522,350 @@
     {
       "method": "GET",
       "path": "/api/academy-sales/access",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/staff",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/campaigns",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/campaigns",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/campaigns/sidebar",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/campaigns/slug/:slug",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/campaigns/:id",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "PUT",
       "path": "/api/academy-sales/campaigns/:id",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/campaigns/:id/status",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/campaigns/:id/archive",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/campaigns/:id/clone",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/campaigns/:id/restore",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "DELETE",
       "path": "/api/academy-sales/campaigns/:id",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/campaigns/:id/leads",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/campaigns/:id/leads",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "DELETE",
       "path": "/api/academy-sales/campaigns/:id/leads/:leadId",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/campaigns/:id/leads/:leadId/touchpoints/:touchpointId",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/campaigns/:id/stats",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-campaigns.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/leads",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/calendar",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/leads",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "GET",
-      "path": "/api/academy-sales/talent-instructors/manage",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "POST",
-      "path": "/api/academy-sales/talent-instructors",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/academy-sales/talent-instructors/:id",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "GET",
-      "path": "/api/academy-sales/talent-instructors",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "GET",
-      "path": "/api/academy-sales/talent-ladder",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/academy-sales/talent-ladder",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "GET",
-      "path": "/api/academy-sales/leads/:id/talent-assessments",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "POST",
-      "path": "/api/academy-sales/leads/:id/talent-assessments/preview",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "POST",
-      "path": "/api/academy-sales/leads/:id/talent-assessments",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/academy-sales/talent-assessments/:id",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "POST",
-      "path": "/api/academy-sales/talent-assessments/:id/print",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "POST",
-      "path": "/api/academy-sales/talent-assessments/:id/payments",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "GET",
-      "path": "/api/academy-sales/talent-payments",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "academy-sales"
-    },
-    {
-      "method": "GET",
-      "path": "/api/academy-sales/talent-payments/:id/trace",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/leads/:id",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "PUT",
       "path": "/api/academy-sales/leads/:id",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/leads/:id/activities",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/leads/:id/no-show",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/follow-ups",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/follow-ups",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "PUT",
       "path": "/api/academy-sales/follow-ups/:id",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/playbooks",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/playbooks",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "PUT",
       "path": "/api/academy-sales/playbooks/:id",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "GET",
       "path": "/api/academy-sales/courses",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/courses",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "PUT",
       "path": "/api/academy-sales/courses/:id",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/import/supabase",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
     {
       "method": "POST",
       "path": "/api/academy-sales/sync/pancake",
-      "filePath": "apps/api/src/modules/academy-sales/routes.ts",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-leads-and-catalog.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "GET",
+      "path": "/api/academy-sales/talent-instructors/manage",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "POST",
+      "path": "/api/academy-sales/talent-instructors",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/academy-sales/talent-instructors/:id",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "GET",
+      "path": "/api/academy-sales/talent-instructors",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "GET",
+      "path": "/api/academy-sales/talent-ladder",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/academy-sales/talent-ladder",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "GET",
+      "path": "/api/academy-sales/leads/:id/talent-assessments",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "POST",
+      "path": "/api/academy-sales/leads/:id/talent-assessments/preview",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "POST",
+      "path": "/api/academy-sales/leads/:id/talent-assessments",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/academy-sales/talent-assessments/:id",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "POST",
+      "path": "/api/academy-sales/talent-assessments/:id/print",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "POST",
+      "path": "/api/academy-sales/talent-assessments/:id/payments",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "GET",
+      "path": "/api/academy-sales/talent-payments",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "academy-sales"
+    },
+    {
+      "method": "GET",
+      "path": "/api/academy-sales/talent-payments/:id/trace",
+      "filePath": "apps/api/src/modules/academy-sales/routes/academy-talent.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "academy-sales"
     },
