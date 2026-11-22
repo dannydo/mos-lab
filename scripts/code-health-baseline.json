@@ -34,7 +34,6 @@
     "apps/api/src/modules/notifications/routes.ts": 747,
     "apps/api/src/modules/omicall/routes.ts": 719,
     "apps/api/src/modules/pilot/pilot.service.ts": 2743,
-    "apps/api/src/modules/pilot/routes.ts": 711,
     "apps/api/src/modules/plans/routes.ts": 765,
     "apps/api/src/modules/plans/routes/plan-crud.routes.ts": 714,
     "apps/api/src/modules/post-hub/post-hub.service.ts": 1070,
@@ -172,7 +171,6 @@
     "packages/shared/src/types/academy-talent-assessment.ts": 795,
     "packages/shared/src/types/career-progression.ts": 733,
     "packages/shared/src/types/customer.ts": 858,
-    "packages/shared/src/types/pilot.ts": 1085,
     "packages/shared/src/utils/chat-checklist-summarizer.ts": 697
   }
 }

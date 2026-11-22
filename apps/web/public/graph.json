@@ -12236,13 +12236,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/pilot/media/:filename",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/pilot/media/:filename",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 47
+        "line": 23
       }
     },
     {
@@ -12250,13 +12250,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/pilot/feature-flag",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/pilot/feature-flag",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 72
+        "line": 46
       }
     },
     {
@@ -12264,13 +12264,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/pilot/materials",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/pilot/materials",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 86
+        "line": 60
       }
     },
     {
@@ -12278,13 +12278,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/materials",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/materials",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 97
+        "line": 71
       }
     },
     {
@@ -12292,13 +12292,13 @@
       "type": "FastifyRoute",
       "label": "PATCH /api/pilot/materials/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "PATCH",
         "path": "/api/pilot/materials/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 108
+        "line": 82
       }
     },
     {
@@ -12306,13 +12306,13 @@
       "type": "FastifyRoute",
       "label": "DELETE /api/pilot/materials/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "DELETE",
         "path": "/api/pilot/materials/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 124
+        "line": 98
       }
     },
     {
@@ -12320,13 +12320,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/materials/seed-defaults",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/materials/seed-defaults",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 139
+        "line": 113
       }
     },
     {
@@ -12334,13 +12334,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/pilot/material-sop",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/pilot/material-sop",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 153
+        "line": 127
       }
     },
     {
@@ -12348,13 +12348,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/material-sop",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/material-sop",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 163
+        "line": 137
       }
     },
     {
@@ -12362,13 +12362,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/material-sop/review",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/material-sop/review",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 173
+        "line": 147
       }
     },
     {
@@ -12376,13 +12376,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/pilot/sop-preparation/category-1",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/pilot/sop-preparation/category-1",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 187
+        "line": 165
       }
     },
     {
@@ -12390,13 +12390,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sop-preparation/category-1",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sop-preparation/category-1",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 197
+        "line": 175
       }
     },
     {
@@ -12404,13 +12404,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sop-preparation/category-1/criterion/:criterionId",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sop-preparation/category-1/criterion/:criterionId",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 207
+        "line": 185
       }
     },
     {
@@ -12418,13 +12418,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sop-preparation/upload-evidence",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sop-preparation/upload-evidence",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 222
+        "line": 204
       }
     },
     {
@@ -12432,13 +12432,13 @@
       "type": "FastifyRoute",
       "label": "DELETE /api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "DELETE",
         "path": "/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 232
+        "line": 214
       }
     },
     {
@@ -12446,13 +12446,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/pilot/sop-steps",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/pilot/sop-steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 253
+        "line": 239
       }
     },
     {
@@ -12460,13 +12460,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sop-steps",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sop-steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 263
+        "line": 249
       }
     },
     {
@@ -12474,13 +12474,13 @@
       "type": "FastifyRoute",
       "label": "PATCH /api/pilot/sop-steps/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "PATCH",
         "path": "/api/pilot/sop-steps/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 273
+        "line": 259
       }
     },
     {
@@ -12488,13 +12488,13 @@
       "type": "FastifyRoute",
       "label": "DELETE /api/pilot/sop-steps/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "DELETE",
         "path": "/api/pilot/sop-steps/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 288
+        "line": 274
       }
     },
     {
@@ -12502,13 +12502,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sop-steps/reorder",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sop-steps/reorder",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 302
+        "line": 288
       }
     },
     {
@@ -12516,13 +12516,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sop-steps/seed-defaults",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sop-steps/seed-defaults",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 312
+        "line": 298
       }
     },
     {
@@ -12530,13 +12530,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/pilot/sop-steps/empirical-stats",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/pilot/sop-steps/empirical-stats",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 322
+        "line": 308
       }
     },
     {
@@ -12544,13 +12544,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/pilot/assessment-criteria",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/pilot/assessment-criteria",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 336
+        "line": 322
       }
     },
     {
@@ -12558,13 +12558,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/assessment-criteria",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/assessment-criteria",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 346
+        "line": 332
       }
     },
     {
@@ -12572,13 +12572,13 @@
       "type": "FastifyRoute",
       "label": "PATCH /api/pilot/assessment-criteria/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "PATCH",
         "path": "/api/pilot/assessment-criteria/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 356
+        "line": 342
       }
     },
     {
@@ -12586,13 +12586,13 @@
       "type": "FastifyRoute",
       "label": "DELETE /api/pilot/assessment-criteria/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "DELETE",
         "path": "/api/pilot/assessment-criteria/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 371
+        "line": 357
       }
     },
     {
@@ -12600,13 +12600,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/assessment-criteria/reorder",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/assessment-criteria/reorder",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 385
+        "line": 371
       }
     },
     {
@@ -12614,13 +12614,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions/:id/assessment",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions/:id/assessment",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 396
+        "line": 24
       }
     },
     {
@@ -12628,13 +12628,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions/:id/ai-analyze",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions/:id/ai-analyze",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 412
+        "line": 40
       }
     },
     {
@@ -12642,13 +12642,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/pilot/sessions/:id/steps",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/pilot/sessions/:id/steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 432
+        "line": 60
       }
     },
     {
@@ -12656,13 +12656,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions/:id/steps/:stepId/start",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions/:id/steps/:stepId/start",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 447
+        "line": 75
       }
     },
     {
@@ -12670,13 +12670,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions/:id/steps/:stepId/finish",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions/:id/steps/:stepId/finish",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 464
+        "line": 92
       }
     },
     {
@@ -12684,13 +12684,13 @@
       "type": "FastifyRoute",
       "label": "PATCH /api/pilot/sessions/:id/steps/:stepId/note",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "PATCH",
         "path": "/api/pilot/sessions/:id/steps/:stepId/note",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 481
+        "line": 109
       }
     },
     {
@@ -12698,13 +12698,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions/:id/steps/:stepId/reset",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions/:id/steps/:stepId/reset",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 498
+        "line": 126
       }
     },
     {
@@ -12712,13 +12712,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/pilot/sessions",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 514
+        "line": 142
       }
     },
     {
@@ -12726,13 +12726,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/pilot/metrics",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/pilot/metrics",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 525
+        "line": 153
       }
     },
     {
@@ -12740,13 +12740,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 536
+        "line": 164
       }
     },
     {
@@ -12754,13 +12754,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions/:id/check-in",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions/:id/check-in",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 548
+        "line": 176
       }
     },
     {
@@ -12768,13 +12768,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions/:id/before-photo",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions/:id/before-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 564
+        "line": 192
       }
     },
     {
@@ -12782,13 +12782,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions/:id/service-done",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions/:id/service-done",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 580
+        "line": 208
       }
     },
     {
@@ -12796,13 +12796,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions/:id/after-photo",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions/:id/after-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 596
+        "line": 224
       }
     },
     {
@@ -12810,13 +12810,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions/:id/feedback",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions/:id/feedback",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 612
+        "line": 240
       }
     },
     {
@@ -12824,13 +12824,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions/:id/check-out",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions/:id/check-out",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 628
+        "line": 256
       }
     },
     {
@@ -12838,13 +12838,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/upload-photo",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/upload-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 644
+        "line": 272
       }
     },
     {
@@ -12852,13 +12852,13 @@
       "type": "FastifyRoute",
       "label": "PATCH /api/pilot/sessions/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "PATCH",
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 655
+        "line": 283
       }
     },
     {
@@ -12866,13 +12866,13 @@
       "type": "FastifyRoute",
       "label": "POST /api/pilot/sessions/:id/deduct-stock",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "POST",
         "path": "/api/pilot/sessions/:id/deduct-stock",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 671
+        "line": 299
       }
     },
     {
@@ -12880,13 +12880,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/pilot/inventory",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/pilot/inventory",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 686
+        "line": 314
       }
     },
     {
@@ -12894,13 +12894,13 @@
       "type": "FastifyRoute",
       "label": "DELETE /api/pilot/sessions/:id",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "metadata": {
         "method": "DELETE",
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 697
+        "line": 325
       }
     },
     {
@@ -30873,359 +30873,11 @@
       }
     },
     {
-      "id": "type:@mos-lab/shared:PilotFollowUpStatus",
-      "type": "SharedType",
-      "label": "PilotFollowUpStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "PilotFollowUpStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:PilotMaterialItemType",
-      "type": "SharedType",
-      "label": "PilotMaterialItemType",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "PilotMaterialItemType",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:PilotMaterial",
-      "type": "SharedType",
-      "label": "PilotMaterial",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "PilotMaterial",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CreatePilotMaterialRequest",
-      "type": "SharedType",
-      "label": "CreatePilotMaterialRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CreatePilotMaterialRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UpdatePilotMaterialRequest",
-      "type": "SharedType",
-      "label": "UpdatePilotMaterialRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UpdatePilotMaterialRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:StockInventoryItem",
-      "type": "SharedType",
-      "label": "StockInventoryItem",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "StockInventoryItem",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:PilotSessionMaterialItem",
-      "type": "SharedType",
-      "label": "PilotSessionMaterialItem",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "PilotSessionMaterialItem",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:DarkLashesSessionStatus",
-      "type": "SharedType",
-      "label": "DarkLashesSessionStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "DarkLashesSessionStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:PilotSession",
-      "type": "SharedType",
-      "label": "PilotSession",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "PilotSession",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CreatePilotSessionRequest",
-      "type": "SharedType",
-      "label": "CreatePilotSessionRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CreatePilotSessionRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UpdatePilotSessionRequest",
-      "type": "SharedType",
-      "label": "UpdatePilotSessionRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UpdatePilotSessionRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CheckInPilotSessionRequest",
-      "type": "SharedType",
-      "label": "CheckInPilotSessionRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CheckInPilotSessionRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BeforePhotoPilotSessionRequest",
-      "type": "SharedType",
-      "label": "BeforePhotoPilotSessionRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BeforePhotoPilotSessionRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:ServiceDonePilotSessionRequest",
-      "type": "SharedType",
-      "label": "ServiceDonePilotSessionRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "ServiceDonePilotSessionRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AfterPhotoPilotSessionRequest",
-      "type": "SharedType",
-      "label": "AfterPhotoPilotSessionRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AfterPhotoPilotSessionRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:FeedbackPilotSessionRequest",
-      "type": "SharedType",
-      "label": "FeedbackPilotSessionRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "FeedbackPilotSessionRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CheckOutPilotSessionRequest",
-      "type": "SharedType",
-      "label": "CheckOutPilotSessionRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CheckOutPilotSessionRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:PilotMetricsSummary",
-      "type": "SharedType",
-      "label": "PilotMetricsSummary",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "PilotMetricsSummary",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:PilotSessionsListResponse",
-      "type": "SharedType",
-      "label": "PilotSessionsListResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "PilotSessionsListResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:PilotSessionsQuery",
-      "type": "SharedType",
-      "label": "PilotSessionsQuery",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "PilotSessionsQuery",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:PilotSopStep",
-      "type": "SharedType",
-      "label": "PilotSopStep",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "PilotSopStep",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CreatePilotSopStepRequest",
-      "type": "SharedType",
-      "label": "CreatePilotSopStepRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CreatePilotSopStepRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UpdatePilotSopStepRequest",
-      "type": "SharedType",
-      "label": "UpdatePilotSopStepRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UpdatePilotSopStepRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:ReorderPilotSopStepsRequest",
-      "type": "SharedType",
-      "label": "ReorderPilotSopStepsRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "ReorderPilotSopStepsRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:PilotSessionStepStatus",
-      "type": "SharedType",
-      "label": "PilotSessionStepStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "PilotSessionStepStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:PilotSessionStep",
-      "type": "SharedType",
-      "label": "PilotSessionStep",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "PilotSessionStep",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:StartSessionStepRequest",
-      "type": "SharedType",
-      "label": "StartSessionStepRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "StartSessionStepRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:FinishSessionStepRequest",
-      "type": "SharedType",
-      "label": "FinishSessionStepRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "FinishSessionStepRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UpdateSessionStepNoteRequest",
-      "type": "SharedType",
-      "label": "UpdateSessionStepNoteRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UpdateSessionStepNoteRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
       "id": "type:@mos-lab/shared:PilotAssessmentCriterion",
       "type": "SharedType",
       "label": "PilotAssessmentCriterion",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotAssessmentCriterion",
@@ -31237,7 +30889,7 @@
       "type": "SharedType",
       "label": "CreatePilotAssessmentCriterionRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CreatePilotAssessmentCriterionRequest",
@@ -31249,7 +30901,7 @@
       "type": "SharedType",
       "label": "UpdatePilotAssessmentCriterionRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UpdatePilotAssessmentCriterionRequest",
@@ -31261,7 +30913,7 @@
       "type": "SharedType",
       "label": "ReorderPilotAssessmentCriteriaRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ReorderPilotAssessmentCriteriaRequest",
@@ -31273,7 +30925,7 @@
       "type": "SharedType",
       "label": "PilotCriterionEvaluation",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotCriterionEvaluation",
@@ -31285,7 +30937,7 @@
       "type": "SharedType",
       "label": "SavePilotAssessmentRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SavePilotAssessmentRequest",
@@ -31297,7 +30949,7 @@
       "type": "SharedType",
       "label": "PilotAiSuitability",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotAiSuitability",
@@ -31309,7 +30961,7 @@
       "type": "SharedType",
       "label": "PilotLashProfile",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotLashProfile",
@@ -31321,7 +30973,7 @@
       "type": "SharedType",
       "label": "PilotAiAssessmentRecommendation",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotAiAssessmentRecommendation",
@@ -31333,7 +30985,7 @@
       "type": "SharedType",
       "label": "PilotAiAssessment",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotAiAssessment",
@@ -31345,22 +30997,10 @@
       "type": "SharedType",
       "label": "PilotAiAnalyzeRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-assessment.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotAiAnalyzeRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:PilotAiAssessmentResponse",
-      "type": "SharedType",
-      "label": "PilotAiAssessmentResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "PilotAiAssessmentResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -31369,7 +31009,7 @@
       "type": "SharedType",
       "label": "SopItemReviewStatus",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SopItemReviewStatus",
@@ -31381,7 +31021,7 @@
       "type": "SharedType",
       "label": "SopDraftStatus",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SopDraftStatus",
@@ -31393,7 +31033,7 @@
       "type": "SharedType",
       "label": "ToolSanitizationClassification",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ToolSanitizationClassification",
@@ -31405,7 +31045,7 @@
       "type": "SharedType",
       "label": "PilotSolutionNormItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotSolutionNormItem",
@@ -31417,7 +31057,7 @@
       "type": "SharedType",
       "label": "PilotGlueRodStandardItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotGlueRodStandardItem",
@@ -31429,7 +31069,7 @@
       "type": "SharedType",
       "label": "PilotSanitizationItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotSanitizationItem",
@@ -31441,7 +31081,7 @@
       "type": "SharedType",
       "label": "PilotMaterialSopDocument",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotMaterialSopDocument",
@@ -31453,7 +31093,7 @@
       "type": "SharedType",
       "label": "SavePilotMaterialSopRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SavePilotMaterialSopRequest",
@@ -31465,7 +31105,7 @@
       "type": "SharedType",
       "label": "PilotSopMaterialItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotSopMaterialItem",
@@ -31477,7 +31117,7 @@
       "type": "SharedType",
       "label": "PilotSopCommonError",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotSopCommonError",
@@ -31489,7 +31129,7 @@
       "type": "SharedType",
       "label": "PilotSopStepDetail",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotSopStepDetail",
@@ -31501,7 +31141,7 @@
       "type": "SharedType",
       "label": "PilotStepSampleSession",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotStepSampleSession",
@@ -31513,7 +31153,7 @@
       "type": "SharedType",
       "label": "PilotSopStepEmpiricalStat",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotSopStepEmpiricalStat",
@@ -31525,10 +31165,370 @@
       "type": "SharedType",
       "label": "PilotSopEmpiricalStatsResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotSopEmpiricalStatsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotFollowUpStatus",
+      "type": "SharedType",
+      "label": "PilotFollowUpStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotFollowUpStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotMaterialItemType",
+      "type": "SharedType",
+      "label": "PilotMaterialItemType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotMaterialItemType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotMaterial",
+      "type": "SharedType",
+      "label": "PilotMaterial",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotMaterial",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreatePilotMaterialRequest",
+      "type": "SharedType",
+      "label": "CreatePilotMaterialRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreatePilotMaterialRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdatePilotMaterialRequest",
+      "type": "SharedType",
+      "label": "UpdatePilotMaterialRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdatePilotMaterialRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:StockInventoryItem",
+      "type": "SharedType",
+      "label": "StockInventoryItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "StockInventoryItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSessionMaterialItem",
+      "type": "SharedType",
+      "label": "PilotSessionMaterialItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSessionMaterialItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:DarkLashesSessionStatus",
+      "type": "SharedType",
+      "label": "DarkLashesSessionStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "DarkLashesSessionStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSession",
+      "type": "SharedType",
+      "label": "PilotSession",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSession",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreatePilotSessionRequest",
+      "type": "SharedType",
+      "label": "CreatePilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreatePilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdatePilotSessionRequest",
+      "type": "SharedType",
+      "label": "UpdatePilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdatePilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CheckInPilotSessionRequest",
+      "type": "SharedType",
+      "label": "CheckInPilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CheckInPilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BeforePhotoPilotSessionRequest",
+      "type": "SharedType",
+      "label": "BeforePhotoPilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BeforePhotoPilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ServiceDonePilotSessionRequest",
+      "type": "SharedType",
+      "label": "ServiceDonePilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ServiceDonePilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AfterPhotoPilotSessionRequest",
+      "type": "SharedType",
+      "label": "AfterPhotoPilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AfterPhotoPilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FeedbackPilotSessionRequest",
+      "type": "SharedType",
+      "label": "FeedbackPilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FeedbackPilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CheckOutPilotSessionRequest",
+      "type": "SharedType",
+      "label": "CheckOutPilotSessionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CheckOutPilotSessionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotMetricsSummary",
+      "type": "SharedType",
+      "label": "PilotMetricsSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotMetricsSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSessionsListResponse",
+      "type": "SharedType",
+      "label": "PilotSessionsListResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSessionsListResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSessionsQuery",
+      "type": "SharedType",
+      "label": "PilotSessionsQuery",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSessionsQuery",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotAiAssessmentResponse",
+      "type": "SharedType",
+      "label": "PilotAiAssessmentResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotAiAssessmentResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSopStep",
+      "type": "SharedType",
+      "label": "PilotSopStep",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSopStep",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreatePilotSopStepRequest",
+      "type": "SharedType",
+      "label": "CreatePilotSopStepRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreatePilotSopStepRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdatePilotSopStepRequest",
+      "type": "SharedType",
+      "label": "UpdatePilotSopStepRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdatePilotSopStepRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ReorderPilotSopStepsRequest",
+      "type": "SharedType",
+      "label": "ReorderPilotSopStepsRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ReorderPilotSopStepsRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSessionStepStatus",
+      "type": "SharedType",
+      "label": "PilotSessionStepStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSessionStepStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSessionStep",
+      "type": "SharedType",
+      "label": "PilotSessionStep",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSessionStep",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:StartSessionStepRequest",
+      "type": "SharedType",
+      "label": "StartSessionStepRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "StartSessionStepRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FinishSessionStepRequest",
+      "type": "SharedType",
+      "label": "FinishSessionStepRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FinishSessionStepRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateSessionStepNoteRequest",
+      "type": "SharedType",
+      "label": "UpdateSessionStepNoteRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateSessionStepNoteRequest",
         "package": "@mos-lab/shared"
       }
     },
@@ -31537,7 +31537,7 @@
       "type": "SharedType",
       "label": "SopPrepFileType",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-sop-prep-category1.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SopPrepFileType",
@@ -31549,7 +31549,7 @@
       "type": "SharedType",
       "label": "SopPrepEvidenceFile",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-sop-prep-category1.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SopPrepEvidenceFile",
@@ -31561,7 +31561,7 @@
       "type": "SharedType",
       "label": "SopPrepCriterionData",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-sop-prep-category1.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SopPrepCriterionData",
@@ -31573,7 +31573,7 @@
       "type": "SharedType",
       "label": "SopPreparationCategory1Document",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-sop-prep-category1.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SopPreparationCategory1Document",
@@ -31585,7 +31585,7 @@
       "type": "SharedType",
       "label": "SaveSopPrepCategory1Request",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-sop-prep-category1.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SaveSopPrepCategory1Request",
@@ -31597,7 +31597,7 @@
       "type": "SharedType",
       "label": "SaveSopPrepCriterionRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-sop-prep-category1.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SaveSopPrepCriterionRequest",
@@ -31609,7 +31609,7 @@
       "type": "SharedType",
       "label": "UploadSopPrepEvidenceRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/pilot.ts",
+      "filePath": "packages/shared/src/types/pilot/pilot-sop-prep-category1.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UploadSopPrepEvidenceRequest",
@@ -47915,6 +47915,45 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
+      "type": "File",
+      "label": "pilot-catalog-sop.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 16810,
+        "lineCount": 381,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/pilot/routes/pilot-route-helpers.ts",
+      "type": "File",
+      "label": "pilot-route-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-route-helpers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 575,
+        "lineCount": 14,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
+      "type": "File",
+      "label": "pilot-sessions.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14642,
+        "lineCount": 339,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/pilot/routes.ts",
       "type": "File",
       "label": "routes.ts",
@@ -47922,8 +47961,8 @@
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 31174,
-        "lineCount": 711,
+        "sizeBytes": 360,
+        "lineCount": 9,
         "ext": ".ts"
       }
     },
@@ -61539,6 +61578,71 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/pilot/pilot-assessment.types.ts",
+      "type": "File",
+      "label": "pilot-assessment.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/pilot/pilot-assessment.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 2966,
+        "lineCount": 91,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/pilot/pilot-material-sop.types.ts",
+      "type": "File",
+      "label": "pilot-material-sop.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/pilot/pilot-material-sop.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 4136,
+        "lineCount": 146,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/pilot/pilot-session.types.ts",
+      "type": "File",
+      "label": "pilot-session.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/pilot/pilot-session.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 9351,
+        "lineCount": 363,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/pilot/pilot-sop-7-steps.data.ts",
+      "type": "File",
+      "label": "pilot-sop-7-steps.data.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/pilot/pilot-sop-7-steps.data.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 19121,
+        "lineCount": 386,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/pilot/pilot-sop-prep-category1.ts",
+      "type": "File",
+      "label": "pilot-sop-prep-category1.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/pilot/pilot-sop-prep-category1.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 13623,
+        "lineCount": 245,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/pilot.test.ts",
       "type": "File",
       "label": "pilot.test.ts",
@@ -61559,8 +61663,8 @@
       "filePath": "packages/shared/src/types/pilot.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 47913,
-        "lineCount": 1085,
+        "sizeBytes": 256,
+        "lineCount": 6,
         "ext": ".ts"
       }
     },
@@ -78329,6 +78433,181 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:PilotAssessmentCriterion:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotAssessmentCriterion",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreatePilotAssessmentCriterionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreatePilotAssessmentCriterionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdatePilotAssessmentCriterionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdatePilotAssessmentCriterionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ReorderPilotAssessmentCriteriaRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ReorderPilotAssessmentCriteriaRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotCriterionEvaluation:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotCriterionEvaluation",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SavePilotAssessmentRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SavePilotAssessmentRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotAiSuitability:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotAiSuitability",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotLashProfile:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotLashProfile",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotAiAssessmentRecommendation:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotAiAssessmentRecommendation",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotAiAssessment:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotAiAssessment",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotAiAnalyzeRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotAiAnalyzeRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SopItemReviewStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SopItemReviewStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SopDraftStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SopDraftStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ToolSanitizationClassification:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ToolSanitizationClassification",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSolutionNormItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSolutionNormItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotGlueRodStandardItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotGlueRodStandardItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSanitizationItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSanitizationItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotMaterialSopDocument:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotMaterialSopDocument",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SavePilotMaterialSopRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SavePilotMaterialSopRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSopMaterialItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSopMaterialItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSopCommonError:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSopCommonError",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSopStepDetail:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSopStepDetail",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotStepSampleSession:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotStepSampleSession",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSopStepEmpiricalStat:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSopStepEmpiricalStat",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSopEmpiricalStatsResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSopEmpiricalStatsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:PilotFollowUpStatus:ws:packages/shared",
       "source": "type:@mos-lab/shared:PilotFollowUpStatus",
       "target": "ws:packages/shared",
@@ -78469,6 +78748,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:PilotAiAssessmentResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotAiAssessmentResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:PilotSopStep:ws:packages/shared",
       "source": "type:@mos-lab/shared:PilotSopStep",
       "target": "ws:packages/shared",
@@ -78527,188 +78813,6 @@
     {
       "id": "edge:type:@mos-lab/shared:UpdateSessionStepNoteRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:UpdateSessionStepNoteRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotAssessmentCriterion:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotAssessmentCriterion",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:CreatePilotAssessmentCriterionRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:CreatePilotAssessmentCriterionRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:UpdatePilotAssessmentCriterionRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UpdatePilotAssessmentCriterionRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:ReorderPilotAssessmentCriteriaRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:ReorderPilotAssessmentCriteriaRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotCriterionEvaluation:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotCriterionEvaluation",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:SavePilotAssessmentRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:SavePilotAssessmentRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotAiSuitability:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotAiSuitability",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotLashProfile:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotLashProfile",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotAiAssessmentRecommendation:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotAiAssessmentRecommendation",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotAiAssessment:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotAiAssessment",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotAiAnalyzeRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotAiAnalyzeRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotAiAssessmentResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotAiAssessmentResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:SopItemReviewStatus:ws:packages/shared",
-      "source": "type:@mos-lab/shared:SopItemReviewStatus",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:SopDraftStatus:ws:packages/shared",
-      "source": "type:@mos-lab/shared:SopDraftStatus",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:ToolSanitizationClassification:ws:packages/shared",
-      "source": "type:@mos-lab/shared:ToolSanitizationClassification",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotSolutionNormItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotSolutionNormItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotGlueRodStandardItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotGlueRodStandardItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotSanitizationItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotSanitizationItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotMaterialSopDocument:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotMaterialSopDocument",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:SavePilotMaterialSopRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:SavePilotMaterialSopRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotSopMaterialItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotSopMaterialItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotSopCommonError:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotSopCommonError",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotSopStepDetail:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotSopStepDetail",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotStepSampleSession:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotStepSampleSession",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotSopStepEmpiricalStat:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotSopStepEmpiricalStat",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:PilotSopEmpiricalStatsResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:PilotSopEmpiricalStatsResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -90719,8 +90823,15 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/pilot/routes.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/pilot/routes.ts",
+      "id": "edge:file:apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -128695,8 +128806,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4796,
-    "totalEdges": 9532,
+    "totalNodes": 4804,
+    "totalEdges": 9533,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -128705,14 +128816,14 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 547,
-      "File": 1635
+      "File": 1643
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 613,
       "USES_TOKEN": 549,
-      "IMPORTS": 970,
+      "IMPORTS": 971,
       "QUERIES_MODEL": 519,
       "API_CALL": 4336
     },
@@ -133177,336 +133288,336 @@
     {
       "method": "GET",
       "path": "/api/pilot/media/:filename",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "GET",
       "path": "/api/pilot/feature-flag",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "GET",
       "path": "/api/pilot/materials",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/materials",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "PATCH",
       "path": "/api/pilot/materials/:id",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "DELETE",
       "path": "/api/pilot/materials/:id",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/materials/seed-defaults",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "GET",
       "path": "/api/pilot/material-sop",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/material-sop",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/material-sop/review",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "GET",
       "path": "/api/pilot/sop-preparation/category-1",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sop-preparation/category-1",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sop-preparation/category-1/criterion/:criterionId",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sop-preparation/upload-evidence",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "DELETE",
       "path": "/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "GET",
       "path": "/api/pilot/sop-steps",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sop-steps",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "PATCH",
       "path": "/api/pilot/sop-steps/:id",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "DELETE",
       "path": "/api/pilot/sop-steps/:id",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sop-steps/reorder",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sop-steps/seed-defaults",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "GET",
       "path": "/api/pilot/sop-steps/empirical-stats",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "GET",
       "path": "/api/pilot/assessment-criteria",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/assessment-criteria",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "PATCH",
       "path": "/api/pilot/assessment-criteria/:id",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "DELETE",
       "path": "/api/pilot/assessment-criteria/:id",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/assessment-criteria/reorder",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-catalog-sop.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions/:id/assessment",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions/:id/ai-analyze",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "GET",
       "path": "/api/pilot/sessions/:id/steps",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions/:id/steps/:stepId/start",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions/:id/steps/:stepId/finish",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "PATCH",
       "path": "/api/pilot/sessions/:id/steps/:stepId/note",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions/:id/steps/:stepId/reset",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "GET",
       "path": "/api/pilot/sessions",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "GET",
       "path": "/api/pilot/metrics",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions/:id/check-in",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions/:id/before-photo",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions/:id/service-done",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions/:id/after-photo",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions/:id/feedback",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions/:id/check-out",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/upload-photo",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "PATCH",
       "path": "/api/pilot/sessions/:id",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "POST",
       "path": "/api/pilot/sessions/:id/deduct-stock",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "GET",
       "path": "/api/pilot/inventory",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
     {
       "method": "DELETE",
       "path": "/api/pilot/sessions/:id",
-      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "filePath": "apps/api/src/modules/pilot/routes/pilot-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
     },
