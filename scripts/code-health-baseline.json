@@ -33,8 +33,6 @@
     "apps/api/src/modules/kpi/services/telesale-tv-celebration.service.ts": 1313,
     "apps/api/src/modules/notifications/routes.ts": 747,
     "apps/api/src/modules/omicall/routes.ts": 719,
-    "apps/api/src/modules/plans/routes.ts": 765,
-    "apps/api/src/modules/plans/routes/plan-crud.routes.ts": 714,
     "apps/api/src/modules/post-hub/post-hub.service.ts": 1070,
     "apps/api/src/modules/qa-shop/qa-shop.service.ts": 1157,
     "apps/api/src/modules/sms/routes.ts": 682,
