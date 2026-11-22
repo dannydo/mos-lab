@@ -1,62 +1,40 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Alert, Button, Select, Radio, Input, theme, message, Card, Tag, Switch } from 'antd';
-import {
-  PhoneOutlined,
-  UserOutlined,
-  HomeOutlined,
-  CalendarOutlined,
-  InboxOutlined,
-  GiftOutlined,
-  CopyOutlined,
-  SaveOutlined,
-  CheckOutlined,
-  MessageOutlined,
-  SettingOutlined,
-  ExclamationCircleOutlined,
-} from '@ant-design/icons';
+import { Alert, Button, theme, message } from 'antd';
+import { CalendarOutlined, CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
 import { apiClient } from '../lib/api-client';
-import {
-  vietnameseSearchFilter,
-  CustomerCampaignPromotionInfo,
-  CustomerCampaignPromotionItem,
-  BookingConfirmationTemplate,
-  DEFAULT_BOOKING_TEMPLATES,
-  BOOKING_TEMPLATE_TAGS,
-} from '@mos-lab/shared';
+import { CustomerCampaignPromotionInfo } from '@mos-lab/shared';
 
 // Shared modules
-import { STORES, FALLBACK_SERVICES, CHANNELS, getStoreFullAddress, isStaffOffOnDate } from './booking/constants';
-import { checkAndAppendLowerLashNote, getCalculatedPrice } from './booking/comboUtils';
+import { STORES, FALLBACK_SERVICES } from './booking/constants';
+import { getCalculatedPrice } from './booking/comboUtils';
 import { useBookingStaff } from './booking/useBookingStaff';
 import { useSlotMatrix } from './booking/useSlotMatrix';
 import { useCustomerInsights } from './booking/useCustomerInsights';
-import { TechnicianSelector } from './booking/TechnicianSelector';
-import { SlotMatrixGrid } from './booking/SlotMatrixGrid';
 import { BookingTemplateManagerModal } from './booking/BookingTemplateManagerModal';
-import { CvDatePicker } from './booking/CvDatePicker';
 import CreateCustomerModal from './CreateCustomerModal';
-import { AdaptiveDrawer, AdaptiveModal } from './ui/AdaptiveOverlay';
-import { CopyPhoneButton } from './ui';
+import { AdaptiveDrawer } from './ui/AdaptiveOverlay';
 import { notifyBookingMutation, toBookingCustomerId } from '../lib/booking-events';
 import {
-  isBookingWithinCampaignScope,
-  resolveEligibleCampaignPromotions,
-  resolveDefaultCampaignPromotion,
-} from './booking/bookingCampaignScope';
-
-const { TextArea } = Input;
-
-const getFixedPriceScopeLabel = (promotion: CustomerCampaignPromotionItem): string => {
-  const categoryLabels = promotion.eligibleServiceCategoryLabels || [];
-  if (categoryLabels.length > 0) return categoryLabels.join(', ');
-
-  const serviceCount = (promotion.eligibleServiceIds || []).length;
-  return serviceCount === 1 ? '1 dịch vụ mi đã cấu hình' : `${serviceCount} dịch vụ mi đã cấu hình`;
-};
+  buildValidatedBookingPayload,
+  isCvDateDisabled,
+  normalizeInitialBookingCustomer,
+  resolveInitialStore,
+} from './booking/wizard/bookingWizardHelpers';
+import { useBookingWizardTemplates } from './booking/wizard/useBookingWizardTemplates';
+import { useBookingWizardCustomerAndPromos } from './booking/wizard/useBookingWizardCustomerAndPromos';
+import { BookingWizardCvAndBranchSection } from './booking/wizard/BookingWizardCvAndBranchSection';
+import { BookingWizardCustomerSection } from './booking/wizard/BookingWizardCustomerSection';
+import { BookingWizardServiceSection } from './booking/wizard/BookingWizardServiceSection';
+import { BookingWizardPromotionsAndNoteSection } from './booking/wizard/BookingWizardPromotionsAndNoteSection';
+import { BookingWizardSlotSection } from './booking/wizard/BookingWizardSlotSection';
+import {
+  BookingWizardConfirmationCard,
+  BookingWizardLateSlotModal,
+} from './booking/wizard/BookingWizardMessageAndModals';
 
 interface BookingWizardDrawerProps {
   open: boolean;
@@ -95,71 +73,44 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   const [showCvCardSelector, setShowCvCardSelector] = useState(false);
   const [showMessagePreview, setShowMessagePreview] = useState(false);
 
-  // Form State
-  const [selectedCV, setSelectedCV] = useState<SafeAny>(null); // Specific CV or null for "No CV"
-  const [selectedCN, setSelectedCN] = useState<SafeAny>(STORES[0]); // Branch/Store
-  const [searchQuery, setSearchQuery] = useState('');
-  const [customerList, setCustomerList] = useState<SafeAny[]>([]);
-  const [searchingCustomers, setSearchingCustomers] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<SafeAny>(null);
+  // Core Form States
+  const [selectedCV, setSelectedCV] = useState<SafeAny>(null);
+  const [selectedCN, setSelectedCN] = useState<SafeAny>(STORES[0]);
   const [isCreateCustomerModalOpen, setIsCreateCustomerModalOpen] = useState(false);
-
-  // Promotion & Referral states
-  const [promotions, setPromotions] = useState<SafeAny[]>([]);
-  const [selectedPromotion, setSelectedPromotion] = useState<SafeAny>(null);
-  const [referralPhone, setReferralPhone] = useState('');
-
-  // Campaign Promotion states
-  const [customerCampaignPromotions, setCustomerCampaignPromotions] = useState<CustomerCampaignPromotionInfo[]>([]);
-  const [selectedCampaignPromotion, setSelectedCampaignPromotion] = useState<CustomerCampaignPromotionItem | null>(
-    null
-  );
-  const [loadingCampaignPromotions, setLoadingCampaignPromotions] = useState(false);
-
-  // Custom lead fields for new customer
-  const [isNewLead, setIsNewLead] = useState(false);
-  const [leadName, setLeadName] = useState('');
-  const [leadPhone, setLeadPhone] = useState('');
-  const [isForeignCustomer, setIsForeignCustomer] = useState(false);
-
-  // Auto detect foreign customer status from phone or selectedCustomer
-  useEffect(() => {
-    if (isNewLead && leadPhone) {
-      const clean = leadPhone.replace(/[\s\-\(\)\.]/g, '').trim();
-      if (clean) {
-        const isVn = /^(0|\+?84)[35789]\d{8}$/.test(clean);
-        setIsForeignCustomer(!isVn);
-      }
-    } else if (!isNewLead && selectedCustomer) {
-      if (selectedCustomer.isForeign !== undefined) {
-        setIsForeignCustomer(Boolean(selectedCustomer.isForeign));
-      } else if (selectedCustomer.phone) {
-        const clean = String(selectedCustomer.phone)
-          .replace(/[\s\-\(\)\.]/g, '')
-          .trim();
-        const isVn = /^(0|\+?84)[35789]\d{8}$/.test(clean);
-        setIsForeignCustomer(!isVn);
-      }
-    }
-  }, [isNewLead, leadPhone, selectedCustomer]);
-
   const [selectedService, setSelectedService] = useState<SafeAny>(null);
   const [services, setServices] = useState<SafeAny[]>(FALLBACK_SERVICES);
   const [bookingChannel, setBookingChannel] = useState('FB');
   const [bookingNote, setBookingNote] = useState('');
 
-  // Step 4 Confirmation Template States
-  const [bookingCreated, setBookingCreated] = useState(false);
-  const [bookingTemplates, setBookingTemplates] = useState<BookingConfirmationTemplate[]>(DEFAULT_BOOKING_TEMPLATES);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('tpl_booking_no_tech');
-  const [customMessage, setCustomMessage] = useState<string>('');
-  const [savingTemplate, setSavingTemplate] = useState<boolean>(false);
-  const [loadingTemplates, setLoadingTemplates] = useState<boolean>(false);
-  const [isManagerModalOpen, setIsManagerModalOpen] = useState<boolean>(false);
-
   // 20:00 Late Slot Confirmation Modal States
   const [isLateSlotModalOpen, setIsLateSlotModalOpen] = useState<boolean>(false);
   const [pendingSlot, setPendingSlot] = useState<string | null>(null);
+  const [pickerNonce, setPickerNonce] = useState<number>(0);
+  const [creatingBooking, setCreatingBooking] = useState(false);
+  const [bookingCreationError, setBookingCreationError] = useState<string | null>(null);
+
+  const customerPromos = useBookingWizardCustomerAndPromos({
+    open,
+    initialCampaignPromotions,
+    selectedService,
+  });
+
+  const { favoriteTechs, comboBalances, suggestedServices, lastUsedServices, suggestedBranch, customerLastVisit } =
+    useCustomerInsights(customerPromos.selectedCustomer, selectedCN, setSelectedCN);
+
+  const { staffList, loadingStaff, fetchStaff, getGroupedKTVs, getFavoriteKTVs } = useBookingStaff(null, favoriteTechs);
+
+  const {
+    bookingDate: rawBookingDate,
+    setBookingDate: setRawBookingDate,
+    selectedSlot,
+    setSelectedSlot,
+    slotMatrix,
+    loadingSlots,
+    fetchSlots,
+    getNextAvailableDate,
+    getCategorizedSlots,
+  } = useSlotMatrix(selectedCN, selectedCV);
 
   const handleSelectSlot = (slot: string | null) => {
     if (!slot) {
@@ -174,228 +125,30 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     setSelectedSlot(slot);
   };
 
-  // Custom Hooks
-  const { favoriteTechs, comboBalances, suggestedServices, lastUsedServices, suggestedBranch, customerLastVisit } =
-    useCustomerInsights(selectedCustomer, selectedCN, setSelectedCN);
-
-  const { staffList, loadingStaff, fetchStaff, getGroupedKTVs, getFavoriteKTVs } = useBookingStaff(null, favoriteTechs);
-
-  const [pickerNonce, setPickerNonce] = useState<number>(0);
-
-  const {
-    bookingDate: rawBookingDate,
-    setBookingDate: setRawBookingDate,
+  const templates = useBookingWizardTemplates({
+    open,
+    isNewLead: customerPromos.isNewLead,
+    leadName: customerPromos.leadName,
+    selectedCustomer: customerPromos.selectedCustomer,
+    selectedCN,
     selectedSlot,
-    setSelectedSlot,
-    slotMatrix,
-    loadingSlots,
-    fetchSlots,
-    getNextAvailableDate,
-    getCategorizedSlots,
-  } = useSlotMatrix(selectedCN, selectedCV);
-
-  // Helper for Vietnamese Day of Week without accent
-  const getDayOfWeekNoAccent = useCallback((date: SafeAny): string => {
-    if (!date) return 'Chu Nhat';
-    const d = typeof date.format === 'function' ? date : dayjs(date);
-    const dayNum = d.day();
-    const map: { [key: number]: string } = {
-      0: 'Chu Nhat',
-      1: 'Thu Hai',
-      2: 'Thu Ba',
-      3: 'Thu Tu',
-      4: 'Thu Nam',
-      5: 'Thu Sau',
-      6: 'Thu Bay',
-    };
-    return map[dayNum] || 'Chu Nhat';
-  }, []);
-
-  // Helper for Cycle Days ({chu_ky_ngay})
-  const getCycleDays = useCallback(
-    (targetDate: SafeAny, customer: SafeAny, fallbackLastVisit?: string | null): number => {
-      const lastVisit =
-        customer?.lastVisit || customer?.last_order_booking || customer?.lastOrderBooking || fallbackLastVisit;
-      if (!lastVisit) return 0;
-      const tDate = typeof targetDate?.format === 'function' ? targetDate : dayjs(targetDate);
-      const lDate = dayjs(lastVisit);
-      if (!tDate.isValid() || !lDate.isValid()) return 0;
-      const diff = tDate.diff(lDate, 'day');
-      return diff > 0 ? diff : 0;
-    },
-    []
-  );
-
-  // Helper to evaluate tags in template
-  const evaluateBookingTemplate = useCallback(
-    (templateContent: string): string => {
-      if (!templateContent) return '';
-      const customerName = isNewLead
-        ? leadName
-        : selectedCustomer?.name || selectedCustomer?.customerName || 'Khách hàng';
-      const branchName = getStoreFullAddress(selectedCN);
-      const slotTime = selectedSlot || '1:30 PM';
-      const dayOfWeek = getDayOfWeekNoAccent(rawBookingDate);
-      const formattedDate = rawBookingDate
-        ? typeof rawBookingDate.format === 'function'
-          ? rawBookingDate.format('DD/MM/YYYY')
-          : dayjs(rawBookingDate).format('DD/MM/YYYY')
-        : dayjs().format('DD/MM/YYYY');
-      const techName = selectedCV?.displayName || 'Chuyên viên';
-      const cycleDays = getCycleDays(rawBookingDate, selectedCustomer, customerLastVisit);
-
-      return templateContent
-        .replace(/\{ten_khach\}/g, customerName)
-        .replace(/\{chi_nhanh\}/g, branchName)
-        .replace(/\{gio_hen\}/g, slotTime)
-        .replace(/\{thu_ngay\}/g, dayOfWeek)
-        .replace(/\{ngay_thang_nam\}/g, formattedDate)
-        .replace(/\{ten_chuyen_vien\}/g, techName)
-        .replace(/\{chu_ky_ngay\}/g, String(cycleDays));
-    },
-    [
-      isNewLead,
-      leadName,
-      selectedCustomer,
-      selectedCN,
-      selectedSlot,
-      rawBookingDate,
-      selectedCV,
-      customerLastVisit,
-      getDayOfWeekNoAccent,
-      getCycleDays,
-    ]
-  );
-
-  // Helper to auto select template based on priority rule: 20:00 slot > Has Tech > No Tech
-  const autoSelectTemplate = useCallback(
-    (templatesList: BookingConfirmationTemplate[]) => {
-      const isLateSlot = selectedSlot && (selectedSlot.includes('20:00') || selectedSlot === '20:00');
-      const hasTech = selectedCV !== null && selectedCV !== undefined;
-
-      let target: BookingConfirmationTemplate | undefined;
-      if (isLateSlot && hasTech) {
-        target = templatesList.find(
-          (t) => t.type === 'has_tech_late_slot' || t.id === 'tpl_booking_has_tech_late_slot'
-        );
-      } else if (isLateSlot) {
-        target = templatesList.find((t) => t.type === 'late_slot' || t.id === 'tpl_booking_late_slot');
-      } else if (hasTech) {
-        target = templatesList.find((t) => t.type === 'has_tech' || t.id === 'tpl_booking_has_tech');
-      } else {
-        target = templatesList.find((t) => t.type === 'no_tech' || t.id === 'tpl_booking_no_tech');
-      }
-
-      if (!target && templatesList.length > 0) {
-        target = templatesList[0];
-      }
-
-      if (target) {
-        setSelectedTemplateId(target.id);
-        setCustomMessage(target.content);
-      }
-    },
-    [selectedSlot, selectedCV]
-  );
-
-  useEffect(() => {
-    if (open && bookingTemplates.length > 0) {
-      autoSelectTemplate(bookingTemplates);
-    }
-  }, [open, selectedSlot, selectedCV, bookingTemplates, autoSelectTemplate]);
-
-  // Fetch templates from API
-  const fetchBookingTemplates = useCallback(async () => {
-    setLoadingTemplates(true);
-    try {
-      const list = await apiClient.sms.getBookingTemplates();
-      if (Array.isArray(list) && list.length > 0) {
-        setBookingTemplates(list);
-        return list;
-      }
-    } catch (err) {
-      console.error('Failed to fetch booking templates:', err);
-    } finally {
-      setLoadingTemplates(false);
-    }
-    return DEFAULT_BOOKING_TEMPLATES;
-  }, []);
+    rawBookingDate,
+    selectedCV,
+    customerLastVisit,
+  });
 
   const { morning, afternoon, night } = getCategorizedSlots();
 
-  const HARDCODED_OFF_DATES: { [name: string]: string[] } = {
-    'cẩm tiên': ['2026-07-26', '2026-07-27'],
-    'cam tien': ['2026-07-26', '2026-07-27'],
-  };
-
-  const isDateDisabledForCV = useCallback(
-    (current: dayjs.Dayjs, cv: SafeAny) => {
-      if (!current) return false;
-
-      if (current.isBefore(dayjs().startOf('day'))) {
-        return true;
-      }
-
-      if (!cv) {
-        return false;
-      }
-
-      const cvName = (cv.displayName || '').trim().toLowerCase();
-      const cvNormalized = cvName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-      const dateStr = current.format('YYYY-MM-DD');
-
-      const matchedStaffs = (staffList || []).filter(
-        (s: SafeAny) => s.id === cv.id || (s.displayName && s.displayName.trim().toLowerCase() === cvName)
-      );
-
-      const fallbackOffDates = HARDCODED_OFF_DATES[cvName] || HARDCODED_OFF_DATES[cvNormalized] || [];
-
-      const allApprovedOffDates: string[] = Array.from(
-        new Set([
-          ...(cv.approvedOffDates || []),
-          ...matchedStaffs.flatMap((s: SafeAny) => s.approvedOffDates || []),
-          ...fallbackOffDates,
-        ])
-      );
-
-      if (allApprovedOffDates.includes(dateStr)) {
-        return true;
-      }
-
-      const allOffDays: string[] = Array.from(
-        new Set([...(cv.offDays || []), ...matchedStaffs.flatMap((s: SafeAny) => s.offDays || [])])
-      );
-
-      if (allOffDays.length > 0) {
-        const dayOfWeek = current.day();
-        const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
-        if (allOffDays.includes(dbDayStr)) {
-          return true;
-        }
-      }
-
-      return false;
-    },
-    [staffList]
-  );
-
-  const isCVOff = useCallback(
-    (date: dayjs.Dayjs, cv: SafeAny) => {
-      return isDateDisabledForCV(date, cv);
-    },
-    [isDateDisabledForCV]
-  );
+  const isCVOff = useCallback((date: dayjs.Dayjs, cv: SafeAny) => isCvDateDisabled(date, cv, staffList), [staffList]);
 
   const setBookingDate = useCallback(
     (newDate: dayjs.Dayjs | null) => {
       if (!newDate) return;
-      const cDayjs = dayjs(newDate);
-      const adjusted = getNextAvailableDate(cDayjs, selectedCV);
+      const adjusted = getNextAvailableDate(dayjs(newDate), selectedCV);
       setRawBookingDate(dayjs(adjusted));
       setPickerNonce((prev) => prev + 1);
     },
-    [selectedCV, getNextAvailableDate, setRawBookingDate, setPickerNonce]
+    [selectedCV, getNextAvailableDate, setRawBookingDate]
   );
 
   const bookingDate = rawBookingDate;
@@ -413,13 +166,71 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     return getNextAvailableDate(target, selectedCV);
   }, [bookingDate, selectedCV, getNextAvailableDate]);
 
+  const fetchServices = async () => {
+    try {
+      const data = await apiClient.customers.getServices();
+      setServices(data || FALLBACK_SERVICES);
+      if (data && data.length > 0) {
+        setSelectedService(data[0]);
+      }
+    } catch (err) {
+      console.error('[BookingWizard] Failed to fetch services:', err);
+      setServices(FALLBACK_SERVICES);
+    }
+  };
+
+  const resetForm = () => {
+    setShowCvCardSelector(false);
+    setShowMessagePreview(false);
+    setSelectedCV(initialCV || null);
+    const resolvedBranch = initialBranch
+      ? resolveInitialStore(initialBranch)
+      : initialCV?.notes
+        ? resolveInitialStore(initialCV.notes)
+        : STORES[0];
+    setSelectedCN(resolvedBranch);
+    if (initialCustomer) {
+      const normalizedCust = normalizeInitialBookingCustomer(initialCustomer);
+      customerPromos.setSelectedCustomer(normalizedCust);
+      customerPromos.setCustomerList([normalizedCust]);
+      customerPromos.setIsNewLead(false);
+    } else {
+      customerPromos.setSelectedCustomer(null);
+      customerPromos.setIsNewLead(false);
+    }
+    customerPromos.setLeadName('');
+    customerPromos.setLeadPhone('');
+
+    if (initialDate) {
+      setRawBookingDate(dayjs(initialDate));
+    } else {
+      const checkCV =
+        initialCV || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
+      const initialAvailable = getNextAvailableDate(dayjs(), checkCV);
+      const safeInitial =
+        initialAvailable.date() === 27 || initialAvailable.date() === 26 || initialAvailable.day() === 2
+          ? getNextAvailableDate(dayjs(), checkCV)
+          : initialAvailable;
+      setRawBookingDate(safeInitial);
+    }
+
+    setSelectedSlot(initialSlot || null);
+    setBookingChannel('FB');
+    setBookingNote(initialIsOverbook ? '[⚠️ Ép lịch Overbook]' : '');
+    setBookingCreationError(null);
+    customerPromos.setSelectedPromotion(null);
+    customerPromos.setCustomerCampaignPromotions(initialCampaignPromotions || []);
+    customerPromos.setSelectedCampaignPromotion(null);
+    customerPromos.setReferralPhone('');
+  };
+
   useEffect(() => {
     if (open) {
       fetchStaff(bookingDate.format('YYYY-MM-DD'));
       fetchServices();
-      fetchPromotions();
+      customerPromos.fetchPromotions();
       resetForm();
-      void fetchBookingTemplates().then((list) => autoSelectTemplate(list));
+      void templates.fetchBookingTemplates().then((list) => templates.autoSelectTemplate(list));
     }
   }, [open]);
 
@@ -436,188 +247,6 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       fetchSlots();
     }
   }, [selectedCN, bookingDate, selectedCV, open]);
-
-  const resolveInitialStore = (branchInput: SafeAny) => {
-    if (!branchInput) return STORES[0];
-    if (typeof branchInput === 'object' && branchInput.id) {
-      return STORES.find((s) => Number(s.id) === Number(branchInput.id)) || branchInput;
-    }
-    const rawStr = String(branchInput).trim().toLowerCase();
-    if (rawStr === '6' || rawStr.includes('đề thám') || rawStr.includes('de tham')) {
-      return STORES.find((s) => s.id === 6) || STORES[1] || STORES[0];
-    }
-    if (rawStr === '16' || rawStr.includes('estella')) {
-      return STORES.find((s) => s.id === 16) || STORES[0];
-    }
-    return STORES.find((s) => s.name.toLowerCase().includes(rawStr)) || STORES[0];
-  };
-
-  const resetForm = () => {
-    setShowCvCardSelector(false);
-    setShowMessagePreview(false);
-    setBookingCreated(false);
-    setSelectedCV(initialCV || null);
-    const resolvedBranch = initialBranch
-      ? resolveInitialStore(initialBranch)
-      : initialCV?.notes
-        ? resolveInitialStore(initialCV.notes)
-        : STORES[0];
-    setSelectedCN(resolvedBranch);
-    if (initialCustomer) {
-      const normalizedCust = {
-        ...initialCustomer,
-        id: initialCustomer.legacyUserId || initialCustomer.customerId || initialCustomer.id,
-        name:
-          initialCustomer.name ||
-          initialCustomer.customerName ||
-          initialCustomer.user_name ||
-          `Khách hàng #${initialCustomer.id}`,
-        phone: initialCustomer.phone || initialCustomer.customerPhone || initialCustomer.user_phone || '',
-      };
-      setSelectedCustomer(normalizedCust);
-      setCustomerList([normalizedCust]);
-      setIsNewLead(false);
-    } else {
-      setSelectedCustomer(null);
-      setIsNewLead(false);
-    }
-    setLeadName('');
-    setLeadPhone('');
-
-    if (initialDate) {
-      setRawBookingDate(dayjs(initialDate));
-    } else {
-      const checkCV =
-        initialCV || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
-      const initialAvailable = getNextAvailableDate(dayjs(), checkCV);
-      const safeInitial =
-        initialAvailable.date() === 27 || initialAvailable.date() === 26 || initialAvailable.day() === 2
-          ? getNextAvailableDate(dayjs(), checkCV)
-          : initialAvailable;
-      setRawBookingDate(safeInitial);
-    }
-
-    if (initialSlot) {
-      setSelectedSlot(initialSlot);
-    } else {
-      setSelectedSlot(null);
-    }
-
-    setBookingChannel('FB');
-    setBookingNote(initialIsOverbook ? '[⚠️ Ép lịch Overbook]' : '');
-    setBookingCreationError(null);
-    setSelectedPromotion(null);
-    setCustomerCampaignPromotions(initialCampaignPromotions || []);
-    setSelectedCampaignPromotion(null);
-    setReferralPhone('');
-  };
-
-  const fetchCustomerCampaignPromotions = useCallback(
-    async (customerId: number) => {
-      if (!customerId) {
-        setCustomerCampaignPromotions([]);
-        setSelectedCampaignPromotion(null);
-        return;
-      }
-
-      setLoadingCampaignPromotions(true);
-      try {
-        const data = await apiClient.campaigns.getCustomerActivePromotions(customerId);
-        const campPromos = resolveEligibleCampaignPromotions(initialCampaignPromotions, data);
-        setCustomerCampaignPromotions(campPromos);
-
-        const defaultPromotion = resolveDefaultCampaignPromotion(campPromos);
-        if (defaultPromotion) {
-          setSelectedCampaignPromotion(defaultPromotion);
-          setSelectedPromotion(null);
-        } else {
-          setSelectedCampaignPromotion(null);
-        }
-      } catch (err) {
-        console.error('[BookingWizard] Failed to fetch customer campaign promotions:', err);
-        const campPromos = resolveEligibleCampaignPromotions(initialCampaignPromotions, null);
-        setCustomerCampaignPromotions(campPromos);
-        const defaultPromotion = resolveDefaultCampaignPromotion(campPromos);
-        if (defaultPromotion) {
-          setSelectedCampaignPromotion(defaultPromotion);
-          setSelectedPromotion(null);
-        } else {
-          setSelectedCampaignPromotion(null);
-        }
-      } finally {
-        setLoadingCampaignPromotions(false);
-      }
-    },
-    [initialCampaignPromotions]
-  );
-
-  // The campaign detail page loads catalog scope asynchronously. If the drawer
-  // was opened before that context arrived, hydrate its empty list as soon as
-  // the membership-scoped context becomes available. The API remains the source
-  // of truth when a booking is submitted.
-  useEffect(() => {
-    if (!open || isNewLead || !initialCampaignPromotions || initialCampaignPromotions.length === 0) return;
-    setCustomerCampaignPromotions((current) => (current.length > 0 ? current : initialCampaignPromotions));
-  }, [initialCampaignPromotions, isNewLead, open]);
-
-  useEffect(() => {
-    const targetCustId = selectedCustomer?.legacyUserId || selectedCustomer?.id;
-    if (open && selectedCustomer && targetCustId && !isNewLead) {
-      fetchCustomerCampaignPromotions(targetCustId);
-    } else {
-      setCustomerCampaignPromotions(initialCampaignPromotions || []);
-      setSelectedCampaignPromotion(null);
-    }
-  }, [selectedCustomer, isNewLead, open, initialCampaignPromotions, fetchCustomerCampaignPromotions]);
-
-  useEffect(() => {
-    if (
-      selectedCampaignPromotion?.type === 'FIXED_FINAL_PRICE' &&
-      (!selectedService ||
-        !(selectedCampaignPromotion.eligibleServiceIds || []).map(Number).includes(Number(selectedService.id)))
-    ) {
-      setSelectedCampaignPromotion(null);
-    }
-  }, [selectedCampaignPromotion, selectedService]);
-
-  const fetchPromotions = async () => {
-    try {
-      const data = await apiClient.customers.getPromotions();
-      setPromotions(data || []);
-    } catch (err) {
-      console.error('[BookingWizard] Failed to fetch promotions:', err);
-    }
-  };
-
-  const fetchServices = async () => {
-    try {
-      const data = await apiClient.customers.getServices();
-      setServices(data || FALLBACK_SERVICES);
-      if (data && data.length > 0) {
-        setSelectedService(data[0]);
-      }
-    } catch (err) {
-      console.error('[BookingWizard] Failed to fetch services:', err);
-      setServices(FALLBACK_SERVICES);
-    }
-  };
-
-  const handleSearchCustomers = async (val: string) => {
-    setSearchQuery(val);
-    if (!val.trim()) {
-      setCustomerList([]);
-      return;
-    }
-    setSearchingCustomers(true);
-    try {
-      const data = await apiClient.customers.list({ search: val, limit: 10 });
-      setCustomerList(data.data || []);
-    } catch (err) {
-      console.error('Search customers failed:', err);
-    } finally {
-      setSearchingCustomers(false);
-    }
-  };
 
   const selectCVOption = (cv: SafeAny) => {
     setSelectedCV(cv);
@@ -648,86 +277,52 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     }
   };
 
-  const [creatingBooking, setCreatingBooking] = useState(false);
-  const [bookingCreationError, setBookingCreationError] = useState<string | null>(null);
-
   const handleFinalCreateBooking = async () => {
-    if (!selectedCN) {
-      message.error('Vui lòng chọn chi nhánh');
-      return;
-    }
-    if (!selectedService) {
-      message.error('Vui lòng chọn dịch vụ');
-      return;
-    }
-    if (!selectedSlot) {
-      message.error('Vui lòng chọn khung giờ trống');
-      return;
-    }
-    if (!selectedCustomer && !isNewLead) {
-      message.error('Vui lòng chọn khách hàng');
-      return;
-    }
+    const validationResult = buildValidatedBookingPayload({
+      selectedCN,
+      selectedService,
+      selectedSlot,
+      selectedCustomer: customerPromos.selectedCustomer,
+      isNewLead: customerPromos.isNewLead,
+      leadName: customerPromos.leadName,
+      leadPhone: customerPromos.leadPhone,
+      selectedCV,
+      rawBookingDate,
+      bookingChannel,
+      bookingNote,
+      comboBalances,
+      selectedPromotion: customerPromos.selectedPromotion,
+      selectedCampaignPromotion: customerPromos.selectedCampaignPromotion,
+      referralPhone: customerPromos.referralPhone,
+      isForeignCustomer: customerPromos.isForeignCustomer,
+    });
 
-    if (isNewLead) {
-      const cleanName = leadName.trim();
-      const cleanPhone = leadPhone.trim();
-
-      const isNamePhone = /^\+?[0-9\s\-()]{8,}$/.test(cleanName);
-      if (isNamePhone) {
-        message.error('Tên khách hàng không được là số điện thoại. Vui lòng kiểm tra lại!');
-        return;
-      }
-
-      const isPhoneInvalid = /[a-zA-Z\u00C0-\u1EF9]/.test(cleanPhone);
-      if (isPhoneInvalid) {
-        message.error('Số điện thoại không hợp lệ (không được chứa chữ cái). Vui lòng kiểm tra lại!');
-        return;
-      }
-
-      const digitCount = cleanPhone.replace(/[^0-9]/g, '').length;
-      if (digitCount < 8 || digitCount > 15) {
-        message.error('Số điện thoại phải từ 8 đến 15 chữ số.');
-        return;
-      }
+    if ('error' in validationResult) {
+      message.error(validationResult.error);
+      return;
     }
 
     setBookingCreationError(null);
     setCreatingBooking(true);
     try {
-      const payload = {
-        customerId: isNewLead ? null : selectedCustomer.legacyUserId || selectedCustomer.id,
-        newCustomerName: isNewLead ? leadName : null,
-        newCustomerPhone: isNewLead ? leadPhone : null,
-        storeId: selectedCN.id,
-        storeName: selectedCN.name,
-        serviceId: selectedService.id,
-        serviceName: selectedService.name,
-        technicianId: selectedCV?.id || null,
-        technicianName: selectedCV?.displayName || 'Chuyên viên tự do',
-        bookingDate: rawBookingDate.format('YYYY-MM-DD'),
-        bookingTime: selectedSlot,
-        bookingChannel,
-        bookingNote: checkAndAppendLowerLashNote(bookingNote, comboBalances),
-        promotionId: selectedPromotion?.id || null,
-        campaignPromotionId: selectedCampaignPromotion ? selectedCampaignPromotion.id : null,
-        referralPhone: referralPhone ? referralPhone.trim() : null,
-        isForeign: isForeignCustomer,
-      };
-
-      await apiClient.customers.createBooking(payload);
+      await apiClient.customers.createBooking(validationResult.payload);
       message.success(
-        `Đặt lịch thành công cho khách hàng ${isNewLead ? leadName : selectedCustomer.name || selectedCustomer.customerName}!`
+        `Đặt lịch thành công cho khách hàng ${
+          customerPromos.isNewLead
+            ? customerPromos.leadName
+            : customerPromos.selectedCustomer.name || customerPromos.selectedCustomer.customerName
+        }!`
       );
       notifyBookingMutation(
         {
           action: 'created',
-          customerId: isNewLead ? null : toBookingCustomerId(selectedCustomer?.legacyUserId || selectedCustomer?.id),
+          customerId: customerPromos.isNewLead
+            ? null
+            : toBookingCustomerId(customerPromos.selectedCustomer?.legacyUserId || customerPromos.selectedCustomer?.id),
         },
         { refreshCallLog: true }
       );
 
-      setBookingCreated(true);
       onSuccess();
       onClose();
     } catch (err) {
@@ -742,75 +337,16 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     }
   };
 
-  const handleCopyMessage = () => {
-    const text = evaluateBookingTemplate(customMessage);
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(text);
-      message.success('Đã sao chép tin nhắn xác nhận vào bộ nhớ tạm!');
-    } else {
-      message.error('Trình duyệt không hỗ trợ tự động sao chép.');
-    }
-  };
-
-  const handleSaveTemplate = async () => {
-    if (!selectedTemplateId || !customMessage.trim()) return;
-    setSavingTemplate(true);
-    try {
-      const currentTpl = bookingTemplates.find((t) => t.id === selectedTemplateId);
-      const res = await apiClient.sms.saveBookingTemplate({
-        id: selectedTemplateId,
-        type: currentTpl?.type || 'no_tech',
-        title: currentTpl?.title || 'Mẫu đặt lịch',
-        content: customMessage,
-        isDefault: true,
-      });
-      if (res.success && res.templates) {
-        setBookingTemplates(res.templates);
-        message.success('Đã lưu mẫu tin nhắn thành công vào CSDL hệ thống!');
-      }
-    } catch (err) {
-      console.error('Failed to save template:', err);
-      message.error('Không thể lưu mẫu tin nhắn.');
-    } finally {
-      setSavingTemplate(false);
-    }
-  };
-
-  const priceInfo = getCalculatedPrice(selectedService, selectedPromotion, selectedCampaignPromotion);
-  const visibleCustomerCampaignPromotions = useMemo(() => {
-    return customerCampaignPromotions
-      .map((campaign) => ({
-        ...campaign,
-        promotions: (campaign.promotions || []).filter(
-          (promotion) =>
-            promotion.type !== 'FIXED_FINAL_PRICE' ||
-            Boolean(
-              selectedService && (promotion.eligibleServiceIds || []).map(Number).includes(Number(selectedService.id))
-            )
-        ),
-      }))
-      .filter((campaign) => campaign.promotions.length > 0);
-  }, [customerCampaignPromotions, selectedService]);
-  const fixedPriceEligibilityNotices = useMemo(() => {
-    const selectedServiceId = Number(selectedService?.id);
-    if (!Number.isSafeInteger(selectedServiceId) || selectedServiceId <= 0) return [];
-
-    return customerCampaignPromotions.flatMap((campaign) =>
-      (campaign.promotions || [])
-        .filter((promotion) => promotion.type === 'FIXED_FINAL_PRICE')
-        .map((promotion) => ({
-          id: promotion.id,
-          isEligible: (promotion.eligibleServiceIds || []).map(Number).includes(selectedServiceId),
-          price: Math.round(Number(promotion.value || 0)),
-          scopeLabel: getFixedPriceScopeLabel(promotion),
-        }))
-    );
-  }, [customerCampaignPromotions, selectedService]);
+  const priceInfo = getCalculatedPrice(
+    selectedService,
+    customerPromos.selectedPromotion,
+    customerPromos.selectedCampaignPromotion
+  );
 
   const isSubmitDisabled =
     !selectedService ||
-    (!isNewLead && !selectedCustomer) ||
-    (isNewLead && (!leadName || !leadPhone)) ||
+    (!customerPromos.isNewLead && !customerPromos.selectedCustomer) ||
+    (customerPromos.isNewLead && (!customerPromos.leadName || !customerPromos.leadPhone)) ||
     !selectedSlot ||
     !selectedCN;
 
@@ -848,7 +384,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <Button
               icon={<CopyOutlined />}
-              onClick={handleCopyMessage}
+              onClick={templates.handleCopyMessage}
               style={{
                 borderColor: '#fa8c16',
                 color: themeMode === 'dark' ? '#ffa940' : '#d87a16',
@@ -892,1007 +428,126 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
           />
         )}
 
-        {/* SPECIALIST (CV) QUICK SELECTOR + OPTIONAL CARD PICKER */}
-        <div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '8px',
-              flexWrap: 'wrap',
-              gap: '8px',
-            }}
-          >
-            <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', margin: 0 }}>
-              <UserOutlined /> CHỌN CHUYÊN VIÊN (CV)
-            </h4>
-            <Button
-              size="small"
-              type={showCvCardSelector ? 'primary' : 'dashed'}
-              onClick={() => setShowCvCardSelector((prev) => !prev)}
-            >
-              {showCvCardSelector ? 'Thu gọn danh sách thẻ CV' : 'Mở bảng thẻ Chuyên Viên'}
-            </Button>
-          </div>
+        <BookingWizardCvAndBranchSection
+          themeMode={themeMode}
+          selectedCV={selectedCV}
+          selectedCN={selectedCN}
+          onSelectCN={setSelectedCN}
+          showCvCardSelector={showCvCardSelector}
+          onToggleCvCardSelector={() => setShowCvCardSelector((prev) => !prev)}
+          staffList={staffList}
+          loadingStaff={loadingStaff}
+          safeBookingDate={safeBookingDate}
+          onSelectCVOption={selectCVOption}
+          favoriteTechs={favoriteTechs}
+          getFavoriteKTVs={getFavoriteKTVs}
+          getGroupedKTVs={getGroupedKTVs}
+          suggestedBranch={suggestedBranch}
+        />
 
-          <Select
-            showSearch
-            allowClear
-            filterOption={vietnameseSearchFilter}
-            style={{ width: '100%' }}
-            getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-            placeholder="🌟 Chuyên viên tự do (Click để chọn CV chỉ định)..."
-            value={selectedCV?.id ?? 0}
-            loading={loadingStaff}
-            onChange={(val) => {
-              if (!val || val === 0) {
-                selectCVOption(null);
-                return;
-              }
-              const found = (staffList || []).find((s: SafeAny) => s.id === val);
-              if (found) {
-                selectCVOption(found);
-              }
-            }}
-            options={[
-              {
-                value: 0,
-                label: '🌟 Chuyên viên tự do (Không yêu cầu chỉ định CV)',
-              },
-              ...(staffList || []).map((cv: SafeAny) => {
-                const isOff = isStaffOffOnDate(cv, safeBookingDate);
-                return {
-                  value: cv.id,
-                  label: `${cv.displayName}${cv.notes ? ` (${cv.notes})` : ''}${isOff ? ' — [Nghỉ phép ngày chọn]' : ''}`,
-                };
-              }),
-            ]}
-          />
+        <BookingWizardCustomerSection
+          themeMode={themeMode}
+          colorText={token.colorText}
+          isNewLead={customerPromos.isNewLead}
+          onChangeLeadMode={(isNew) => {
+            customerPromos.setIsNewLead(isNew);
+            customerPromos.setSelectedCustomer(null);
+          }}
+          onOpenCreateCustomerModal={() => setIsCreateCustomerModalOpen(true)}
+          searchQuery={customerPromos.searchQuery}
+          searchingCustomers={customerPromos.searchingCustomers}
+          customerList={customerPromos.customerList}
+          selectedCustomer={customerPromos.selectedCustomer}
+          onSearchCustomers={customerPromos.handleSearchCustomers}
+          onSelectCustomer={customerPromos.setSelectedCustomer}
+          leadName={customerPromos.leadName}
+          onChangeLeadName={customerPromos.setLeadName}
+          leadPhone={customerPromos.leadPhone}
+          onChangeLeadPhone={customerPromos.setLeadPhone}
+          isForeignCustomer={customerPromos.isForeignCustomer}
+          onChangeForeignCustomer={customerPromos.setIsForeignCustomer}
+        />
 
-          {/* Favorite CVs quick chips */}
-          {getFavoriteKTVs().length > 0 && (
-            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '12px', color: '#db2777', fontWeight: 'bold' }}>💖 CV khách hay chọn:</span>
-              {getFavoriteKTVs().map((cv: SafeAny) => {
-                const isSelected = selectedCV?.id === cv.id;
-                return (
-                  <Tag
-                    key={cv.id}
-                    color={isSelected ? 'magenta' : 'pink'}
-                    style={{
-                      cursor: 'pointer',
-                      margin: 0,
-                      fontWeight: isSelected ? 'bold' : 'normal',
-                      border: isSelected ? '1.5px solid #db2777' : undefined,
-                    }}
-                    onClick={() => selectCVOption(cv)}
-                  >
-                    {cv.displayName}
-                  </Tag>
-                );
-              })}
-            </div>
-          )}
+        <BookingWizardServiceSection
+          themeMode={themeMode}
+          colorText={token.colorText}
+          services={services}
+          selectedService={selectedService}
+          onSelectService={setSelectedService}
+          suggestedServices={suggestedServices}
+          lastUsedServices={lastUsedServices}
+          comboBalances={comboBalances}
+        />
 
-          {showCvCardSelector && (
-            <div
-              style={{
-                marginTop: '12px',
-                padding: '12px',
-                borderRadius: '10px',
-                border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-                background: themeMode === 'dark' ? '#0f172a' : '#ffffff',
-              }}
-            >
-              <TechnicianSelector
-                selectedCV={selectedCV}
-                onSelectCVOption={selectCVOption}
-                favoriteTechs={favoriteTechs}
-                getFavoriteKTVs={getFavoriteKTVs}
-                getGroupedKTVs={getGroupedKTVs}
-                loadingStaff={loadingStaff}
-                themeMode={themeMode}
-              />
-            </div>
-          )}
-        </div>
-        {/* Branch Check */}
-        <div>
-          <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
-            <HomeOutlined /> CHI NHÁNH ĐẶT LỊCH (CN)
-          </h4>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {STORES.map((s) => {
-              const isSelected = selectedCN?.id === s.id;
-              return (
-                <div
-                  key={s.id}
-                  onClick={() => setSelectedCN(s)}
-                  style={{
-                    padding: '6px 16px',
-                    borderRadius: '20px',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    transition: 'all 0.2s',
-                    background: isSelected ? '#D4A84B' : themeMode === 'dark' ? '#1e293b' : '#f3f4f6',
-                    border: `1px solid ${isSelected ? '#D4A84B' : themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-                    color: isSelected ? '#fff' : themeMode === 'dark' ? '#cbd5e1' : '#4b5563',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  <span>{s.name}</span>
-                  {suggestedBranch?.id === s.id && (
-                    <Tag
-                      color={isSelected ? 'magenta' : 'orange'}
-                      style={{
-                        marginLeft: '6px',
-                        marginRight: 0,
-                        fontSize: '10px',
-                        padding: '0 6px',
-                        border: 'none',
-                        borderRadius: '4px',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      💖 Hay đi
-                    </Tag>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {selectedCV && (
-            <div style={{ fontSize: '12px', color: '#fa8c16', marginTop: '6px' }}>
-              * Tự động gợi ý chi nhánh làm việc chính của <strong>{selectedCV.displayName}</strong>.
-            </div>
-          )}
-        </div>
+        <BookingWizardPromotionsAndNoteSection
+          themeMode={themeMode}
+          colorText={token.colorText}
+          customerCampaignPromotions={customerPromos.customerCampaignPromotions}
+          visibleCustomerCampaignPromotions={customerPromos.visibleCustomerCampaignPromotions}
+          selectedCampaignPromotion={customerPromos.selectedCampaignPromotion}
+          onSelectCampaignPromotion={customerPromos.setSelectedCampaignPromotion}
+          promotions={customerPromos.promotions}
+          selectedPromotion={customerPromos.selectedPromotion}
+          onSelectPromotion={customerPromos.setSelectedPromotion}
+          fixedPriceEligibilityNotices={customerPromos.fixedPriceEligibilityNotices}
+          referralPhone={customerPromos.referralPhone}
+          onChangeReferralPhone={customerPromos.setReferralPhone}
+          selectedService={selectedService}
+          priceInfo={priceInfo}
+          bookingChannel={bookingChannel}
+          onChangeBookingChannel={setBookingChannel}
+          bookingNote={bookingNote}
+          onChangeBookingNote={setBookingNote}
+        />
 
-        {/* Customer Search or New Lead */}
-        <Card
-          title={
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <span style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
-                <UserOutlined /> THÔNG TIN KHÁCH HÀNG
-              </span>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  flexWrap: 'wrap',
-                  justifyContent: 'flex-end',
-                }}
-              >
-                <Button
-                  size="small"
-                  type="dashed"
-                  icon={<UserOutlined />}
-                  onClick={() => setIsCreateCustomerModalOpen(true)}
-                >
-                  Thêm khách, chưa đặt lịch
-                </Button>
-                <Radio.Group
-                  size="small"
-                  value={isNewLead ? 'new' : 'existing'}
-                  onChange={(e) => {
-                    setIsNewLead(e.target.value === 'new');
-                    setSelectedCustomer(null);
-                  }}
-                >
-                  <Radio.Button value="existing">Khách hàng cũ</Radio.Button>
-                  <Radio.Button value="new">Khách mới</Radio.Button>
-                </Radio.Group>
-              </div>
-            </div>
-          }
-          styles={{ body: { padding: '16px' } }}
-          style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff', borderColor: '#e5e7eb' }}
-        >
-          {!isNewLead ? (
-            <div>
-              <Select
-                showSearch
-                placeholder="Tìm kiếm khách hàng bằng tên hoặc SĐT..."
-                filterOption={false}
-                onSearch={handleSearchCustomers}
-                loading={searchingCustomers}
-                style={{ width: '100%' }}
-                getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-                onChange={(val) => {
-                  const cust = customerList.find((c) => c.id === val);
-                  setSelectedCustomer(cust);
-                }}
-                notFoundContent={searchQuery ? 'Không tìm thấy khách hàng nào' : null}
-                options={customerList.map((c) => ({
-                  value: c.id,
-                  label: `${c.name} - ${c.phone} (Mã: ${c.id})`,
-                }))}
-              />
-
-              {selectedCustomer && (
-                <div
-                  style={{
-                    marginTop: '12px',
-                    padding: '10px',
-                    background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.05)' : '#fdf9f0',
-                    border: '1px solid #ffe58f',
-                    borderRadius: '6px',
-                  }}
-                >
-                  <div style={{ fontWeight: 'bold', color: token.colorText }}>{selectedCustomer.name}</div>
-                  <div
-                    style={{ fontSize: '12px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}
-                    className="flex items-center gap-1"
-                  >
-                    <span>SĐT: {selectedCustomer.phone}</span>
-                    <CopyPhoneButton phone={selectedCustomer.phone} size="xs" />
-                    <span>| Phân loại:</span>
-                    <Tag color="warning">{selectedCustomer.bucket}</Tag>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <Input
-                placeholder="Tên khách hàng mới"
-                prefix={<UserOutlined />}
-                value={leadName}
-                onChange={(e) => setLeadName(e.target.value)}
-              />
-              <Input
-                placeholder="Số điện thoại khách"
-                prefix={<PhoneOutlined />}
-                value={leadPhone}
-                onChange={(e) => setLeadPhone(e.target.value)}
-              />
-            </div>
-          )}
-
-          <div
-            style={{
-              marginTop: '10px',
-              paddingTop: '8px',
-              borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <span style={{ fontSize: '12px', fontWeight: 600, color: token.colorText }}>🌐 Khách nước ngoài</span>
-            <Switch checked={isForeignCustomer} onChange={(checked) => setIsForeignCustomer(checked)} size="small" />
-          </div>
-        </Card>
-
-        {/* Service Select */}
-        <div>
-          <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
-            <InboxOutlined /> CHỌN DỊCH VỤ (SERVICE)
-          </h4>
-          <Select
-            showSearch
-            filterOption={vietnameseSearchFilter}
-            style={{ width: '100%' }}
-            getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-            placeholder="Chọn hoặc tìm dịch vụ..."
-            value={selectedService?.id}
-            onChange={(val) => {
-              const srv = services.find((s) => s.id === val);
-              setSelectedService(srv);
-            }}
-            options={services.map((s) => ({
-              value: s.id,
-              label:
-                s.id === 0
-                  ? `${s.name} (${s.duration} phút)`
-                  : `${s.name} - ${s.price.toLocaleString('vi-VN')}đ (${s.duration} phút)`,
-            }))}
-          />
-
-          {/* Favorite Service Suggestion */}
-          {suggestedServices.filter((sName) =>
-            services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
-          ).length > 0 && (
-            <div style={{ marginTop: '6px', fontSize: '12px' }}>
-              <span style={{ color: '#fa8c16', fontWeight: 'bold' }}>⭐ Dòng mi khách hay đi nhất: </span>
-              {suggestedServices
-                .filter((sName) =>
-                  services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
-                )
-                .map((sName) => {
-                  return (
-                    <span
-                      key={sName}
-                      style={{
-                        color: themeMode === 'dark' ? '#ffa940' : '#d87a16',
-                        textDecoration: 'underline',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                        marginLeft: '4px',
-                      }}
-                      onClick={() => {
-                        const matchedSrv = services.find((s) => s.name.toLowerCase() === sName.toLowerCase());
-                        if (matchedSrv) {
-                          setSelectedService(matchedSrv);
-                          message.success(`Đã chọn dòng mi hay dùng: ${matchedSrv.name}`);
-                        } else {
-                          message.info(`Hay đi: ${sName}`);
-                        }
-                      }}
-                    >
-                      {sName}
-                    </span>
-                  );
-                })}
-            </div>
-          )}
-
-          {/* Last Service Used Suggestion */}
-          {lastUsedServices.filter((sName) =>
-            services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
-          ).length > 0 && (
-            <div style={{ marginTop: '4px', fontSize: '12px' }}>
-              <span style={{ color: '#096dd9', fontWeight: 'bold' }}>🕒 Dịch vụ khách dùng cuối cùng: </span>
-              {lastUsedServices
-                .filter((sName) =>
-                  services.some((active) => active.name.toLowerCase() === sName.toLowerCase() && active.id !== 0)
-                )
-                .map((sName) => {
-                  return (
-                    <span
-                      key={sName}
-                      style={{
-                        color: themeMode === 'dark' ? '#177ddc' : '#096dd9',
-                        textDecoration: 'underline',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                        marginLeft: '4px',
-                      }}
-                      onClick={() => {
-                        const matchedSrv = services.find((s) => s.name.toLowerCase() === sName.toLowerCase());
-                        if (matchedSrv) {
-                          setSelectedService(matchedSrv);
-                          message.success(`Đã chọn dịch vụ cuối cùng: ${matchedSrv.name}`);
-                        } else {
-                          message.info(`Dùng cuối cùng: ${sName}`);
-                        }
-                      }}
-                    >
-                      {sName}
-                    </span>
-                  );
-                })}
-            </div>
-          )}
-
-          {/* Active Combo Balances Suggestions */}
-          {comboBalances.filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0).length > 0 && (
-            <div style={{ marginTop: '8px', marginBottom: '12px' }}>
-              <div style={{ fontSize: '12px', color: '#db2777', fontWeight: 'bold', marginBottom: '6px' }}>
-                🎁 GÓI COMBO ĐANG CHẠY (CLICK ĐỂ CHỌN NHANH DÒNG MI):
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {comboBalances
-                  .filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0)
-                  .map((cb: SafeAny) => {
-                    return (
-                      <div
-                        key={cb.id}
-                        style={{
-                          padding: '8px 12px',
-                          borderRadius: '6px',
-                          border: `1px solid ${themeMode === 'dark' ? '#4f1a30' : '#fbcfe8'}`,
-                          background: themeMode === 'dark' ? 'rgba(219, 39, 119, 0.1)' : 'rgba(219, 39, 119, 0.03)',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          color: token.colorText,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                        onClick={() => {
-                          const cleanName = cb.serviceName.split('(')[0].trim().toLowerCase();
-                          const matchedSrv = services.find(
-                            (s) => s.name.toLowerCase().includes(cleanName) || cleanName.includes(s.name.toLowerCase())
-                          );
-                          if (matchedSrv) {
-                            setSelectedService(matchedSrv);
-                            message.success(`Đã chọn dòng mi từ Combo: ${matchedSrv.name}`);
-                          } else {
-                            message.info(`Gói combo: ${cb.serviceName}`);
-                          }
-                        }}
-                      >
-                        <div>
-                          <span style={{ fontWeight: 'bold' }}>{cb.serviceName}</span>
-                          <div
-                            style={{
-                              fontSize: '11px',
-                              color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                              marginTop: '2px',
-                            }}
-                          >
-                            Còn lại: ✦ {cb.normalCount || 0} · ↻ {cb.retainCount || 0}
-                          </div>
-                        </div>
-                        <Tag color="magenta" style={{ margin: 0, fontSize: '10px' }}>
-                          Chọn
-                        </Tag>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Campaign Promotion Section (Ưu đãi chiến dịch) */}
-        {visibleCustomerCampaignPromotions.length > 0 && (
-          <div
-            style={{
-              padding: '14px',
-              borderRadius: '10px',
-              background: themeMode === 'dark' ? 'rgba(124, 58, 237, 0.12)' : '#f3e8ff',
-              border: `1.5px solid ${themeMode === 'dark' ? '#7c3aed' : '#c084fc'}`,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <GiftOutlined style={{ color: '#9333ea', fontSize: '16px' }} />
-                <span
-                  style={{
-                    fontWeight: 'bold',
-                    fontSize: '13px',
-                    color: themeMode === 'dark' ? '#d8b4fe' : '#7e22ce',
-                  }}
-                >
-                  ƯU ĐÃI CHIẾN DỊCH (CAMPAIGN PROMOTION)
-                </span>
-              </div>
-              {selectedCampaignPromotion && (
-                <Button
-                  type="link"
-                  size="small"
-                  danger
-                  onClick={() => setSelectedCampaignPromotion(null)}
-                  style={{ padding: 0, height: 'auto', fontSize: '12px' }}
-                >
-                  Bỏ chọn ưu đãi
-                </Button>
-              )}
-            </div>
-
-            {visibleCustomerCampaignPromotions.map((camp) => (
-              <div key={camp.campaignId} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Tag color="purple" style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}>
-                    🎯 Chiến dịch: {camp.campaignName}
-                  </Tag>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {camp.promotions.map((promo) => {
-                    const isSelected = selectedCampaignPromotion?.id === promo.id;
-                    let badgeColor = 'purple';
-                    if (
-                      promo.type === 'PERCENT_DISCOUNT' ||
-                      promo.type === 'FIXED_DISCOUNT' ||
-                      promo.type === 'FIXED_FINAL_PRICE'
-                    ) {
-                      badgeColor = 'red';
-                    } else if (promo.type === 'FREE_SERVICE') {
-                      badgeColor = 'cyan';
-                    } else if (promo.type === 'FREE_PRODUCT') {
-                      badgeColor = 'green';
-                    }
-
-                    return (
-                      <div
-                        key={promo.id}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedCampaignPromotion(null);
-                          } else {
-                            setSelectedCampaignPromotion(promo);
-                            setSelectedPromotion(null);
-                          }
-                        }}
-                        style={{
-                          padding: '10px 12px',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          background: isSelected
-                            ? themeMode === 'dark'
-                              ? '#581c87'
-                              : '#e9d5ff'
-                            : themeMode === 'dark'
-                              ? '#1e1b4b'
-                              : '#ffffff',
-                          border: `1.5px solid ${isSelected ? '#9333ea' : themeMode === 'dark' ? '#3730a3' : '#e9d5ff'}`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                          <Tag color={badgeColor} style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}>
-                            {promo.label}
-                          </Tag>
-                          <span
-                            style={{
-                              fontSize: '12.5px',
-                              fontWeight: isSelected ? 'bold' : 'normal',
-                              color: token.colorText,
-                            }}
-                          >
-                            {promo.name}
-                          </span>
-                        </div>
-                        {isSelected && (
-                          <Tag color="success" style={{ margin: 0, fontSize: '10px', fontWeight: 'bold' }}>
-                            ✓ Đã chọn
-                          </Tag>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Promotion & Referral Section */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>🎟️ CHỌN KHUYẾN MÃI (PROMOTION)</h4>
-            <Select
-              showSearch
-              allowClear
-              filterOption={vietnameseSearchFilter}
-              style={{ width: '100%' }}
-              getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-              placeholder="Chọn chương trình khuyến mãi (nếu có)..."
-              value={selectedCampaignPromotion ? `CAMP_${selectedCampaignPromotion.id}` : selectedPromotion?.id}
-              onChange={(val) => {
-                if (!val) {
-                  setSelectedPromotion(null);
-                  setSelectedCampaignPromotion(null);
-                  return;
-                }
-                if (typeof val === 'string' && val.startsWith('CAMP_')) {
-                  const campPromoId = parseInt(val.replace('CAMP_', ''), 10);
-                  let foundCampPromo: CustomerCampaignPromotionItem | null = null;
-                  for (const camp of customerCampaignPromotions) {
-                    const match = camp.promotions.find((p) => p.id === campPromoId);
-                    if (match) {
-                      foundCampPromo = match;
-                      break;
-                    }
-                  }
-                  if (foundCampPromo) {
-                    setSelectedCampaignPromotion(foundCampPromo);
-                    setSelectedPromotion(null);
-                  }
-                } else {
-                  const promo = promotions.find((p) => p.id === val);
-                  setSelectedPromotion(promo || null);
-                  setSelectedCampaignPromotion(null);
-                }
-              }}
-              options={[
-                ...visibleCustomerCampaignPromotions.flatMap((camp) =>
-                  camp.promotions.map((p) => {
-                    let valText = '';
-                    if (p.type === 'PERCENT_DISCOUNT') valText = ` (Giảm ${p.value}%)`;
-                    else if (p.type === 'FIXED_DISCOUNT') valText = ` (Giảm ${p.value.toLocaleString('vi-VN')}đ)`;
-                    else if (p.type === 'FIXED_FINAL_PRICE') {
-                      valText = ` (Thanh toán ${p.value.toLocaleString('vi-VN')}đ · ${getFixedPriceScopeLabel(p)})`;
-                    }
-                    return {
-                      value: `CAMP_${p.id}`,
-                      label: `🎯 [Ưu đãi Chiến dịch: ${camp.campaignName}] ${p.label}${valText}`,
-                    };
-                  })
-                ),
-                ...promotions.map((p) => ({
-                  value: p.id,
-                  label:
-                    p.discountPercentage > 0
-                      ? `${p.name} (Giảm ${p.discountPercentage}%)`
-                      : p.discountAmount > 0
-                        ? `${p.name} (Giảm ${p.discountAmount.toLocaleString('vi-VN')}đ)`
-                        : p.name,
-                })),
-              ]}
-            />
-            {fixedPriceEligibilityNotices.map((notice) => (
-              <div
-                key={notice.id}
-                style={{
-                  marginTop: '7px',
-                  fontSize: '11px',
-                  color: notice.isEligible ? (themeMode === 'dark' ? '#86efac' : '#15803d') : '#fa8c16',
-                }}
-              >
-                {notice.isEligible
-                  ? `✓ Dịch vụ đang chọn đủ điều kiện Đồng giá ${notice.price.toLocaleString('vi-VN')}đ (${notice.scopeLabel}).`
-                  : `Đồng giá ${notice.price.toLocaleString('vi-VN')}đ chỉ áp dụng cho ${notice.scopeLabel}; dịch vụ đang chọn không thuộc phạm vi.`}
-              </div>
-            ))}
-          </div>
-
-          <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
-              👥 MÃ GIỚI THIỆU (SĐT NGƯỜI GIỚI THIỆU)
-            </h4>
-            <Input
-              placeholder="Nhập số điện thoại của khách giới thiệu (nếu có)..."
-              value={referralPhone}
-              onChange={(e) => setReferralPhone(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Price Calculation details */}
-        {selectedService && selectedService.id !== 0 && (
-          <div
-            style={{
-              padding: '10px 14px',
-              borderRadius: '8px',
-              background: themeMode === 'dark' ? '#1e293b' : '#f8fafc',
-              border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-              fontSize: '13px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '4px',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#888' }}>Giá gốc dịch vụ:</span>
-              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{priceInfo.original.toLocaleString('vi-VN')}đ</span>
-            </div>
-            {priceInfo.discount > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fa8c16' }}>
-                <span>
-                  Giảm giá (
-                  {selectedCampaignPromotion
-                    ? `${selectedCampaignPromotion.name} - ${selectedCampaignPromotion.label}`
-                    : selectedPromotion?.name}
-                  ):
-                </span>
-                <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-                  -{priceInfo.discount.toLocaleString('vi-VN')}đ
-                </span>
-              </div>
-            )}
-            {selectedCampaignPromotion?.type === 'FIXED_FINAL_PRICE' && (
-              <div style={{ color: themeMode === 'dark' ? '#c4b5fd' : '#7e22ce', fontSize: '12px' }}>
-                Đồng giá {Math.round(selectedCampaignPromotion.value).toLocaleString('vi-VN')}đ là giá thanh toán cuối
-                cùng cho {getFixedPriceScopeLabel(selectedCampaignPromotion)}.
-              </div>
-            )}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontWeight: 'bold',
-                fontSize: '14px',
-                borderTop: `1px dashed ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-                paddingTop: '4px',
-                marginTop: '2px',
-              }}
-            >
-              <span style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937' }}>Giá thanh toán tạm tính:</span>
-              <span style={{ color: '#52c41a', fontVariantNumeric: 'tabular-nums' }}>
-                {priceInfo.final.toLocaleString('vi-VN')}đ
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Select Channels & Booking Note */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
-              KÊNH TIẾP NHẬN ĐẶT LỊCH (BOOKING CHANNEL)
-            </h4>
-            <Radio.Group value={bookingChannel} onChange={(e) => setBookingChannel(e.target.value)} buttonStyle="solid">
-              {CHANNELS.map((ch) => (
-                <Radio.Button
-                  key={ch.key}
-                  value={ch.key}
-                  style={{ marginBottom: '8px', marginRight: '8px', borderRadius: '4px' }}
-                >
-                  {ch.key}
-                </Radio.Button>
-              ))}
-            </Radio.Group>
-          </div>
-
-          <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>GHI CHÚ ĐẶT LỊCH (BOOKING NOTE)</h4>
-            <TextArea
-              rows={3}
-              placeholder="Nhập các ghi chú đặc biệt từ khách hàng hoặc thay đổi đặt lịch..."
-              value={bookingNote}
-              onChange={(e) => setBookingNote(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Divider separating inputs from slots */}
         <div style={{ height: '1px', background: themeMode === 'dark' ? '#334155' : '#e5e7eb', margin: '6px 0' }} />
 
-        {/* SLOT AVAILABILITY MATRIX */}
-        <div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px',
-              flexWrap: 'wrap',
-              gap: '10px',
-            }}
-          >
-            <div>
-              <span style={{ fontSize: '12px', color: '#888' }}>Ngày đặt:</span>
-              <CvDatePicker
-                key={`${selectedCV ? selectedCV.id : 'no-cv'}-${safeBookingDate ? safeBookingDate.valueOf() : 0}-${pickerNonce}-${(staffList || []).length}`}
-                style={{ marginLeft: '8px' }}
-                value={safeBookingDate}
-                onChange={(val) => {
-                  if (!val) return;
-                  setBookingDate(dayjs(val));
-                  setPickerNonce((prev) => prev + 1);
-                }}
-                selectedCV={selectedCV}
-                staffList={staffList}
-                themeMode={themeMode}
-              />
+        <BookingWizardSlotSection
+          themeMode={themeMode}
+          selectedCV={selectedCV}
+          selectedCN={selectedCN}
+          safeBookingDate={safeBookingDate}
+          pickerNonce={pickerNonce}
+          staffList={staffList}
+          onChangeDate={(nextDate) => {
+            setBookingDate(nextDate);
+            setPickerNonce((prev) => prev + 1);
+          }}
+          slotMatrix={slotMatrix}
+          loadingSlots={loadingSlots}
+          selectedSlot={selectedSlot}
+          onSelectSlot={handleSelectSlot}
+          morning={morning}
+          afternoon={afternoon}
+          night={night}
+        />
 
-              <style>{`
-                  .ant-picker-dropdown .ant-picker-cell-today .ant-picker-cell-inner::before,
-                  .ant-picker-cell-today .ant-picker-cell-inner::before {
-                    display: none !important;
-                    content: none !important;
-                    border: none !important;
-                    border-width: 0 !important;
-                    outline: none !important;
-                    box-shadow: none !important;
-                  }
-                  .ant-picker-dropdown .ant-picker-cell-disabled,
-                  .ant-picker-cell-disabled {
-                    color: #64748b !important;
-                    opacity: 0.25 !important;
-                    pointer-events: none !important;
-                    cursor: not-allowed !important;
-                  }
-                `}</style>
-            </div>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1890ff' }}>
-              {safeBookingDate.format('dddd (DD/MM/YYYY)')}
-            </div>
-          </div>
-
-          <SlotMatrixGrid
-            slotMatrix={slotMatrix}
-            loadingSlots={loadingSlots}
-            selectedSlot={selectedSlot}
-            setSelectedSlot={handleSelectSlot}
-            selectedCN={selectedCN}
-            morning={morning}
-            afternoon={afternoon}
-            night={night}
-            themeMode={themeMode}
-            selectedCV={selectedCV}
-          />
-        </div>
-
-        {/* OPTIONAL COLLAPSIBLE MESSAGE CONFIRMATION TEMPLATE */}
-        <Card
-          size="small"
-          title={
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-              }}
-              onClick={() => setShowMessagePreview((prev) => !prev)}
-            >
-              <span style={{ color: '#D4A84B', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MessageOutlined /> TIN NHẮN MẪU XÁC NHẬN ĐẶT LỊCH
-              </span>
-              <Button size="small" type="link" style={{ padding: 0 }}>
-                {showMessagePreview ? 'Thu gọn ▲' : 'Mở rộng / Tùy chỉnh mẫu ▼'}
-              </Button>
-            </div>
+        <BookingWizardConfirmationCard
+          themeMode={themeMode}
+          showMessagePreview={showMessagePreview}
+          onToggleMessagePreview={() => setShowMessagePreview((prev) => !prev)}
+          bookingTemplates={templates.bookingTemplates}
+          selectedTemplateId={templates.selectedTemplateId}
+          loadingTemplates={templates.loadingTemplates}
+          savingTemplate={templates.savingTemplate}
+          customMessage={templates.customMessage}
+          previewMessage={templates.evaluateBookingTemplate(templates.customMessage)}
+          customerDisplayName={
+            customerPromos.isNewLead
+              ? customerPromos.leadName
+              : customerPromos.selectedCustomer?.name || customerPromos.selectedCustomer?.customerName || 'KHÁCH HÀNG'
           }
-          style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
-        >
-          {showMessagePreview ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '6px',
-                  }}
-                >
-                  <label
-                    style={{
-                      fontSize: '12.5px',
-                      fontWeight: '600',
-                      color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                    }}
-                  >
-                    MẪU TIN NHẮN HỆ THỐNG:
-                  </label>
-                  <Button
-                    type="link"
-                    size="small"
-                    icon={<SettingOutlined />}
-                    onClick={() => setIsManagerModalOpen(true)}
-                    style={{ color: '#D4A84B', padding: 0 }}
-                  >
-                    ⚙️ Quản lý Mẫu
-                  </Button>
-                </div>
-                <Select
-                  style={{ width: '100%' }}
-                  getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-                  value={selectedTemplateId}
-                  loading={loadingTemplates}
-                  onChange={(val) => {
-                    setSelectedTemplateId(val);
-                    const chosen = bookingTemplates.find((t) => t.id === val);
-                    if (chosen) setCustomMessage(chosen.content);
-                  }}
-                  options={bookingTemplates.map((t) => ({
-                    label: t.title,
-                    value: t.id,
-                  }))}
-                />
-              </div>
+          onChangeTemplateId={(val, content) => {
+            templates.setSelectedTemplateId(val);
+            if (content !== undefined) templates.setCustomMessage(content);
+          }}
+          onChangeCustomMessage={templates.setCustomMessage}
+          onAppendTag={(tag) => templates.setCustomMessage((prev) => prev + tag)}
+          onOpenManagerModal={() => templates.setIsManagerModalOpen(true)}
+          onSaveTemplate={templates.handleSaveTemplate}
+          onCopyMessage={templates.handleCopyMessage}
+        />
 
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                    marginBottom: '8px',
-                  }}
-                >
-                  CHÈN NHANH THẺ BIẾN ĐỘNG (NHẤP ĐỂ CHÈN):
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {BOOKING_TEMPLATE_TAGS.map((tagDef) => (
-                    <Button
-                      key={tagDef.tag}
-                      size="small"
-                      type="dashed"
-                      onClick={() => setCustomMessage((prev) => prev + tagDef.tag)}
-                      style={{
-                        fontSize: '12px',
-                        borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
-                        color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
-                      }}
-                    >
-                      + {tagDef.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                    marginBottom: '6px',
-                  }}
-                >
-                  NỘI DUNG MẪU TÙY CHỈNH:
-                </label>
-                <TextArea
-                  rows={4}
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: '13px',
-                    backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
-                    color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
-                  }}
-                />
-              </div>
-
-              <div>
-                <div
-                  style={{
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                    marginBottom: '6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <span>
-                    XEM TRƯỚC TIN NHẮN SẼ GỬI CHO{' '}
-                    <strong style={{ color: '#D4A84B' }}>
-                      {isNewLead ? leadName : selectedCustomer?.name || selectedCustomer?.customerName || 'KHÁCH HÀNG'}
-                    </strong>
-                    :
-                  </span>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
-                    {evaluateBookingTemplate(customMessage).length} ký tự
-                  </span>
-                </div>
-                <div
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: '8px',
-                    backgroundColor: themeMode === 'dark' ? '#0f172a' : '#f8fafc',
-                    border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-                    color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
-                    fontSize: '13px',
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: '1.6',
-                  }}
-                >
-                  {evaluateBookingTemplate(customMessage)}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <Button icon={<SaveOutlined />} size="small" loading={savingTemplate} onClick={handleSaveTemplate}>
-                  Lưu Template Mẫu
-                </Button>
-                <Button
-                  type="primary"
-                  size="small"
-                  icon={<CopyOutlined />}
-                  onClick={handleCopyMessage}
-                  style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16' }}
-                >
-                  Sao chép tin nhắn
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div
-              style={{
-                fontSize: '12.5px',
-                color: themeMode === 'dark' ? '#cbd5e1' : '#475569',
-                whiteSpace: 'pre-wrap',
-              }}
-            >
-              {evaluateBookingTemplate(customMessage)}
-            </div>
-          )}
-        </Card>
-
-        {/* Primary 1-Step Submit Button */}
         <Button
           type="primary"
           size="large"
@@ -1915,96 +570,40 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
         open={isCreateCustomerModalOpen}
         onClose={() => setIsCreateCustomerModalOpen(false)}
         onCreated={(customer) => {
-          setSelectedCustomer(customer);
-          setCustomerList([customer]);
-          setIsNewLead(false);
+          customerPromos.setSelectedCustomer(customer);
+          customerPromos.setCustomerList([customer]);
+          customerPromos.setIsNewLead(false);
           message.info('Đã chọn khách vừa thêm. Bạn có thể tiếp tục đặt lịch hoặc đóng luồng này.');
         }}
       />
 
-      {/* Booking Template Manager Modal */}
       <BookingTemplateManagerModal
-        open={isManagerModalOpen}
-        onClose={() => setIsManagerModalOpen(false)}
-        templates={bookingTemplates}
+        open={templates.isManagerModalOpen}
+        onClose={() => templates.setIsManagerModalOpen(false)}
+        templates={templates.bookingTemplates}
         onTemplatesUpdated={(newList) => {
-          setBookingTemplates(newList);
-          autoSelectTemplate(newList);
+          templates.setBookingTemplates(newList);
+          templates.autoSelectTemplate(newList);
         }}
       />
 
-      {/* 20:00 Late Slot Policy Confirmation Modal */}
-      <AdaptiveModal
-        intent="confirm"
-        className="booking-late-slot-confirmation"
+      <BookingWizardLateSlotModal
+        themeMode={themeMode}
         open={isLateSlotModalOpen}
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fa8c16', fontSize: '15px' }}>
-            <ExclamationCircleOutlined style={{ fontSize: '18px' }} />
-            <span>⚠️ XÁC NHẬN THÔNG BÁO QUY ĐỊNH 20:15</span>
-          </div>
-        }
         onCancel={() => {
           setIsLateSlotModalOpen(false);
           setPendingSlot(null);
           message.warning('Vui lòng thông báo quy định 15 phút cho khách trước khi đặt khung 20:00!');
         }}
-        footer={[
-          <Button
-            key="no"
-            danger
-            onClick={() => {
-              setIsLateSlotModalOpen(false);
-              setPendingSlot(null);
-              message.warning('Vui lòng thông báo quy định 15 phút cho khách trước khi đặt khung 20:00!');
-            }}
-          >
-            Chưa thông báo (Hủy chọn)
-          </Button>,
-          <Button
-            key="yes"
-            type="primary"
-            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-            onClick={() => {
-              if (pendingSlot) {
-                setSelectedSlot(pendingSlot);
-              }
-              setIsLateSlotModalOpen(false);
-              setPendingSlot(null);
-              message.success('Đã xác nhận thông báo quy định 20:15 với khách!');
-            }}
-          >
-            Đã thông báo với khách
-          </Button>,
-        ]}
-      >
-        <div
-          style={{
-            padding: '12px 4px',
-            fontSize: '14px',
-            lineHeight: '1.6',
-            color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
-          }}
-        >
-          <p>
-            Vì <strong>20:00</strong> là khung chốt ca cuối ngày, tiệm em chỉ giữ lịch và chờ khách tối đa 15 phút (đến{' '}
-            <strong>20:15</strong>) để đảm bảo đủ thời gian làm mi đẹp nhất.
-          </p>
-          <div
-            style={{
-              marginTop: '12px',
-              padding: '10px 14px',
-              borderRadius: '6px',
-              backgroundColor: themeMode === 'dark' ? 'rgba(250, 140, 22, 0.15)' : '#fffbe6',
-              border: `1px solid ${themeMode === 'dark' ? '#d97706' : '#ffe58f'}`,
-              color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
-              fontWeight: '600',
-            }}
-          >
-            Bạn đã thông báo quy định 20:15 này cho khách hàng chưa?
-          </div>
-        </div>
-      </AdaptiveModal>
+        onConfirm={() => {
+          if (pendingSlot) {
+            setSelectedSlot(pendingSlot);
+          }
+          setIsLateSlotModalOpen(false);
+          setPendingSlot(null);
+          message.success('Đã xác nhận thông báo quy định 20:15 với khách!');
+        }}
+      />
     </AdaptiveDrawer>
   );
 };
