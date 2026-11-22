@@ -1,111 +1,38 @@
 'use client';
 
 import React, { Suspense, useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { canSwitchIosBranch, hasCompleteNaturalLashSet, isDoneBookingPendingCheckout } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
 import { useIosSessionAuth } from './state/useIosSessionAuth';
 import { useIosFontScale } from './state/useIosFontScale';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
-import { IosProfileMenuSheet } from './components/ui-kit/IosProfileMenuSheet';
 import { CvFeather1Badge } from './components/ui-kit/CvFeatherLabels';
-import { IosSimulationWorkspaceBar } from './components/simulation/IosSimulationWorkspaceBar';
-import { IosSimulationHistorySheet } from './components/simulation/IosSimulationHistorySheet';
-import { IosCreateBookingSheet } from './components/modals/booking/IosCreateBookingSheet';
 import { SimulationReceiptReplayBar } from './components/screens/checkout/SimulationReceiptReplayBar';
+import { IosAppGlobalOverlays } from './components/IosAppGlobalOverlays';
+import {
+  Screen02CheckInProfile,
+  Screen03ConsultationMatrix,
+  Screen04StaffQueueAssign,
+  Screen05ServicingTransfer,
+  Screen06CvDashboardReceive,
+  Screen07LashProgressBefore,
+  Screen07bLashProgressCleaned,
+  Screen08LashProgressTimer,
+  Screen09LashProgressAfter,
+  Screen10CustomerSurvey,
+  Screen11ProductUpsell,
+  Screen12CheckoutBilling,
+  Screen13CheckoutTip,
+  Screen14ThermalReceiptDone,
+  ScreenStoreDashboard,
+  ScreenInventoryStock,
+  ScreenCvPaystub,
+  ScreenSettingsRoleSwitch,
+} from './components/IosAppDynamicScreens';
 import './ios-typography.css';
 
 import { Screen01IncomingBookings } from './components/screens/Screen01IncomingBookings';
-
-const ScreenSkeleton = () => (
-  <div
-    className="w-full min-h-[450px] flex items-center justify-center backdrop-blur-sm animate-pulse"
-    style={{ backgroundColor: 'var(--background)' }}
-  >
-    <div className="flex flex-col items-center gap-3">
-      <div
-        className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-        style={{ borderColor: 'var(--mos-accent)', borderTopColor: 'transparent' }}
-      />
-      <span className="text-xs font-medium" style={{ color: 'var(--mos-text-muted)' }}>
-        Đang tải màn hình...
-      </span>
-    </div>
-  </div>
-);
-
-const Screen02CheckInProfile = dynamic(
-  () => import('./components/screens/Screen02CheckInProfile').then((m) => m.Screen02CheckInProfile),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen03ConsultationMatrix = dynamic(
-  () => import('./components/screens/Screen03ConsultationMatrix').then((m) => m.Screen03ConsultationMatrix),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen04StaffQueueAssign = dynamic(
-  () => import('./components/screens/Screen04StaffQueueAssign').then((m) => m.Screen04StaffQueueAssign),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen05ServicingTransfer = dynamic(
-  () => import('./components/screens/Screen05ServicingTransfer').then((m) => m.Screen05ServicingTransfer),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen06CvDashboardReceive = dynamic(
-  () => import('./components/screens/Screen06CvDashboardReceive').then((m) => m.Screen06CvDashboardReceive),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen07LashProgressBefore = dynamic(
-  () => import('./components/screens/Screen07LashProgressBefore').then((m) => m.Screen07LashProgressBefore),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen07bLashProgressCleaned = dynamic(
-  () => import('./components/screens/Screen07bLashProgressCleaned').then((m) => m.Screen07bLashProgressCleaned),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen08LashProgressTimer = dynamic(
-  () => import('./components/screens/Screen08LashProgressTimer').then((m) => m.Screen08LashProgressTimer),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen09LashProgressAfter = dynamic(
-  () => import('./components/screens/Screen09LashProgressAfter').then((m) => m.Screen09LashProgressAfter),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen10CustomerSurvey = dynamic(
-  () => import('./components/screens/Screen10CustomerSurvey').then((m) => m.Screen10CustomerSurvey),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen11ProductUpsell = dynamic(
-  () => import('./components/screens/Screen11ProductUpsell').then((m) => m.Screen11ProductUpsell),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen12CheckoutBilling = dynamic(
-  () => import('./components/screens/Screen12CheckoutBilling').then((m) => m.Screen12CheckoutBilling),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen13CheckoutTip = dynamic(
-  () => import('./components/screens/Screen13CheckoutTip').then((m) => m.Screen13CheckoutTip),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen14ThermalReceiptDone = dynamic(
-  () => import('./components/screens/Screen14ThermalReceiptDone').then((m) => m.Screen14ThermalReceiptDone),
-  { loading: () => <ScreenSkeleton /> }
-);
-const ScreenStoreDashboard = dynamic(
-  () => import('./components/screens/ScreenStoreDashboard').then((m) => m.ScreenStoreDashboard),
-  { loading: () => <ScreenSkeleton /> }
-);
-const ScreenInventoryStock = dynamic(
-  () => import('./components/screens/ScreenInventoryStock').then((m) => m.ScreenInventoryStock),
-  { loading: () => <ScreenSkeleton /> }
-);
-const ScreenCvPaystub = dynamic(() => import('./components/screens/ScreenCvPaystub').then((m) => m.ScreenCvPaystub), {
-  loading: () => <ScreenSkeleton />,
-});
-const ScreenSettingsRoleSwitch = dynamic(
-  () => import('./components/screens/ScreenSettingsRoleSwitch').then((m) => m.ScreenSettingsRoleSwitch),
-  { loading: () => <ScreenSkeleton /> }
-);
 
 function IosAppInner() {
   const [authorized, setAuthorized] = useState<boolean>(false);
@@ -531,147 +458,44 @@ function IosAppInner() {
         className="w-full max-w-[430px] h-[100dvh] max-h-[100dvh] flex flex-col relative overflow-hidden transition-colors"
         style={{ backgroundColor: 'var(--background)' }}
       >
-        <IosSimulationWorkspaceBar
-          isSimulationMode={state.isSimulationMode}
-          isReadOnlyMentorView={state.isReadOnlyMentorView}
-          simulationActorStaffName={state.simulationActorStaffName}
-          menteesList={state.menteesList}
-          selectedMenteeStaffId={state.selectedMenteeStaffId}
-          onSelectMentee={state.selectMenteeStaffId}
-          activeBooking={state.activeBooking}
-          currentStep={state.currentStep}
-          isBusy={state.isSimActionBusy}
-          simActionError={state.simActionError}
-          onDismissError={() => state.setSimActionError(null)}
-          onOpenHistory={state.openHistoryForBooking}
-          onRevertConsultation={state.handleSimRevertConsultation}
-          onResetToIncoming={state.handleSimResetToIncoming}
-          onExitSimulation={state.toggleSimulationMode}
-        />
-
-        {/* Screen Body */}
-        <div
-          className="flex-1 flex flex-col min-h-0 relative overflow-hidden transition-colors"
-          style={{ backgroundColor: 'var(--background)' }}
+        <IosAppGlobalOverlays
+          state={state}
+          isProfileSheetOpen={isProfileSheetOpen}
+          setIsProfileSheetOpen={setIsProfileSheetOpen}
         >
-          {renderActiveScreen()}
-        </div>
+          {/* Screen Body */}
+          <div
+            className="flex-1 flex flex-col min-h-0 relative overflow-hidden transition-colors"
+            style={{ backgroundColor: 'var(--background)' }}
+          >
+            {renderActiveScreen()}
+          </div>
 
-        {/* Real Native iOS Bottom TabBar */}
-        {showTabBar && (
-          <IosTabBar
-            role={state.role}
-            activeTab={state.activeTab}
-            onTabChange={handleTabChange}
-            onCenterPlusClick={() => {
-              if (state.isSimulationMode && !state.activeServicingBooking) {
-                state.setIsCreateBookingOpen(true);
-              } else if (state.activeServicingBooking) {
-                state.handleResumeServicing(state.activeServicingBooking.id);
-              } else {
-                state.setActiveTab('booking');
-                state.setCurrentStep(3);
-              }
-            }}
-            badgeCounts={{
-              booking: state.counts.incoming,
-              task: state.counts.servicing || 1,
-              staff: 0,
-              dispense: 0,
-            }}
-          />
-        )}
-
-        {/* iOS Native Profile & Admin Switch Action Sheet */}
-        <IosProfileMenuSheet
-          isOpen={isProfileSheetOpen}
-          onClose={() => setIsProfileSheetOpen(false)}
-          actor={state.actor}
-          role={state.role}
-          canSwitchRole={state.canSwitchRole}
-          currentBranch={state.currentBranch}
-          selectedStoreId={state.selectedStoreId}
-          onSelectBranch={
-            canSwitchIosBranch({ isAdmin: state.isAdmin, iosRole: state.role }) ? state.setSelectedStoreId : undefined
-          }
-          availableBranches={state.availableBranches}
-          isAdmin={state.isAdmin}
-          isSimulationMode={state.isSimulationMode}
-          onToggleSimulationMode={state.toggleSimulationMode}
-          menteesList={state.menteesList}
-          selectedMenteeStaffId={state.selectedMenteeStaffId}
-          onSelectMentee={state.selectMenteeStaffId}
-          onOpenCreateBooking={!state.isReadOnlyMentorView ? () => state.setIsCreateBookingOpen(true) : undefined}
-          onRoleChange={(r) => {
-            state.setRole(r);
-            setIsProfileSheetOpen(false);
-          }}
-          onOpenPaystub={() => {
-            state.setActiveTab('paystub');
-            setIsProfileSheetOpen(false);
-          }}
-          onOpenChat={() => {
-            setIsProfileSheetOpen(false);
-            const chatUrl = '/chat';
-            const win = window.open(chatUrl, '_blank');
-            if (!win || win.closed || typeof win.closed === 'undefined') {
-              window.location.href = chatUrl;
-            }
-          }}
-          onOpenCareer={() => {
-            setIsProfileSheetOpen(false);
-            const staffIdParam = state.actor?.staffId ? `?staffId=${state.actor.staffId}` : '';
-            const careerUrl = `/dashboard/career-path${staffIdParam}`;
-            const win = window.open(careerUrl, '_blank');
-            if (!win || win.closed || typeof win.closed === 'undefined') {
-              window.location.href = careerUrl;
-            }
-          }}
-          onLogout={() => {
-            setIsProfileSheetOpen(false);
-            if (typeof window !== 'undefined') {
-              window.localStorage.removeItem('mos_token');
-              window.localStorage.removeItem('mos_user');
-              window.localStorage.removeItem('mos_omicall_auto_init');
-              window.localStorage.removeItem('mos_original_token');
-              window.localStorage.removeItem('mos_original_user');
-              window.localStorage.removeItem('mos_original_omicall_auto_init');
-              window.localStorage.removeItem('mos_impersonation_audit_id');
-              window.location.replace('/login');
-            }
-          }}
-        />
-
-        <IosCreateBookingSheet
-          isOpen={state.isCreateBookingOpen}
-          onClose={() => state.setIsCreateBookingOpen(false)}
-          isSimulationMode={state.isSimulationMode}
-          selectedStoreId={state.selectedStoreId}
-          branchName={state.currentBranch?.name}
-          targetDate={state.targetDateStr}
-          actorStaffId={state.actor?.staffId}
-          onCreated={state.handleBookingCreated}
-        />
-
-        <IosSimulationHistorySheet
-          isOpen={state.isHistorySheetOpen}
-          onClose={() => state.setIsHistorySheetOpen(false)}
-          booking={state.bookings.find((b) => Number(b.id) === Number(state.historyBookingId)) || state.activeBooking}
-          attempts={state.historyBookingId ? state.attemptsByBookingId[state.historyBookingId] || [] : []}
-          isLoading={state.historyLoading}
-          error={state.historyError}
-          isReadOnly={state.isReadOnlyMentorView}
-          isBusy={state.isSimActionBusy}
-          onRetryLoad={() => {
-            if (state.historyBookingId) {
-              void state.loadAttemptsForBooking(state.historyBookingId);
-            }
-          }}
-          onRevertConsultation={state.handleSimRevertConsultation}
-          onResetToIncoming={state.handleSimResetToIncoming}
-          onUpdateAttempt={state.handleUpdateSimulationAttempt}
-          onApplyAttempt={state.handleApplyAttemptToWorkspace}
-        />
+          {/* Real Native iOS Bottom TabBar */}
+          {showTabBar && (
+            <IosTabBar
+              role={state.role}
+              activeTab={state.activeTab}
+              onTabChange={handleTabChange}
+              onCenterPlusClick={() => {
+                if (state.isSimulationMode && !state.activeServicingBooking) {
+                  state.setIsCreateBookingOpen(true);
+                } else if (state.activeServicingBooking) {
+                  state.handleResumeServicing(state.activeServicingBooking.id);
+                } else {
+                  state.setActiveTab('booking');
+                  state.setCurrentStep(3);
+                }
+              }}
+              badgeCounts={{
+                booking: state.counts.incoming,
+                task: state.counts.servicing || 1,
+                staff: 0,
+                dispense: 0,
+              }}
+            />
+          )}
+        </IosAppGlobalOverlays>
       </div>
     </div>
   );
