@@ -92,4 +92,5 @@ Read **only** the guide(s) relevant to the files you are modifying:
 | Combo recognition & bounds, VND rounding, Vietnamese tone-insensitive search, Hook deps, Constants               | [docs/rules/catalog-and-data-conventions.md](docs/rules/catalog-and-data-conventions.md) |
 | `/ios-app` Frontend (step map, `UI-010`, `OPS-003` 7/7 diagnostic, `OPS-004` simulation)                         | [apps/web/app/ios-app/AGENTS.md](apps/web/app/ios-app/AGENTS.md)                         |
 | `/api/ios` Backend (MySQL/CRM repo, batch SQL, simulation isolation, Legacy PHP step sync)                       | [apps/api/src/modules/ios/AGENTS.md](apps/api/src/modules/ios/AGENTS.md)                 |
+| `/api/chat` Backend (15 route plugins, relational write-through, locks, SSE & access guards)                     | [apps/api/src/modules/chat/AGENTS.md](apps/api/src/modules/chat/AGENTS.md)               |
 | Voice Chat, Hột Mít & 5 background daemons                                                                       | [docs/VOICE_SYSTEM_ARCHITECTURE.md](docs/VOICE_SYSTEM_ARCHITECTURE.md)                   |

@@ -33,7 +33,6 @@
     "apps/api/src/modules/chat/chat-repository.service.ts": 1456,
     "apps/api/src/modules/chat/chat-web-push.service.ts": 879,
     "apps/api/src/modules/chat/chat-workflow.service.ts": 726,
-    "apps/api/src/modules/chat/routes.ts": 7064,
     "apps/api/src/modules/customers/routes/appointments.routes.ts": 1333,
     "apps/api/src/modules/customers/routes/booking.routes.ts": 1432,
     "apps/api/src/modules/customers/routes/customer-allocation.routes.ts": 971,
