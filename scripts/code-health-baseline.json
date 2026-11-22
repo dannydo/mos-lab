@@ -48,7 +48,6 @@
     "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx": 1761,
     "apps/web/app/dashboard/career-path/page.tsx": 846,
     "apps/web/app/dashboard/catalog/components/CatalogBranchTab.tsx": 775,
-    "apps/web/app/dashboard/catalog/components/CatalogComboConsultTab.tsx": 703,
     "apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx": 1150,
     "apps/web/app/dashboard/cc/components/CcDiamondTab.tsx": 730,
     "apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx": 1652,
@@ -100,7 +99,6 @@
     "apps/web/app/dashboard/telesale-target/components/TelesaleTvJournalModal.tsx": 824,
     "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx": 1723,
     "apps/web/app/dashboard/telesale-target/components/TelesaleTvQuotesDrawer.tsx": 845,
-    "apps/web/app/dashboard/telesale-target/page.tsx": 696,
     "apps/web/app/dashboard/today/components/TodayCalendarSummary.tsx": 1330,
     "apps/web/app/dashboard/today/components/TodayStats.tsx": 1070,
     "apps/web/app/dashboard/today/hooks/useTodayData.ts": 955,
@@ -137,7 +135,6 @@
     "apps/web/components/telesales/components/TelesalesBackFace.tsx": 832,
     "apps/web/components/telesales/components/TelesalesFrontFace.tsx": 754,
     "apps/web/components/ui/MermaidViewer.tsx": 1102,
-    "apps/web/config/sidebar.config.tsx": 702,
     "packages/shared/src/theme/tokens.ts": 1312
   }
 }

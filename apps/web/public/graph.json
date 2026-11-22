@@ -53474,8 +53474,8 @@
       "filePath": "apps/web/app/dashboard/catalog/components/CatalogComboConsultTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32906,
-        "lineCount": 703,
+        "sizeBytes": 14975,
+        "lineCount": 357,
         "ext": ".tsx"
       }
     },
@@ -53606,6 +53606,45 @@
       "metadata": {
         "sizeBytes": 12437,
         "lineCount": 354,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/catalog/components/combo-consult/CatalogComboAccountingSimulator.tsx",
+      "type": "File",
+      "label": "CatalogComboAccountingSimulator.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/catalog/components/combo-consult/CatalogComboAccountingSimulator.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12134,
+        "lineCount": 265,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/catalog/components/combo-consult/CatalogComboComparePanel.tsx",
+      "type": "File",
+      "label": "CatalogComboComparePanel.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/catalog/components/combo-consult/CatalogComboComparePanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4002,
+        "lineCount": 98,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/catalog/components/combo-consult/CatalogComboPackageGrid.tsx",
+      "type": "File",
+      "label": "CatalogComboPackageGrid.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/catalog/components/combo-consult/CatalogComboPackageGrid.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5411,
+        "lineCount": 136,
         "ext": ".tsx"
       }
     },
@@ -56847,6 +56886,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTargetHeader.tsx",
+      "type": "File",
+      "label": "TelesaleTargetHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTargetHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 16110,
+        "lineCount": 373,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTargetOverlays.tsx",
+      "type": "File",
+      "label": "TelesaleTargetOverlays.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTargetOverlays.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3264,
+        "lineCount": 112,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitor.test.tsx",
       "type": "File",
       "label": "TelesaleTodayTvMonitor.test.tsx",
@@ -57114,8 +57179,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30517,
-        "lineCount": 696,
+        "sizeBytes": 14453,
+        "lineCount": 357,
         "ext": ".tsx"
       }
     },
@@ -94204,6 +94269,27 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/catalog/components/combo-consult/CatalogComboAccountingSimulator.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/catalog/components/combo-consult/CatalogComboAccountingSimulator.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/catalog/components/combo-consult/CatalogComboComparePanel.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/catalog/components/combo-consult/CatalogComboComparePanel.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/catalog/components/combo-consult/CatalogComboPackageGrid.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/catalog/components/combo-consult/CatalogComboPackageGrid.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/catalog/components/useCatalogCrudActions.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/catalog/components/useCatalogCrudActions.ts",
       "target": "ws:packages/shared",
@@ -95466,6 +95552,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TeamSelectModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/TeamSelectModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTargetOverlays.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTargetOverlays.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -130927,8 +131020,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4911,
-    "totalEdges": 9639,
+    "totalNodes": 4916,
+    "totalEdges": 9643,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -130937,14 +131030,14 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 559,
-      "File": 1738
+      "File": 1743
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 625,
       "USES_TOKEN": 561,
-      "IMPORTS": 1031,
+      "IMPORTS": 1035,
       "QUERIES_MODEL": 541,
       "API_CALL": 4336
     },
