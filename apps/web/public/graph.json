@@ -36182,6 +36182,90 @@
       }
     },
     {
+      "id": "uicomp:BookingCard",
+      "type": "UIComponent",
+      "label": "<BookingCard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/components/bookings-tab/BookingCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "BookingCard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:BookingCycleBadge",
+      "type": "UIComponent",
+      "label": "<BookingCycleBadge />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/components/bookings-tab/BookingCycleBadge.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "BookingCycleBadge",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:BookingLashSpecsPanel",
+      "type": "UIComponent",
+      "label": "<BookingLashSpecsPanel />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/components/bookings-tab/BookingLashSpecsPanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "BookingLashSpecsPanel",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:BookingNotesPanel",
+      "type": "UIComponent",
+      "label": "<BookingNotesPanel />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/components/bookings-tab/BookingNotesPanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "BookingNotesPanel",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:LegacyBookingStatusTags",
+      "type": "UIComponent",
+      "label": "<LegacyBookingStatusTags />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/components/bookings-tab/LegacyBookingStatusTags.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "LegacyBookingStatusTags",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:bookingsTabHelpers",
+      "type": "UIComponent",
+      "label": "<bookingsTabHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/components/bookings-tab/bookingsTabHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "bookingsTabHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useBookingsTabState",
+      "type": "UIComponent",
+      "label": "<useBookingsTabState />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/components/bookings-tab/useBookingsTabState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useBookingsTabState",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:TimelineBookingCard",
       "type": "UIComponent",
       "label": "<TimelineBookingCard />",
@@ -38854,6 +38938,90 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useMosChatTaskInlineChecklist",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ThreadChecklistAiExtractModal",
+      "type": "UIComponent",
+      "label": "<ThreadChecklistAiExtractModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-thread-checklist/ThreadChecklistAiExtractModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ThreadChecklistAiExtractModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ThreadChecklistHeader",
+      "type": "UIComponent",
+      "label": "<ThreadChecklistHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-thread-checklist/ThreadChecklistHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ThreadChecklistHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ThreadChecklistHistoryModal",
+      "type": "UIComponent",
+      "label": "<ThreadChecklistHistoryModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-thread-checklist/ThreadChecklistHistoryModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ThreadChecklistHistoryModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ThreadChecklistItemRow",
+      "type": "UIComponent",
+      "label": "<ThreadChecklistItemRow />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-thread-checklist/ThreadChecklistItemRow.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ThreadChecklistItemRow",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ThreadChecklistQuickAddRow",
+      "type": "UIComponent",
+      "label": "<ThreadChecklistQuickAddRow />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-thread-checklist/ThreadChecklistQuickAddRow.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ThreadChecklistQuickAddRow",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:threadChecklistTypes",
+      "type": "UIComponent",
+      "label": "<threadChecklistTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-thread-checklist/threadChecklistTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "threadChecklistTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMosChatThreadChecklist",
+      "type": "UIComponent",
+      "label": "<useMosChatThreadChecklist />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-thread-checklist/useMosChatThreadChecklist.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMosChatThreadChecklist",
         "isPrimitive": false
       }
     },
@@ -57089,8 +57257,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 46302,
-        "lineCount": 1101,
+        "sizeBytes": 3901,
+        "lineCount": 115,
         "ext": ".tsx"
       }
     },
@@ -57338,6 +57506,84 @@
       "metadata": {
         "sizeBytes": 6653,
         "lineCount": 192,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-game-create-modal/BkGameCoreFieldsSection.tsx",
+      "type": "File",
+      "label": "BkGameCoreFieldsSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-game-create-modal/BkGameCoreFieldsSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9788,
+        "lineCount": 222,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-game-create-modal/BkGameFormatConfigSection.tsx",
+      "type": "File",
+      "label": "BkGameFormatConfigSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-game-create-modal/BkGameFormatConfigSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7622,
+        "lineCount": 186,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-game-create-modal/BkGameParticipantsSection.tsx",
+      "type": "File",
+      "label": "BkGameParticipantsSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-game-create-modal/BkGameParticipantsSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8740,
+        "lineCount": 213,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-game-create-modal/BkStaffSelectOption.tsx",
+      "type": "File",
+      "label": "BkStaffSelectOption.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-game-create-modal/BkStaffSelectOption.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1412,
+        "lineCount": 39,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-game-create-modal/bkGameCreateUtils.ts",
+      "type": "File",
+      "label": "bkGameCreateUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-game-create-modal/bkGameCreateUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 16788,
+        "lineCount": 473,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-game-create-modal/useBkGameCreateForm.ts",
+      "type": "File",
+      "label": "useBkGameCreateForm.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-game-create-modal/useBkGameCreateForm.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6669,
+        "lineCount": 186,
         "ext": ".ts"
       }
     },
@@ -64382,8 +64628,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 47834,
-        "lineCount": 1035,
+        "sizeBytes": 5435,
+        "lineCount": 147,
         "ext": ".tsx"
       }
     },
@@ -64644,6 +64890,97 @@
       "metadata": {
         "sizeBytes": 8299,
         "lineCount": 218,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/TvMonitorGaugeCard.tsx",
+      "type": "File",
+      "label": "TvMonitorGaugeCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/TvMonitorGaugeCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7268,
+        "lineCount": 182,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/TvMonitorHeaderBar.tsx",
+      "type": "File",
+      "label": "TvMonitorHeaderBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/TvMonitorHeaderBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9914,
+        "lineCount": 244,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/TvMonitorSettingsPopover.tsx",
+      "type": "File",
+      "label": "TvMonitorSettingsPopover.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/TvMonitorSettingsPopover.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9187,
+        "lineCount": 234,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/TvMonitorSnapshotsStrip.tsx",
+      "type": "File",
+      "label": "TvMonitorSnapshotsStrip.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/TvMonitorSnapshotsStrip.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4931,
+        "lineCount": 116,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/tvMonitorCardStyles.ts",
+      "type": "File",
+      "label": "tvMonitorCardStyles.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/tvMonitorCardStyles.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7060,
+        "lineCount": 148,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/tvMonitorCardTypes.ts",
+      "type": "File",
+      "label": "tvMonitorCardTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/tvMonitorCardTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3583,
+        "lineCount": 94,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/useTelesaleTodayTvMonitor.ts",
+      "type": "File",
+      "label": "useTelesaleTodayTvMonitor.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/useTelesaleTodayTvMonitor.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6633,
+        "lineCount": 182,
         "ext": ".ts"
       }
     },
@@ -65162,9 +65499,139 @@
       "filePath": "apps/web/app/dashboard/today/components/TodayStats.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41281,
-        "lineCount": 1070,
+        "sizeBytes": 2816,
+        "lineCount": 87,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-stats/ActualRevenueStatCard.tsx",
+      "type": "File",
+      "label": "ActualRevenueStatCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-stats/ActualRevenueStatCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6438,
+        "lineCount": 157,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-stats/BookingsCreatedStatCard.tsx",
+      "type": "File",
+      "label": "BookingsCreatedStatCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-stats/BookingsCreatedStatCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5996,
+        "lineCount": 159,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-stats/ComingClientsStatCard.tsx",
+      "type": "File",
+      "label": "ComingClientsStatCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-stats/ComingClientsStatCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7574,
+        "lineCount": 174,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-stats/DonutChart.tsx",
+      "type": "File",
+      "label": "DonutChart.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-stats/DonutChart.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2536,
+        "lineCount": 73,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-stats/DonutStatSection.tsx",
+      "type": "File",
+      "label": "DonutStatSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-stats/DonutStatSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2411,
+        "lineCount": 78,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-stats/ForecastIndicator.tsx",
+      "type": "File",
+      "label": "ForecastIndicator.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-stats/ForecastIndicator.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1335,
+        "lineCount": 44,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-stats/todayStatsConstants.ts",
+      "type": "File",
+      "label": "todayStatsConstants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-stats/todayStatsConstants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1318,
+        "lineCount": 57,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-stats/todayStatsHelpers.ts",
+      "type": "File",
+      "label": "todayStatsHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-stats/todayStatsHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6342,
+        "lineCount": 209,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-stats/types.ts",
+      "type": "File",
+      "label": "types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-stats/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2550,
+        "lineCount": 103,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/today-stats/useTodayStatsData.ts",
+      "type": "File",
+      "label": "useTodayStatsData.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/today-stats/useTodayStatsData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3224,
+        "lineCount": 98,
+        "ext": ".ts"
       }
     },
     {
@@ -92358,6 +92825,104 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:BookingCard:ws:apps/web",
+      "source": "uicomp:BookingCard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:BookingCard:token:color:primary",
+      "source": "uicomp:BookingCard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:BookingCycleBadge:ws:apps/web",
+      "source": "uicomp:BookingCycleBadge",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:BookingCycleBadge:token:color:primary",
+      "source": "uicomp:BookingCycleBadge",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:BookingLashSpecsPanel:ws:apps/web",
+      "source": "uicomp:BookingLashSpecsPanel",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:BookingLashSpecsPanel:token:color:primary",
+      "source": "uicomp:BookingLashSpecsPanel",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:BookingNotesPanel:ws:apps/web",
+      "source": "uicomp:BookingNotesPanel",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:BookingNotesPanel:token:color:primary",
+      "source": "uicomp:BookingNotesPanel",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:LegacyBookingStatusTags:ws:apps/web",
+      "source": "uicomp:LegacyBookingStatusTags",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:LegacyBookingStatusTags:token:color:primary",
+      "source": "uicomp:LegacyBookingStatusTags",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:bookingsTabHelpers:ws:apps/web",
+      "source": "uicomp:bookingsTabHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:bookingsTabHelpers:token:color:primary",
+      "source": "uicomp:bookingsTabHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useBookingsTabState:ws:apps/web",
+      "source": "uicomp:useBookingsTabState",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useBookingsTabState:token:color:primary",
+      "source": "uicomp:useBookingsTabState",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:TimelineBookingCard:ws:apps/web",
       "source": "uicomp:TimelineBookingCard",
       "target": "ws:apps/web",
@@ -95475,6 +96040,104 @@
     {
       "id": "edge:uicomp:useMosChatTaskInlineChecklist:token:color:primary",
       "source": "uicomp:useMosChatTaskInlineChecklist",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ThreadChecklistAiExtractModal:ws:apps/web",
+      "source": "uicomp:ThreadChecklistAiExtractModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ThreadChecklistAiExtractModal:token:color:primary",
+      "source": "uicomp:ThreadChecklistAiExtractModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ThreadChecklistHeader:ws:apps/web",
+      "source": "uicomp:ThreadChecklistHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ThreadChecklistHeader:token:color:primary",
+      "source": "uicomp:ThreadChecklistHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ThreadChecklistHistoryModal:ws:apps/web",
+      "source": "uicomp:ThreadChecklistHistoryModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ThreadChecklistHistoryModal:token:color:primary",
+      "source": "uicomp:ThreadChecklistHistoryModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ThreadChecklistItemRow:ws:apps/web",
+      "source": "uicomp:ThreadChecklistItemRow",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ThreadChecklistItemRow:token:color:primary",
+      "source": "uicomp:ThreadChecklistItemRow",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ThreadChecklistQuickAddRow:ws:apps/web",
+      "source": "uicomp:ThreadChecklistQuickAddRow",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ThreadChecklistQuickAddRow:token:color:primary",
+      "source": "uicomp:ThreadChecklistQuickAddRow",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:threadChecklistTypes:ws:apps/web",
+      "source": "uicomp:threadChecklistTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:threadChecklistTypes:token:color:primary",
+      "source": "uicomp:threadChecklistTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMosChatThreadChecklist:ws:apps/web",
+      "source": "uicomp:useMosChatThreadChecklist",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMosChatThreadChecklist:token:color:primary",
+      "source": "uicomp:useMosChatThreadChecklist",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -105588,13 +106251,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/bk/components/BkGameEditModal.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bk/components/BkGameEditModal.test.tsx",
       "target": "ws:packages/shared",
@@ -105702,6 +106358,41 @@
     {
       "id": "edge:file:apps/web/app/dashboard/bk/components/bk-booking-tab/useBkBookingData.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bk/components/bk-booking-tab/useBkBookingData.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-game-create-modal/BkGameCoreFieldsSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-game-create-modal/BkGameCoreFieldsSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-game-create-modal/BkGameFormatConfigSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-game-create-modal/BkGameFormatConfigSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-game-create-modal/BkGameParticipantsSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-game-create-modal/BkGameParticipantsSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-game-create-modal/bkGameCreateUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-game-create-modal/bkGameCreateUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-game-create-modal/useBkGameCreateForm.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-game-create-modal/useBkGameCreateForm.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -108304,13 +108995,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvBookSidePanel.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvBookSidePanel.tsx",
       "target": "ws:packages/shared",
@@ -108376,6 +109060,34 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/kpiOverviewUtils.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/kpiOverviewUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/TvMonitorSnapshotsStrip.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/TvMonitorSnapshotsStrip.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/tvMonitorCardStyles.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/tvMonitorCardStyles.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/tvMonitorCardTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/tvMonitorCardTypes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/useTelesaleTodayTvMonitor.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-today-tv-monitor-card/useTelesaleTodayTvMonitor.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -108549,8 +109261,36 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/today/components/TodayStats.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/today/components/TodayStats.tsx",
+      "id": "edge:file:apps/web/app/dashboard/today/components/today-stats/ActualRevenueStatCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/components/today-stats/ActualRevenueStatCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/today/components/today-stats/BookingsCreatedStatCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/components/today-stats/BookingsCreatedStatCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/today/components/today-stats/ComingClientsStatCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/components/today-stats/ComingClientsStatCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/today/components/today-stats/todayStatsHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/components/today-stats/todayStatsHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/today/components/today-stats/types.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/components/today-stats/types.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -133995,8 +134735,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5559,
-    "totalEdges": 8909,
+    "totalNodes": 5596,
+    "totalEdges": 8948,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -134004,15 +134744,15 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 738,
-      "File": 2207
+      "UIComponent": 752,
+      "File": 2230
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 804,
-      "USES_TOKEN": 740,
-      "IMPORTS": 1358,
+      "RENDERS": 818,
+      "USES_TOKEN": 754,
+      "IMPORTS": 1369,
       "QUERIES_MODEL": 602,
       "API_CALL": 2860
     },
