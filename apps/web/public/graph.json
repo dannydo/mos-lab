@@ -14921,14 +14921,8 @@
       "filePath": "apps/web/app/dashboard/post-hub/page.tsx",
       "metadata": {
         "routePath": "/dashboard/post-hub",
-        "apiCallsCount": 5,
-        "apiCalls": [
-          "postHub.list",
-          "postHub.getLeaderboard",
-          "postHub.review",
-          "postHub.create",
-          "postHub.updateRewardConfig"
-        ]
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -38061,6 +38055,90 @@
       }
     },
     {
+      "id": "uicomp:WorkspaceCardHeader",
+      "type": "UIComponent",
+      "label": "<WorkspaceCardHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-google-workspace-card/WorkspaceCardHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "WorkspaceCardHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:WorkspaceCardStatusBanners",
+      "type": "UIComponent",
+      "label": "<WorkspaceCardStatusBanners />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-google-workspace-card/WorkspaceCardStatusBanners.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "WorkspaceCardStatusBanners",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:WorkspaceRichPreview",
+      "type": "UIComponent",
+      "label": "<WorkspaceRichPreview />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-google-workspace-card/WorkspaceRichPreview.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "WorkspaceRichPreview",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:WorkspaceSheetPreview",
+      "type": "UIComponent",
+      "label": "<WorkspaceSheetPreview />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-google-workspace-card/WorkspaceSheetPreview.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "WorkspaceSheetPreview",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useGoogleWorkspaceCardState",
+      "type": "UIComponent",
+      "label": "<useGoogleWorkspaceCardState />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-google-workspace-card/useGoogleWorkspaceCardState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useGoogleWorkspaceCardState",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:workspaceCardHelpers",
+      "type": "UIComponent",
+      "label": "<workspaceCardHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-google-workspace-card/workspaceCardHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "workspaceCardHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:workspaceCardTypes",
+      "type": "UIComponent",
+      "label": "<workspaceCardTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-google-workspace-card/workspaceCardTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "workspaceCardTypes",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:chat-constants",
       "type": "UIComponent",
       "label": "<chat-constants />",
@@ -55957,8 +56035,8 @@
       "filePath": "apps/web/app/dashboard/catalog/components/CatalogBranchTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26845,
-        "lineCount": 775,
+        "sizeBytes": 3016,
+        "lineCount": 105,
         "ext": ".tsx"
       }
     },
@@ -56077,6 +56155,84 @@
         "sizeBytes": 8497,
         "lineCount": 235,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/BranchDetailDrawer.tsx",
+      "type": "File",
+      "label": "BranchDetailDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/catalog/components/catalog-branch-tab/BranchDetailDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7253,
+        "lineCount": 202,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/BranchFilterToolbar.tsx",
+      "type": "File",
+      "label": "BranchFilterToolbar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/catalog/components/catalog-branch-tab/BranchFilterToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2091,
+        "lineCount": 63,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/BranchStatsRow.tsx",
+      "type": "File",
+      "label": "BranchStatsRow.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/catalog/components/catalog-branch-tab/BranchStatsRow.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1641,
+        "lineCount": 49,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/branchColumns.tsx",
+      "type": "File",
+      "label": "branchColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/catalog/components/catalog-branch-tab/branchColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8452,
+        "lineCount": 261,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/branchHelpers.ts",
+      "type": "File",
+      "label": "branchHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/catalog/components/catalog-branch-tab/branchHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4023,
+        "lineCount": 119,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/useCatalogBranchTab.ts",
+      "type": "File",
+      "label": "useCatalogBranchTab.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/catalog/components/catalog-branch-tab/useCatalogBranchTab.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6906,
+        "lineCount": 229,
+        "ext": ".ts"
       }
     },
     {
@@ -57315,6 +57471,71 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/customers/hooks/use-customer-filters/filterHelpers.ts",
+      "type": "File",
+      "label": "filterHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/hooks/use-customer-filters/filterHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7214,
+        "lineCount": 184,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/hooks/use-customer-filters/types.ts",
+      "type": "File",
+      "label": "types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/hooks/use-customer-filters/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9317,
+        "lineCount": 220,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/hooks/use-customer-filters/urlSync.ts",
+      "type": "File",
+      "label": "urlSync.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/hooks/use-customer-filters/urlSync.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2596,
+        "lineCount": 74,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/hooks/use-customer-filters/useCustomerFilterState.ts",
+      "type": "File",
+      "label": "useCustomerFilterState.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/hooks/use-customer-filters/useCustomerFilterState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14258,
+        "lineCount": 448,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/hooks/use-customer-filters/useSavedCustomerFilters.ts",
+      "type": "File",
+      "label": "useSavedCustomerFilters.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/hooks/use-customer-filters/useSavedCustomerFilters.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7454,
+        "lineCount": 243,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/customers/hooks/useAssignmentHistory.ts",
       "type": "File",
       "label": "useAssignmentHistory.ts",
@@ -57361,8 +57582,8 @@
       "filePath": "apps/web/app/dashboard/customers/hooks/useCustomerFilters.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25206,
-        "lineCount": 765,
+        "sizeBytes": 6018,
+        "lineCount": 141,
         "ext": ".ts"
       }
     },
@@ -58674,8 +58895,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/LashLiftTheoryExamModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 35993,
-        "lineCount": 783,
+        "sizeBytes": 3594,
+        "lineCount": 113,
         "ext": ".tsx"
       }
     },
@@ -59083,6 +59304,84 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/lash-lift-theory-exam-modal/TheoryEssaySection.tsx",
+      "type": "File",
+      "label": "TheoryEssaySection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/lash-lift-theory-exam-modal/TheoryEssaySection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5035,
+        "lineCount": 128,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/lash-lift-theory-exam-modal/TheoryExamBanner.tsx",
+      "type": "File",
+      "label": "TheoryExamBanner.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/lash-lift-theory-exam-modal/TheoryExamBanner.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1986,
+        "lineCount": 50,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/lash-lift-theory-exam-modal/TheoryExamFooter.tsx",
+      "type": "File",
+      "label": "TheoryExamFooter.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/lash-lift-theory-exam-modal/TheoryExamFooter.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2538,
+        "lineCount": 77,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/lash-lift-theory-exam-modal/TheoryMcqSection.tsx",
+      "type": "File",
+      "label": "TheoryMcqSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/lash-lift-theory-exam-modal/TheoryMcqSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5666,
+        "lineCount": 149,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/lash-lift-theory-exam-modal/theory-exam-questions.ts",
+      "type": "File",
+      "label": "theory-exam-questions.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/lash-lift-theory-exam-modal/theory-exam-questions.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15839,
+        "lineCount": 337,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/lash-lift-theory-exam-modal/useLashLiftTheoryExam.ts",
+      "type": "File",
+      "label": "useLashLiftTheoryExam.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/lash-lift-theory-exam-modal/useLashLiftTheoryExam.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4243,
+        "lineCount": 129,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-session/PilotQuickMaterialModal.tsx",
       "type": "File",
       "label": "PilotQuickMaterialModal.tsx",
@@ -59259,9 +59558,74 @@
       "filePath": "apps/web/app/dashboard/post-hub/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32076,
-        "lineCount": 797,
+        "sizeBytes": 9821,
+        "lineCount": 263,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/post-hub/post-hub-page-modules/PostHubCreateDrawer.tsx",
+      "type": "File",
+      "label": "PostHubCreateDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/post-hub/post-hub-page-modules/PostHubCreateDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3329,
+        "lineCount": 89,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/post-hub/post-hub-page-modules/PostHubRewardConfigDrawer.tsx",
+      "type": "File",
+      "label": "PostHubRewardConfigDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/post-hub/post-hub-page-modules/PostHubRewardConfigDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3692,
+        "lineCount": 76,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/post-hub/post-hub-page-modules/postHubPageConstants.ts",
+      "type": "File",
+      "label": "postHubPageConstants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/post-hub/post-hub-page-modules/postHubPageConstants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6432,
+        "lineCount": 138,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/post-hub/post-hub-page-modules/usePostHubDataAndFilters.ts",
+      "type": "File",
+      "label": "usePostHubDataAndFilters.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/post-hub/post-hub-page-modules/usePostHubDataAndFilters.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9410,
+        "lineCount": 269,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/post-hub/post-hub-page-modules/usePostHubDrawers.ts",
+      "type": "File",
+      "label": "usePostHubDrawers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/post-hub/post-hub-page-modules/usePostHubDrawers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8423,
+        "lineCount": 254,
+        "ext": ".ts"
       }
     },
     {
@@ -89609,6 +89973,104 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:WorkspaceCardHeader:ws:apps/web",
+      "source": "uicomp:WorkspaceCardHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:WorkspaceCardHeader:token:color:primary",
+      "source": "uicomp:WorkspaceCardHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:WorkspaceCardStatusBanners:ws:apps/web",
+      "source": "uicomp:WorkspaceCardStatusBanners",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:WorkspaceCardStatusBanners:token:color:primary",
+      "source": "uicomp:WorkspaceCardStatusBanners",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:WorkspaceRichPreview:ws:apps/web",
+      "source": "uicomp:WorkspaceRichPreview",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:WorkspaceRichPreview:token:color:primary",
+      "source": "uicomp:WorkspaceRichPreview",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:WorkspaceSheetPreview:ws:apps/web",
+      "source": "uicomp:WorkspaceSheetPreview",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:WorkspaceSheetPreview:token:color:primary",
+      "source": "uicomp:WorkspaceSheetPreview",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useGoogleWorkspaceCardState:ws:apps/web",
+      "source": "uicomp:useGoogleWorkspaceCardState",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useGoogleWorkspaceCardState:token:color:primary",
+      "source": "uicomp:useGoogleWorkspaceCardState",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:workspaceCardHelpers:ws:apps/web",
+      "source": "uicomp:workspaceCardHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:workspaceCardHelpers:token:color:primary",
+      "source": "uicomp:workspaceCardHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:workspaceCardTypes:ws:apps/web",
+      "source": "uicomp:workspaceCardTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:workspaceCardTypes:token:color:primary",
+      "source": "uicomp:workspaceCardTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:chat-constants:ws:apps/web",
       "source": "uicomp:chat-constants",
       "target": "ws:apps/web",
@@ -98975,6 +99437,41 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/BranchDetailDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/BranchDetailDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/BranchStatsRow.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/BranchStatsRow.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/branchColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/branchColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/branchHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/branchHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/useCatalogBranchTab.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/catalog/components/catalog-branch-tab/useCatalogBranchTab.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/catalog/components/catalogTableColumns.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/catalog/components/catalogTableColumns.tsx",
       "target": "ws:packages/shared",
@@ -99376,6 +99873,20 @@
     {
       "id": "edge:file:apps/web/app/dashboard/customers/components/filters/ActiveFilterTags.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/customers/components/filters/ActiveFilterTags.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/customers/hooks/use-customer-filters/types.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/customers/hooks/use-customer-filters/types.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/customers/hooks/use-customer-filters/useCustomerFilterState.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/customers/hooks/use-customer-filters/useCustomerFilterState.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -100193,8 +100704,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/post-hub/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/post-hub/page.tsx",
+      "id": "edge:file:apps/web/app/dashboard/post-hub/post-hub-page-modules/postHubPageConstants.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/post-hub/post-hub-page-modules/postHubPageConstants.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/post-hub/post-hub-page-modules/usePostHubDataAndFilters.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/post-hub/post-hub-page-modules/usePostHubDataAndFilters.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/post-hub/post-hub-page-modules/usePostHubDrawers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/post-hub/post-hub-page-modules/usePostHubDrawers.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -126961,202 +127486,6 @@
       "label": "CALLS plans.getWeekly"
     },
     {
-      "id": "edge:page:/dashboard/post-hub:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "type": "API_CALL",
-      "label": "CALLS postHub.review"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/academy-sales/workshops/:workshopId/clone-preview",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/academy-sales/workshops/:workshopId/clone-preview",
-      "type": "API_CALL",
-      "label": "CALLS postHub.review"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/academy-sales/workshops/:workshopId/talent-leaderboard",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/academy-sales/workshops/:workshopId/talent-leaderboard",
-      "type": "API_CALL",
-      "label": "CALLS postHub.getLeaderboard"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/ag-task-bridge/reports/:reportId/release-preview",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/ag-task-bridge/reports/:reportId/release-preview",
-      "type": "API_CALL",
-      "label": "CALLS postHub.review"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/ide-task-bridge/tasks/:taskId/release-preview",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/ide-task-bridge/tasks/:taskId/release-preview",
-      "type": "API_CALL",
-      "label": "CALLS postHub.review"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:PATCH:/api/bug-reports/:id/review",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:PATCH:/api/bug-reports/:id/review",
-      "type": "API_CALL",
-      "label": "CALLS postHub.review"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:POST:/api/chat/threads/:messageId/extract-checklist",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
-      "type": "API_CALL",
-      "label": "CALLS postHub.list"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:POST:/api/customers/revoke/preview",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:POST:/api/customers/revoke/preview",
-      "type": "API_CALL",
-      "label": "CALLS postHub.review"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/customers/create-options",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/customers/create-options",
-      "type": "API_CALL",
-      "label": "CALLS postHub.create"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:POST:/api/customers/create",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:POST:/api/customers/create",
-      "type": "API_CALL",
-      "label": "CALLS postHub.create"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:POST:/api/holiday-work/performance-events/:eventId/review",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:POST:/api/holiday-work/performance-events/:eventId/review",
-      "type": "API_CALL",
-      "label": "CALLS postHub.review"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:POST:/api/ios/bookings/create",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:POST:/api/ios/bookings/create",
-      "type": "API_CALL",
-      "label": "CALLS postHub.create"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/kpi/leaderboard",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/kpi/leaderboard",
-      "type": "API_CALL",
-      "label": "CALLS postHub.getLeaderboard"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/kpi/bk/booking/leaderboard",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/kpi/bk/booking/leaderboard",
-      "type": "API_CALL",
-      "label": "CALLS postHub.getLeaderboard"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/kpi/bk/done/leaderboard",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/kpi/bk/done/leaderboard",
-      "type": "API_CALL",
-      "label": "CALLS postHub.getLeaderboard"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/kpi/bk/revenue/leaderboard",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/kpi/bk/revenue/leaderboard",
-      "type": "API_CALL",
-      "label": "CALLS postHub.getLeaderboard"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/kpi/bk/tip/leaderboard",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/kpi/bk/tip/leaderboard",
-      "type": "API_CALL",
-      "label": "CALLS postHub.getLeaderboard"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/kpi/cc-tip/leaderboard",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/kpi/cc-tip/leaderboard",
-      "type": "API_CALL",
-      "label": "CALLS postHub.getLeaderboard"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/kpi/cc-leaderboard",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/kpi/cc-leaderboard",
-      "type": "API_CALL",
-      "label": "CALLS postHub.getLeaderboard"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/kpi/cv-tip/leaderboard",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/kpi/cv-tip/leaderboard",
-      "type": "API_CALL",
-      "label": "CALLS postHub.getLeaderboard"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/kpi/package-audit/list",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/kpi/package-audit/list",
-      "type": "API_CALL",
-      "label": "CALLS postHub.list"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:POST:/api/kpi/package-audit/review",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:POST:/api/kpi/package-audit/review",
-      "type": "API_CALL",
-      "label": "CALLS postHub.review"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:POST:/api/pilot/material-sop/review",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:POST:/api/pilot/material-sop/review",
-      "type": "API_CALL",
-      "label": "CALLS postHub.review"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/post-hub/leaderboard",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/post-hub/leaderboard",
-      "type": "API_CALL",
-      "label": "CALLS postHub.getLeaderboard"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/post-hub/leaderboard/:staffId/daily",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/post-hub/leaderboard/:staffId/daily",
-      "type": "API_CALL",
-      "label": "CALLS postHub.getLeaderboard"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:GET:/api/post-hub/submissions/:id/reward-preview",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:GET:/api/post-hub/submissions/:id/reward-preview",
-      "type": "API_CALL",
-      "label": "CALLS postHub.review"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:PUT:/api/post-hub/submissions/:id/review",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:PUT:/api/post-hub/submissions/:id/review",
-      "type": "API_CALL",
-      "label": "CALLS postHub.review"
-    },
-    {
-      "id": "edge:page:/dashboard/post-hub:route:POST:/api/ui-experiences/:id/preview-token",
-      "source": "page:/dashboard/post-hub",
-      "target": "route:POST:/api/ui-experiences/:id/preview-token",
-      "type": "API_CALL",
-      "label": "CALLS postHub.review"
-    },
-    {
       "id": "edge:page:/dashboard/referrals:route:GET:/api/campaigns/:id/customers",
       "source": "page:/dashboard/referrals",
       "target": "route:GET:/api/campaigns/:id/customers",
@@ -136405,8 +136734,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5169,
-    "totalEdges": 9948,
+    "totalNodes": 5198,
+    "totalEdges": 9943,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -136414,17 +136743,17 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 598,
-      "File": 1957
+      "UIComponent": 605,
+      "File": 1979
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 664,
-      "USES_TOKEN": 600,
-      "IMPORTS": 1201,
+      "RENDERS": 671,
+      "USES_TOKEN": 607,
+      "IMPORTS": 1210,
       "QUERIES_MODEL": 602,
-      "API_CALL": 4336
+      "API_CALL": 4308
     },
     "fastifyRouteCount": 777,
     "prismaModelCount": 183,
