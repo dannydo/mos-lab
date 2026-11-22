@@ -14883,8 +14883,8 @@
       "filePath": "apps/web/app/dashboard/plans/page.tsx",
       "metadata": {
         "routePath": "/dashboard/plans",
-        "apiCallsCount": 4,
-        "apiCalls": ["plans.getWeekly", "plans.getSuggestions", "plans.create", "plans.confirm"]
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -34477,6 +34477,90 @@
       }
     },
     {
+      "id": "uicomp:AvatarAiScoreCard",
+      "type": "UIComponent",
+      "label": "<AvatarAiScoreCard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/avatar/avatar-crop-modal/AvatarAiScoreCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "AvatarAiScoreCard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:AvatarCropFooter",
+      "type": "UIComponent",
+      "label": "<AvatarCropFooter />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/avatar/avatar-crop-modal/AvatarCropFooter.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "AvatarCropFooter",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:AvatarCropHeader",
+      "type": "UIComponent",
+      "label": "<AvatarCropHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/avatar/avatar-crop-modal/AvatarCropHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "AvatarCropHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:AvatarViewfinderControls",
+      "type": "UIComponent",
+      "label": "<AvatarViewfinderControls />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/avatar/avatar-crop-modal/AvatarViewfinderControls.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "AvatarViewfinderControls",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:avatarCropHelpers",
+      "type": "UIComponent",
+      "label": "<avatarCropHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/avatar/avatar-crop-modal/avatarCropHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "avatarCropHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:avatarCropModalTypes",
+      "type": "UIComponent",
+      "label": "<avatarCropModalTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/avatar/avatar-crop-modal/avatarCropModalTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "avatarCropModalTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useAvatarCropModal",
+      "type": "UIComponent",
+      "label": "<useAvatarCropModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/avatar/avatar-crop-modal/useAvatarCropModal.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useAvatarCropModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:BookingAuditLogDrawer",
       "type": "UIComponent",
       "label": "<BookingAuditLogDrawer />",
@@ -40929,6 +41013,66 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "TelesalesFrontFace",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TelesalesBackHeader",
+      "type": "UIComponent",
+      "label": "<TelesalesBackHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telesales/components/telesales-back-face/TelesalesBackHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TelesalesBackHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TelesalesBackLeaderboard",
+      "type": "UIComponent",
+      "label": "<TelesalesBackLeaderboard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telesales/components/telesales-back-face/TelesalesBackLeaderboard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TelesalesBackLeaderboard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TelesalesRadarChart",
+      "type": "UIComponent",
+      "label": "<TelesalesRadarChart />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telesales/components/telesales-back-face/TelesalesRadarChart.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TelesalesRadarChart",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:backFaceVisualConfig",
+      "type": "UIComponent",
+      "label": "<backFaceVisualConfig />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telesales/components/telesales-back-face/backFaceVisualConfig.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "backFaceVisualConfig",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:telesalesBackFaceTypes",
+      "type": "UIComponent",
+      "label": "<telesalesBackFaceTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/telesales/components/telesales-back-face/telesalesBackFaceTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "telesalesBackFaceTypes",
         "isPrimitive": false
       }
     },
@@ -59215,8 +59359,8 @@
       "filePath": "apps/web/app/dashboard/kpi/components/AppointmentsAuditDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31576,
-        "lineCount": 836,
+        "sizeBytes": 3637,
+        "lineCount": 124,
         "ext": ".tsx"
       }
     },
@@ -59296,6 +59440,84 @@
         "sizeBytes": 19358,
         "lineCount": 491,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/kpi/components/appointments-audit-drawer/AppointmentsAuditTable.tsx",
+      "type": "File",
+      "label": "AppointmentsAuditTable.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/kpi/components/appointments-audit-drawer/AppointmentsAuditTable.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3140,
+        "lineCount": 87,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/kpi/components/appointments-audit-drawer/AuditFilterBar.tsx",
+      "type": "File",
+      "label": "AuditFilterBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/kpi/components/appointments-audit-drawer/AuditFilterBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1997,
+        "lineCount": 67,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/kpi/components/appointments-audit-drawer/AuditPaystubSummaryCards.tsx",
+      "type": "File",
+      "label": "AuditPaystubSummaryCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/kpi/components/appointments-audit-drawer/AuditPaystubSummaryCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6973,
+        "lineCount": 166,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/kpi/components/appointments-audit-drawer/appointmentsAuditTypes.ts",
+      "type": "File",
+      "label": "appointmentsAuditTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/kpi/components/appointments-audit-drawer/appointmentsAuditTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4114,
+        "lineCount": 142,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/kpi/components/appointments-audit-drawer/auditTableColumns.tsx",
+      "type": "File",
+      "label": "auditTableColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/kpi/components/appointments-audit-drawer/auditTableColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3614,
+        "lineCount": 110,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/kpi/components/appointments-audit-drawer/useAppointmentsAudit.ts",
+      "type": "File",
+      "label": "useAppointmentsAudit.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/kpi/components/appointments-audit-drawer/useAppointmentsAudit.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4584,
+        "lineCount": 153,
+        "ext": ".ts"
       }
     },
     {
@@ -60541,9 +60763,87 @@
       "filePath": "apps/web/app/dashboard/plans/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29629,
-        "lineCount": 837,
+        "sizeBytes": 5739,
+        "lineCount": 176,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/plans/plans-page-modules/PlansSuggestionsDrawer.tsx",
+      "type": "File",
+      "label": "PlansSuggestionsDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/plans/plans-page-modules/PlansSuggestionsDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4122,
+        "lineCount": 116,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/plans/plans-page-modules/PlansWeekToolbarCard.tsx",
+      "type": "File",
+      "label": "PlansWeekToolbarCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/plans/plans-page-modules/PlansWeekToolbarCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1800,
+        "lineCount": 53,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/plans/plans-page-modules/plansColumns.tsx",
+      "type": "File",
+      "label": "plansColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/plans/plans-page-modules/plansColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7861,
+        "lineCount": 228,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/plans/plans-page-modules/plansPageTypes.ts",
+      "type": "File",
+      "label": "plansPageTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/plans/plans-page-modules/plansPageTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1187,
+        "lineCount": 45,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/plans/plans-page-modules/plansPageUtils.ts",
+      "type": "File",
+      "label": "plansPageUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/plans/plans-page-modules/plansPageUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6268,
+        "lineCount": 200,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/plans/plans-page-modules/usePlansPage.ts",
+      "type": "File",
+      "label": "usePlansPage.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/plans/plans-page-modules/usePlansPage.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5337,
+        "lineCount": 165,
+        "ext": ".ts"
       }
     },
     {
@@ -61763,8 +62063,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvQuotesDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31209,
-        "lineCount": 845,
+        "sizeBytes": 4306,
+        "lineCount": 133,
         "ext": ".tsx"
       }
     },
@@ -61882,6 +62182,110 @@
       "metadata": {
         "sizeBytes": 2907,
         "lineCount": 87,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuoteCard.tsx",
+      "type": "File",
+      "label": "TvQuoteCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuoteCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5715,
+        "lineCount": 166,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuoteFormModal.tsx",
+      "type": "File",
+      "label": "TvQuoteFormModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuoteFormModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4769,
+        "lineCount": 137,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuotesList.tsx",
+      "type": "File",
+      "label": "TvQuotesList.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuotesList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2392,
+        "lineCount": 80,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuotesToolbar.tsx",
+      "type": "File",
+      "label": "TvQuotesToolbar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuotesToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6115,
+        "lineCount": 173,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/tvQuotesConstants.ts",
+      "type": "File",
+      "label": "tvQuotesConstants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/tvQuotesConstants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5570,
+        "lineCount": 143,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/tvQuotesTypes.ts",
+      "type": "File",
+      "label": "tvQuotesTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/tvQuotesTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 896,
+        "lineCount": 45,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/useTelesaleTvQuotes.ts",
+      "type": "File",
+      "label": "useTelesaleTvQuotes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/useTelesaleTvQuotes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6983,
+        "lineCount": 219,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/useTvQuoteAudioPreview.ts",
+      "type": "File",
+      "label": "useTvQuoteAudioPreview.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/useTvQuoteAudioPreview.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3244,
+        "lineCount": 112,
         "ext": ".ts"
       }
     },
@@ -87124,6 +87528,104 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:AvatarAiScoreCard:ws:apps/web",
+      "source": "uicomp:AvatarAiScoreCard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:AvatarAiScoreCard:token:color:primary",
+      "source": "uicomp:AvatarAiScoreCard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:AvatarCropFooter:ws:apps/web",
+      "source": "uicomp:AvatarCropFooter",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:AvatarCropFooter:token:color:primary",
+      "source": "uicomp:AvatarCropFooter",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:AvatarCropHeader:ws:apps/web",
+      "source": "uicomp:AvatarCropHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:AvatarCropHeader:token:color:primary",
+      "source": "uicomp:AvatarCropHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:AvatarViewfinderControls:ws:apps/web",
+      "source": "uicomp:AvatarViewfinderControls",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:AvatarViewfinderControls:token:color:primary",
+      "source": "uicomp:AvatarViewfinderControls",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:avatarCropHelpers:ws:apps/web",
+      "source": "uicomp:avatarCropHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:avatarCropHelpers:token:color:primary",
+      "source": "uicomp:avatarCropHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:avatarCropModalTypes:ws:apps/web",
+      "source": "uicomp:avatarCropModalTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:avatarCropModalTypes:token:color:primary",
+      "source": "uicomp:avatarCropModalTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useAvatarCropModal:ws:apps/web",
+      "source": "uicomp:useAvatarCropModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useAvatarCropModal:token:color:primary",
+      "source": "uicomp:useAvatarCropModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:BookingAuditLogDrawer:ws:apps/web",
       "source": "uicomp:BookingAuditLogDrawer",
       "target": "ws:apps/web",
@@ -94651,6 +95153,76 @@
     {
       "id": "edge:uicomp:TelesalesFrontFace:token:color:primary",
       "source": "uicomp:TelesalesFrontFace",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TelesalesBackHeader:ws:apps/web",
+      "source": "uicomp:TelesalesBackHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TelesalesBackHeader:token:color:primary",
+      "source": "uicomp:TelesalesBackHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TelesalesBackLeaderboard:ws:apps/web",
+      "source": "uicomp:TelesalesBackLeaderboard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TelesalesBackLeaderboard:token:color:primary",
+      "source": "uicomp:TelesalesBackLeaderboard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TelesalesRadarChart:ws:apps/web",
+      "source": "uicomp:TelesalesRadarChart",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TelesalesRadarChart:token:color:primary",
+      "source": "uicomp:TelesalesRadarChart",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:backFaceVisualConfig:ws:apps/web",
+      "source": "uicomp:backFaceVisualConfig",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:backFaceVisualConfig:token:color:primary",
+      "source": "uicomp:backFaceVisualConfig",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:telesalesBackFaceTypes:ws:apps/web",
+      "source": "uicomp:telesalesBackFaceTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:telesalesBackFaceTypes:token:color:primary",
+      "source": "uicomp:telesalesBackFaceTypes",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -102237,13 +102809,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/kpi/components/AppointmentsAuditDrawer.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/kpi/components/AppointmentsAuditDrawer.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/kpi/components/BookingAuditLogReportTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/kpi/components/BookingAuditLogReportTab.tsx",
       "target": "ws:packages/shared",
@@ -102267,6 +102832,27 @@
     {
       "id": "edge:file:apps/web/app/dashboard/kpi/components/PackageAuditTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/kpi/components/PackageAuditTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/kpi/components/appointments-audit-drawer/AuditPaystubSummaryCards.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/kpi/components/appointments-audit-drawer/AuditPaystubSummaryCards.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/kpi/components/appointments-audit-drawer/appointmentsAuditTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/kpi/components/appointments-audit-drawer/appointmentsAuditTypes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/kpi/components/appointments-audit-drawer/useAppointmentsAudit.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/kpi/components/appointments-audit-drawer/useAppointmentsAudit.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -102678,8 +103264,29 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/plans/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/plans/page.tsx",
+      "id": "edge:file:apps/web/app/dashboard/plans/plans-page-modules/plansColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/plans/plans-page-modules/plansColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/plans/plans-page-modules/plansPageTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/plans/plans-page-modules/plansPageTypes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/plans/plans-page-modules/plansPageUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/plans/plans-page-modules/plansPageUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/plans/plans-page-modules/usePlansPage.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/plans/plans-page-modules/usePlansPage.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -103168,13 +103775,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvQuotesDrawer.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvQuotesDrawer.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.test.tsx",
       "target": "ws:packages/shared",
@@ -103212,6 +103812,62 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/useTelesaleTvJournal.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/useTelesaleTvJournal.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuoteCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuoteCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuoteFormModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuoteFormModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuotesList.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuotesList.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuotesToolbar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/TvQuotesToolbar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/tvQuotesConstants.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/tvQuotesConstants.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/tvQuotesTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/tvQuotesTypes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/useTelesaleTvQuotes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/useTelesaleTvQuotes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/useTvQuoteAudioPreview.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-quotes-drawer/useTvQuoteAudioPreview.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -127101,97 +127757,6 @@
       "label": "CALLS pilot.listSessions"
     },
     {
-      "id": "edge:page:/dashboard/plans:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/photos/confirm",
-      "source": "page:/dashboard/plans",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/photos/confirm",
-      "type": "API_CALL",
-      "label": "CALLS plans.confirm"
-    },
-    {
-      "id": "edge:page:/dashboard/plans:route:PATCH:/api/bug-reports/:id/confirm-close",
-      "source": "page:/dashboard/plans",
-      "target": "route:PATCH:/api/bug-reports/:id/confirm-close",
-      "type": "API_CALL",
-      "label": "CALLS plans.confirm"
-    },
-    {
-      "id": "edge:page:/dashboard/plans:route:POST:/api/request-classifier/inbox-plans/claim",
-      "source": "page:/dashboard/plans",
-      "target": "route:POST:/api/request-classifier/inbox-plans/claim",
-      "type": "API_CALL",
-      "label": "CALLS plans.getWeekly"
-    },
-    {
-      "id": "edge:page:/dashboard/plans:route:POST:/api/request-classifier/inbox-plans/:id/complete",
-      "source": "page:/dashboard/plans",
-      "target": "route:POST:/api/request-classifier/inbox-plans/:id/complete",
-      "type": "API_CALL",
-      "label": "CALLS plans.getWeekly"
-    },
-    {
-      "id": "edge:page:/dashboard/plans:route:POST:/api/request-classifier/inbox-plans/:id/fail",
-      "source": "page:/dashboard/plans",
-      "target": "route:POST:/api/request-classifier/inbox-plans/:id/fail",
-      "type": "API_CALL",
-      "label": "CALLS plans.getWeekly"
-    },
-    {
-      "id": "edge:page:/dashboard/plans:route:GET:/api/customers/create-options",
-      "source": "page:/dashboard/plans",
-      "target": "route:GET:/api/customers/create-options",
-      "type": "API_CALL",
-      "label": "CALLS plans.create"
-    },
-    {
-      "id": "edge:page:/dashboard/plans:route:POST:/api/customers/create",
-      "source": "page:/dashboard/plans",
-      "target": "route:POST:/api/customers/create",
-      "type": "API_CALL",
-      "label": "CALLS plans.create"
-    },
-    {
-      "id": "edge:page:/dashboard/plans:route:POST:/api/ios/bookings/create",
-      "source": "page:/dashboard/plans",
-      "target": "route:POST:/api/ios/bookings/create",
-      "type": "API_CALL",
-      "label": "CALLS plans.create"
-    },
-    {
-      "id": "edge:page:/dashboard/plans:route:POST:/api/plans",
-      "source": "page:/dashboard/plans",
-      "target": "route:POST:/api/plans",
-      "type": "API_CALL",
-      "label": "CALLS plans.getWeekly"
-    },
-    {
-      "id": "edge:page:/dashboard/plans:route:GET:/api/plans/today",
-      "source": "page:/dashboard/plans",
-      "target": "route:GET:/api/plans/today",
-      "type": "API_CALL",
-      "label": "CALLS plans.getWeekly"
-    },
-    {
-      "id": "edge:page:/dashboard/plans:route:PUT:/api/plans/:id/confirm",
-      "source": "page:/dashboard/plans",
-      "target": "route:PUT:/api/plans/:id/confirm",
-      "type": "API_CALL",
-      "label": "CALLS plans.getWeekly"
-    },
-    {
-      "id": "edge:page:/dashboard/plans:route:GET:/api/plans/suggest",
-      "source": "page:/dashboard/plans",
-      "target": "route:GET:/api/plans/suggest",
-      "type": "API_CALL",
-      "label": "CALLS plans.getWeekly"
-    },
-    {
-      "id": "edge:page:/dashboard/plans:route:GET:/api/plans/weekly",
-      "source": "page:/dashboard/plans",
-      "target": "route:GET:/api/plans/weekly",
-      "type": "API_CALL",
-      "label": "CALLS plans.getWeekly"
-    },
-    {
       "id": "edge:page:/dashboard/referrals:route:GET:/api/campaigns/:id/customers",
       "source": "page:/dashboard/referrals",
       "target": "route:GET:/api/campaigns/:id/customers",
@@ -136440,8 +137005,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5302,
-    "totalEdges": 9716,
+    "totalNodes": 5334,
+    "totalEdges": 9739,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -136449,17 +137014,17 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 636,
-      "File": 2052
+      "UIComponent": 648,
+      "File": 2072
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 702,
-      "USES_TOKEN": 638,
-      "IMPORTS": 1263,
+      "RENDERS": 714,
+      "USES_TOKEN": 650,
+      "IMPORTS": 1275,
       "QUERIES_MODEL": 602,
-      "API_CALL": 3966
+      "API_CALL": 3953
     },
     "fastifyRouteCount": 777,
     "prismaModelCount": 183,

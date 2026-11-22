@@ -29,7 +29,6 @@
     "apps/web/app/dashboard/funds/components/FundDetailDrawer.tsx": 952,
     "apps/web/app/dashboard/funds/components/FundFormModal.tsx": 979,
     "apps/web/app/dashboard/holiday-work/page.tsx": 865,
-    "apps/web/app/dashboard/kpi/components/AppointmentsAuditDrawer.tsx": 836,
     "apps/web/app/dashboard/loca/components/LocaStaffActivityTab.tsx": 857,
     "apps/web/app/dashboard/loca/hooks/useLocaData.ts": 1152,
     "apps/web/app/dashboard/loca/page.tsx": 1535,
@@ -43,7 +42,6 @@
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.tsx": 1991,
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx": 1264,
     "apps/web/app/dashboard/pilot-dark-lashes/components/SopPrepCategory1DetailView.tsx": 915,
-    "apps/web/app/dashboard/plans/page.tsx": 837,
     "apps/web/app/dashboard/schedule-calendar/page.tsx": 848,
     "apps/web/app/dashboard/staff/page.tsx": 998,
     "apps/web/app/dashboard/staff/teams/page.tsx": 849,
@@ -51,13 +49,11 @@
     "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx": 875,
     "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx": 1035,
     "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx": 1723,
-    "apps/web/app/dashboard/telesale-target/components/TelesaleTvQuotesDrawer.tsx": 845,
     "apps/web/app/dashboard/today/components/TodayCalendarSummary.tsx": 1330,
     "apps/web/app/dashboard/today/components/TodayStats.tsx": 1070,
     "apps/web/app/dashboard/today/hooks/useTodayData.ts": 955,
     "apps/web/app/login/page.tsx": 881,
     "apps/web/app/payroll-adjustment-lab/page.tsx": 897,
-    "apps/web/components/avatar/AvatarCropModal.tsx": 840,
     "apps/web/components/campaign/SharedPoolHistoryRecoveryDrawer.tsx": 888,
     "apps/web/components/cc-thu-nhap/modals/CcPaystubDetailModal.tsx": 918,
     "apps/web/components/customer-detail/components/BookingsTab.tsx": 1030,
@@ -74,7 +70,6 @@
     "apps/web/components/notification-center/HeaderNotificationCenter.tsx": 1030,
     "apps/web/components/profile/UnifiedProfileSheet.tsx": 853,
     "apps/web/components/qa-shop/hooks/useQaShopState.ts": 866,
-    "apps/web/components/telesales/components/TelesalesBackFace.tsx": 832,
     "apps/web/components/ui/MermaidViewer.tsx": 1102
   }
 }
