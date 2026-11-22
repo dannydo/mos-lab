@@ -285,7 +285,9 @@ try {
   const modalBox = await page.locator('#task-modal').boundingBox();
   if (!modalBox) throw new Error('Task modal not rendered');
 
-  console.log(`[Playwright QA] Task Modal Box: x=${modalBox.x}, y=${modalBox.y}, width=${modalBox.width}, height=${modalBox.height}`);
+  console.log(
+    `[Playwright QA] Task Modal Box: x=${modalBox.x}, y=${modalBox.y}, width=${modalBox.width}, height=${modalBox.height}`
+  );
 
   if (modalBox.x < 0) {
     throw new Error(`Modal clipped on the left: x=${modalBox.x}`);
@@ -299,7 +301,9 @@ try {
   const bodyClientWidth = await page.evaluate(() => document.body.clientWidth);
   console.log(`[Playwright QA] Body scrollWidth=${bodyScrollWidth}, clientWidth=${bodyClientWidth}`);
   if (bodyScrollWidth > bodyClientWidth) {
-    throw new Error(`Horizontal overflow detected: scrollWidth (${bodyScrollWidth}) > clientWidth (${bodyClientWidth})`);
+    throw new Error(
+      `Horizontal overflow detected: scrollWidth (${bodyScrollWidth}) > clientWidth (${bodyClientWidth})`
+    );
   }
 
   // Capture screenshot

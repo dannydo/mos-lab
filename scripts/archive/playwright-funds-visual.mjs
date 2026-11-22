@@ -35,20 +35,23 @@ hardTimeout.unref();
     });
 
     console.log('1. Setting pre-authenticated session...');
-    await context.addInitScript((userData) => {
-      window.localStorage.setItem('mos_token', userData.token);
-      window.localStorage.setItem('mos_user', JSON.stringify(userData.user));
-      window.localStorage.setItem('mos_avatar_snooze_until', '2099-01-01');
-    }, {
-      token,
-      user: {
-        id: 1,
-        username: 'danhdo@gmail.com',
-        displayName: 'Danny Do',
-        role: 'super_admin',
-        isActive: true,
+    await context.addInitScript(
+      (userData) => {
+        window.localStorage.setItem('mos_token', userData.token);
+        window.localStorage.setItem('mos_user', JSON.stringify(userData.user));
+        window.localStorage.setItem('mos_avatar_snooze_until', '2099-01-01');
       },
-    });
+      {
+        token,
+        user: {
+          id: 1,
+          username: 'danhdo@gmail.com',
+          displayName: 'Danny Do',
+          role: 'super_admin',
+          isActive: true,
+        },
+      }
+    );
 
     const page = await context.newPage();
 

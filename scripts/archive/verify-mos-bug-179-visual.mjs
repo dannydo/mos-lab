@@ -224,9 +224,7 @@ try {
   const spentStat = await page.textContent('text=3.450.000đ');
   if (!spentStat) throw new Error('Customer spending KPI stat missing');
 
-  const screenshotPath = resolve(
-    '/tmp/verify-mos-bug-179.png'
-  );
+  const screenshotPath = resolve('/tmp/verify-mos-bug-179.png');
   await page.screenshot({ path: screenshotPath, fullPage: true });
 
   console.log('Playwright visual QA PASSED: Screenshot saved to ' + screenshotPath);

@@ -35,21 +35,24 @@ hardTimeout.unref();
     });
 
     console.log('1. Configuring pre-authenticated localStorage via addInitScript...');
-    await context.addInitScript((userData) => {
-      window.localStorage.setItem('mos_token', userData.token);
-      window.localStorage.setItem('mos_user', JSON.stringify(userData.user));
-      window.localStorage.setItem('mos_avatar_snooze_until', '2099-01-01');
-    }, {
-      token,
-      user: {
-        id: 1,
-        username: 'danhdo@gmail.com',
-        displayName: 'Danny Do',
-        role: 'super_admin',
-        isActive: true,
-        avatarUrl: 'https://cdn.example.com/danny-avatar.jpg',
+    await context.addInitScript(
+      (userData) => {
+        window.localStorage.setItem('mos_token', userData.token);
+        window.localStorage.setItem('mos_user', JSON.stringify(userData.user));
+        window.localStorage.setItem('mos_avatar_snooze_until', '2099-01-01');
       },
-    });
+      {
+        token,
+        user: {
+          id: 1,
+          username: 'danhdo@gmail.com',
+          displayName: 'Danny Do',
+          role: 'super_admin',
+          isActive: true,
+          avatarUrl: 'https://cdn.example.com/danny-avatar.jpg',
+        },
+      }
+    );
 
     const page = await context.newPage();
     page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));

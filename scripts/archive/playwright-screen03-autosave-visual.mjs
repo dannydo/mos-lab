@@ -32,24 +32,28 @@ hardTimeout.unref();
 
     const context = await browser.newContext({
       viewport: { width: 430, height: 932 }, // iPhone 15 Pro Max viewport
-      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
     });
 
     console.log('1. Setting pre-authenticated session...');
-    await context.addInitScript((userData) => {
-      window.localStorage.setItem('mos_token', userData.token);
-      window.localStorage.setItem('mos_user', JSON.stringify(userData.user));
-      window.localStorage.setItem('mos_avatar_snooze_until', '2099-01-01');
-    }, {
-      token,
-      user: {
-        id: 1,
-        username: 'danhdo@gmail.com',
-        displayName: 'Danny Do',
-        role: 'super_admin',
-        isActive: true,
+    await context.addInitScript(
+      (userData) => {
+        window.localStorage.setItem('mos_token', userData.token);
+        window.localStorage.setItem('mos_user', JSON.stringify(userData.user));
+        window.localStorage.setItem('mos_avatar_snooze_until', '2099-01-01');
       },
-    });
+      {
+        token,
+        user: {
+          id: 1,
+          username: 'danhdo@gmail.com',
+          displayName: 'Danny Do',
+          role: 'super_admin',
+          isActive: true,
+        },
+      }
+    );
 
     const page = await context.newPage();
     console.log('2. Navigating to /ios-app...');

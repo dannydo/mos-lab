@@ -1,6 +1,6 @@
 # 🚀 AI Agent Development Guide for mos-lab
 
-This guide outlines common commands, monorepo architecture, coding standards, and best practices to help you develop faster and correctly in `mos-lab`.
+This guide outlines common commands, monorepo architecture, coding standards, and best practices to help you develop faster and correctly in `mos-lab`. See [AGENTS.md](AGENTS.md) for global invariants and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for full workflow details.
 
 ---
 
@@ -10,7 +10,8 @@ This guide outlines common commands, monorepo architecture, coding standards, an
 
 - **Start local dev servers**: `pnpm dev` (Runs Web on http://localhost:4000 and API on http://localhost:4001)
 - **Build all packages**: `pnpm build`
-- **Run lint checks**: `pnpm lint`
+- **Run lint & health checks**: `pnpm lint`
+- **Run fast verification**: `pnpm verify:quick`
 - **Clean workspace build cache**: `pnpm clean`
 
 ### Backend DB Commands (`apps/api`)
@@ -26,11 +27,12 @@ This guide outlines common commands, monorepo architecture, coding standards, an
 ```
 mos-lab/
 ├── apps/
-│   ├── web/                          # Next.js 15 + Ant Design 5 (Port: 4000)
-│   └── api/                          # Fastify 5 + TypeScript (Port: 4001)
+│   ├── web/                          # Next.js 16 + Ant Design 5 (Port: 4000)
+│   ├── api/                          # Fastify 5 + TypeScript (Port: 4001)
+│   └── ads-portal/                   # Next.js 16 Ads Portal (Port: 8000)
 ├── packages/
 │   └── shared/                       # Shared Types & Constants (@mos-lab/shared)
-└── scripts/                          # Deployment scripts
+└── scripts/                          # Operational, deploy & verification scripts
 ```
 
 ---
@@ -53,23 +55,15 @@ mos-lab/
 - **File Extensions**: Relative imports in `apps/api` **MUST** end with `.js` (e.g. `import prismaPlugin from './plugins/prisma.js'`). This is required by `NodeNext` TypeScript configuration.
 - **Prisma Clients**:
   - `fastify.prisma.crm`: Database `mos_lab` for CRM data (CRUD allowed).
-  - `fastify.prisma.legacy`: Database `management` for Legacy CRM data (**READ-ONLY**).
+  - `fastify.prisma.legacy`: Database `management` for Legacy CRM data (**READ-ONLY** on transactional tables; catalog writes allowed only on `/api/catalog/*` for admins inside `$transaction`).
 
-### 4. Theme & Styling (Refer to `.agents/AGENTS.md`)
+### 4. Theme & Styling (Refer to `docs/rules/ui-theme-and-tables.md`)
 
 - **Theme support**: Giao diện hỗ trợ cả Sáng (Light Theme) và Tối (Dark Theme).
-- **CSS Overrides**: Tuyệt đối không hardcode màu nền tối (`background: #141414 !important`). Phân vùng ghi đè rõ ràng:
-  ```css
-  .dark-theme .ant-table {
-    background: #141414 !important;
-  }
-  .light-theme .ant-table {
-    background: #ffffff !important;
-  }
-  ```
+- **CSS Overrides**: Tuyệt đối không hardcode màu nền tối (`background: #141414 !important`). Phân vùng `.dark-theme` / `.light-theme` rõ ràng.
 - **Inline Styles**: Luôn sử dụng `themeMode === 'dark' ? ... : ...` hoặc `theme.useToken()` của Ant Design.
 
-### 5. Booker Salary API Configuration & Privacy (Refer to `.agents/AGENTS.md`)
+### 5. Booker Salary API Configuration & Privacy (Refer to `docs/rules/sales-booker-and-telesales.md`)
 
 - **No Shared API**: Tuyệt đối không gọi đến endpoint Wingslashes ngoài.
 - Dùng API xuất dữ liệu nội bộ: `GET /api/kpi/export-booker-salary` đi kèm key tích hợp: `?key=FDC0D0A177694777A`.
