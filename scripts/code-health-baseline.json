@@ -128,7 +128,6 @@
     "apps/web/components/sms/SMSModal.tsx": 799,
     "apps/web/components/telesales/components/TelesalesBackFace.tsx": 832,
     "apps/web/components/telesales/components/TelesalesFrontFace.tsx": 754,
-    "apps/web/components/ui/MermaidViewer.tsx": 1102,
-    "packages/shared/src/theme/tokens.ts": 1312
+    "apps/web/components/ui/MermaidViewer.tsx": 1102
   }
 }
