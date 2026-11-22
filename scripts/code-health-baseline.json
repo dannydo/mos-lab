@@ -7,11 +7,8 @@
     "apps/api/src/modules/bug-reports/inbox-implementation.service.ts": 4123,
     "apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx": 2290,
     "apps/web/app/dashboard/academy-leads/components/AcademyTalentWorkshopDrawer.tsx": 3045,
-    "apps/web/app/dashboard/bk/components/BkThuNhapTab.tsx": 1986,
     "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx": 2891,
     "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx": 3022,
-    "apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx": 2015,
-    "apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.tsx": 2149,
-    "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.tsx": 1991
+    "apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.tsx": 2149
   }
 }
