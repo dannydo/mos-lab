@@ -58802,8 +58802,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 82105,
-        "lineCount": 1565,
+        "sizeBytes": 6097,
+        "lineCount": 163,
         "ext": ".tsx"
       }
     },
@@ -58870,6 +58870,58 @@
         "sizeBytes": 82235,
         "lineCount": 1761,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerConfigFieldPrimitives.tsx",
+      "type": "File",
+      "label": "CareerConfigFieldPrimitives.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/CareerConfigFieldPrimitives.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8269,
+        "lineCount": 249,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage1ConfigTab.tsx",
+      "type": "File",
+      "label": "CareerStage1ConfigTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage1ConfigTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 18431,
+        "lineCount": 411,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage2ConfigTab.tsx",
+      "type": "File",
+      "label": "CareerStage2ConfigTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage2ConfigTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 22204,
+        "lineCount": 504,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/careerConfigTypesAndHelpers.ts",
+      "type": "File",
+      "label": "careerConfigTypesAndHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/careerConfigTypesAndHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6725,
+        "lineCount": 207,
+        "ext": ".ts"
       }
     },
     {
@@ -63189,6 +63241,123 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/loca/loca-page-modules/LocaAccessDeniedCard.tsx",
+      "type": "File",
+      "label": "LocaAccessDeniedCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/loca-page-modules/LocaAccessDeniedCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 821,
+        "lineCount": 22,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/loca-page-modules/LocaFilterBar.tsx",
+      "type": "File",
+      "label": "LocaFilterBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/loca-page-modules/LocaFilterBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9807,
+        "lineCount": 235,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/loca-page-modules/LocaHeaderSection.tsx",
+      "type": "File",
+      "label": "LocaHeaderSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/loca-page-modules/LocaHeaderSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2320,
+        "lineCount": 69,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/loca-page-modules/LocaMetricsCards.tsx",
+      "type": "File",
+      "label": "LocaMetricsCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/loca-page-modules/LocaMetricsCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2114,
+        "lineCount": 70,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/loca-page-modules/LocaTouchpointPipeline.tsx",
+      "type": "File",
+      "label": "LocaTouchpointPipeline.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/loca-page-modules/LocaTouchpointPipeline.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11343,
+        "lineCount": 278,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/loca-page-modules/LocaWorkflowSettingsTab.tsx",
+      "type": "File",
+      "label": "LocaWorkflowSettingsTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/loca-page-modules/LocaWorkflowSettingsTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9320,
+        "lineCount": 224,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/loca-page-modules/locaPageTypes.ts",
+      "type": "File",
+      "label": "locaPageTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/loca-page-modules/locaPageTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 619,
+        "lineCount": 28,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/loca-page-modules/locaPageUtils.ts",
+      "type": "File",
+      "label": "locaPageUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/loca-page-modules/locaPageUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3185,
+        "lineCount": 105,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/loca-page-modules/useLocaPageController.ts",
+      "type": "File",
+      "label": "useLocaPageController.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/loca-page-modules/useLocaPageController.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9900,
+        "lineCount": 375,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/loca/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -63196,8 +63365,8 @@
       "filePath": "apps/web/app/dashboard/loca/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 61434,
-        "lineCount": 1535,
+        "sizeBytes": 10430,
+        "lineCount": 312,
         "ext": ".tsx"
       }
     },
@@ -63586,8 +63755,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 75277,
-        "lineCount": 1452,
+        "sizeBytes": 5765,
+        "lineCount": 146,
         "ext": ".tsx"
       }
     },
@@ -64043,6 +64212,136 @@
       "metadata": {
         "sizeBytes": 4243,
         "lineCount": 129,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/AssessmentCertificateTab.tsx",
+      "type": "File",
+      "label": "AssessmentCertificateTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/AssessmentCertificateTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7344,
+        "lineCount": 145,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/AssessmentCsatAuditTab.tsx",
+      "type": "File",
+      "label": "AssessmentCsatAuditTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/AssessmentCsatAuditTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7605,
+        "lineCount": 142,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/AssessmentExamTab.tsx",
+      "type": "File",
+      "label": "AssessmentExamTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/AssessmentExamTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2679,
+        "lineCount": 77,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/AssessmentSopHeaderAndTabs.tsx",
+      "type": "File",
+      "label": "AssessmentSopHeaderAndTabs.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/AssessmentSopHeaderAndTabs.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7608,
+        "lineCount": 146,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/CertificatePreviewModal.tsx",
+      "type": "File",
+      "label": "CertificatePreviewModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/CertificatePreviewModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5666,
+        "lineCount": 121,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/ExamGradingFormCard.tsx",
+      "type": "File",
+      "label": "ExamGradingFormCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/ExamGradingFormCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10695,
+        "lineCount": 231,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/ExamResultsTableCard.tsx",
+      "type": "File",
+      "label": "ExamResultsTableCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/ExamResultsTableCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5426,
+        "lineCount": 115,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/ExamStructureAndCriteriaSection.tsx",
+      "type": "File",
+      "label": "ExamStructureAndCriteriaSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/ExamStructureAndCriteriaSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7123,
+        "lineCount": 131,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/assessment-cert-config.ts",
+      "type": "File",
+      "label": "assessment-cert-config.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/assessment-cert-config.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13984,
+        "lineCount": 353,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/usePilotAssessmentCertSop.ts",
+      "type": "File",
+      "label": "usePilotAssessmentCertSop.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/usePilotAssessmentCertSop.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5938,
+        "lineCount": 172,
         "ext": ".ts"
       }
     },
@@ -108829,13 +109128,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/career-path/components/IslandGameIcon.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/career-path/components/IslandGameIcon.tsx",
       "target": "ws:packages/shared",
@@ -108859,6 +109151,27 @@
     {
       "id": "edge:file:apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage1ConfigTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage1ConfigTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage2ConfigTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage2ConfigTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/career-config-drawer/careerConfigTypesAndHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/careerConfigTypesAndHelpers.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -110390,8 +110703,29 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/loca/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/loca/page.tsx",
+      "id": "edge:file:apps/web/app/dashboard/loca/loca-page-modules/LocaHeaderSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/loca-page-modules/LocaHeaderSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/loca-page-modules/locaPageTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/loca-page-modules/locaPageTypes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/loca-page-modules/locaPageUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/loca-page-modules/locaPageUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/loca-page-modules/useLocaPageController.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/loca-page-modules/useLocaPageController.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -110483,13 +110817,6 @@
     {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.test.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
-      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -110588,6 +110915,20 @@
     {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/assessment-cert-config.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/assessment-cert-config.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/usePilotAssessmentCertSop.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/usePilotAssessmentCertSop.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -137194,8 +137535,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5727,
-    "totalEdges": 9060,
+    "totalNodes": 5750,
+    "totalEdges": 9066,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -137204,14 +137545,14 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 780,
-      "File": 2333
+      "File": 2356
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 846,
       "USES_TOKEN": 782,
-      "IMPORTS": 1428,
+      "IMPORTS": 1434,
       "QUERIES_MODEL": 602,
       "API_CALL": 2857
     },
