@@ -6,7 +6,6 @@
   "files": {
     "apps/api/src/modules/academy-sales/academy-campaign.service.ts": 1238,
     "apps/api/src/modules/academy-sales/academy-sales.service.ts": 1185,
-    "apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts": 1920,
     "apps/api/src/modules/academy-sales/routes.ts": 804,
     "apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts": 1168,
     "apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts": 957,
@@ -184,7 +183,6 @@
     "packages/shared/src/types/career-progression.ts": 733,
     "packages/shared/src/types/customer.ts": 858,
     "packages/shared/src/types/menu-access.ts": 984,
-    "packages/shared/src/types/mos-chat.ts": 1365,
     "packages/shared/src/types/pilot.ts": 1085,
     "packages/shared/src/types/wings-garden.ts": 1148,
     "packages/shared/src/utils/chat-checklist-summarizer.ts": 697

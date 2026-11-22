@@ -28689,635 +28689,11 @@
       }
     },
     {
-      "id": "type:@mos-lab/shared:MosChatPresenceStatus",
-      "type": "SharedType",
-      "label": "MosChatPresenceStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatPresenceStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatTaskPriority",
-      "type": "SharedType",
-      "label": "MosChatTaskPriority",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatTaskPriority",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatImageMimeType",
-      "type": "SharedType",
-      "label": "MosChatImageMimeType",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatImageMimeType",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatVideoMimeType",
-      "type": "SharedType",
-      "label": "MosChatVideoMimeType",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatVideoMimeType",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatFileMimeType",
-      "type": "SharedType",
-      "label": "MosChatFileMimeType",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatFileMimeType",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatImageAttachment",
-      "type": "SharedType",
-      "label": "MosChatImageAttachment",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatImageAttachment",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatAttachment",
-      "type": "SharedType",
-      "label": "MosChatAttachment",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatAttachment",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatCustomerCard",
-      "type": "SharedType",
-      "label": "MosChatCustomerCard",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatCustomerCard",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatMessageEditHistoryItem",
-      "type": "SharedType",
-      "label": "MosChatMessageEditHistoryItem",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatMessageEditHistoryItem",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatBuzzEvent",
-      "type": "SharedType",
-      "label": "MosChatBuzzEvent",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatBuzzEvent",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatMissionStage",
-      "type": "SharedType",
-      "label": "MosChatMissionStage",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatMissionStage",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatMissionExecutionTrack",
-      "type": "SharedType",
-      "label": "MosChatMissionExecutionTrack",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatMissionExecutionTrack",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatMissionArtifactPreview",
-      "type": "SharedType",
-      "label": "MosChatMissionArtifactPreview",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatMissionArtifactPreview",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatMissionSummary",
-      "type": "SharedType",
-      "label": "MosChatMissionSummary",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatMissionSummary",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatReadReceiptEntry",
-      "type": "SharedType",
-      "label": "MosChatReadReceiptEntry",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatReadReceiptEntry",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatThreadReadReceiptEntry",
-      "type": "SharedType",
-      "label": "MosChatThreadReadReceiptEntry",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatThreadReadReceiptEntry",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatForwardedMetadata",
-      "type": "SharedType",
-      "label": "MosChatForwardedMetadata",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatForwardedMetadata",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatThreadReply",
-      "type": "SharedType",
-      "label": "MosChatThreadReply",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatThreadReply",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatQuotedMessage",
-      "type": "SharedType",
-      "label": "MosChatQuotedMessage",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatQuotedMessage",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatMessage",
-      "type": "SharedType",
-      "label": "MosChatMessage",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatMessage",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatTaskChecklistItem",
-      "type": "SharedType",
-      "label": "MosChatTaskChecklistItem",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatTaskChecklistItem",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatTaskActivityAction",
-      "type": "SharedType",
-      "label": "MosChatTaskActivityAction",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatTaskActivityAction",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatTaskActivityLogItem",
-      "type": "SharedType",
-      "label": "MosChatTaskActivityLogItem",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatTaskActivityLogItem",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatTaskItem",
-      "type": "SharedType",
-      "label": "MosChatTaskItem",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatTaskItem",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatConversation",
-      "type": "SharedType",
-      "label": "MosChatConversation",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatConversation",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatStaffMember",
-      "type": "SharedType",
-      "label": "MosChatStaffMember",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatStaffMember",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatAccessConfig",
-      "type": "SharedType",
-      "label": "MosChatAccessConfig",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatAccessConfig",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UpdateMosChatAccessConfigRequest",
-      "type": "SharedType",
-      "label": "UpdateMosChatAccessConfigRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UpdateMosChatAccessConfigRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatCustomSection",
-      "type": "SharedType",
-      "label": "MosChatCustomSection",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatCustomSection",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatNotificationMode",
-      "type": "SharedType",
-      "label": "MosChatNotificationMode",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatNotificationMode",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatChannelNotificationOverride",
-      "type": "SharedType",
-      "label": "MosChatChannelNotificationOverride",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatChannelNotificationOverride",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatUserSidebarPrefs",
-      "type": "SharedType",
-      "label": "MosChatUserSidebarPrefs",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatUserSidebarPrefs",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatBootstrapResponse",
-      "type": "SharedType",
-      "label": "MosChatBootstrapResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatBootstrapResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatUnreadSummaryResponse",
-      "type": "SharedType",
-      "label": "MosChatUnreadSummaryResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatUnreadSummaryResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CreateMosChatMessageRequest",
-      "type": "SharedType",
-      "label": "CreateMosChatMessageRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CreateMosChatMessageRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:EditMosChatMessageRequest",
-      "type": "SharedType",
-      "label": "EditMosChatMessageRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "EditMosChatMessageRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:DeleteMosChatMessageRequest",
-      "type": "SharedType",
-      "label": "DeleteMosChatMessageRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "DeleteMosChatMessageRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:RestoreMosChatMessageRequest",
-      "type": "SharedType",
-      "label": "RestoreMosChatMessageRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "RestoreMosChatMessageRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BuzzMosChatMessageRequest",
-      "type": "SharedType",
-      "label": "BuzzMosChatMessageRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BuzzMosChatMessageRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:BuzzMosChatMessageResponse",
-      "type": "SharedType",
-      "label": "BuzzMosChatMessageResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "BuzzMosChatMessageResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CreateMosChatThreadReplyRequest",
-      "type": "SharedType",
-      "label": "CreateMosChatThreadReplyRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CreateMosChatThreadReplyRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UploadMosChatImageRequest",
-      "type": "SharedType",
-      "label": "UploadMosChatImageRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UploadMosChatImageRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UploadMosChatFileRequest",
-      "type": "SharedType",
-      "label": "UploadMosChatFileRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UploadMosChatFileRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UploadMosChatImageResponse",
-      "type": "SharedType",
-      "label": "UploadMosChatImageResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UploadMosChatImageResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UploadMosChatFileResponse",
-      "type": "SharedType",
-      "label": "UploadMosChatFileResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UploadMosChatFileResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UploadMosChatVideoResponse",
-      "type": "SharedType",
-      "label": "UploadMosChatVideoResponse",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UploadMosChatVideoResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CreateMosChatTaskRequest",
-      "type": "SharedType",
-      "label": "CreateMosChatTaskRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CreateMosChatTaskRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:CreateMosChatConversationRequest",
-      "type": "SharedType",
-      "label": "CreateMosChatConversationRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "CreateMosChatConversationRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UpdateMosChatSpaceConfigRequest",
-      "type": "SharedType",
-      "label": "UpdateMosChatSpaceConfigRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UpdateMosChatSpaceConfigRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:AddMosChatMemberRequest",
-      "type": "SharedType",
-      "label": "AddMosChatMemberRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "AddMosChatMemberRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:RemoveMosChatMemberRequest",
-      "type": "SharedType",
-      "label": "RemoveMosChatMemberRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "RemoveMosChatMemberRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:UpdateMosChatNicknameRequest",
-      "type": "SharedType",
-      "label": "UpdateMosChatNicknameRequest",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "UpdateMosChatNicknameRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
       "id": "type:@mos-lab/shared:UpdateMosChatTaskRequest",
       "type": "SharedType",
       "label": "UpdateMosChatTaskRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UpdateMosChatTaskRequest",
@@ -29329,7 +28705,7 @@
       "type": "SharedType",
       "label": "ExtractMosChatChecklistRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ExtractMosChatChecklistRequest",
@@ -29341,7 +28717,7 @@
       "type": "SharedType",
       "label": "ExtractMosChatChecklistSuggestion",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ExtractMosChatChecklistSuggestion",
@@ -29353,7 +28729,7 @@
       "type": "SharedType",
       "label": "ExtractMosChatChecklistResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ExtractMosChatChecklistResponse",
@@ -29365,7 +28741,7 @@
       "type": "SharedType",
       "label": "DeleteMosChatTaskResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "DeleteMosChatTaskResponse",
@@ -29377,7 +28753,7 @@
       "type": "SharedType",
       "label": "MosChatMissionActionType",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatMissionActionType",
@@ -29389,7 +28765,7 @@
       "type": "SharedType",
       "label": "CreateMosChatMissionRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CreateMosChatMissionRequest",
@@ -29401,7 +28777,7 @@
       "type": "SharedType",
       "label": "CreateMosChatMissionResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CreateMosChatMissionResponse",
@@ -29413,7 +28789,7 @@
       "type": "SharedType",
       "label": "ActionMosChatMissionRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ActionMosChatMissionRequest",
@@ -29425,7 +28801,7 @@
       "type": "SharedType",
       "label": "ActionMosChatMissionResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ActionMosChatMissionResponse",
@@ -29437,7 +28813,7 @@
       "type": "SharedType",
       "label": "TogglePinConversationRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "TogglePinConversationRequest",
@@ -29449,7 +28825,7 @@
       "type": "SharedType",
       "label": "TogglePinConversationResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "TogglePinConversationResponse",
@@ -29461,7 +28837,7 @@
       "type": "SharedType",
       "label": "MarkConversationAsUnreadResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MarkConversationAsUnreadResponse",
@@ -29473,7 +28849,7 @@
       "type": "SharedType",
       "label": "MarkThreadAsReadRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MarkThreadAsReadRequest",
@@ -29485,7 +28861,7 @@
       "type": "SharedType",
       "label": "MarkThreadAsReadResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MarkThreadAsReadResponse",
@@ -29497,7 +28873,7 @@
       "type": "SharedType",
       "label": "MosChatThreadMoveMode",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatThreadMoveMode",
@@ -29509,7 +28885,7 @@
       "type": "SharedType",
       "label": "MoveMosChatThreadItemRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MoveMosChatThreadItemRequest",
@@ -29521,7 +28897,7 @@
       "type": "SharedType",
       "label": "MoveMosChatThreadItemResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MoveMosChatThreadItemResponse",
@@ -29533,7 +28909,7 @@
       "type": "SharedType",
       "label": "ForwardMosChatMessageRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ForwardMosChatMessageRequest",
@@ -29545,7 +28921,7 @@
       "type": "SharedType",
       "label": "ForwardMosChatMessageResultItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ForwardMosChatMessageResultItem",
@@ -29557,154 +28933,10 @@
       "type": "SharedType",
       "label": "ForwardMosChatMessageResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ForwardMosChatMessageResponse",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatEntityType",
-      "type": "SharedType",
-      "label": "MosChatEntityType",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatEntityType",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatEntityContext",
-      "type": "SharedType",
-      "label": "MosChatEntityContext",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatEntityContext",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatWorkflowCategory",
-      "type": "SharedType",
-      "label": "MosChatWorkflowCategory",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatWorkflowCategory",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatWorkflowTargetHook",
-      "type": "SharedType",
-      "label": "MosChatWorkflowTargetHook",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatWorkflowTargetHook",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatWorkflowStepType",
-      "type": "SharedType",
-      "label": "MosChatWorkflowStepType",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatWorkflowStepType",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatWorkflowStepDefinition",
-      "type": "SharedType",
-      "label": "MosChatWorkflowStepDefinition",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatWorkflowStepDefinition",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatWorkflowTemplate",
-      "type": "SharedType",
-      "label": "MosChatWorkflowTemplate",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatWorkflowTemplate",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatWorkflowStepStatus",
-      "type": "SharedType",
-      "label": "MosChatWorkflowStepStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatWorkflowStepStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatWorkflowStepLog",
-      "type": "SharedType",
-      "label": "MosChatWorkflowStepLog",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatWorkflowStepLog",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatWorkflowInstanceStatus",
-      "type": "SharedType",
-      "label": "MosChatWorkflowInstanceStatus",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatWorkflowInstanceStatus",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatInventoryVarianceItem",
-      "type": "SharedType",
-      "label": "MosChatInventoryVarianceItem",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatInventoryVarianceItem",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatWorkflowInstance",
-      "type": "SharedType",
-      "label": "MosChatWorkflowInstance",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatWorkflowInstance",
         "package": "@mos-lab/shared"
       }
     },
@@ -29713,7 +28945,7 @@
       "type": "SharedType",
       "label": "CreateMosChatWorkflowInstanceRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CreateMosChatWorkflowInstanceRequest",
@@ -29725,7 +28957,7 @@
       "type": "SharedType",
       "label": "CreateMosChatWorkflowInstanceResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CreateMosChatWorkflowInstanceResponse",
@@ -29737,7 +28969,7 @@
       "type": "SharedType",
       "label": "ActionMosChatWorkflowInstanceRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ActionMosChatWorkflowInstanceRequest",
@@ -29749,7 +28981,7 @@
       "type": "SharedType",
       "label": "ActionMosChatWorkflowInstanceResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ActionMosChatWorkflowInstanceResponse",
@@ -29761,7 +28993,7 @@
       "type": "SharedType",
       "label": "SaveThreadAsWorkflowTemplateRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SaveThreadAsWorkflowTemplateRequest",
@@ -29773,7 +29005,7 @@
       "type": "SharedType",
       "label": "SaveThreadAsWorkflowTemplateResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SaveThreadAsWorkflowTemplateResponse",
@@ -29785,7 +29017,7 @@
       "type": "SharedType",
       "label": "MosChatPaginatedMessagesQuery",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatPaginatedMessagesQuery",
@@ -29797,7 +29029,7 @@
       "type": "SharedType",
       "label": "MosChatPaginatedMessagesResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatPaginatedMessagesResponse",
@@ -29809,7 +29041,7 @@
       "type": "SharedType",
       "label": "MosChatDeltaSyncResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatDeltaSyncResponse",
@@ -29821,7 +29053,7 @@
       "type": "SharedType",
       "label": "MosChatRealtimeEventType",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatRealtimeEventType",
@@ -29833,7 +29065,7 @@
       "type": "SharedType",
       "label": "MosChatRealtimeEvent",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatRealtimeEvent",
@@ -29845,7 +29077,7 @@
       "type": "SharedType",
       "label": "SearchMosChatMessagesQuery",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SearchMosChatMessagesQuery",
@@ -29857,7 +29089,7 @@
       "type": "SharedType",
       "label": "MosChatSearchResultItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatSearchResultItem",
@@ -29869,10 +29101,442 @@
       "type": "SharedType",
       "label": "SearchMosChatMessagesResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SearchMosChatMessagesResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatPresenceStatus",
+      "type": "SharedType",
+      "label": "MosChatPresenceStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatPresenceStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatTaskPriority",
+      "type": "SharedType",
+      "label": "MosChatTaskPriority",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatTaskPriority",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatImageMimeType",
+      "type": "SharedType",
+      "label": "MosChatImageMimeType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatImageMimeType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatVideoMimeType",
+      "type": "SharedType",
+      "label": "MosChatVideoMimeType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatVideoMimeType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatFileMimeType",
+      "type": "SharedType",
+      "label": "MosChatFileMimeType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatFileMimeType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatImageAttachment",
+      "type": "SharedType",
+      "label": "MosChatImageAttachment",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatImageAttachment",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatAttachment",
+      "type": "SharedType",
+      "label": "MosChatAttachment",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatAttachment",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatCustomerCard",
+      "type": "SharedType",
+      "label": "MosChatCustomerCard",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatCustomerCard",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatMessageEditHistoryItem",
+      "type": "SharedType",
+      "label": "MosChatMessageEditHistoryItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatMessageEditHistoryItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatBuzzEvent",
+      "type": "SharedType",
+      "label": "MosChatBuzzEvent",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatBuzzEvent",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatMissionStage",
+      "type": "SharedType",
+      "label": "MosChatMissionStage",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatMissionStage",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatMissionExecutionTrack",
+      "type": "SharedType",
+      "label": "MosChatMissionExecutionTrack",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatMissionExecutionTrack",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatMissionArtifactPreview",
+      "type": "SharedType",
+      "label": "MosChatMissionArtifactPreview",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatMissionArtifactPreview",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatMissionSummary",
+      "type": "SharedType",
+      "label": "MosChatMissionSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatMissionSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatReadReceiptEntry",
+      "type": "SharedType",
+      "label": "MosChatReadReceiptEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatReadReceiptEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatThreadReadReceiptEntry",
+      "type": "SharedType",
+      "label": "MosChatThreadReadReceiptEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatThreadReadReceiptEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatForwardedMetadata",
+      "type": "SharedType",
+      "label": "MosChatForwardedMetadata",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatForwardedMetadata",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatStaffMember",
+      "type": "SharedType",
+      "label": "MosChatStaffMember",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatStaffMember",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatAccessConfig",
+      "type": "SharedType",
+      "label": "MosChatAccessConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatAccessConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateMosChatAccessConfigRequest",
+      "type": "SharedType",
+      "label": "UpdateMosChatAccessConfigRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateMosChatAccessConfigRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatCustomSection",
+      "type": "SharedType",
+      "label": "MosChatCustomSection",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatCustomSection",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatNotificationMode",
+      "type": "SharedType",
+      "label": "MosChatNotificationMode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatNotificationMode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatChannelNotificationOverride",
+      "type": "SharedType",
+      "label": "MosChatChannelNotificationOverride",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatChannelNotificationOverride",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatUserSidebarPrefs",
+      "type": "SharedType",
+      "label": "MosChatUserSidebarPrefs",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatUserSidebarPrefs",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatEntityType",
+      "type": "SharedType",
+      "label": "MosChatEntityType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatEntityType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatEntityContext",
+      "type": "SharedType",
+      "label": "MosChatEntityContext",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatEntityContext",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowCategory",
+      "type": "SharedType",
+      "label": "MosChatWorkflowCategory",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowCategory",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowTargetHook",
+      "type": "SharedType",
+      "label": "MosChatWorkflowTargetHook",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowTargetHook",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowStepType",
+      "type": "SharedType",
+      "label": "MosChatWorkflowStepType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowStepType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowStepDefinition",
+      "type": "SharedType",
+      "label": "MosChatWorkflowStepDefinition",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowStepDefinition",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowTemplate",
+      "type": "SharedType",
+      "label": "MosChatWorkflowTemplate",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowTemplate",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowStepStatus",
+      "type": "SharedType",
+      "label": "MosChatWorkflowStepStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowStepStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowStepLog",
+      "type": "SharedType",
+      "label": "MosChatWorkflowStepLog",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowStepLog",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowInstanceStatus",
+      "type": "SharedType",
+      "label": "MosChatWorkflowInstanceStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowInstanceStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatInventoryVarianceItem",
+      "type": "SharedType",
+      "label": "MosChatInventoryVarianceItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatInventoryVarianceItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowInstance",
+      "type": "SharedType",
+      "label": "MosChatWorkflowInstance",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowInstance",
         "package": "@mos-lab/shared"
       }
     },
@@ -29881,7 +29545,7 @@
       "type": "SharedType",
       "label": "MosChatVoiceCallStatus",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatVoiceCallStatus",
@@ -29893,7 +29557,7 @@
       "type": "SharedType",
       "label": "MosChatVoiceCallParticipant",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatVoiceCallParticipant",
@@ -29905,7 +29569,7 @@
       "type": "SharedType",
       "label": "MosChatVoiceCallLog",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatVoiceCallLog",
@@ -29917,7 +29581,7 @@
       "type": "SharedType",
       "label": "MosChatVoiceCallSession",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatVoiceCallSession",
@@ -29929,10 +29593,358 @@
       "type": "SharedType",
       "label": "MosChatVoiceCallSignalType",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatVoiceCallSignalType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatVoiceCallSignalEnvelope",
+      "type": "SharedType",
+      "label": "MosChatVoiceCallSignalEnvelope",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatVoiceCallSignalEnvelope",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatThreadReply",
+      "type": "SharedType",
+      "label": "MosChatThreadReply",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatThreadReply",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatQuotedMessage",
+      "type": "SharedType",
+      "label": "MosChatQuotedMessage",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatQuotedMessage",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatMessage",
+      "type": "SharedType",
+      "label": "MosChatMessage",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatMessage",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatTaskChecklistItem",
+      "type": "SharedType",
+      "label": "MosChatTaskChecklistItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatTaskChecklistItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatTaskActivityAction",
+      "type": "SharedType",
+      "label": "MosChatTaskActivityAction",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatTaskActivityAction",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatTaskActivityLogItem",
+      "type": "SharedType",
+      "label": "MosChatTaskActivityLogItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatTaskActivityLogItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatTaskItem",
+      "type": "SharedType",
+      "label": "MosChatTaskItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatTaskItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatConversation",
+      "type": "SharedType",
+      "label": "MosChatConversation",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatConversation",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatBootstrapResponse",
+      "type": "SharedType",
+      "label": "MosChatBootstrapResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatBootstrapResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatUnreadSummaryResponse",
+      "type": "SharedType",
+      "label": "MosChatUnreadSummaryResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatUnreadSummaryResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateMosChatMessageRequest",
+      "type": "SharedType",
+      "label": "CreateMosChatMessageRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateMosChatMessageRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:EditMosChatMessageRequest",
+      "type": "SharedType",
+      "label": "EditMosChatMessageRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "EditMosChatMessageRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:DeleteMosChatMessageRequest",
+      "type": "SharedType",
+      "label": "DeleteMosChatMessageRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "DeleteMosChatMessageRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:RestoreMosChatMessageRequest",
+      "type": "SharedType",
+      "label": "RestoreMosChatMessageRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "RestoreMosChatMessageRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BuzzMosChatMessageRequest",
+      "type": "SharedType",
+      "label": "BuzzMosChatMessageRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BuzzMosChatMessageRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BuzzMosChatMessageResponse",
+      "type": "SharedType",
+      "label": "BuzzMosChatMessageResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BuzzMosChatMessageResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateMosChatThreadReplyRequest",
+      "type": "SharedType",
+      "label": "CreateMosChatThreadReplyRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateMosChatThreadReplyRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UploadMosChatImageRequest",
+      "type": "SharedType",
+      "label": "UploadMosChatImageRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UploadMosChatImageRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UploadMosChatFileRequest",
+      "type": "SharedType",
+      "label": "UploadMosChatFileRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UploadMosChatFileRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UploadMosChatImageResponse",
+      "type": "SharedType",
+      "label": "UploadMosChatImageResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UploadMosChatImageResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UploadMosChatFileResponse",
+      "type": "SharedType",
+      "label": "UploadMosChatFileResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UploadMosChatFileResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UploadMosChatVideoResponse",
+      "type": "SharedType",
+      "label": "UploadMosChatVideoResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UploadMosChatVideoResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateMosChatTaskRequest",
+      "type": "SharedType",
+      "label": "CreateMosChatTaskRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateMosChatTaskRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateMosChatConversationRequest",
+      "type": "SharedType",
+      "label": "CreateMosChatConversationRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateMosChatConversationRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateMosChatSpaceConfigRequest",
+      "type": "SharedType",
+      "label": "UpdateMosChatSpaceConfigRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateMosChatSpaceConfigRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:AddMosChatMemberRequest",
+      "type": "SharedType",
+      "label": "AddMosChatMemberRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "AddMosChatMemberRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:RemoveMosChatMemberRequest",
+      "type": "SharedType",
+      "label": "RemoveMosChatMemberRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "RemoveMosChatMemberRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateMosChatNicknameRequest",
+      "type": "SharedType",
+      "label": "UpdateMosChatNicknameRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateMosChatNicknameRequest",
         "package": "@mos-lab/shared"
       }
     },
@@ -29941,7 +29953,7 @@
       "type": "SharedType",
       "label": "StartMosChatVoiceCallRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "StartMosChatVoiceCallRequest",
@@ -29953,7 +29965,7 @@
       "type": "SharedType",
       "label": "StartMosChatVoiceCallResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "StartMosChatVoiceCallResponse",
@@ -29965,7 +29977,7 @@
       "type": "SharedType",
       "label": "RespondMosChatVoiceCallRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "RespondMosChatVoiceCallRequest",
@@ -29977,7 +29989,7 @@
       "type": "SharedType",
       "label": "RespondMosChatVoiceCallResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "RespondMosChatVoiceCallResponse",
@@ -29989,22 +30001,10 @@
       "type": "SharedType",
       "label": "SignalMosChatVoiceCallRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SignalMosChatVoiceCallRequest",
-        "package": "@mos-lab/shared"
-      }
-    },
-    {
-      "id": "type:@mos-lab/shared:MosChatVoiceCallSignalEnvelope",
-      "type": "SharedType",
-      "label": "MosChatVoiceCallSignalEnvelope",
-      "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
-      "packageName": "@mos-lab/shared",
-      "metadata": {
-        "typeName": "MosChatVoiceCallSignalEnvelope",
         "package": "@mos-lab/shared"
       }
     },
@@ -30013,7 +30013,7 @@
       "type": "SharedType",
       "label": "MuteMosChatVoiceCallRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MuteMosChatVoiceCallRequest",
@@ -30025,7 +30025,7 @@
       "type": "SharedType",
       "label": "EndMosChatVoiceCallResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "EndMosChatVoiceCallResponse",
@@ -30037,7 +30037,7 @@
       "type": "SharedType",
       "label": "ListActiveMosChatVoiceCallsResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ListActiveMosChatVoiceCallsResponse",
@@ -30049,7 +30049,7 @@
       "type": "SharedType",
       "label": "MosChatPushSubscriptionKeys",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatPushSubscriptionKeys",
@@ -30061,7 +30061,7 @@
       "type": "SharedType",
       "label": "MosChatPushSubscriptionPayload",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatPushSubscriptionPayload",
@@ -30073,7 +30073,7 @@
       "type": "SharedType",
       "label": "MosChatPushConfigResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatPushConfigResponse",
@@ -30085,7 +30085,7 @@
       "type": "SharedType",
       "label": "SubscribeMosChatPushRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SubscribeMosChatPushRequest",
@@ -30097,7 +30097,7 @@
       "type": "SharedType",
       "label": "SubscribeMosChatPushResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SubscribeMosChatPushResponse",
@@ -30109,7 +30109,7 @@
       "type": "SharedType",
       "label": "UnsubscribeMosChatPushRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UnsubscribeMosChatPushRequest",
@@ -30121,7 +30121,7 @@
       "type": "SharedType",
       "label": "UnsubscribeMosChatPushResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UnsubscribeMosChatPushResponse",
@@ -30133,7 +30133,7 @@
       "type": "SharedType",
       "label": "MosChatWebPushNotificationPayload",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatWebPushNotificationPayload",
@@ -30145,7 +30145,7 @@
       "type": "SharedType",
       "label": "MosChatGoogleWorkspaceAccessStatus",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatGoogleWorkspaceAccessStatus",
@@ -30157,7 +30157,7 @@
       "type": "SharedType",
       "label": "MosChatGoogleSheetTabSummary",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatGoogleSheetTabSummary",
@@ -30169,7 +30169,7 @@
       "type": "SharedType",
       "label": "MosChatGoogleSheetActiveTabData",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatGoogleSheetActiveTabData",
@@ -30181,7 +30181,7 @@
       "type": "SharedType",
       "label": "MosChatGoogleDocHeading",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatGoogleDocHeading",
@@ -30193,7 +30193,7 @@
       "type": "SharedType",
       "label": "MosChatGoogleDocSection",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatGoogleDocSection",
@@ -30205,7 +30205,7 @@
       "type": "SharedType",
       "label": "MosChatGoogleWorkspacePreviewQuery",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatGoogleWorkspacePreviewQuery",
@@ -30217,7 +30217,7 @@
       "type": "SharedType",
       "label": "MosChatGoogleWorkspacePreviewResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatGoogleWorkspacePreviewResponse",
@@ -41058,8 +41058,8 @@
       "filePath": "apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 84025,
-        "lineCount": 1920,
+        "sizeBytes": 4642,
+        "lineCount": 137,
         "ext": ".ts"
       }
     },
@@ -41125,6 +41125,71 @@
       "metadata": {
         "sizeBytes": 31569,
         "lineCount": 804,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-billing.service.ts",
+      "type": "File",
+      "label": "talent-assessment-billing.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-billing.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 12642,
+        "lineCount": 292,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-instructors.service.ts",
+      "type": "File",
+      "label": "talent-assessment-instructors.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-instructors.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5381,
+        "lineCount": 114,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-payment-audit.service.ts",
+      "type": "File",
+      "label": "talent-assessment-payment-audit.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-payment-audit.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 23105,
+        "lineCount": 543,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-quote-and-validators.ts",
+      "type": "File",
+      "label": "talent-assessment-quote-and-validators.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-quote-and-validators.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 21866,
+        "lineCount": 536,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-workflow.service.ts",
+      "type": "File",
+      "label": "talent-assessment-workflow.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-workflow.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 22893,
+        "lineCount": 533,
         "ext": ".ts"
       }
     },
@@ -44906,8 +44971,8 @@
       "filePath": "apps/api/src/modules/holiday-work/holiday-work.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 84064,
-        "lineCount": 1975,
+        "sizeBytes": 6164,
+        "lineCount": 202,
         "ext": ".ts"
       }
     },
@@ -44921,6 +44986,71 @@
       "metadata": {
         "sizeBytes": 12494,
         "lineCount": 346,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/holiday-work/services/holiday-work-calendar-and-calc.ts",
+      "type": "File",
+      "label": "holiday-work-calendar-and-calc.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/holiday-work/services/holiday-work-calendar-and-calc.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 17496,
+        "lineCount": 448,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts",
+      "type": "File",
+      "label": "holiday-work-candidates.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15067,
+        "lineCount": 321,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/holiday-work/services/holiday-work-mappers.ts",
+      "type": "File",
+      "label": "holiday-work-mappers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/holiday-work/services/holiday-work-mappers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8278,
+        "lineCount": 236,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts",
+      "type": "File",
+      "label": "holiday-work-payroll-and-events.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 20920,
+        "lineCount": 499,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts",
+      "type": "File",
+      "label": "holiday-work-planning.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 22286,
+        "lineCount": 561,
         "ext": ".ts"
       }
     },
@@ -46498,6 +46628,58 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/services/telesale-target/overview-data-loader.ts",
+      "type": "File",
+      "label": "overview-data-loader.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/telesale-target/overview-data-loader.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 20376,
+        "lineCount": 523,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/telesale-target/overview-pipeline-stages.ts",
+      "type": "File",
+      "label": "overview-pipeline-stages.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/telesale-target/overview-pipeline-stages.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9848,
+        "lineCount": 247,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/telesale-target/overview-staff-and-actions.ts",
+      "type": "File",
+      "label": "overview-staff-and-actions.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/telesale-target/overview-staff-and-actions.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14005,
+        "lineCount": 366,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/telesale-target/overview-today-feeds.ts",
+      "type": "File",
+      "label": "overview-today-feeds.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/telesale-target/overview-today-feeds.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 20965,
+        "lineCount": 515,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts",
       "type": "File",
       "label": "telesale-target-config.service.ts",
@@ -46531,8 +46713,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 78665,
-        "lineCount": 1923,
+        "sizeBytes": 19305,
+        "lineCount": 546,
         "ext": ".ts"
       }
     },
@@ -58614,6 +58796,71 @@
       }
     },
     {
+      "id": "file:apps/web/lib/api/academy/campaigns.api.ts",
+      "type": "File",
+      "label": "campaigns.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/academy/campaigns.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5078,
+        "lineCount": 122,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/lib/api/academy/sales-core.api.ts",
+      "type": "File",
+      "label": "sales-core.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/academy/sales-core.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10196,
+        "lineCount": 251,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/lib/api/academy/workshop-operations.api.ts",
+      "type": "File",
+      "label": "workshop-operations.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/academy/workshop-operations.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 17303,
+        "lineCount": 471,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/lib/api/academy/workshop-setup.api.ts",
+      "type": "File",
+      "label": "workshop-setup.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/academy/workshop-setup.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 20020,
+        "lineCount": 513,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/lib/api/academy/workshops-public.api.ts",
+      "type": "File",
+      "label": "workshops-public.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/academy/workshops-public.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5576,
+        "lineCount": 140,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/api/academy.api.ts",
       "type": "File",
       "label": "academy.api.ts",
@@ -58621,8 +58868,8 @@
       "filePath": "apps/web/lib/api/academy.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 62387,
-        "lineCount": 1490,
+        "sizeBytes": 626,
+        "lineCount": 18,
         "ext": ".ts"
       }
     },
@@ -60486,6 +60733,58 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
+      "type": "File",
+      "label": "actions-and-sync.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 9176,
+        "lineCount": 352,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "type": "File",
+      "label": "core-entities.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 12675,
+        "lineCount": 444,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "type": "File",
+      "label": "messages-and-tasks.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 10649,
+        "lineCount": 421,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
+      "type": "File",
+      "label": "voice-push-workspace.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/mos-chat/voice-push-workspace.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 5035,
+        "lineCount": 199,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/mos-chat.ts",
       "type": "File",
       "label": "mos-chat.ts",
@@ -60493,8 +60792,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 36226,
-        "lineCount": 1365,
+        "sizeBytes": 219,
+        "lineCount": 5,
         "ext": ".ts"
       }
     },
@@ -76041,370 +76340,6 @@
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:MosChatPresenceStatus:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatPresenceStatus",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatTaskPriority:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatTaskPriority",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatImageMimeType:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatImageMimeType",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatVideoMimeType:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatVideoMimeType",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatFileMimeType:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatFileMimeType",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatImageAttachment:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatImageAttachment",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatAttachment:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatAttachment",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatCustomerCard:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatCustomerCard",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatMessageEditHistoryItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatMessageEditHistoryItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatBuzzEvent:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatBuzzEvent",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatMissionStage:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatMissionStage",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatMissionExecutionTrack:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatMissionExecutionTrack",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatMissionArtifactPreview:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatMissionArtifactPreview",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatMissionSummary:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatMissionSummary",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatReadReceiptEntry:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatReadReceiptEntry",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatThreadReadReceiptEntry:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatThreadReadReceiptEntry",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatForwardedMetadata:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatForwardedMetadata",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatThreadReply:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatThreadReply",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatQuotedMessage:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatQuotedMessage",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatMessage:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatMessage",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatTaskChecklistItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatTaskChecklistItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatTaskActivityAction:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatTaskActivityAction",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatTaskActivityLogItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatTaskActivityLogItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatTaskItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatTaskItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatConversation:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatConversation",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatStaffMember:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatStaffMember",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatAccessConfig:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatAccessConfig",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:UpdateMosChatAccessConfigRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UpdateMosChatAccessConfigRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatCustomSection:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatCustomSection",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatNotificationMode:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatNotificationMode",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatChannelNotificationOverride:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatChannelNotificationOverride",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatUserSidebarPrefs:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatUserSidebarPrefs",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatBootstrapResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatBootstrapResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatUnreadSummaryResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatUnreadSummaryResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:CreateMosChatMessageRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:CreateMosChatMessageRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:EditMosChatMessageRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:EditMosChatMessageRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:DeleteMosChatMessageRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:DeleteMosChatMessageRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:RestoreMosChatMessageRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:RestoreMosChatMessageRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:BuzzMosChatMessageRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:BuzzMosChatMessageRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:BuzzMosChatMessageResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:BuzzMosChatMessageResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:CreateMosChatThreadReplyRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:CreateMosChatThreadReplyRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:UploadMosChatImageRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UploadMosChatImageRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:UploadMosChatFileRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UploadMosChatFileRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:UploadMosChatImageResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UploadMosChatImageResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:UploadMosChatFileResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UploadMosChatFileResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:UploadMosChatVideoResponse:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UploadMosChatVideoResponse",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:CreateMosChatTaskRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:CreateMosChatTaskRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:CreateMosChatConversationRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:CreateMosChatConversationRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:UpdateMosChatSpaceConfigRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UpdateMosChatSpaceConfigRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:AddMosChatMemberRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:AddMosChatMemberRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:RemoveMosChatMemberRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:RemoveMosChatMemberRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:UpdateMosChatNicknameRequest:ws:packages/shared",
-      "source": "type:@mos-lab/shared:UpdateMosChatNicknameRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
       "id": "edge:type:@mos-lab/shared:UpdateMosChatTaskRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:UpdateMosChatTaskRequest",
       "target": "ws:packages/shared",
@@ -76552,90 +76487,6 @@
       "label": "EXPORTED_BY"
     },
     {
-      "id": "edge:type:@mos-lab/shared:MosChatEntityType:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatEntityType",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatEntityContext:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatEntityContext",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatWorkflowCategory:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatWorkflowCategory",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatWorkflowTargetHook:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatWorkflowTargetHook",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatWorkflowStepType:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatWorkflowStepType",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatWorkflowStepDefinition:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatWorkflowStepDefinition",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatWorkflowTemplate:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatWorkflowTemplate",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatWorkflowStepStatus:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatWorkflowStepStatus",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatWorkflowStepLog:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatWorkflowStepLog",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatWorkflowInstanceStatus:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatWorkflowInstanceStatus",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatInventoryVarianceItem:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatInventoryVarianceItem",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatWorkflowInstance:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatWorkflowInstance",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
       "id": "edge:type:@mos-lab/shared:CreateMosChatWorkflowInstanceRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:CreateMosChatWorkflowInstanceRequest",
       "target": "ws:packages/shared",
@@ -76734,6 +76585,258 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:MosChatPresenceStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatPresenceStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatTaskPriority:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatTaskPriority",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatImageMimeType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatImageMimeType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatVideoMimeType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatVideoMimeType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatFileMimeType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatFileMimeType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatImageAttachment:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatImageAttachment",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatAttachment:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatAttachment",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatCustomerCard:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatCustomerCard",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatMessageEditHistoryItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatMessageEditHistoryItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatBuzzEvent:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatBuzzEvent",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatMissionStage:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatMissionStage",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatMissionExecutionTrack:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatMissionExecutionTrack",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatMissionArtifactPreview:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatMissionArtifactPreview",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatMissionSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatMissionSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatReadReceiptEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatReadReceiptEntry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatThreadReadReceiptEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatThreadReadReceiptEntry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatForwardedMetadata:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatForwardedMetadata",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatStaffMember:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatStaffMember",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatAccessConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatAccessConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdateMosChatAccessConfigRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateMosChatAccessConfigRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatCustomSection:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatCustomSection",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatNotificationMode:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatNotificationMode",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatChannelNotificationOverride:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatChannelNotificationOverride",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatUserSidebarPrefs:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatUserSidebarPrefs",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatEntityType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatEntityType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatEntityContext:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatEntityContext",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowCategory:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowCategory",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowTargetHook:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowTargetHook",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowStepType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowStepType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowStepDefinition:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowStepDefinition",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowTemplate:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowTemplate",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowStepStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowStepStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowStepLog:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowStepLog",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowInstanceStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowInstanceStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatInventoryVarianceItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatInventoryVarianceItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowInstance:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowInstance",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:MosChatVoiceCallStatus:ws:packages/shared",
       "source": "type:@mos-lab/shared:MosChatVoiceCallStatus",
       "target": "ws:packages/shared",
@@ -76769,6 +76872,209 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:MosChatVoiceCallSignalEnvelope:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatVoiceCallSignalEnvelope",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatThreadReply:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatThreadReply",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatQuotedMessage:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatQuotedMessage",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatMessage:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatMessage",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatTaskChecklistItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatTaskChecklistItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatTaskActivityAction:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatTaskActivityAction",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatTaskActivityLogItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatTaskActivityLogItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatTaskItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatTaskItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatConversation:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatConversation",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatBootstrapResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatBootstrapResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatUnreadSummaryResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatUnreadSummaryResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateMosChatMessageRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateMosChatMessageRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:EditMosChatMessageRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:EditMosChatMessageRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:DeleteMosChatMessageRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:DeleteMosChatMessageRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:RestoreMosChatMessageRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:RestoreMosChatMessageRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BuzzMosChatMessageRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BuzzMosChatMessageRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BuzzMosChatMessageResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BuzzMosChatMessageResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateMosChatThreadReplyRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateMosChatThreadReplyRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UploadMosChatImageRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UploadMosChatImageRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UploadMosChatFileRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UploadMosChatFileRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UploadMosChatImageResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UploadMosChatImageResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UploadMosChatFileResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UploadMosChatFileResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UploadMosChatVideoResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UploadMosChatVideoResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateMosChatTaskRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateMosChatTaskRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateMosChatConversationRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateMosChatConversationRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdateMosChatSpaceConfigRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateMosChatSpaceConfigRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:AddMosChatMemberRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:AddMosChatMemberRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:RemoveMosChatMemberRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:RemoveMosChatMemberRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdateMosChatNicknameRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateMosChatNicknameRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:StartMosChatVoiceCallRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:StartMosChatVoiceCallRequest",
       "target": "ws:packages/shared",
@@ -76799,13 +77105,6 @@
     {
       "id": "edge:type:@mos-lab/shared:SignalMosChatVoiceCallRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:SignalMosChatVoiceCallRequest",
-      "target": "ws:packages/shared",
-      "type": "EXPORTS",
-      "label": "EXPORTED_BY"
-    },
-    {
-      "id": "edge:type:@mos-lab/shared:MosChatVoiceCallSignalEnvelope:ws:packages/shared",
-      "source": "type:@mos-lab/shared:MosChatVoiceCallSignalEnvelope",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -86975,6 +87274,41 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-billing.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-billing.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-instructors.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-instructors.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-payment-audit.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-payment-audit.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-quote-and-validators.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-quote-and-validators.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-workflow.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-workflow.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/academy-workshops/academy-workshop-agenda-template.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/academy-workshops/academy-workshop-agenda-template.service.ts",
       "target": "ws:packages/shared",
@@ -88494,6 +88828,41 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-calendar-and-calc.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-calendar-and-calc.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-mappers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-mappers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/__tests__/ios-cv-self-speed.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/__tests__/ios-cv-self-speed.test.ts",
       "target": "ws:packages/shared",
@@ -89196,6 +89565,34 @@
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/telesale-customer-pool.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/services/telesale-customer-pool.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target/overview-data-loader.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target/overview-data-loader.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target/overview-pipeline-stages.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target/overview-pipeline-stages.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target/overview-staff-and-actions.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target/overview-staff-and-actions.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target/overview-today-feeds.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target/overview-today-feeds.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -93107,8 +93504,36 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/lib/api/academy.api.ts:ws:packages/shared",
-      "source": "file:apps/web/lib/api/academy.api.ts",
+      "id": "edge:file:apps/web/lib/api/academy/campaigns.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/academy/campaigns.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/academy/sales-core.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/academy/sales-core.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/academy/workshop-operations.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/academy/workshop-operations.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/academy/workshop-setup.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/academy/workshop-setup.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/academy/workshops-public.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/academy/workshops-public.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -93478,48 +93903,6 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts",
-      "target": "prisma:crm:CrmStaff",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts:prisma:crm:CrmAcademyLeadActivity",
-      "source": "file:apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts",
-      "target": "prisma:crm:CrmAcademyLeadActivity",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts:prisma:crm:CrmAcademyCourse",
-      "source": "file:apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts",
-      "target": "prisma:crm:CrmAcademyCourse",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts:prisma:crm:CrmAcademyInstructor",
-      "source": "file:apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts",
-      "target": "prisma:crm:CrmAcademyInstructor",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts:prisma:crm:CrmAcademyTalentAssessment",
-      "source": "file:apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts",
-      "target": "prisma:crm:CrmAcademyTalentAssessment",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts:prisma:crm:CrmAcademyWorkshopParticipant",
-      "source": "file:apps/api/src/modules/academy-sales/academy-talent-assessment.service.ts",
-      "target": "prisma:crm:CrmAcademyWorkshopParticipant",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
       "id": "edge:file:apps/api/src/modules/academy-sales/academy-talent-ladder-configuration.service.ts:prisma:crm:CrmConfig",
       "source": "file:apps/api/src/modules/academy-sales/academy-talent-ladder-configuration.service.ts",
       "target": "prisma:crm:CrmConfig",
@@ -93537,6 +93920,55 @@
       "id": "edge:file:apps/api/src/modules/academy-sales/pancake-sync.service.ts:prisma:crm:CrmAcademyLead",
       "source": "file:apps/api/src/modules/academy-sales/pancake-sync.service.ts",
       "target": "prisma:crm:CrmAcademyLead",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-instructors.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-instructors.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-instructors.service.ts:prisma:crm:CrmAcademyInstructor",
+      "source": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-instructors.service.ts",
+      "target": "prisma:crm:CrmAcademyInstructor",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-payment-audit.service.ts:prisma:crm:CrmAcademyLeadActivity",
+      "source": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-payment-audit.service.ts",
+      "target": "prisma:crm:CrmAcademyLeadActivity",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-payment-audit.service.ts:prisma:crm:CrmAcademyTalentAssessment",
+      "source": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-payment-audit.service.ts",
+      "target": "prisma:crm:CrmAcademyTalentAssessment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-workflow.service.ts:prisma:crm:CrmAcademyCourse",
+      "source": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-workflow.service.ts",
+      "target": "prisma:crm:CrmAcademyCourse",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-workflow.service.ts:prisma:crm:CrmAcademyTalentAssessment",
+      "source": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-workflow.service.ts",
+      "target": "prisma:crm:CrmAcademyTalentAssessment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-workflow.service.ts:prisma:crm:CrmAcademyWorkshopParticipant",
+      "source": "file:apps/api/src/modules/academy-sales/talent-assessment/talent-assessment-workflow.service.ts",
+      "target": "prisma:crm:CrmAcademyWorkshopParticipant",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -95459,93 +95891,163 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts",
       "target": "prisma:crm:CrmStaff",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmTeam",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts:prisma:crm:CrmTeam",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts",
       "target": "prisma:crm:CrmTeam",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmTeamMember",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
-      "target": "prisma:crm:CrmTeamMember",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmCvSpeedProfile",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts:prisma:crm:CrmCvSpeedProfile",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts",
       "target": "prisma:crm:CrmCvSpeedProfile",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmStore",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
-      "target": "prisma:crm:CrmStore",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmHolidayPeriod",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts:prisma:crm:CrmHolidayPeriod",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts",
       "target": "prisma:crm:CrmHolidayPeriod",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmHolidayCoverage",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
-      "target": "prisma:crm:CrmHolidayCoverage",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmHolidayRoster",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
-      "target": "prisma:crm:CrmHolidayRoster",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmHolidayCandidateSnapshot",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts:prisma:crm:CrmHolidayCandidateSnapshot",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts",
       "target": "prisma:crm:CrmHolidayCandidateSnapshot",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmStaffPerformanceEvent",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts:prisma:crm:CrmStaffPerformanceEvent",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-candidates.service.ts",
       "target": "prisma:crm:CrmStaffPerformanceEvent",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmHolidayPayrollLedger",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-mappers.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-mappers.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-mappers.ts:prisma:crm:CrmTeam",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-mappers.ts",
+      "target": "prisma:crm:CrmTeam",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-mappers.ts:prisma:crm:CrmTeamMember",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-mappers.ts",
+      "target": "prisma:crm:CrmTeamMember",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-mappers.ts:prisma:crm:CrmHolidayAuditLog",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-mappers.ts",
+      "target": "prisma:crm:CrmHolidayAuditLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts:prisma:crm:CrmTeamMember",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts",
+      "target": "prisma:crm:CrmTeamMember",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts:prisma:crm:CrmHolidayPeriod",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts",
+      "target": "prisma:crm:CrmHolidayPeriod",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts:prisma:crm:CrmHolidayRoster",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts",
+      "target": "prisma:crm:CrmHolidayRoster",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts:prisma:crm:CrmStaffPerformanceEvent",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts",
+      "target": "prisma:crm:CrmStaffPerformanceEvent",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts:prisma:crm:CrmHolidayPayrollLedger",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts",
       "target": "prisma:crm:CrmHolidayPayrollLedger",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmHolidayPayrollAdjustment",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts:prisma:crm:CrmHolidayPayrollAdjustment",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-payroll-and-events.service.ts",
       "target": "prisma:crm:CrmHolidayPayrollAdjustment",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/holiday-work/holiday-work.service.ts:prisma:crm:CrmHolidayAuditLog",
-      "source": "file:apps/api/src/modules/holiday-work/holiday-work.service.ts",
-      "target": "prisma:crm:CrmHolidayAuditLog",
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts:prisma:crm:CrmStore",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts",
+      "target": "prisma:crm:CrmStore",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts:prisma:crm:CrmHolidayPeriod",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts",
+      "target": "prisma:crm:CrmHolidayPeriod",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts:prisma:crm:CrmHolidayCoverage",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts",
+      "target": "prisma:crm:CrmHolidayCoverage",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts:prisma:crm:CrmHolidayRoster",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts",
+      "target": "prisma:crm:CrmHolidayRoster",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts:prisma:crm:CrmHolidayCandidateSnapshot",
+      "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts",
+      "target": "prisma:crm:CrmHolidayCandidateSnapshot",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -95935,6 +96437,13 @@
       "label": "READS_LEGACY_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target/overview-data-loader.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target/overview-data-loader.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts:prisma:crm:CrmStaff",
       "source": "file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts",
       "target": "prisma:crm:CrmStaff",
@@ -95959,13 +96468,6 @@
       "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts:prisma:crm:CrmHolidayPeriod",
       "source": "file:apps/api/src/modules/kpi/services/telesale-target-config.service.ts",
       "target": "prisma:crm:CrmHolidayPeriod",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target.service.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/kpi/services/telesale-target.service.ts",
-      "target": "prisma:crm:CrmStaff",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -127037,8 +127539,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4718,
-    "totalEdges": 9440,
+    "totalNodes": 4741,
+    "totalEdges": 9469,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -127047,15 +127549,15 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 547,
-      "File": 1557
+      "File": 1580
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 613,
       "USES_TOKEN": 549,
-      "IMPORTS": 916,
-      "QUERIES_MODEL": 481,
+      "IMPORTS": 934,
+      "QUERIES_MODEL": 492,
       "API_CALL": 4336
     },
     "fastifyRouteCount": 782,
