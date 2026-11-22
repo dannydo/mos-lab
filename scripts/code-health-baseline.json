@@ -13,7 +13,6 @@
     "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx": 2891,
     "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx": 1761,
     "apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx": 1652,
-    "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx": 1185,
     "apps/web/app/dashboard/customers/components/CustomerFilters.tsx": 1477,
     "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx": 3022,
     "apps/web/app/dashboard/fal/page.tsx": 1338,
@@ -25,11 +24,7 @@
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx": 1922,
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialSopModal.tsx": 1405,
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.tsx": 1991,
-    "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx": 1264,
-    "apps/web/app/dashboard/telesale-competency/components/TelesaleConfigTab.tsx": 1302,
     "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx": 1723,
-    "apps/web/app/dashboard/today/components/TodayCalendarSummary.tsx": 1330,
-    "apps/web/components/CustomerDetailDrawer.tsx": 1181,
-    "apps/web/components/layout/SidebarNav.tsx": 1205
+    "apps/web/app/dashboard/today/components/TodayCalendarSummary.tsx": 1330
   }
 }

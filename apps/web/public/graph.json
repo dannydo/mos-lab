@@ -36350,6 +36350,78 @@
       }
     },
     {
+      "id": "uicomp:CustomerDetailBody",
+      "type": "UIComponent",
+      "label": "<CustomerDetailBody />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail-drawer/CustomerDetailBody.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CustomerDetailBody",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:CustomerDetailHeader",
+      "type": "UIComponent",
+      "label": "<CustomerDetailHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail-drawer/CustomerDetailHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CustomerDetailHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:CustomerDetailModals",
+      "type": "UIComponent",
+      "label": "<CustomerDetailModals />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail-drawer/CustomerDetailModals.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CustomerDetailModals",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:CustomerStickyNotesBanner",
+      "type": "UIComponent",
+      "label": "<CustomerStickyNotesBanner />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail-drawer/CustomerStickyNotesBanner.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CustomerStickyNotesBanner",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:customerDetailDrawerHelpers",
+      "type": "UIComponent",
+      "label": "<customerDetailDrawerHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail-drawer/customerDetailDrawerHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "customerDetailDrawerHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useCustomerDetailDrawerState",
+      "type": "UIComponent",
+      "label": "<useCustomerDetailDrawerState />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail-drawer/useCustomerDetailDrawerState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useCustomerDetailDrawerState",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:DailyCallsMobileCard",
       "type": "UIComponent",
       "label": "<DailyCallsMobileCard />",
@@ -36718,6 +36790,114 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "UserProfileDropdown.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SidebarCollapsedRail",
+      "type": "UIComponent",
+      "label": "<SidebarCollapsedRail />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/sidebar-nav/SidebarCollapsedRail.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SidebarCollapsedRail",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SidebarEcosystemSwitcher",
+      "type": "UIComponent",
+      "label": "<SidebarEcosystemSwitcher />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/sidebar-nav/SidebarEcosystemSwitcher.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SidebarEcosystemSwitcher",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SidebarPinnedIcon",
+      "type": "UIComponent",
+      "label": "<SidebarPinnedIcon />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/sidebar-nav/SidebarPinnedIcon.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SidebarPinnedIcon",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:sidebarMenuItems",
+      "type": "UIComponent",
+      "label": "<sidebarMenuItems />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/sidebar-nav/sidebarMenuItems.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "sidebarMenuItems",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:sidebarNavTypes",
+      "type": "UIComponent",
+      "label": "<sidebarNavTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/sidebar-nav/sidebarNavTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "sidebarNavTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:sidebarNavUtils",
+      "type": "UIComponent",
+      "label": "<sidebarNavUtils />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/sidebar-nav/sidebarNavUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "sidebarNavUtils",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:usePinnedDragAndDrop",
+      "type": "UIComponent",
+      "label": "<usePinnedDragAndDrop />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/sidebar-nav/usePinnedDragAndDrop.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "usePinnedDragAndDrop",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useSidebarData",
+      "type": "UIComponent",
+      "label": "<useSidebarData />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/sidebar-nav/useSidebarData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useSidebarData",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useSidebarMenuExpansion",
+      "type": "UIComponent",
+      "label": "<useSidebarMenuExpansion />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/sidebar-nav/useSidebarMenuExpansion.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useSidebarMenuExpansion",
         "isPrimitive": false
       }
     },
@@ -60156,8 +60336,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 52682,
-        "lineCount": 1185,
+        "sizeBytes": 7219,
+        "lineCount": 200,
         "ext": ".tsx"
       }
     },
@@ -60328,6 +60508,110 @@
         "sizeBytes": 8378,
         "lineCount": 243,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/CopilotDrawerHeader.tsx",
+      "type": "File",
+      "label": "CopilotDrawerHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/aiassistant-widget/CopilotDrawerHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4290,
+        "lineCount": 101,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/CopilotInputArea.tsx",
+      "type": "File",
+      "label": "CopilotInputArea.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/aiassistant-widget/CopilotInputArea.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4419,
+        "lineCount": 102,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/CopilotMessageList.tsx",
+      "type": "File",
+      "label": "CopilotMessageList.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/aiassistant-widget/CopilotMessageList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15474,
+        "lineCount": 311,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/CopilotSessionBar.tsx",
+      "type": "File",
+      "label": "CopilotSessionBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/aiassistant-widget/CopilotSessionBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7642,
+        "lineCount": 168,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/copilot-utils.ts",
+      "type": "File",
+      "label": "copilot-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/aiassistant-widget/copilot-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3792,
+        "lineCount": 129,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/useCopilotChat.ts",
+      "type": "File",
+      "label": "useCopilotChat.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/aiassistant-widget/useCopilotChat.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9200,
+        "lineCount": 303,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/useCopilotLauncherDrag.ts",
+      "type": "File",
+      "label": "useCopilotLauncherDrag.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/aiassistant-widget/useCopilotLauncherDrag.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4624,
+        "lineCount": 160,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/useCopilotSpeech.ts",
+      "type": "File",
+      "label": "useCopilotSpeech.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/aiassistant-widget/useCopilotSpeech.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3244,
+        "lineCount": 105,
+        "ext": ".ts"
       }
     },
     {
@@ -63250,8 +63534,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 69154,
-        "lineCount": 1264,
+        "sizeBytes": 4380,
+        "lineCount": 117,
         "ext": ".tsx"
       }
     },
@@ -63564,6 +63848,136 @@
       "metadata": {
         "sizeBytes": 2723,
         "lineCount": 70,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopComparisonTable.tsx",
+      "type": "File",
+      "label": "PilotSopComparisonTable.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopComparisonTable.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6427,
+        "lineCount": 121,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopGlossarySection.tsx",
+      "type": "File",
+      "label": "PilotSopGlossarySection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopGlossarySection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2941,
+        "lineCount": 61,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopHeaderBanner.tsx",
+      "type": "File",
+      "label": "PilotSopHeaderBanner.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopHeaderBanner.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5555,
+        "lineCount": 107,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopNavigatorBar.tsx",
+      "type": "File",
+      "label": "PilotSopNavigatorBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopNavigatorBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5322,
+        "lineCount": 124,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopPhotoModal.tsx",
+      "type": "File",
+      "label": "PilotSopPhotoModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopPhotoModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2139,
+        "lineCount": 53,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopPrinciplesAndMetrics.tsx",
+      "type": "File",
+      "label": "PilotSopPrinciplesAndMetrics.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopPrinciplesAndMetrics.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7022,
+        "lineCount": 151,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopStepCard.tsx",
+      "type": "File",
+      "label": "PilotSopStepCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopStepCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 17271,
+        "lineCount": 332,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopStepDeepDive.tsx",
+      "type": "File",
+      "label": "PilotSopStepDeepDive.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopStepDeepDive.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4492,
+        "lineCount": 97,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/pilot-sop-detail-helpers.ts",
+      "type": "File",
+      "label": "pilot-sop-detail-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/pilot-sop-detail-helpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8858,
+        "lineCount": 253,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/usePilotSopDetail.ts",
+      "type": "File",
+      "label": "usePilotSopDetail.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/usePilotSopDetail.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4150,
+        "lineCount": 138,
         "ext": ".ts"
       }
     },
@@ -64966,8 +65380,8 @@
       "filePath": "apps/web/app/dashboard/telesale-competency/components/TelesaleConfigTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 51952,
-        "lineCount": 1302,
+        "sizeBytes": 4671,
+        "lineCount": 146,
         "ext": ".tsx"
       }
     },
@@ -65008,6 +65422,175 @@
         "sizeBytes": 5526,
         "lineCount": 152,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/ConfigActionFloatingBar.tsx",
+      "type": "File",
+      "label": "ConfigActionFloatingBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/ConfigActionFloatingBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1715,
+        "lineCount": 59,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/ConfigLifecycleModals.tsx",
+      "type": "File",
+      "label": "ConfigLifecycleModals.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/ConfigLifecycleModals.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5401,
+        "lineCount": 172,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/LevelTargetsCard.tsx",
+      "type": "File",
+      "label": "LevelTargetsCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/LevelTargetsCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1549,
+        "lineCount": 40,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/PillarAKpiSection.tsx",
+      "type": "File",
+      "label": "PillarAKpiSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/PillarAKpiSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5193,
+        "lineCount": 149,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/PillarsWeightCard.tsx",
+      "type": "File",
+      "label": "PillarsWeightCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/PillarsWeightCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2457,
+        "lineCount": 73,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/PreviewCalculationModal.tsx",
+      "type": "File",
+      "label": "PreviewCalculationModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/PreviewCalculationModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2170,
+        "lineCount": 66,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/TierRulesSection.tsx",
+      "type": "File",
+      "label": "TierRulesSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/TierRulesSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5190,
+        "lineCount": 148,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/VersionMetadataCard.tsx",
+      "type": "File",
+      "label": "VersionMetadataCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/VersionMetadataCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2936,
+        "lineCount": 84,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/VersionSelectorBar.tsx",
+      "type": "File",
+      "label": "VersionSelectorBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/VersionSelectorBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2691,
+        "lineCount": 78,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/levelTargetsColumns.tsx",
+      "type": "File",
+      "label": "levelTargetsColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/levelTargetsColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2915,
+        "lineCount": 106,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/previewColumns.tsx",
+      "type": "File",
+      "label": "previewColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/previewColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1729,
+        "lineCount": 59,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/telesaleConfigHelpers.ts",
+      "type": "File",
+      "label": "telesaleConfigHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/telesaleConfigHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3546,
+        "lineCount": 121,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/useTelesaleConfigState.ts",
+      "type": "File",
+      "label": "useTelesaleConfigState.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/useTelesaleConfigState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8760,
+        "lineCount": 256,
+        "ext": ".ts"
       }
     },
     {
@@ -93619,6 +94202,90 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:CustomerDetailBody:ws:apps/web",
+      "source": "uicomp:CustomerDetailBody",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CustomerDetailBody:token:color:primary",
+      "source": "uicomp:CustomerDetailBody",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CustomerDetailHeader:ws:apps/web",
+      "source": "uicomp:CustomerDetailHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CustomerDetailHeader:token:color:primary",
+      "source": "uicomp:CustomerDetailHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CustomerDetailModals:ws:apps/web",
+      "source": "uicomp:CustomerDetailModals",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CustomerDetailModals:token:color:primary",
+      "source": "uicomp:CustomerDetailModals",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CustomerStickyNotesBanner:ws:apps/web",
+      "source": "uicomp:CustomerStickyNotesBanner",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CustomerStickyNotesBanner:token:color:primary",
+      "source": "uicomp:CustomerStickyNotesBanner",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:customerDetailDrawerHelpers:ws:apps/web",
+      "source": "uicomp:customerDetailDrawerHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:customerDetailDrawerHelpers:token:color:primary",
+      "source": "uicomp:customerDetailDrawerHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useCustomerDetailDrawerState:ws:apps/web",
+      "source": "uicomp:useCustomerDetailDrawerState",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useCustomerDetailDrawerState:token:color:primary",
+      "source": "uicomp:useCustomerDetailDrawerState",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:DailyCallsMobileCard:ws:apps/web",
       "source": "uicomp:DailyCallsMobileCard",
       "target": "ws:apps/web",
@@ -94048,6 +94715,132 @@
     {
       "id": "edge:uicomp:UserProfileDropdown.test:token:color:primary",
       "source": "uicomp:UserProfileDropdown.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SidebarCollapsedRail:ws:apps/web",
+      "source": "uicomp:SidebarCollapsedRail",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SidebarCollapsedRail:token:color:primary",
+      "source": "uicomp:SidebarCollapsedRail",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SidebarEcosystemSwitcher:ws:apps/web",
+      "source": "uicomp:SidebarEcosystemSwitcher",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SidebarEcosystemSwitcher:token:color:primary",
+      "source": "uicomp:SidebarEcosystemSwitcher",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SidebarPinnedIcon:ws:apps/web",
+      "source": "uicomp:SidebarPinnedIcon",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SidebarPinnedIcon:token:color:primary",
+      "source": "uicomp:SidebarPinnedIcon",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:sidebarMenuItems:ws:apps/web",
+      "source": "uicomp:sidebarMenuItems",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:sidebarMenuItems:token:color:primary",
+      "source": "uicomp:sidebarMenuItems",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:sidebarNavTypes:ws:apps/web",
+      "source": "uicomp:sidebarNavTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:sidebarNavTypes:token:color:primary",
+      "source": "uicomp:sidebarNavTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:sidebarNavUtils:ws:apps/web",
+      "source": "uicomp:sidebarNavUtils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:sidebarNavUtils:token:color:primary",
+      "source": "uicomp:sidebarNavUtils",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:usePinnedDragAndDrop:ws:apps/web",
+      "source": "uicomp:usePinnedDragAndDrop",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:usePinnedDragAndDrop:token:color:primary",
+      "source": "uicomp:usePinnedDragAndDrop",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useSidebarData:ws:apps/web",
+      "source": "uicomp:useSidebarData",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useSidebarData:token:color:primary",
+      "source": "uicomp:useSidebarData",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useSidebarMenuExpansion:ws:apps/web",
+      "source": "uicomp:useSidebarMenuExpansion",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useSidebarMenuExpansion:token:color:primary",
+      "source": "uicomp:useSidebarMenuExpansion",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -108060,13 +108853,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/customers/components/AllocationBatchHeader.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/customers/components/AllocationBatchHeader.tsx",
       "target": "ws:packages/shared",
@@ -108118,6 +108904,41 @@
     {
       "id": "edge:file:apps/web/app/dashboard/customers/components/UndoReasonModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/customers/components/UndoReasonModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/customers/components/aiassistant-widget/CopilotMessageList.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/CopilotMessageList.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/customers/components/aiassistant-widget/CopilotSessionBar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/CopilotSessionBar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/customers/components/aiassistant-widget/copilot-utils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/copilot-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/customers/components/aiassistant-widget/useCopilotChat.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/useCopilotChat.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/customers/components/aiassistant-widget/useCopilotSpeech.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/customers/components/aiassistant-widget/useCopilotSpeech.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -109229,13 +110050,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopModal.tsx",
       "target": "ws:packages/shared",
@@ -109273,6 +110087,48 @@
     {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-session/pilot-session-utils.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-session/pilot-session-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopComparisonTable.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopComparisonTable.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopNavigatorBar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopNavigatorBar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopStepCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopStepCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopStepDeepDive.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/PilotSopStepDeepDive.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/pilot-sop-detail-helpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/pilot-sop-detail-helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/usePilotSopDetail.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-sop-detail-view/usePilotSopDetail.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -109824,13 +110680,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/TelesaleConfigTab.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/telesale-competency/components/TelesaleConfigTab.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/TelesaleLadderModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-competency/components/TelesaleLadderModal.tsx",
       "target": "ws:packages/shared",
@@ -109847,6 +110696,90 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/TelesaleTeamMatrixTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-competency/components/TelesaleTeamMatrixTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/ConfigLifecycleModals.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/ConfigLifecycleModals.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/LevelTargetsCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/LevelTargetsCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/PillarAKpiSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/PillarAKpiSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/PillarsWeightCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/PillarsWeightCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/PreviewCalculationModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/PreviewCalculationModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/TierRulesSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/TierRulesSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/VersionMetadataCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/VersionMetadataCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/VersionSelectorBar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/VersionSelectorBar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/levelTargetsColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/levelTargetsColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/previewColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/previewColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/telesaleConfigHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/telesaleConfigHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/useTelesaleConfigState.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/telesale-config-tab/useTelesaleConfigState.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -135676,8 +136609,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5643,
-    "totalEdges": 8997,
+    "totalNodes": 5689,
+    "totalEdges": 9047,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -135685,15 +136618,15 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 765,
-      "File": 2264
+      "UIComponent": 780,
+      "File": 2295
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 831,
-      "USES_TOKEN": 767,
-      "IMPORTS": 1392,
+      "RENDERS": 846,
+      "USES_TOKEN": 782,
+      "IMPORTS": 1412,
       "QUERIES_MODEL": 602,
       "API_CALL": 2860
     },
