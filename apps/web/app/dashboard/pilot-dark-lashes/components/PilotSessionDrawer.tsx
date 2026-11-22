@@ -1,23 +1,21 @@
 'use client';
 
-import React, { useMemo, useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, Form, Input, InputNumber, Select, message } from 'antd';
 import type { FormInstance } from 'antd';
-import { Package, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import type { CreatePilotMaterialRequest, PilotMaterial, PilotSession, PilotSessionStep } from '@mos-lab/shared';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { EntityFormDrawer } from '../../../../components/ui/EntityFormDrawer';
-import { AdaptiveModal } from '../../../../components/ui/AdaptiveOverlay';
 import { apiClient } from '../../../../lib/api-client';
 import { PilotStepTimer } from './PilotStepTimer';
-
-function formatVND(value: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+import { PilotQuickMaterialModal } from './pilot-session/PilotQuickMaterialModal';
+import { PilotSessionConsumablesSection } from './pilot-session/PilotSessionConsumablesSection';
+import {
+  computeLiveConsumablesCost,
+  computeLiveSessionEconomics,
+  formatPilotVND,
+} from './pilot-session/pilot-session-utils';
 
 interface PilotSessionDrawerProps {
   open: boolean;
@@ -125,26 +123,15 @@ export function PilotSessionDrawer({
     }
   };
 
-  const QUICK_LASH_PRESETS = [
-    { name: 'Thuốc số 1 (Perming Cream)', unit: 'ml', volume: 15, purchasePrice: 450000 },
-    { name: 'Thuốc số 2 (Setting Cream)', unit: 'ml', volume: 15, purchasePrice: 450000 },
-    { name: 'Cây chải mi kim loại', unit: 'cây', volume: 1, purchasePrice: 35000 },
-    { name: 'Cây chải mi nhựa', unit: 'cây', volume: 1, purchasePrice: 3000 },
-    { name: 'Keratin dưỡng mi', unit: 'ml', volume: 20, purchasePrice: 380000 },
-    { name: 'Kềm PH (Kiểm tra độ pH)', unit: 'lần', volume: 50, purchasePrice: 50000 },
-    { name: 'Eye Pad (Miếng dán mi dưới)', unit: 'cặp', volume: 1, purchasePrice: 6000 },
-    { name: 'Giấy giữ mi con', unit: 'miếng', volume: 50, purchasePrice: 20000 },
-    { name: 'Thuốc nhuộm mi (Lash Tint)', unit: 'ml', volume: 15, purchasePrice: 240000 },
-    { name: 'Dụng cụ vệ sinh mi', unit: 'bộ', volume: 1, purchasePrice: 5000 },
-  ];
-  const QUICK_UNITS = ['ml', 'cây', 'cặp', 'miếng', 'bộ', 'g', 'lần', 'gói'];
   const formRevenue = Form.useWatch('revenue', form) ?? 990000;
   const formMaterialCost = Form.useWatch('materialCost', form) ?? 0;
   const formTechnicianCost = Form.useWatch('technicianCost', form) ?? 0;
   const formCommissionAmount = Form.useWatch('commissionAmount', form) ?? 0;
   const formPromoAmount = Form.useWatch('promoAmount', form) ?? 0;
   const formRefundAmount = Form.useWatch('refundAmount', form) ?? 0;
-  const formMaterials: Array<{ materialId?: number; usageAmount?: number }> = Form.useWatch('materials', form) || [];
+  const watchedMaterials = Form.useWatch('materials', form) as
+    Array<{ materialId?: number; usageAmount?: number }> | undefined;
+  const formMaterials = useMemo(() => watchedMaterials || [], [watchedMaterials]);
 
   const catalogMap = useMemo(() => {
     const map = new Map<number, PilotMaterial>();
@@ -152,15 +139,10 @@ export function PilotSessionDrawer({
     return map;
   }, [materialsCatalog]);
 
-  const liveConsumablesCost = useMemo(() => {
-    if (!formMaterials || formMaterials.length === 0) return 0;
-    return formMaterials.reduce((total, item) => {
-      if (!item?.materialId || !item?.usageAmount || item.usageAmount <= 0) return total;
-      const mat = catalogMap.get(item.materialId);
-      if (!mat) return total;
-      return total + Math.round(Number(mat.costPerUnit) * Number(item.usageAmount));
-    }, 0);
-  }, [formMaterials, catalogMap]);
+  const liveConsumablesCost = useMemo(
+    () => computeLiveConsumablesCost(formMaterials, catalogMap),
+    [formMaterials, catalogMap]
+  );
 
   // Keep materialCost synced with liveConsumablesCost when materials list is used
   useEffect(() => {
@@ -169,17 +151,16 @@ export function PilotSessionDrawer({
     }
   }, [formMaterials, liveConsumablesCost, form]);
 
-  const effectiveMaterialCost = formMaterials && formMaterials.length > 0 ? liveConsumablesCost : formMaterialCost || 0;
-
-  const liveTotalCost =
-    effectiveMaterialCost +
-    (formTechnicianCost || 0) +
-    (formCommissionAmount || 0) +
-    (formPromoAmount || 0) +
-    (formRefundAmount || 0);
-
-  const liveContribution = (formRevenue || 0) - liveTotalCost;
-  const liveMarginPct = formRevenue > 0 ? Math.round((liveContribution / formRevenue) * 100) : 0;
+  const { liveTotalCost, liveContribution, liveMarginPct } = computeLiveSessionEconomics({
+    hasMaterials: Boolean(formMaterials && formMaterials.length > 0),
+    liveConsumablesCost,
+    formMaterialCost,
+    formTechnicianCost,
+    formCommissionAmount,
+    formPromoAmount,
+    formRefundAmount,
+    formRevenue,
+  });
 
   return (
     <>
@@ -206,7 +187,7 @@ export function PilotSessionDrawer({
           {/* Phase 1: Customer & Logistics */}
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-              1. Thông tin khách hàng & ca làm
+              1. Thông tin khách hàng &amp; ca làm
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Form.Item
@@ -284,177 +265,18 @@ export function PilotSessionDrawer({
             </div>
           </div>
 
-          {/* Phase 2: Consumables Material Tracking */}
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
-            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <AppIcon icon={Package} size="sm" className="text-emerald-500" />
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  2. Theo dõi Vật tư Tiêu hao (Consumables)
-                </span>
-                {session?.isStockDeducted ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                    <AppIcon icon={Sparkles} size="sm" /> Đã trừ kho tồn
-                  </span>
-                ) : session?.id ? (
-                  <Button
-                    size="small"
-                    loading={deducting}
-                    onClick={handleDeductStock}
-                    className="text-[11px] h-6 px-2 border-emerald-500/50 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                  >
-                    Trừ kho BOM
-                  </Button>
-                ) : null}
-              </div>
-              <div className="text-right">
-                <span className="text-xs text-slate-500">Tổng Consumables Cost / Done: </span>
-                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                  {formatVND(liveConsumablesCost)}
-                </span>
-              </div>
-            </div>
-
-            <Form.List name="materials">
-              {(fields, { add, remove }) => (
-                <div className="space-y-2">
-                  {fields.map(({ key, name, ...restField }) => {
-                    const currentItem = formMaterials[name];
-                    const selectedMat = currentItem?.materialId ? catalogMap.get(currentItem.materialId) : null;
-                    const usage = currentItem?.usageAmount || 0;
-                    const rowCost = selectedMat ? Math.round(selectedMat.costPerUnit * usage) : 0;
-
-                    return (
-                      <div
-                        key={key}
-                        className="flex items-center gap-2 p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm"
-                      >
-                        {selectedMat?.imageUrl && (
-                          <div className="w-8 h-8 rounded overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 flex-shrink-0">
-                            <img
-                              src={selectedMat.imageUrl}
-                              alt={selectedMat.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
-
-                        <div className="flex-1">
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'materialId']}
-                            rules={[{ required: true, message: 'Chọn vật tư' }]}
-                            className="!mb-0"
-                          >
-                            <Select
-                              placeholder="Chọn vật tư sử dụng"
-                              className="w-full"
-                              options={materialsCatalog
-                                .filter((m) => m.isActive || m.id === currentItem?.materialId)
-                                .map((m) => ({
-                                  value: m.id,
-                                  label: `[${m.itemType === 'TOOL' ? 'Dụng cụ' : 'Tiêu hao'}] ${m.name} (${formatVND(m.costPerUnit)}/${m.unit})`,
-                                }))}
-                            />
-                          </Form.Item>
-                        </div>
-
-                        {selectedMat && (
-                          <span
-                            className={`text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
-                              selectedMat.itemType === 'TOOL'
-                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
-                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                            }`}
-                          >
-                            {selectedMat.itemType === 'TOOL' ? 'Dụng cụ' : 'Tiêu hao'}
-                          </span>
-                        )}
-
-                        <div className="w-32">
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'usageAmount']}
-                            rules={[{ required: true, message: 'Lượng dùng' }]}
-                            className="!mb-0"
-                          >
-                            <InputNumber
-                              min={0.1}
-                              step={selectedMat?.unit === 'cặp' || selectedMat?.unit === 'miếng' ? 1 : 0.5}
-                              placeholder="Lượng"
-                              addonAfter={selectedMat?.unit || 'đv'}
-                              className="w-full tabular-nums"
-                            />
-                          </Form.Item>
-                        </div>
-
-                        <div className="w-32 text-right">
-                          <span className="text-[10px] text-slate-400 block leading-tight">Cost tạm tính</span>
-                          <span className="text-xs font-semibold tabular-nums text-slate-700 dark:text-slate-200">
-                            {formatVND(rowCost)}
-                          </span>
-                        </div>
-
-                        <Button
-                          type="text"
-                          size="small"
-                          danger
-                          icon={<AppIcon icon={Trash2} size="sm" />}
-                          onClick={() => remove(name)}
-                        />
-                      </div>
-                    );
-                  })}
-
-                  <div className="flex items-center gap-2 pt-1 flex-wrap">
-                    <Button
-                      type="dashed"
-                      onClick={() => add({ materialId: undefined, usageAmount: 1 })}
-                      icon={<AppIcon icon={Plus} size="sm" />}
-                      className="rounded-lg text-xs"
-                    >
-                      Thêm vật tư đã dùng
-                    </Button>
-                    <Button
-                      type="dashed"
-                      onClick={() => {
-                        quickForm.resetFields();
-                        quickForm.setFieldsValue({
-                          unit: 'ml',
-                          volume: 1,
-                          purchasePrice: 0,
-                          itemType: 'CONSUMABLE',
-                          imageUrl: '',
-                        });
-                        setQuickAddOpen(true);
-                      }}
-                      icon={<AppIcon icon={Package} size="sm" />}
-                      className="rounded-lg text-xs border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                    >
-                      + Tạo vật tư mới vào danh mục
-                    </Button>
-                    {materialsCatalog.length > 0 && fields.length === 0 && (
-                      <Button
-                        type="default"
-                        onClick={() => {
-                          const standardPreset = materialsCatalog
-                            .filter((m) => m.isActive)
-                            .map((m) => ({
-                              materialId: m.id,
-                              usageAmount: 1,
-                            }));
-                          form.setFieldValue('materials', standardPreset);
-                        }}
-                        className="text-xs rounded-lg text-emerald-600 border-emerald-500/30"
-                      >
-                        Áp dụng định lượng chuẩn (1 ca)
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </Form.List>
-          </div>
+          <PilotSessionConsumablesSection
+            form={form}
+            quickForm={quickForm}
+            session={session}
+            materialsCatalog={materialsCatalog}
+            catalogMap={catalogMap}
+            formMaterials={formMaterials}
+            liveConsumablesCost={liveConsumablesCost}
+            deducting={deducting}
+            onDeductStock={handleDeductStock}
+            onOpenQuickAdd={() => setQuickAddOpen(true)}
+          />
 
           {/* Phase: Technical Steps Timer History (SOP) */}
           {session && session.id && (
@@ -474,7 +296,7 @@ export function PilotSessionDrawer({
           {/* Phase 3: Direct Costs & Unit Economics */}
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-              3. Chi phí trực tiếp & Unit Economics
+              3. Chi phí trực tiếp &amp; Unit Economics
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <Form.Item
@@ -532,7 +354,7 @@ export function PilotSessionDrawer({
             <div className="mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
               <div>
                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                  Tổng chi phí trực tiếp: <strong className="tabular-nums">{formatVND(liveTotalCost)}</strong>
+                  Tổng chi phí trực tiếp: <strong className="tabular-nums">{formatPilotVND(liveTotalCost)}</strong>
                 </span>
               </div>
               <div className="text-right">
@@ -540,7 +362,7 @@ export function PilotSessionDrawer({
                   Contribution Margin dự kiến:
                 </span>
                 <span className="text-base font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
-                  {formatVND(liveContribution)} ({liveMarginPct}%)
+                  {formatPilotVND(liveContribution)} ({liveMarginPct}%)
                 </span>
               </div>
             </div>
@@ -549,7 +371,7 @@ export function PilotSessionDrawer({
           {/* Phase 4: Follow-up & Satisfaction */}
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-              4. Chăm sóc 24h–72h & Đánh giá (CSAT)
+              4. Chăm sóc 24h–72h &amp; Đánh giá (CSAT)
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Form.Item name="followUp24hStatus" label="Follow-up 24h" className="!mb-2">
@@ -588,103 +410,14 @@ export function PilotSessionDrawer({
         </Form>
       </EntityFormDrawer>
 
-      {/* Modal Thêm nhanh Vật tư Tiêu hao ngay trong ca làm */}
-      <AdaptiveModal
-        intent="form"
-        title="Thêm nhanh Vật tư Tiêu hao"
+      <PilotQuickMaterialModal
         open={quickAddOpen}
+        quickForm={quickForm}
+        quickSubmitting={quickSubmitting}
+        quickCostPerUnit={quickCostPerUnit}
         onCancel={() => setQuickAddOpen(false)}
         onOk={handleSaveQuickMaterial}
-        confirmLoading={quickSubmitting}
-        okText="Tạo & chọn dùng ngay"
-        cancelText="Hủy"
-        okButtonProps={{ className: 'bg-emerald-600 hover:bg-emerald-700 text-white' }}
-        width={480}
-      >
-        <Form form={quickForm} layout="vertical" className="mt-2">
-          <div className="mb-3">
-            <span className="text-xs font-medium text-slate-500 block mb-1.5">Gợi ý nhanh vật tư uốn mi:</span>
-            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 border border-slate-100 dark:border-slate-800 rounded-lg">
-              {QUICK_LASH_PRESETS.map((preset) => (
-                <button
-                  key={preset.name}
-                  type="button"
-                  onClick={() => {
-                    quickForm.setFieldsValue({
-                      name: preset.name,
-                      unit: preset.unit,
-                      volume: preset.volume,
-                      purchasePrice: preset.purchasePrice,
-                    });
-                  }}
-                  className="text-[11px] px-2 py-0.5 rounded bg-slate-100 hover:bg-emerald-100 dark:bg-slate-800 dark:hover:bg-emerald-950 text-slate-700 dark:text-slate-300 hover:text-emerald-700 transition-colors"
-                >
-                  + {preset.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Form.Item name="name" label="Tên vật tư" rules={[{ required: true, message: 'Vui lòng nhập tên vật tư' }]}>
-            <Input placeholder="VD: Cây chải mi kim loại, Keratin..." className="rounded-lg" />
-          </Form.Item>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Form.Item
-              name="itemType"
-              label="Phân loại"
-              initialValue="CONSUMABLE"
-              rules={[{ required: true, message: 'Chọn phân loại' }]}
-            >
-              <Select
-                className="w-full rounded-lg"
-                options={[
-                  { value: 'CONSUMABLE', label: 'Tiêu hao' },
-                  { value: 'TOOL', label: 'Dụng cụ' },
-                ]}
-              />
-            </Form.Item>
-
-            <Form.Item name="unit" label="Đơn vị tính" rules={[{ required: true, message: 'Nhập đơn vị tính' }]}>
-              <Input placeholder="VD: ml, cây, cặp, miếng, bộ, g..." className="rounded-lg" />
-            </Form.Item>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Form.Item
-              name="purchasePrice"
-              label="Giá mua trọn gói (đ)"
-              rules={[{ required: true, message: 'Nhập giá mua' }]}
-            >
-              <InputNumber<number>
-                className="w-full rounded-lg tabular-nums"
-                min={0}
-                formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={(val) => (val ? Number(val.replace(/\$\s?|(,*)/g, '')) : 0)}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="volume"
-              label="Quy cách / Dung tích"
-              rules={[{ required: true, message: 'Nhập dung tích' }]}
-            >
-              <InputNumber<number> className="w-full rounded-lg tabular-nums" min={0.01} step={1} />
-            </Form.Item>
-          </div>
-
-          <Form.Item name="imageUrl" label="URL Hình ảnh (Tùy chọn)">
-            <Input placeholder="https://example.com/item.png" className="rounded-lg" />
-          </Form.Item>
-
-          <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <span className="text-xs text-slate-500">Cost tự động trên 1 đơn vị:</span>
-            <span className="text-base font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-              {formatVND(quickCostPerUnit)} / đơn vị
-            </span>
-          </div>
-        </Form>
-      </AdaptiveModal>
+      />
     </>
   );
 }
