@@ -59,6 +59,7 @@ export interface RawIosOrderSnapshot {
   ledger_cv_points?: number | null;
   ledger_cv_breakdown?: string | null;
   actual_order_specs?: ActualOrderLashSpecs | null;
+  legacy_tip_amount?: number | null;
   legacy_progress?: Partial<IosBookingProgress>;
 }
 
@@ -247,15 +248,72 @@ export async function fetchLiveOrderSnapshots(
         )
       : emptyQueryResult;
 
-  const [[osRows], [contactRows], [visitRows], [productPromoRows], customerContext, legacyProgressByOrderId] =
-    await Promise.all([
-      primaryServicePromise,
-      fallbackContactPromise,
-      visitCountsPromise,
-      productPromoPromise,
-      fetchCustomerEnrichmentContext(pool, customerIds),
-      fetchLegacyProgressHydrationByOrderIds(pool, orderIds),
-    ]);
+  const legacyTipPromise =
+    orderIds.length > 0
+      ? pool.query<mysql.RowDataPacket[]>(
+          `SELECT
+             o.id AS order_id,
+             CASE
+               WHEN COALESCE(MAX(ro.tip_amount), 0) > 0 THEN MAX(ro.tip_amount)
+               ELSE COALESCE(st_agg.staff_tip_100, 0)
+             END AS legacy_tip_amount
+           FROM \`order\` o
+           LEFT JOIN \`report_order\` ro ON ro.order_id = o.id
+           LEFT JOIN (
+             SELECT
+               svc.order_id,
+               SUM(svc.svc_customer_tip) AS staff_tip_100
+             FROM (
+               SELECT
+                 st.order_id,
+                 COALESCE(st.order_service_id, 0) AS svc_id,
+                 MAX(
+                   CASE
+                     WHEN st.tip_percentage > 0 THEN ROUND(st.tip_amount * 100 / st.tip_percentage)
+                     ELSE st.tip_amount
+                   END
+                 ) AS svc_customer_tip
+               FROM \`staff_tip\` st
+               WHERE st.order_id IN (${orderIds.map(() => '?').join(',')})
+                 AND st.tip_amount > 0
+                 AND st.is_academy = 0
+                 AND st.tip_currency_id IN (1, 2)
+               GROUP BY st.order_id, COALESCE(st.order_service_id, 0)
+             ) svc
+             GROUP BY svc.order_id
+           ) st_agg ON st_agg.order_id = o.id
+           WHERE o.id IN (${orderIds.map(() => '?').join(',')})
+           GROUP BY o.id, st_agg.staff_tip_100`,
+          [...orderIds, ...orderIds]
+        )
+      : emptyQueryResult;
+
+  const [
+    [osRows],
+    [contactRows],
+    [visitRows],
+    [productPromoRows],
+    [legacyTipRows],
+    customerContext,
+    legacyProgressByOrderId,
+  ] = await Promise.all([
+    primaryServicePromise,
+    fallbackContactPromise,
+    visitCountsPromise,
+    productPromoPromise,
+    legacyTipPromise,
+    fetchCustomerEnrichmentContext(pool, customerIds),
+    fetchLegacyProgressHydrationByOrderIds(pool, orderIds),
+  ]);
+
+  const legacyTipByOrderId = new Map<number, number>();
+  for (const tipRow of legacyTipRows) {
+    const oid = Number(tipRow.order_id || 0);
+    const tipAmt = Math.round(Number(tipRow.legacy_tip_amount || 0));
+    if (oid > 0 && tipAmt > 0) {
+      legacyTipByOrderId.set(oid, tipAmt);
+    }
+  }
 
   const productPromoMapByOrderId = new Map<number, Record<number, number>>();
   for (const pr of productPromoRows) {
@@ -422,6 +480,7 @@ export async function fetchLiveOrderSnapshots(
       ledger_cv_points: ledgerSummary?.ledgerPoints ?? null,
       ledger_cv_breakdown: ledgerSummary?.breakdownLabel ?? null,
       actual_order_specs: ledgerSummary?.actualSpecs ?? null,
+      legacy_tip_amount: legacyTipByOrderId.get(Number(r.id)) ?? null,
       ...(legacyProg ? { legacy_progress: legacyProg } : {}),
     };
   });

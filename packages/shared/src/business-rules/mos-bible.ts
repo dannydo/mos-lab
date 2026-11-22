@@ -945,7 +945,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     commandments: [
       'Ghép cặp 1-kèm-1 cố định theo kỳ cấu hình động (CVL_TRAINING_MENTORSHIP_CONFIG trong crmConfig, chỉ Admin / Super Admin được chỉnh sửa): Mỗi cặp quy định rõ 1 Mentor CC kèm 1 Mentee CVL kèm khoảng ngày hiệu lực [startDate, endDate] (ví dụ Tháng 11/2026 tại Đề Thám: Diễm Hương kèm Thảo Ly, Thục Nghi kèm Khanh Cao tính trọn tháng 01/11/2026 – 30/11/2026).',
       'Triệt tiêu 100% thưởng của mọi CC trên đơn của Mentee CVL đang trong kỳ Training: Bất kể CC nào bấm Check-in hay Check-out giùm trên đơn có assigned_staff_id là Mentee CVL (kể cả Mentor CC lẫn các CC khác trong tiệm), tất cả CC đều nhận 0đ và 0 điểm từ đơn đó — loại trừ khỏi CC Xoay, CC Daily Sales Bonus (Combo, Nâng cấp, Sản phẩm, Thu nợ, Lượt khách) và 20% CC Tip. Các đơn phục vụ CV thường khác vẫn tính thưởng CC bình thường.',
-      'Quy nạp trực tiếp 100% quyền lợi về Mentee CVL trên Thu nhập CV: Trong suốt khoảng ngày hiệu lực Training, mọi gói Combo (order_service_combo), sản phẩm Dưỡng mi Yeppeum (order_product) và phần +20% Tip tư vấn/checkout phát sinh trên đơn của Mentee CVL đều được ghi nhận trực tiếp cho Mentee CVL ở tầng tính toán mOS (không sửa bảng giao dịch gốc staff_tip của Legacy MySQL) để Mentee CVL hưởng trọn 90% Tip, thưởng bậc thang Combo, thưởng Dưỡng mi và chênh lệch lương giờ +2.000đ/giờ khi mở khóa.',
+      'Quy nạp trực tiếp 100% quyền lợi về Mentee CVL trên Thu nhập CV & Đồng nhất 90% Tip trên staff_tip: Trong suốt khoảng ngày hiệu lực Training, mọi gói Combo (order_service_combo), sản phẩm Dưỡng mi Yeppeum (order_product) và phần +20% Tip tư vấn/checkout phát sinh trên đơn của Mentee CVL đều được ghi nhận trực tiếp 100% cho Mentee CVL (hợp nhất dòng tip ≤ 20% của Mentor/CC trên cùng ca vào dòng 90% của Mentee CVL trong staff_tip cũng như ở tầng tính toán mOS) để cả App Wings lẫn mOS đều hiển thị thống nhất 90% Tip (Mentor nhận 0đ tip), cùng thưởng bậc thang Combo, thưởng Dưỡng mi và chênh lệch lương giờ +2.000đ/giờ khi mở khóa.',
       'Công thức Thưởng Đào Tạo Cuối Tháng cho Mentor CC trên Thu nhập CC: Cơ sở nhân 50% bằng đúng Tổng đãi ngộ tăng thêm của Mentee CVL trên bảng Thu nhập CV (totalAdditionalIncome = Lương giờ tăng thêm + Tip tư vấn +20% + Thưởng Gói Combo bậc thang + Thưởng Dưỡng mi Yeppeum).',
       'Điều kiện mở khóa đồng bộ Điều răn CV-002 (≥ 20,0% Combo trên tập khách Not Combo Live): Nếu cuối kỳ Mentee CVL đạt tỷ lệ chốt Combo ≥ 20,0%, Mentor CC được cộng trực tiếp (1.000.000đ + 50% × totalAdditionalIncome) vào Tổng Thu Nhập và Thực Lãnh trên bảng Thu nhập CC. Nếu Mentee CVL không đạt ngưỡng 20,0%, Mentor CC mất toàn bộ gói thưởng Training (nhận 0đ, không nhận cả 1.000.000đ cứng lẫn 50%).',
     ],
@@ -973,8 +973,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
     routeScopes: ['/dashboard/cc', '/dashboard/cv', '/dashboard/career-path', '/ios-app'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-11-01',
+    version: '1.1.0',
+    effectiveFrom: '2026-11-21',
     sources: [
       {
         label: 'Cấu hình & Công thức Thưởng Đào Tạo CVL',

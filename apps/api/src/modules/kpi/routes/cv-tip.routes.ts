@@ -12,7 +12,11 @@ import {
   TipFilterType,
 } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
-import { buildCvTipStaffMatchSql, CvlTrainingMentorshipService } from '../services/cvl-training-mentorship.service.js';
+import {
+  buildCvTipStaffMatchSql,
+  createFastifyLegacyTipExecutor,
+  CvlTrainingMentorshipService,
+} from '../services/cvl-training-mentorship.service.js';
 
 async function getActiveCvIds(fastify: FastifyInstance): Promise<number[]> {
   const ids = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG');
@@ -91,6 +95,10 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
         getActiveCvIds(fastify),
         CvlTrainingMentorshipService.getActivePairsForRange(fastify, startPart, endPart),
       ]);
+      await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(
+        createFastifyLegacyTipExecutor(fastify),
+        activeTrainingPairs
+      );
       const activeCvIds = activeCvIdsRaw || [47510, 48026, 46092, 37790, 34295, 51659];
       const activeCvStr = activeCvIds.join(',');
 
@@ -155,21 +163,35 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
         JOIN client_store_language csl ON o.client_store_id = csl.client_store_id AND csl.language_id = 1
         LEFT JOIN (
           SELECT
-            os_sub.orderId AS order_id,
-            os_sub.assigned_staff_id,
-            SUM(st_raw.tip_amount) AS tip_amount,
-            SUM(st_raw.tip_percentage) AS tip_percentage,
-            MAX(CASE WHEN st_raw.tip_percentage > 0 THEN st_raw.tip_amount / (st_raw.tip_percentage / 100) ELSE st_raw.tip_amount END) AS customer_tip_100
+            svc_st.order_id,
+            svc_st.assigned_staff_id,
+            SUM(svc_st.svc_tip_amount) AS tip_amount,
+            ROUND(SUM(svc_st.svc_tip_amount) * 100 / NULLIF(SUM(svc_st.svc_customer_tip), 0)) AS tip_percentage,
+            SUM(svc_st.svc_customer_tip) AS customer_tip_100
           FROM (
-            SELECT DISTINCT fo_i.orderId, fo_i.checkinTime, os_i.assigned_staff_id
-            FROM filtered_orders fo_i
-            JOIN order_service os_i ON os_i.order_id = fo_i.orderId
-            WHERE os_i.assigned_staff_id IN (${activeCvStr})
-          ) os_sub
-          JOIN staff_tip st_raw
-            ON st_raw.order_id = os_sub.orderId
-           AND ${leaderboardTipMatchSql}
-          GROUP BY os_sub.orderId, os_sub.assigned_staff_id
+            SELECT
+              os_sub.orderId AS order_id,
+              os_sub.assigned_staff_id,
+              COALESCE(st_raw.order_service_id, 0) AS order_service_id,
+              SUM(st_raw.tip_amount) AS svc_tip_amount,
+              MAX(
+                CASE
+                  WHEN st_raw.tip_percentage > 0 THEN ROUND(st_raw.tip_amount * 100 / st_raw.tip_percentage)
+                  ELSE st_raw.tip_amount
+                END
+              ) AS svc_customer_tip
+            FROM (
+              SELECT DISTINCT fo_i.orderId, fo_i.checkinTime, os_i.assigned_staff_id
+              FROM filtered_orders fo_i
+              JOIN order_service os_i ON os_i.order_id = fo_i.orderId
+              WHERE os_i.assigned_staff_id IN (${activeCvStr})
+            ) os_sub
+            JOIN staff_tip st_raw
+              ON st_raw.order_id = os_sub.orderId
+             AND ${leaderboardTipMatchSql}
+            GROUP BY os_sub.orderId, os_sub.assigned_staff_id, COALESCE(st_raw.order_service_id, 0)
+          ) svc_st
+          GROUP BY svc_st.order_id, svc_st.assigned_staff_id
         ) st ON st.order_id = o.id AND st.assigned_staff_id = tech.assigned_staff_id
         WHERE 1 = 1
           ${storeFilterClause}
@@ -273,6 +295,10 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
         getActiveCvIds(fastify),
         CvlTrainingMentorshipService.getActivePairsForRange(fastify, startPart, endPart),
       ]);
+      await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(
+        createFastifyLegacyTipExecutor(fastify),
+        activeTrainingPairs
+      );
       const activeCvIds = activeCvIdsRaw || [47510, 48026, 46092, 37790, 34295, 51659];
       const activeCvStr = activeCvIds.join(',');
 
@@ -342,20 +368,34 @@ export async function registerCvTipRoutes(fastify: FastifyInstance) {
         LEFT JOIN user_profile tech_p ON os.assigned_staff_id = tech_p.user_id
         LEFT JOIN (
           SELECT
-            os_sub.orderId AS order_id,
-            os_sub.assigned_staff_id,
-            SUM(st_raw.tip_amount) AS tip_amount,
-            SUM(st_raw.tip_percentage) AS tip_percentage,
-            MAX(CASE WHEN st_raw.tip_percentage > 0 THEN st_raw.tip_amount / (st_raw.tip_percentage / 100) ELSE st_raw.tip_amount END) AS customer_tip_100
+            svc_st.order_id,
+            svc_st.assigned_staff_id,
+            SUM(svc_st.svc_tip_amount) AS tip_amount,
+            ROUND(SUM(svc_st.svc_tip_amount) * 100 / NULLIF(SUM(svc_st.svc_customer_tip), 0)) AS tip_percentage,
+            SUM(svc_st.svc_customer_tip) AS customer_tip_100
           FROM (
-            SELECT DISTINCT fo_i.orderId, fo_i.checkinTime, os_i.assigned_staff_id
-            FROM filtered_orders fo_i
-            JOIN order_service os_i ON os_i.order_id = fo_i.orderId
-          ) os_sub
-          JOIN staff_tip st_raw
-            ON st_raw.order_id = os_sub.orderId
-           AND ${recordTipMatchSql}
-          GROUP BY os_sub.orderId, os_sub.assigned_staff_id
+            SELECT
+              os_sub.orderId AS order_id,
+              os_sub.assigned_staff_id,
+              COALESCE(st_raw.order_service_id, 0) AS order_service_id,
+              SUM(st_raw.tip_amount) AS svc_tip_amount,
+              MAX(
+                CASE
+                  WHEN st_raw.tip_percentage > 0 THEN ROUND(st_raw.tip_amount * 100 / st_raw.tip_percentage)
+                  ELSE st_raw.tip_amount
+                END
+              ) AS svc_customer_tip
+            FROM (
+              SELECT DISTINCT fo_i.orderId, fo_i.checkinTime, os_i.assigned_staff_id
+              FROM filtered_orders fo_i
+              JOIN order_service os_i ON os_i.order_id = fo_i.orderId
+            ) os_sub
+            JOIN staff_tip st_raw
+              ON st_raw.order_id = os_sub.orderId
+             AND ${recordTipMatchSql}
+            GROUP BY os_sub.orderId, os_sub.assigned_staff_id, COALESCE(st_raw.order_service_id, 0)
+          ) svc_st
+          GROUP BY svc_st.order_id, svc_st.assigned_staff_id
         ) st ON st.order_id = o.id AND st.assigned_staff_id = os.assigned_staff_id
       `;
 

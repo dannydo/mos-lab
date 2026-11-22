@@ -1,6 +1,7 @@
 import mysql from 'mysql2/promise';
 import { isIosSyntheticSimBookingId, SafeAny } from '@mos-lab/shared';
-import { getLegacyPool } from './db-pools.js';
+import { getCrmPool, getLegacyPool } from './db-pools.js';
+import { CvlTrainingMentorshipService } from '../../kpi/services/cvl-training-mentorship.service.js';
 import {
   defaultCallLegacyPhpEndpoint,
   DEMO_BOOKING_IDS,
@@ -432,6 +433,10 @@ export async function reconcileAndSettlePostCheckoutOrderWithLegacyPhp(
         newCheckOutStaffId,
         bookingId,
       ]);
+
+      if (!deps.callEndpoint) {
+        await CvlTrainingMentorshipService.reconcileOrderTipsFromPools(pool, getCrmPool, bookingId);
+      }
     }
 
     return settlement;

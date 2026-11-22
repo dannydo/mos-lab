@@ -7,6 +7,7 @@ import {
   resolveServicePriceSplit,
   calculateActorTipBreakdown,
 } from '../useIosBillingCheckout';
+import { buildRecordedTipBillingSnapshot } from '../iosBillingMath';
 import { mergeServerBookingsWithLocalState } from '../iosBookingMerge';
 
 describe('useIosBillingCheckout & Tier Bonus Calculations', () => {
@@ -471,6 +472,77 @@ describe('useIosBillingCheckout & Tier Bonus Calculations', () => {
       isFullCreditLocked: false,
       creditEligibleSubtotal: 450000,
       creditEligiblePayableWithVat: 486000,
+    });
+  });
+
+  it('tính đúng trọn 90% tip (90.000đ / 100.000đ) cho CVL trong kỳ Training kể cả khi Mentor bấm Check-in và CVL bấm Check-out', () => {
+    const trainingBooking: any = {
+      id: 339761,
+      assignedStaffId: 46272,
+      assignedStaffName: 'Thảo Ly',
+      checkInStaffId: 37790,
+      checkInStaffName: 'Diễm Hương',
+      checkOutStaffId: 46272,
+      checkOutStaffName: 'Thảo Ly',
+      servicePrice: 770000,
+      cartProducts: [],
+      isTrainingCvlOrder: true,
+    };
+
+    const lyActor: any = {
+      staffId: 46272,
+      name: 'Thảo Ly',
+      tier: 'CVL',
+      isTrainingMentee: true,
+    };
+
+    // Flag isTrainingCvlOrder trên booking
+    const byBookingFlag = calculateActorTipBreakdown(trainingBooking, lyActor, 100000);
+    expect(byBookingFlag).toMatchObject({
+      techShareAmount: 90000,
+      checkInShareAmount: 0,
+      checkOutShareAmount: 0,
+      fundShareAmount: 10000,
+      actorEarnedAmount: 90000,
+      actorEarnedPercent: 90,
+    });
+
+    // Kể cả khi optimistic local booking chưa kịp gắn isTrainingCvlOrder nhưng actor.isTrainingMentee = true
+    const optimisticBooking = { ...trainingBooking, isTrainingCvlOrder: false };
+    const byActorFlag = calculateActorTipBreakdown(optimisticBooking, lyActor, 100000);
+    expect(byActorFlag.actorEarnedPercent).toBe(90);
+    expect(byActorFlag.actorEarnedAmount).toBe(90000);
+
+    // buildRecordedTipBillingSnapshot phản ánh 90% CV / 0% CC cho training CVL
+    const trainingBilling = buildRecordedTipBillingSnapshot(
+      optimisticBooking,
+      100000,
+      'CVL',
+      '2026-11-21T10:00:00.000Z',
+      lyActor
+    );
+    expect(trainingBilling).toMatchObject({
+      tipAmount: 100000,
+      tipCvShare: 90000,
+      tipCheckInShare: 0,
+      tipCheckOutShare: 0,
+      tipCcShare: 0,
+    });
+
+    // Đơn thường (không training) giữ nguyên 70/10/10
+    const regularBilling = buildRecordedTipBillingSnapshot(
+      { ...optimisticBooking, assignedStaffId: 99999 },
+      100000,
+      'CVL',
+      '2026-11-21T10:00:00.000Z',
+      { staffId: 99999, tier: 'CVL', isTrainingMentee: false }
+    );
+    expect(regularBilling).toMatchObject({
+      tipAmount: 100000,
+      tipCvShare: 70000,
+      tipCheckInShare: 10000,
+      tipCheckOutShare: 10000,
+      tipCcShare: 20000,
     });
   });
 });

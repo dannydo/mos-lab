@@ -3,7 +3,8 @@ import https from 'node:https';
 import mysql from 'mysql2/promise';
 import { IosSettlementStatus, resolveNormalizedPaymentBreakdown, SafeAny } from '@mos-lab/shared';
 import { INITIAL_BOOKINGS } from '../mock-data.js';
-import { getLegacyPool } from './db-pools.js';
+import { getCrmPool, getLegacyPool } from './db-pools.js';
+import { CvlTrainingMentorshipService } from '../../kpi/services/cvl-training-mentorship.service.js';
 import { BookingOverrideRecord, LegacySettlementReceipt } from './ios-overrides.service.js';
 import { syncSettledComboExpiryInLegacyDb } from './ios-combo-expiry.service.js';
 import {
@@ -629,6 +630,9 @@ export async function settleIosOrderWithLegacyPhp(
     }
 
     await callPhp('/order/booking/generate/report', withAuth(checkOutStaffId, { order_id: String(bookingId) }));
+    if (!deps.callEndpoint) {
+      await CvlTrainingMentorshipService.reconcileOrderTipsFromPools(pool, getCrmPool, bookingId);
+    }
 
     if (targetWalletSlots.length > 0 && !deps.callEndpoint) {
       await reconcileSelectedWalletDeductionInLegacyDb(pool, {

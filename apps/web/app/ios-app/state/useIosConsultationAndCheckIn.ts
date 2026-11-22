@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, Dispatch, SetStateAction, MutableRefObject } from 'react';
 import {
+  calculateActorTipBreakdown,
   hasCompleteNaturalLashAttributes,
   resolveActiveBookingComboWallets,
   resolveEffectiveServiceTotal,
@@ -109,6 +110,10 @@ export function useIosConsultationAndCheckIn({
               assignedStaffAvatar: b.assignedStaffAvatar || (shouldAutoAssignToActor ? actor.avatar : undefined),
               isUnassignedQueue: shouldAutoAssignToActor ? false : b.isUnassignedQueue,
               isNextQueueCustomer: shouldAutoAssignToActor ? false : b.isNextQueueCustomer,
+              isTrainingCvlOrder:
+                b.isTrainingCvlOrder ||
+                (Boolean(actor.isTrainingMentee) &&
+                  (b.assignedStaffId ? Number(b.assignedStaffId) === actor.staffId : shouldAutoAssignToActor)),
               progress: {
                 ...(b.progress || { elapsedSeconds: 0, timerRunning: false }),
                 currentStep: 3,
@@ -292,6 +297,20 @@ export function useIosConsultationAndCheckIn({
               ? b.assignedStaffName
               : 'Chờ phân công (Đầu tua)';
 
+          const nextIsTrainingCvlOrder =
+            Boolean(b.isTrainingCvlOrder) ||
+            (Boolean(actor.isTrainingMentee) && nextAssignedStaffId > 0 && nextAssignedStaffId === actor.staffId);
+          const tipBreakdown = calculateActorTipBreakdown(
+            {
+              ...b,
+              assignedStaffId: nextAssignedStaffId,
+              checkInStaffId: b.checkInStaffId || actor.staffId,
+              isTrainingCvlOrder: nextIsTrainingCvlOrder,
+            },
+            actor,
+            tipAmount
+          );
+
           return {
             ...b,
             attributes: mergedAttributes,
@@ -315,6 +334,7 @@ export function useIosConsultationAndCheckIn({
             assignedStaffAvatar: isSelfAssignedCv ? b.assignedStaffAvatar || actor.avatar : b.assignedStaffAvatar,
             isUnassignedQueue: !isSelfAssignedCv && nextAssignedStaffId === 0,
             isNextQueueCustomer: !isSelfAssignedCv && nextAssignedStaffId === 0,
+            isTrainingCvlOrder: nextIsTrainingCvlOrder,
             status: isSelfAssignedCv ? 'SERVICING' : 'CHECKED_IN',
             billing: {
               subtotal,
@@ -325,10 +345,10 @@ export function useIosConsultationAndCheckIn({
               productTotal,
               paymentMethod: b.billing?.paymentMethod || 'VIETQR',
               tipAmount,
-              tipCvShare: Math.round(tipAmount * 0.7),
-              tipCheckInShare: Math.round(tipAmount * 0.1),
-              tipCheckOutShare: Math.round(tipAmount * 0.1),
-              tipCcShare: Math.round(tipAmount * 0.2),
+              tipCvShare: tipBreakdown.techShareAmount,
+              tipCheckInShare: tipBreakdown.checkInShareAmount,
+              tipCheckOutShare: tipBreakdown.checkOutShareAmount,
+              tipCcShare: tipBreakdown.checkInShareAmount + tipBreakdown.checkOutShareAmount,
               grandTotal,
             },
           };

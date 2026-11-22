@@ -14,7 +14,10 @@ import { TeamService } from '../../teams/team.service.js';
 import { StaffOffDayService } from '../../staff/services/staff-off-day.service.js';
 import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';
 import { CareerProgressionService } from '../../career/career.service.js';
-import { CvlTrainingMentorshipService } from '../services/cvl-training-mentorship.service.js';
+import {
+  createFastifyLegacyTipExecutor,
+  CvlTrainingMentorshipService,
+} from '../services/cvl-training-mentorship.service.js';
 
 const getLocalDate = (dStr: string) => {
   const p = dStr.split('-');
@@ -411,6 +414,11 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         }),
         CvlTrainingMentorshipService.getActivePairsForRange(fastify, startPart, endPart),
       ]);
+
+      await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(
+        createFastifyLegacyTipExecutor(fastify),
+        activeTrainingPairs
+      );
 
       const transferredTrainingTipMap = await CvlTrainingMentorshipService.queryTransferredCcTipsByMentee(
         fastify,

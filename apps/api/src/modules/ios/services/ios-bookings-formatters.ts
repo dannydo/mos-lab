@@ -251,6 +251,7 @@ export function computeBookingFinancials(params: {
   comboRedemption: SafeAny;
   cartProducts: IosCartProductItem[];
   overrideBilling: SafeAny;
+  legacyTipAmount?: number | null;
   assignedStaffId: number;
   checkInStaffId?: number;
   checkOutStaffId?: number;
@@ -361,7 +362,15 @@ export function computeBookingFinancials(params: {
     : itemizedPromo.hasAnyCreditRestrictedItem
       ? diamondUsed * 1000
       : Number(overrideBilling?.diamondDiscountAmount ?? diamondUsed * 1000);
-  const tipAmount = Number(overrideBilling?.tipAmount ?? 0);
+  const legacyTipFallback =
+    params.dbOrderState === 'Completed' && Number(params.legacyTipAmount ?? 0) > 0
+      ? Math.round(Number(params.legacyTipAmount))
+      : 0;
+  const overrideTipRaw = overrideBilling?.tipAmount;
+  const tipAmount =
+    overrideTipRaw !== undefined && overrideTipRaw !== null && !(Number(overrideTipRaw) === 0 && legacyTipFallback > 0)
+      ? Number(overrideTipRaw)
+      : legacyTipFallback;
 
   const dualCombo = calculateDualComboTierBonus(
     Number(selectedCombo?.price || 0),
@@ -400,10 +409,10 @@ export function computeBookingFinancials(params: {
 
   return {
     cvRewardBreakdown: {
-      techTipPercent: 70,
-      checkInTipPercent: 10,
-      checkOutTipPercent: 10,
-      cvTotalTipPercent: tipBreakdown.actorEarnedPercent,
+      techTipPercent: isTrainingCvlOrder ? 90 : 70,
+      checkInTipPercent: isTrainingCvlOrder ? 0 : 10,
+      checkOutTipPercent: isTrainingCvlOrder ? 0 : 10,
+      cvTotalTipPercent: isTrainingCvlOrder ? (targetStaffId === assignedStaffId ? 90 : 0) : tipBreakdown.actorEarnedPercent,
       comboBonusAmount: comboBonus,
       serumBonusAmount: serumBonus,
       totalOrderBonusForCheckoutStaff: comboBonus + serumBonus,
@@ -464,9 +473,9 @@ export function computeBookingFinancials(params: {
         ? { lastAdjustmentDeltaAmount: overrideBilling.lastAdjustmentDeltaAmount }
         : {}),
       tipAmount,
-      tipCvShare: tipBreakdown.techShareAmount,
-      tipCheckInShare: tipBreakdown.checkInShareAmount,
-      tipCheckOutShare: tipBreakdown.checkOutShareAmount,
+      tipCvShare: isTrainingCvlOrder ? Math.round(tipAmount * 0.9) : tipBreakdown.techShareAmount,
+      tipCheckInShare: isTrainingCvlOrder ? 0 : tipBreakdown.checkInShareAmount,
+      tipCheckOutShare: isTrainingCvlOrder ? 0 : tipBreakdown.checkOutShareAmount,
       tipCcShare: tipBreakdown.fundShareAmount,
       transferProofPhoto: overrideBilling?.transferProofPhoto,
       zaloConsent: overrideBilling?.zaloConsent,

@@ -451,6 +451,20 @@ export function useIosAppState(
     setBookings,
   });
 
+  const isTrainingMentee = Boolean(staffStats?.isTrainingMentee);
+  const trainingMentorName = staffStats?.trainingMentorName;
+  const effectiveActor = useMemo(
+    () =>
+      isTrainingMentee
+        ? {
+            ...actor,
+            isTrainingMentee: true,
+            trainingMentorName,
+          }
+        : actor,
+    [actor, isTrainingMentee, trainingMentorName]
+  );
+
   const simulation = useIosSimulationMode({
     enabled,
     isSimulationMode,
@@ -481,7 +495,7 @@ export function useIosAppState(
     handleTransferToCv,
   } = useIosConsultationAndCheckIn({
     role,
-    actor,
+    actor: effectiveActor,
     bookings,
     setBookings,
     activeBooking,
@@ -533,7 +547,7 @@ export function useIosAppState(
     activeBooking,
     isSimulationMode,
     onSimulationAttemptSaved: simulation.upsertAttemptInCache,
-    actor,
+    actor: effectiveActor,
     cvPlusRules: staffStats?.cvPlusRules,
     updateActiveBooking,
     postAction,
@@ -559,7 +573,7 @@ export function useIosAppState(
     setRole,
     canSwitchRole,
     isAdmin,
-    actor,
+    actor: effectiveActor,
     scopeMode,
     setScopeMode,
     deviceMode,

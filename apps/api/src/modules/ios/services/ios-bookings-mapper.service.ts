@@ -220,6 +220,7 @@ export function mapLiveOrdersToBookings(params: {
       comboRedemption,
       cartProducts,
       overrideBilling: override.billing,
+      legacyTipAmount: r.legacy_tip_amount ?? 0,
       assignedStaffId,
       checkInStaffId,
       checkOutStaffId,

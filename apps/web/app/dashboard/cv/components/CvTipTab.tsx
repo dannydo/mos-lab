@@ -607,12 +607,30 @@ export default function CvTipTab({
       dataIndex: 'cvTipAmount',
       key: 'cvTipAmount',
       align: 'right' as const,
-      width: 130,
-      render: (val: number) => (
-        <span className={`tabular-nums font-bold text-xs ${val > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
-          {val > 0 ? `+${val.toLocaleString('vi-VN')} đ` : '0 đ'}
-        </span>
-      ),
+      width: 155,
+      render: (val: number, record: CvTipRecord) => {
+        const pct = Math.round(Number(record.cvTipPercentage || 70));
+        return (
+          <div className="inline-flex items-center justify-end gap-1.5">
+            {val > 0 && (
+              <span
+                className={`tabular-nums text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                  pct >= 90
+                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                    : pct >= 80
+                      ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                      : 'bg-slate-500/15 text-slate-400 border border-slate-500/20'
+                }`}
+              >
+                {pct}%
+              </span>
+            )}
+            <span className={`tabular-nums font-bold text-xs ${val > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
+              {val > 0 ? `+${val.toLocaleString('vi-VN')} đ` : '0 đ'}
+            </span>
+          </div>
+        );
+      },
     },
   ];
 
@@ -641,7 +659,7 @@ export default function CvTipTab({
               formatter={formatVND}
             />
             {renderForecastSubtext(projectedCvTipBonus, 'đ')}
-            <div className="text-[11px] text-gray-400 mt-2">Thực nhận 70% tiền tip từ khách</div>
+            <div className="text-[11px] text-gray-400 mt-2">Thực nhận 70% tiền tip (90% trong kỳ training CVL)</div>
           </Card>
         </Col>
 
@@ -855,7 +873,7 @@ export default function CvTipTab({
           <div className="flex flex-wrap justify-between items-center gap-2 py-1">
             <div className="flex items-center gap-2">
               <span className="font-bold" style={{ color: token.colorText }}>
-                Chi Tiết Ca Làm Nhận Tip 70%
+                Chi Tiết Ca Làm Nhận Tip CV
               </span>
               {selectedCvName && (
                 <Tag color="gold" className="font-bold text-xs ml-2">
