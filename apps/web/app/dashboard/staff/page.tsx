@@ -2,118 +2,20 @@
 
 import '../../suppress-warnings';
 import React from 'react';
-import {
-  Table,
-  Button,
-  Input,
-  Modal,
-  Form,
-  Select,
-  Switch,
-  Tag,
-  Card,
-  Descriptions,
-  Divider,
-  Drawer,
-  Space,
-  Typography,
-  theme,
-  Row,
-  Col,
-  Avatar,
-  Badge,
-  Tooltip,
-  Popconfirm,
-  Checkbox,
-  Tabs,
-  message,
-} from 'antd';
-import {
-  UserOutlined,
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  CalendarOutlined,
-  SolutionOutlined,
-  InfoCircleOutlined,
-  LockOutlined,
-  EnvironmentOutlined,
-  KeyOutlined,
-  BgColorsOutlined,
-  SafetyCertificateOutlined,
-  SyncOutlined,
-  CheckOutlined,
-  StopOutlined,
-  CloseOutlined,
-  BranchesOutlined,
-  HistoryOutlined,
-  BankOutlined,
-  IdcardOutlined,
-} from '@ant-design/icons';
-import dayjs from 'dayjs';
-import { useTheme } from '../../../context/ThemeContext';
-import {
-  isAdminOrSuperAdminRole,
-  isHrOrAdminRole,
-  isSuperAdminRole,
-  calculateStaffSeniority,
-  TELESALES_EXECUTIVE_STANDARDS,
-  StaffAuditLog,
-  Staff,
-  Role,
-  vietnameseSearchFilter,
-} from '@mos-lab/shared';
-import { apiClient } from '../../../lib/api-client';
-import { useStaffData } from './hooks/useStaffData';
-import StaffDetailDrawerContent from '~/components/staff/StaffDetailDrawerContent';
-import { getStaffColumns, getRoleColumns } from './components/StaffColumns';
-import { StaffDirectoryToolbar } from './components/StaffDirectoryToolbar';
-import StaffTabsContent from './components/StaffTabsContent';
+import { Form, message, theme } from 'antd';
+import { isAdminOrSuperAdminRole, isHrOrAdminRole, isSuperAdminRole } from '@mos-lab/shared';
 import { SendOnboardingEmailModal } from '~/components/staff/SendOnboardingEmailModal';
-
-const { Title, Text, Paragraph } = Typography;
-const { Option } = Select;
-const { TextArea } = Input;
-
-const FIELD_NAME_LABELS: Record<string, string> = {
-  staffCode: 'Mã nhân viên',
-  employmentStatus: 'Trạng thái nhân sự',
-  contractStatus: 'Tình trạng hợp đồng',
-  contractStartDate: 'Ngày bắt đầu HĐ',
-  contractEndDate: 'Ngày kết thúc HĐ',
-  joinedAt: 'Ngày vào làm',
-  birthDate: 'Ngày sinh',
-  seniorityOffset: 'Thâm niên cộng thêm',
-  nationalId: 'Số CCCD',
-  socialInsuranceNo: 'Mã số BHXH',
-  bankName: 'Tên ngân hàng',
-  bankAccountNumber: 'Số tài khoản ngân hàng',
-  baseSalary: 'Lương cứng (Base Salary)',
-  hourlyWage: 'Lương giờ (Hourly Wage)',
-  payBasis: 'Hình thức trả lương',
-  role: 'Vai trò / Nhóm quyền',
-  isActive: 'Trạng thái tài khoản',
-  address: 'Địa chỉ thường trú',
-  emergencyContact: 'Người liên hệ khẩn cấp',
-  emergencyPhone: 'SĐT khẩn cấp',
-};
-
-const PRESET_COLORS = [
-  { value: 'red', label: 'Red (Admin)' },
-  { value: 'purple', label: 'Purple (Manager)' },
-  { value: 'blue', label: 'Blue (Operations)' },
-  { value: 'cyan', label: 'Cyan (Customer Care)' },
-  { value: 'gold', label: 'Gold (Leader)' },
-  { value: 'orange', label: 'Orange (Sales)' },
-  { value: 'green', label: 'Green' },
-  { value: 'pink', label: 'Pink' },
-  { value: 'geekblue', label: 'Geek Blue' },
-  { value: 'magenta', label: 'Magenta' },
-  { value: 'lime', label: 'Lime' },
-];
+import { useTheme } from '../../../context/ThemeContext';
+import { getRoleColumns, getStaffColumns } from './components/StaffColumns';
+import { useStaffData } from './hooks/useStaffData';
+import { MergeStaffModal } from './staff-page-modules/MergeStaffModal';
+import { RoleFormModal } from './staff-page-modules/RoleFormModal';
+import { StaffBulkActionBar } from './staff-page-modules/StaffBulkActionBar';
+import { StaffDetailDrawer } from './staff-page-modules/StaffDetailDrawer';
+import { StaffDirectoryTabs } from './staff-page-modules/StaffDirectoryTabs';
+import { StaffFormModal } from './staff-page-modules/StaffFormModal';
+import { StaffPageHeader } from './staff-page-modules/StaffPageHeader';
+import { useStaffPageExtras } from './staff-page-modules/useStaffPageExtras';
 
 export default function StaffPage() {
   const { themeMode } = useTheme();
@@ -140,7 +42,6 @@ export default function StaffPage() {
     setSearchQuery,
     filterRole,
     setFilterRole,
-    filterStatus,
     setFilterStatus,
     isStaffModalOpen,
     setIsStaffModalOpen,
@@ -153,7 +54,6 @@ export default function StaffPage() {
     setIsRoleModalOpen,
     editingRole,
     roleSubmitting,
-    // Bulk Selection States & Handlers
     selectedRowKeys,
     setSelectedRowKeys,
     selectedBulkRole,
@@ -162,7 +62,6 @@ export default function StaffPage() {
     handleClearSelection,
     handleBulkUpdateRole,
     handleBulkToggleActive,
-    // Merge Staff Modal States & Handlers
     isMergeModalOpen,
     setIsMergeModalOpen,
     targetMergeStaffId,
@@ -170,7 +69,6 @@ export default function StaffPage() {
     mergeSubmitting,
     handleOpenMergeModal,
     handleConfirmMerge,
-    // Methods
     openStaffModal,
     handleStaffSubmit,
     handleToggleActive,
@@ -189,52 +87,28 @@ export default function StaffPage() {
     onSuccess: (msg) => message.success(msg),
     onError: (msg) => message.error(msg),
   });
+
   const canManageStaff = isAdminOrSuperAdminRole(currentUser?.role);
   const isHrOrAdmin = isHrOrAdminRole(currentUser?.role);
   const isSuperAdmin = isSuperAdminRole(currentUser?.role);
   const assignableRoles = roles.filter((role) => role.key !== 'super_admin' || isSuperAdmin);
 
-  const [auditLogs, setAuditLogs] = React.useState<StaffAuditLog[]>([]);
-  const [loadingAuditLogs, setLoadingAuditLogs] = React.useState(false);
+  const {
+    auditLogs,
+    loadingAuditLogs,
+    isOnboardingEmailModalOpen,
+    emailModalStaff,
+    emailModalBulkList,
+    handleOpenSingleEmailModal,
+    handleOpenBulkEmailModal,
+    handleCloseOnboardingEmailModal,
+  } = useStaffPageExtras({
+    isDrawerOpen,
+    selectedStaffId: selectedStaff?.id,
+    staffList,
+    selectedRowKeys,
+  });
 
-  React.useEffect(() => {
-    if (isDrawerOpen && selectedStaff?.id) {
-      setLoadingAuditLogs(true);
-      apiClient.staff
-        .getAuditLogs(selectedStaff.id)
-        .then((res: SafeAny) => {
-          if (res?.success && Array.isArray(res?.data)) {
-            setAuditLogs(res.data);
-          } else {
-            setAuditLogs([]);
-          }
-        })
-        .catch(() => setAuditLogs([]))
-        .finally(() => setLoadingAuditLogs(false));
-    } else {
-      setAuditLogs([]);
-    }
-  }, [isDrawerOpen, selectedStaff?.id]);
-
-  // Onboarding Email Modal States
-  const [isOnboardingEmailModalOpen, setIsOnboardingEmailModalOpen] = React.useState(false);
-  const [emailModalStaff, setEmailModalStaff] = React.useState<Staff | null>(null);
-  const [emailModalBulkList, setEmailModalBulkList] = React.useState<Staff[]>([]);
-
-  const handleOpenSingleEmailModal = (record: Staff) => {
-    setEmailModalStaff(record);
-    setEmailModalBulkList([]);
-    setIsOnboardingEmailModalOpen(true);
-  };
-
-  const handleOpenBulkEmailModal = () => {
-    const selectedStaffList = staffList.filter((s) => selectedRowKeys.includes(s.id));
-    setEmailModalStaff(null);
-    setEmailModalBulkList(selectedStaffList);
-    setIsOnboardingEmailModalOpen(true);
-  };
-
-  // Table columns for Staff Directory
   const staffColumns = getStaffColumns({
     currentPage,
     pageSize,
@@ -253,7 +127,6 @@ export default function StaffPage() {
     },
   });
 
-  // Table columns for Roles Management
   const roleColumns = getRoleColumns({
     themeMode,
     openRoleModal,
@@ -278,711 +151,110 @@ export default function StaffPage() {
     setFilterStatus('all');
   };
 
+  const handlePaginationChange = (page: number, size: number) => {
+    setCurrentPage(page);
+    setPageSize(size);
+    localStorage.setItem('mos_staff_pageSize', String(size));
+  };
+
   return (
-    <div className="responsive-page responsive-workspace staff-page" style={{ padding: '4px' }}>
-      {/* Page Header */}
-      <div className="staff-page-header">
-        <div className="staff-page-header-copy">
-          <Title
-            level={3}
-            style={{ color: token.colorPrimary, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}
-          >
-            <SolutionOutlined /> Quản Lý Nhân Sự & Vai Trò (HR)
-          </Title>
-          <Text type="secondary">
-            Cấu hình nhân sự, quản lý nhóm quyền, liên kết Google Auth và cập nhật thông tin nội bộ.
-          </Text>
-        </div>
-        <div className="staff-page-header-actions">
-          {activeTab !== 'roles' ? (
-            <Space wrap>
-              {canManageStaff && (
-                <Button
-                  icon={<SyncOutlined />}
-                  onClick={handleSyncLegacyStaff}
-                  loading={syncing}
-                  style={{
-                    borderRadius: '6px',
-                    fontWeight: '500',
-                  }}
-                >
-                  Đồng bộ Wings Lashes
-                </Button>
-              )}
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => openStaffModal(null)}
-                style={{
-                  fontWeight: '600',
-                  borderRadius: '6px',
-                }}
-              >
-                Thêm Nhân Viên
-              </Button>
-            </Space>
-          ) : (
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => openRoleModal(null)}
-              style={{
-                fontWeight: '600',
-                borderRadius: '6px',
-              }}
-            >
-              Thêm Vai Trò
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <Tabs
-        activeKey={activeTab}
-        onChange={(key) => setActiveTab(key)}
-        items={[
-          {
-            key: 'staff-active',
-            label: (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <UserOutlined style={{ color: '#10b981' }} />
-                Danh sách nhân sự (Active)
-                <Badge count={activeCount} overflowCount={999} style={{ backgroundColor: '#10b981' }} />
-              </span>
-            ),
-            children: (
-              <>
-                <StaffDirectoryToolbar
-                  roles={roles}
-                  searchQuery={searchQuery}
-                  filterRole={filterRole}
-                  onSearchQueryChange={handleSearchQueryChange}
-                  onFilterRoleChange={handleFilterRoleChange}
-                  onClear={handleClearDirectoryFilters}
-                />
-
-                {/* Staff Table */}
-                <Table
-                  dataSource={staffList}
-                  columns={staffColumns}
-                  rowKey="id"
-                  loading={loading}
-                  rowSelection={
-                    canManageStaff
-                      ? {
-                          selectedRowKeys,
-                          onChange: (keys) => setSelectedRowKeys(keys),
-                        }
-                      : undefined
-                  }
-                  pagination={{
-                    current: currentPage,
-                    pageSize: pageSize,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
-                    onChange: (page, size) => {
-                      setCurrentPage(page);
-                      setPageSize(size);
-                      localStorage.setItem('mos_staff_pageSize', String(size));
-                    },
-                  }}
-                  style={{
-                    background: themeMode === 'dark' ? '#141414' : '#fff',
-                  }}
-                  className="antd-custom-table staff-directory-table"
-                />
-              </>
-            ),
-          },
-          {
-            key: 'staff-locked',
-            label: (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <LockOutlined style={{ color: '#ef4444' }} />
-                Tài khoản đã khóa (Locked)
-                <Badge count={lockedCount} overflowCount={999} style={{ backgroundColor: '#ef4444' }} />
-              </span>
-            ),
-            children: (
-              <>
-                <StaffDirectoryToolbar
-                  roles={roles}
-                  searchQuery={searchQuery}
-                  filterRole={filterRole}
-                  onSearchQueryChange={handleSearchQueryChange}
-                  onFilterRoleChange={handleFilterRoleChange}
-                  onClear={handleClearDirectoryFilters}
-                />
-
-                {/* Staff Table */}
-                <Table
-                  dataSource={staffList}
-                  columns={staffColumns}
-                  rowKey="id"
-                  loading={loading}
-                  rowSelection={
-                    canManageStaff
-                      ? {
-                          selectedRowKeys,
-                          onChange: (keys) => setSelectedRowKeys(keys),
-                        }
-                      : undefined
-                  }
-                  pagination={{
-                    current: currentPage,
-                    pageSize: pageSize,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
-                    onChange: (page, size) => {
-                      setCurrentPage(page);
-                      setPageSize(size);
-                      localStorage.setItem('mos_staff_pageSize', String(size));
-                    },
-                  }}
-                  style={{
-                    background: themeMode === 'dark' ? '#141414' : '#fff',
-                  }}
-                  className="antd-custom-table staff-directory-table"
-                />
-              </>
-            ),
-          },
-          {
-            key: 'roles',
-            label: (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <KeyOutlined />
-                Vai trò hệ thống & Quyền
-              </span>
-            ),
-            children: (
-              <Table
-                dataSource={roles}
-                columns={roleColumns}
-                rowKey="key"
-                loading={rolesLoading}
-                pagination={false}
-                style={{
-                  background: themeMode === 'dark' ? '#141414' : '#fff',
-                }}
-                className="antd-custom-table"
-              />
-            ),
-          },
-        ]}
+    <div className="responsive-page responsive-workspace staff-page p-1">
+      <StaffPageHeader
+        activeTab={activeTab}
+        canManageStaff={canManageStaff}
+        syncing={syncing}
+        onSyncLegacyStaff={handleSyncLegacyStaff}
+        onAddStaff={() => openStaffModal(null)}
+        onAddRole={() => openRoleModal(null)}
       />
 
-      {/* Floating Action Bar for Bulk Selection */}
-      {canManageStaff && selectedRowKeys.length > 0 && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '28px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 1050,
-            background: themeMode === 'dark' ? 'rgba(20, 20, 20, 0.92)' : 'rgba(255, 255, 255, 0.92)',
-            backdropFilter: 'blur(16px) saturate(180%)',
-            border: themeMode === 'dark' ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.08)',
-            boxShadow:
-              themeMode === 'dark'
-                ? '0 20px 35px -10px rgba(0,0,0,0.7), 0 0 1px 1px rgba(255,255,255,0.1)'
-                : '0 20px 35px -10px rgba(0,0,0,0.15), 0 4px 6px -2px rgba(0,0,0,0.05)',
-            borderRadius: '14px',
-            padding: '10px 18px',
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: '14px',
-            whiteSpace: 'nowrap',
-            maxWidth: '95vw',
-            overflowX: 'auto',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
-        >
-          {/* Cluster 1: Selected Counter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
-            <Badge
-              count={selectedRowKeys.length}
-              overflowCount={999}
-              style={{ backgroundColor: token.colorPrimary, color: token.colorTextLightSolid, fontWeight: 'bold' }}
-            />
-            <Text
-              style={{
-                color: themeMode === 'dark' ? '#f1f5f9' : '#0f172a',
-                fontWeight: 600,
-                fontSize: '14px',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Đã chọn{' '}
-              <strong className="tabular-nums" style={{ color: token.colorPrimary }}>
-                {selectedRowKeys.length}
-              </strong>{' '}
-              nhân viên
-            </Text>
-          </div>
+      <StaffDirectoryTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        activeCount={activeCount}
+        lockedCount={lockedCount}
+        roles={roles}
+        rolesLoading={rolesLoading}
+        staffList={staffList}
+        staffColumns={staffColumns}
+        roleColumns={roleColumns}
+        loading={loading}
+        canManageStaff={canManageStaff}
+        selectedRowKeys={selectedRowKeys}
+        onSelectedRowKeysChange={setSelectedRowKeys}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        onPaginationChange={handlePaginationChange}
+        searchQuery={searchQuery}
+        filterRole={filterRole}
+        onSearchQueryChange={handleSearchQueryChange}
+        onFilterRoleChange={handleFilterRoleChange}
+        onClearFilters={handleClearDirectoryFilters}
+      />
 
-          <Divider
-            type="vertical"
-            style={{
-              height: '24px',
-              margin: '0 2px',
-              flexShrink: 0,
-              borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.15)' : '#cbd5e1',
-            }}
-          />
+      <StaffBulkActionBar
+        canManageStaff={canManageStaff}
+        isHrOrAdmin={isHrOrAdmin}
+        selectedRowKeys={selectedRowKeys}
+        assignableRoles={assignableRoles}
+        selectedBulkRole={selectedBulkRole}
+        onSelectedBulkRoleChange={setSelectedBulkRole}
+        bulkSubmitting={bulkSubmitting}
+        onBulkUpdateRole={() => handleBulkUpdateRole()}
+        onBulkToggleActive={handleBulkToggleActive}
+        onOpenBulkEmailModal={handleOpenBulkEmailModal}
+        onOpenMergeModal={handleOpenMergeModal}
+        onClearSelection={handleClearSelection}
+      />
 
-          {/* Cluster 2: Role Adjustment */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
-            <Select
-              placeholder="Chọn vai trò mới..."
-              value={selectedBulkRole}
-              onChange={(val) => setSelectedBulkRole(val)}
-              style={{ width: '190px' }}
-              allowClear
-            >
-              {assignableRoles.map((r) => (
-                <Option key={r.key} value={r.key}>
-                  {r.name}
-                </Option>
-              ))}
-            </Select>
-
-            <Button
-              type="primary"
-              loading={bulkSubmitting}
-              disabled={!selectedBulkRole}
-              onClick={() => handleBulkUpdateRole()}
-              style={{
-                fontWeight: '600',
-                borderRadius: '6px',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Đổi vai trò
-            </Button>
-          </div>
-
-          <Divider
-            type="vertical"
-            style={{
-              height: '24px',
-              margin: '0 2px',
-              flexShrink: 0,
-              borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.15)' : '#cbd5e1',
-            }}
-          />
-
-          {/* Cluster 3: Status & Merge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
-            <Button
-              loading={bulkSubmitting}
-              onClick={() => handleBulkToggleActive(true)}
-              icon={<CheckOutlined style={{ color: '#10b981' }} />}
-              style={{ borderRadius: '6px', whiteSpace: 'nowrap' }}
-            >
-              Kích hoạt
-            </Button>
-            <Button
-              loading={bulkSubmitting}
-              onClick={() => handleBulkToggleActive(false)}
-              danger
-              icon={<StopOutlined />}
-              style={{ borderRadius: '6px', whiteSpace: 'nowrap' }}
-            >
-              Khóa tài khoản
-            </Button>
-            {isHrOrAdmin && (
-              <Button
-                icon={<MailOutlined className="text-cyan-500" />}
-                onClick={handleOpenBulkEmailModal}
-                className="rounded-md border-cyan-500 text-cyan-500 font-medium whitespace-nowrap"
-              >
-                Gửi email hướng dẫn ({selectedRowKeys.length})
-              </Button>
-            )}
-            {selectedRowKeys.length >= 2 && (
-              <Button
-                type="primary"
-                icon={<BranchesOutlined />}
-                onClick={handleOpenMergeModal}
-                style={{
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
-                  borderColor: 'transparent',
-                  color: '#ffffff',
-                  fontWeight: '600',
-                  borderRadius: '6px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Gộp trùng lặp
-              </Button>
-            )}
-          </div>
-
-          <Divider
-            type="vertical"
-            style={{
-              height: '24px',
-              margin: '0 2px',
-              flexShrink: 0,
-              borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.15)' : '#cbd5e1',
-            }}
-          />
-
-          {/* Cluster 4: Clear Selection */}
-          <Button
-            onClick={handleClearSelection}
-            type="text"
-            danger
-            icon={<CloseOutlined />}
-            style={{ fontWeight: 500, flexShrink: 0, whiteSpace: 'nowrap' }}
-          >
-            Bỏ chọn
-          </Button>
-        </div>
-      )}
-
-      {/* Staff Add/Edit Modal */}
-      <Modal
-        title={
-          <Text style={{ fontSize: '18px', fontWeight: 'bold', color: token.colorPrimary }}>
-            {editingStaff ? `Chỉnh sửa nhân viên: ${editingStaff.displayName}` : 'Thêm Nhân Viên Mới'}
-          </Text>
-        }
+      <StaffFormModal
         open={isStaffModalOpen}
+        staffForm={staffForm}
+        editingStaff={editingStaff}
+        submitting={staffSubmitting}
+        roles={roles}
+        legacyStaffList={legacyStaffList}
+        currentUser={currentUser}
         onCancel={() => setIsStaffModalOpen(false)}
-        footer={null}
-        width={700}
-        destroyOnHidden
-        styles={{
-          content: { background: token.colorBgElevated },
-        }}
-      >
-        <Form
-          form={staffForm}
-          layout="vertical"
-          onFinish={handleStaffSubmit}
-          style={{ marginTop: '20px' }}
-          autoComplete="off"
-        >
-          <StaffTabsContent
-            themeMode={themeMode}
-            token={token}
-            editingStaff={editingStaff}
-            submitting={staffSubmitting}
-            roles={roles}
-            onCancel={() => setIsStaffModalOpen(false)}
-            legacyStaffList={legacyStaffList}
-            currentUser={currentUser}
-          />
-        </Form>
-      </Modal>
+        onSubmit={handleStaffSubmit}
+      />
 
-      {/* Role Add/Edit Modal */}
-      <Modal
-        title={
-          <Text style={{ fontSize: '18px', fontWeight: 'bold', color: token.colorPrimary }}>
-            {editingRole ? `Cấu hình nhóm quyền: ${editingRole.name}` : 'Thêm Nhóm Quyền / Vai Trò Mới'}
-          </Text>
-        }
+      <RoleFormModal
         open={isRoleModalOpen}
+        roleForm={roleForm}
+        editingRole={editingRole}
+        submitting={roleSubmitting}
         onCancel={() => setIsRoleModalOpen(false)}
-        footer={null}
-        width={600}
-        destroyOnHidden
-        styles={{
-          content: { background: token.colorBgElevated },
-        }}
-      >
-        <Form form={roleForm} layout="vertical" onFinish={handleRoleSubmit} style={{ marginTop: '20px' }}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="key"
-                label={
-                  <Space>
-                    <Text style={{ color: token.colorText }}>Mã định danh (Key)</Text>
-                    <Tooltip title="Chuỗi định danh dạng viết liền không dấu, dùng để xác định vai trò trong hệ thống (ví dụ: ccc-leader, marketing)">
-                      <InfoCircleOutlined style={{ color: '#888' }} />
-                    </Tooltip>
-                  </Space>
-                }
-                rules={[
-                  { required: true, message: 'Vui lòng nhập mã định danh!' },
-                  {
-                    pattern: /^[a-z0-9-_]+$/,
-                    message: 'Mã định danh chỉ gồm chữ thường viết liền, gạch ngang, gạch dưới!',
-                  },
-                ]}
-              >
-                <Input
-                  placeholder="ví dụ: admin-assistant"
-                  disabled={!!editingRole}
-                  prefix={<KeyOutlined style={{ color: '#888' }} />}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="name"
-                label={<Text style={{ color: token.colorText }}>Tên hiển thị</Text>}
-                rules={[{ required: true, message: 'Vui lòng nhập tên vai trò!' }]}
-              >
-                <Input placeholder="ví dụ: Trợ lý Admin" />
-              </Form.Item>
-            </Col>
-          </Row>
+        onSubmit={handleRoleSubmit}
+      />
 
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item
-                name="color"
-                label={
-                  <Space>
-                    <Text style={{ color: token.colorText }}>Màu sắc hiển thị (Tag color)</Text>
-                    <BgColorsOutlined style={{ color: '#888' }} />
-                  </Space>
-                }
-                rules={[{ required: true, message: 'Vui lòng chọn màu hiển thị!' }]}
-              >
-                <Select placeholder="Chọn màu tag">
-                  {PRESET_COLORS.map((c) => (
-                    <Option key={c.value} value={c.value}>
-                      <Badge color={c.value} text={c.label} />
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item name="description" label={<Text style={{ color: token.colorText }}>Mô tả vai trò</Text>}>
-            <TextArea rows={2} placeholder="Nhiệm vụ, phạm vi công việc của nhóm quyền..." />
-          </Form.Item>
-
-          <Card
-            title={
-              <Space>
-                <SafetyCertificateOutlined style={{ color: token.colorPrimary }} />
-                <Text style={{ fontSize: '14px', fontWeight: 'bold' }}>Phân Quyền Hệ Thống (Permissions)</Text>
-              </Space>
-            }
-            size="small"
-            style={{
-              background: token.colorBgContainer,
-              border: `1px solid ${token.colorBorderSecondary}`,
-              marginBottom: '20px',
-            }}
-          >
-            <Row gutter={[16, 16]}>
-              <Col span={24}>
-                <Form.Item name="viewKPI" valuePropName="checked" style={{ marginBottom: 4 }}>
-                  <Checkbox disabled={editingRole?.key === 'admin'}>
-                    <Text style={{ fontWeight: 500 }}>Xem báo cáo KPI cá nhân (`viewKPI`)</Text>
-                    <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
-                      Cho phép xem hiệu suất kế hoạch cuộc gọi, lịch hẹn của riêng tài khoản này.
-                    </Paragraph>
-                  </Checkbox>
-                </Form.Item>
-              </Col>
-              <Col span={24}>
-                <Form.Item name="viewTeamKPI" valuePropName="checked" style={{ marginBottom: 4 }}>
-                  <Checkbox disabled={editingRole?.key === 'admin'}>
-                    <Text style={{ fontWeight: 500 }}>Xem báo cáo KPI Nhóm (`viewTeamKPI`)</Text>
-                    <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
-                      Cho phép xem bảng xếp hạng (leaderboard) và hiệu suất KPI của cả đội nhóm.
-                    </Paragraph>
-                  </Checkbox>
-                </Form.Item>
-              </Col>
-              <Col span={24}>
-                <Form.Item name="manageStaff" valuePropName="checked" style={{ marginBottom: 4 }}>
-                  <Checkbox disabled={editingRole?.key === 'admin'}>
-                    <Text style={{ fontWeight: 500 }}>Quản lý Nhân sự & Vai trò (`manageStaff`)</Text>
-                    <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
-                      Toàn quyền truy cập tab quản trị, thêm/sửa/xóa nhân viên, cấu hình nhóm quyền.
-                    </Paragraph>
-                  </Checkbox>
-                </Form.Item>
-              </Col>
-              <Col span={24}>
-                <Form.Item name="omicallAutoInit" valuePropName="checked" style={{ marginBottom: 4 }}>
-                  <Checkbox>
-                    <Text style={{ fontWeight: 500 }}>Tự động nhận cuộc gọi OmiCall (`omicallAutoInit`)</Text>
-                    <Paragraph type="secondary" style={{ fontSize: '12px', margin: 0 }}>
-                      Tự động khởi chạy OmiCall SDK và đăng ký SIP khi đăng nhập để sẵn sàng nhận cuộc gọi đến.
-                    </Paragraph>
-                  </Checkbox>
-                </Form.Item>
-              </Col>
-            </Row>
-          </Card>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-            <Button onClick={() => setIsRoleModalOpen(false)}>Hủy</Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={roleSubmitting}
-              style={{
-                fontWeight: '600',
-              }}
-            >
-              {editingRole ? 'Lưu thay đổi' : 'Tạo vai trò mới'}
-            </Button>
-          </div>
-        </Form>
-      </Modal>
-
-      {/* Staff Detail Drawer (HR Card) */}
-      <Drawer
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <SolutionOutlined style={{ color: token.colorPrimary, fontSize: '20px' }} />
-            <Text style={{ fontSize: '16px', fontWeight: 'bold', color: token.colorText }}>Hồ Sơ Nhân Sự Chi Tiết</Text>
-          </div>
-        }
-        placement="right"
-        width={550}
-        onClose={() => setIsDrawerOpen(false)}
+      <StaffDetailDrawer
         open={isDrawerOpen}
-        styles={{
-          body: {
-            background: token.colorBgContainer,
-            color: token.colorText,
-            padding: '24px',
-          },
-          header: {
-            background: token.colorBgElevated,
-            borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          },
-        }}
-      >
-        {selectedStaff && (
-          <StaffDetailDrawerContent
-            selectedStaff={selectedStaff}
-            roles={roles}
-            legacyStaffList={legacyStaffList}
-            currentUser={currentUser}
-            isHrOrAdmin={isHrOrAdmin}
-            canManageStaff={canManageStaff}
-            auditLogs={auditLogs}
-            loadingAuditLogs={loadingAuditLogs}
-          />
-        )}
-      </Drawer>
+        onClose={() => setIsDrawerOpen(false)}
+        selectedStaff={selectedStaff}
+        roles={roles}
+        legacyStaffList={legacyStaffList}
+        currentUser={currentUser}
+        isHrOrAdmin={isHrOrAdmin}
+        canManageStaff={canManageStaff}
+        auditLogs={auditLogs}
+        loadingAuditLogs={loadingAuditLogs}
+      />
 
-      {/* Merge Staff Modal */}
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#8b5cf6' }}>
-            <BranchesOutlined style={{ fontSize: '20px' }} />
-            <span style={{ fontSize: '18px', fontWeight: 'bold' }}>Gộp Nhân Viên Trùng Lặp</span>
-          </div>
-        }
+      <MergeStaffModal
         open={isMergeModalOpen}
+        staffList={staffList}
+        selectedRowKeys={selectedRowKeys}
+        targetMergeStaffId={targetMergeStaffId}
+        mergeSubmitting={mergeSubmitting}
+        onTargetMergeStaffChange={setTargetMergeStaffId}
         onCancel={() => setIsMergeModalOpen(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setIsMergeModalOpen(false)}>
-            Hủy bỏ
-          </Button>,
-          <Popconfirm
-            key="confirm"
-            title="Xác nhận gộp tài khoản nhân viên?"
-            description="Tất cả lịch sử cuộc gọi, KPI và phân công khách hàng từ tài khoản phụ sẽ chuyển sang tài khoản chính. Các tài khoản phụ trùng lặp sẽ bị XÓA VĨNH VIỄN."
-            onConfirm={handleConfirmMerge}
-            okText="Đồng ý Gộp"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true, loading: mergeSubmitting }}
-          >
-            <Button
-              type="primary"
-              loading={mergeSubmitting}
-              style={{
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
-                borderColor: 'transparent',
-                fontWeight: '600',
-              }}
-            >
-              Xác Nhận Gộp ({selectedRowKeys.length} tài khoản)
-            </Button>
-          </Popconfirm>,
-        ]}
-        width={650}
-      >
-        <div style={{ marginTop: '16px' }}>
-          <Paragraph type="secondary">
-            Bạn đang chọn <strong>{selectedRowKeys.length} nhân viên</strong> để gộp dữ liệu. Vui lòng chọn 1 nhân viên
-            làm <strong style={{ color: '#8b5cf6' }}>Tài khoản chính (Target)</strong> để giữ lại:
-          </Paragraph>
+        onConfirmMerge={handleConfirmMerge}
+      />
 
-          <Card
-            size="small"
-            style={{
-              background: themeMode === 'dark' ? '#1f1f1f' : '#f8fafc',
-              border: `1px solid ${themeMode === 'dark' ? '#333333' : '#e2e8f0'}`,
-              marginBottom: '16px',
-            }}
-          >
-            <Select
-              style={{ width: '100%' }}
-              placeholder="Chọn tài khoản chính giữ lại..."
-              value={targetMergeStaffId}
-              onChange={(val) => setTargetMergeStaffId(val)}
-              showSearch
-              filterOption={vietnameseSearchFilter}
-            >
-              {staffList
-                .filter((s) => selectedRowKeys.includes(s.id))
-                .map((s) => (
-                  <Option key={s.id} value={s.id}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>
-                        <strong>{s.displayName}</strong> ({s.username})
-                      </span>
-                      <Tag color="purple">ID: {s.id}</Tag>
-                    </div>
-                  </Option>
-                ))}
-            </Select>
-          </Card>
-
-          {targetMergeStaffId && (
-            <div
-              style={{
-                padding: '12px 16px',
-                borderRadius: '8px',
-                background: themeMode === 'dark' ? '#1c1917' : '#f0fdf4',
-                border: `1px solid ${themeMode === 'dark' ? '#44403c' : '#bbf7d0'}`,
-              }}
-            >
-              <Text style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', color: '#10b981' }}>
-                ✓ Tài khoản chính giữ lại: {staffList.find((s) => s.id === targetMergeStaffId)?.displayName} (ID:{' '}
-                {targetMergeStaffId})
-              </Text>
-              <Text type="secondary" style={{ fontSize: '13px', display: 'block' }}>
-                ✕ Tài khoản phụ bị gộp & xóa:{' '}
-                {staffList
-                  .filter((s) => selectedRowKeys.includes(s.id) && s.id !== targetMergeStaffId)
-                  .map((s) => s.displayName)
-                  .join(', ')}
-              </Text>
-            </div>
-          )}
-        </div>
-      </Modal>
-
-      {/* Send Onboarding Email Modal */}
       <SendOnboardingEmailModal
         open={isOnboardingEmailModalOpen}
-        onClose={() => {
-          setIsOnboardingEmailModalOpen(false);
-          setEmailModalStaff(null);
-          setEmailModalBulkList([]);
-        }}
+        onClose={handleCloseOnboardingEmailModal}
         staff={emailModalStaff}
         bulkStaffList={emailModalBulkList}
         roles={roles}

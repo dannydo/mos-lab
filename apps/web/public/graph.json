@@ -36206,6 +36206,54 @@
       }
     },
     {
+      "id": "uicomp:customerDetailHelpers",
+      "type": "UIComponent",
+      "label": "<customerDetailHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/hooks/use-customer-detail/customerDetailHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "customerDetailHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useCustomerDataAndTabs",
+      "type": "UIComponent",
+      "label": "<useCustomerDataAndTabs />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/hooks/use-customer-detail/useCustomerDataAndTabs.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useCustomerDataAndTabs",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useCustomerMutations",
+      "type": "UIComponent",
+      "label": "<useCustomerMutations />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/hooks/use-customer-detail/useCustomerMutations.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useCustomerMutations",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useResizableCustomerPanels",
+      "type": "UIComponent",
+      "label": "<useResizableCustomerPanels />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/hooks/use-customer-detail/useResizableCustomerPanels.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useResizableCustomerPanels",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:useCustomerDetail",
       "type": "UIComponent",
       "label": "<useCustomerDetail />",
@@ -39758,6 +39806,102 @@
       }
     },
     {
+      "id": "uicomp:MobileMessageAiExtras",
+      "type": "UIComponent",
+      "label": "<MobileMessageAiExtras />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-message-item/MobileMessageAiExtras.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileMessageAiExtras",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MobileMessageAttachments",
+      "type": "UIComponent",
+      "label": "<MobileMessageAttachments />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-message-item/MobileMessageAttachments.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileMessageAttachments",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MobileMessageBubble",
+      "type": "UIComponent",
+      "label": "<MobileMessageBubble />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-message-item/MobileMessageBubble.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileMessageBubble",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MobileMessageReactionsAndThread",
+      "type": "UIComponent",
+      "label": "<MobileMessageReactionsAndThread />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-message-item/MobileMessageReactionsAndThread.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileMessageReactionsAndThread",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MobileMessageSenderHeader",
+      "type": "UIComponent",
+      "label": "<MobileMessageSenderHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-message-item/MobileMessageSenderHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileMessageSenderHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:mobileMessageItemHelpers",
+      "type": "UIComponent",
+      "label": "<mobileMessageItemHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-message-item/mobileMessageItemHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mobileMessageItemHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:mobileMessageItemTypes",
+      "type": "UIComponent",
+      "label": "<mobileMessageItemTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-message-item/mobileMessageItemTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mobileMessageItemTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMobileMessageGestures",
+      "type": "UIComponent",
+      "label": "<useMobileMessageGestures />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-message-item/useMobileMessageGestures.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMobileMessageGestures",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:TaskDetailActionFooter",
       "type": "UIComponent",
       "label": "<TaskDetailActionFooter />",
@@ -40894,6 +41038,126 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "HeaderNotificationCenter.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:NotificationCategoryChips",
+      "type": "UIComponent",
+      "label": "<NotificationCategoryChips />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/notification-center/header-notification-center/NotificationCategoryChips.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "NotificationCategoryChips",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:NotificationDesktopPopoverPanel",
+      "type": "UIComponent",
+      "label": "<NotificationDesktopPopoverPanel />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/notification-center/header-notification-center/NotificationDesktopPopoverPanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "NotificationDesktopPopoverPanel",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:NotificationFeedList",
+      "type": "UIComponent",
+      "label": "<NotificationFeedList />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/notification-center/header-notification-center/NotificationFeedList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "NotificationFeedList",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:NotificationMobileDrawer",
+      "type": "UIComponent",
+      "label": "<NotificationMobileDrawer />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/notification-center/header-notification-center/NotificationMobileDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "NotificationMobileDrawer",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:NotificationRowItem",
+      "type": "UIComponent",
+      "label": "<NotificationRowItem />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/notification-center/header-notification-center/NotificationRowItem.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "NotificationRowItem",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:NotificationStatusSegmentedFilter",
+      "type": "UIComponent",
+      "label": "<NotificationStatusSegmentedFilter />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/notification-center/header-notification-center/NotificationStatusSegmentedFilter.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "NotificationStatusSegmentedFilter",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:notificationHelpers",
+      "type": "UIComponent",
+      "label": "<notificationHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/notification-center/header-notification-center/notificationHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "notificationHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:notificationTypes",
+      "type": "UIComponent",
+      "label": "<notificationTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/notification-center/header-notification-center/notificationTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "notificationTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:urgentNotificationToast",
+      "type": "UIComponent",
+      "label": "<urgentNotificationToast />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/notification-center/header-notification-center/urgentNotificationToast.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "urgentNotificationToast",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useHeaderNotifications",
+      "type": "UIComponent",
+      "label": "<useHeaderNotifications />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/notification-center/header-notification-center/useHeaderNotifications.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useHeaderNotifications",
         "isPrimitive": false
       }
     },
@@ -60465,8 +60729,8 @@
       "filePath": "apps/web/app/dashboard/funds/components/FundFormModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 37892,
-        "lineCount": 979,
+        "sizeBytes": 5055,
+        "lineCount": 163,
         "ext": ".tsx"
       }
     },
@@ -60610,6 +60874,110 @@
       "metadata": {
         "sizeBytes": 12817,
         "lineCount": 378,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-form-modal/FundApprovalWorkflowTab.tsx",
+      "type": "File",
+      "label": "FundApprovalWorkflowTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-form-modal/FundApprovalWorkflowTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7142,
+        "lineCount": 166,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-form-modal/FundBasicInfoTab.tsx",
+      "type": "File",
+      "label": "FundBasicInfoTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-form-modal/FundBasicInfoTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4339,
+        "lineCount": 107,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-form-modal/FundFinancialConfigTab.tsx",
+      "type": "File",
+      "label": "FundFinancialConfigTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-form-modal/FundFinancialConfigTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5843,
+        "lineCount": 143,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-form-modal/FundRolesTab.tsx",
+      "type": "File",
+      "label": "FundRolesTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-form-modal/FundRolesTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6091,
+        "lineCount": 153,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-form-modal/fundFormConstants.ts",
+      "type": "File",
+      "label": "fundFormConstants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-form-modal/fundFormConstants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1734,
+        "lineCount": 54,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-form-modal/fundFormHelpers.ts",
+      "type": "File",
+      "label": "fundFormHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-form-modal/fundFormHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3880,
+        "lineCount": 128,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-form-modal/types.ts",
+      "type": "File",
+      "label": "types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-form-modal/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 620,
+        "lineCount": 31,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-form-modal/useFundFormModal.ts",
+      "type": "File",
+      "label": "useFundFormModal.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-form-modal/useFundFormModal.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8519,
+        "lineCount": 274,
         "ext": ".ts"
       }
     },
@@ -63468,9 +63836,126 @@
       "filePath": "apps/web/app/dashboard/staff/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 34336,
-        "lineCount": 998,
+        "sizeBytes": 7856,
+        "lineCount": 270,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/staff/staff-page-modules/MergeStaffModal.tsx",
+      "type": "File",
+      "label": "MergeStaffModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/staff/staff-page-modules/MergeStaffModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4367,
+        "lineCount": 116,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/staff/staff-page-modules/RoleFormModal.tsx",
+      "type": "File",
+      "label": "RoleFormModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/staff/staff-page-modules/RoleFormModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5466,
+        "lineCount": 140,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/staff/staff-page-modules/StaffBulkActionBar.tsx",
+      "type": "File",
+      "label": "StaffBulkActionBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/staff/staff-page-modules/StaffBulkActionBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4924,
+        "lineCount": 144,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/staff/staff-page-modules/StaffDetailDrawer.tsx",
+      "type": "File",
+      "label": "StaffDetailDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/staff/staff-page-modules/StaffDetailDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1776,
+        "lineCount": 67,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/staff/staff-page-modules/StaffDirectoryTabs.tsx",
+      "type": "File",
+      "label": "StaffDirectoryTabs.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/staff/staff-page-modules/StaffDirectoryTabs.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4161,
+        "lineCount": 154,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/staff/staff-page-modules/StaffFormModal.tsx",
+      "type": "File",
+      "label": "StaffFormModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/staff/staff-page-modules/StaffFormModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1812,
+        "lineCount": 68,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/staff/staff-page-modules/StaffPageHeader.tsx",
+      "type": "File",
+      "label": "StaffPageHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/staff/staff-page-modules/StaffPageHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2123,
+        "lineCount": 74,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/staff/staff-page-modules/staffPageConstants.ts",
+      "type": "File",
+      "label": "staffPageConstants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/staff/staff-page-modules/staffPageConstants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2199,
+        "lineCount": 66,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/staff/staff-page-modules/useStaffPageExtras.ts",
+      "type": "File",
+      "label": "useStaffPageExtras.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/staff/staff-page-modules/useStaffPageExtras.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2499,
+        "lineCount": 86,
+        "ext": ".ts"
       }
     },
     {
@@ -91901,6 +92386,62 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:customerDetailHelpers:ws:apps/web",
+      "source": "uicomp:customerDetailHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:customerDetailHelpers:token:color:primary",
+      "source": "uicomp:customerDetailHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useCustomerDataAndTabs:ws:apps/web",
+      "source": "uicomp:useCustomerDataAndTabs",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useCustomerDataAndTabs:token:color:primary",
+      "source": "uicomp:useCustomerDataAndTabs",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useCustomerMutations:ws:apps/web",
+      "source": "uicomp:useCustomerMutations",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useCustomerMutations:token:color:primary",
+      "source": "uicomp:useCustomerMutations",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useResizableCustomerPanels:ws:apps/web",
+      "source": "uicomp:useResizableCustomerPanels",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useResizableCustomerPanels:token:color:primary",
+      "source": "uicomp:useResizableCustomerPanels",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:useCustomerDetail:ws:apps/web",
       "source": "uicomp:useCustomerDetail",
       "target": "ws:apps/web",
@@ -96045,6 +96586,118 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MobileMessageAiExtras:ws:apps/web",
+      "source": "uicomp:MobileMessageAiExtras",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileMessageAiExtras:token:color:primary",
+      "source": "uicomp:MobileMessageAiExtras",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MobileMessageAttachments:ws:apps/web",
+      "source": "uicomp:MobileMessageAttachments",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileMessageAttachments:token:color:primary",
+      "source": "uicomp:MobileMessageAttachments",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MobileMessageBubble:ws:apps/web",
+      "source": "uicomp:MobileMessageBubble",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileMessageBubble:token:color:primary",
+      "source": "uicomp:MobileMessageBubble",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MobileMessageReactionsAndThread:ws:apps/web",
+      "source": "uicomp:MobileMessageReactionsAndThread",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileMessageReactionsAndThread:token:color:primary",
+      "source": "uicomp:MobileMessageReactionsAndThread",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MobileMessageSenderHeader:ws:apps/web",
+      "source": "uicomp:MobileMessageSenderHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileMessageSenderHeader:token:color:primary",
+      "source": "uicomp:MobileMessageSenderHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mobileMessageItemHelpers:ws:apps/web",
+      "source": "uicomp:mobileMessageItemHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mobileMessageItemHelpers:token:color:primary",
+      "source": "uicomp:mobileMessageItemHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mobileMessageItemTypes:ws:apps/web",
+      "source": "uicomp:mobileMessageItemTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mobileMessageItemTypes:token:color:primary",
+      "source": "uicomp:mobileMessageItemTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMobileMessageGestures:ws:apps/web",
+      "source": "uicomp:useMobileMessageGestures",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMobileMessageGestures:token:color:primary",
+      "source": "uicomp:useMobileMessageGestures",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:TaskDetailActionFooter:ws:apps/web",
       "source": "uicomp:TaskDetailActionFooter",
       "target": "ws:apps/web",
@@ -97370,6 +98023,146 @@
     {
       "id": "edge:uicomp:HeaderNotificationCenter.test:token:color:primary",
       "source": "uicomp:HeaderNotificationCenter.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:NotificationCategoryChips:ws:apps/web",
+      "source": "uicomp:NotificationCategoryChips",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:NotificationCategoryChips:token:color:primary",
+      "source": "uicomp:NotificationCategoryChips",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:NotificationDesktopPopoverPanel:ws:apps/web",
+      "source": "uicomp:NotificationDesktopPopoverPanel",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:NotificationDesktopPopoverPanel:token:color:primary",
+      "source": "uicomp:NotificationDesktopPopoverPanel",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:NotificationFeedList:ws:apps/web",
+      "source": "uicomp:NotificationFeedList",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:NotificationFeedList:token:color:primary",
+      "source": "uicomp:NotificationFeedList",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:NotificationMobileDrawer:ws:apps/web",
+      "source": "uicomp:NotificationMobileDrawer",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:NotificationMobileDrawer:token:color:primary",
+      "source": "uicomp:NotificationMobileDrawer",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:NotificationRowItem:ws:apps/web",
+      "source": "uicomp:NotificationRowItem",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:NotificationRowItem:token:color:primary",
+      "source": "uicomp:NotificationRowItem",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:NotificationStatusSegmentedFilter:ws:apps/web",
+      "source": "uicomp:NotificationStatusSegmentedFilter",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:NotificationStatusSegmentedFilter:token:color:primary",
+      "source": "uicomp:NotificationStatusSegmentedFilter",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:notificationHelpers:ws:apps/web",
+      "source": "uicomp:notificationHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:notificationHelpers:token:color:primary",
+      "source": "uicomp:notificationHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:notificationTypes:ws:apps/web",
+      "source": "uicomp:notificationTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:notificationTypes:token:color:primary",
+      "source": "uicomp:notificationTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:urgentNotificationToast:ws:apps/web",
+      "source": "uicomp:urgentNotificationToast",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:urgentNotificationToast:token:color:primary",
+      "source": "uicomp:urgentNotificationToast",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useHeaderNotifications:ws:apps/web",
+      "source": "uicomp:useHeaderNotifications",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useHeaderNotifications:token:color:primary",
+      "source": "uicomp:useHeaderNotifications",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -106174,13 +106967,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/funds/components/FundFormModal.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/funds/components/FundFormModal.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/funds/components/FundModals.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/funds/components/FundModals.tsx",
       "target": "ws:packages/shared",
@@ -106225,6 +107011,55 @@
     {
       "id": "edge:file:apps/web/app/dashboard/funds/components/fund-detail-drawer/useFundDetailOperations.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/useFundDetailOperations.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-form-modal/FundApprovalWorkflowTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-form-modal/FundApprovalWorkflowTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-form-modal/FundFinancialConfigTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-form-modal/FundFinancialConfigTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-form-modal/FundRolesTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-form-modal/FundRolesTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-form-modal/fundFormConstants.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-form-modal/fundFormConstants.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-form-modal/fundFormHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-form-modal/fundFormHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-form-modal/types.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-form-modal/types.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-form-modal/useFundFormModal.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-form-modal/useFundFormModal.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -107219,6 +108054,62 @@
     {
       "id": "edge:file:apps/web/app/dashboard/staff/page.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/staff/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/staff/staff-page-modules/MergeStaffModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/staff/staff-page-modules/MergeStaffModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/staff/staff-page-modules/RoleFormModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/staff/staff-page-modules/RoleFormModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/staff/staff-page-modules/StaffBulkActionBar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/staff/staff-page-modules/StaffBulkActionBar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/staff/staff-page-modules/StaffDetailDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/staff/staff-page-modules/StaffDetailDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/staff/staff-page-modules/StaffDirectoryTabs.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/staff/staff-page-modules/StaffDirectoryTabs.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/staff/staff-page-modules/StaffFormModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/staff/staff-page-modules/StaffFormModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/staff/staff-page-modules/staffPageConstants.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/staff/staff-page-modules/staffPageConstants.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/staff/staff-page-modules/useStaffPageExtras.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/staff/staff-page-modules/useStaffPageExtras.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -133104,8 +133995,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5520,
-    "totalEdges": 8851,
+    "totalNodes": 5559,
+    "totalEdges": 8909,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -133113,15 +134004,15 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 716,
-      "File": 2190
+      "UIComponent": 738,
+      "File": 2207
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 782,
-      "USES_TOKEN": 718,
-      "IMPORTS": 1344,
+      "RENDERS": 804,
+      "USES_TOKEN": 740,
+      "IMPORTS": 1358,
       "QUERIES_MODEL": 602,
       "API_CALL": 2860
     },

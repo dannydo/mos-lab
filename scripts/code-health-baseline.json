@@ -21,7 +21,6 @@
     "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx": 3022,
     "apps/web/app/dashboard/cv/components/CvTipTab.tsx": 1109,
     "apps/web/app/dashboard/fal/page.tsx": 1338,
-    "apps/web/app/dashboard/funds/components/FundFormModal.tsx": 979,
     "apps/web/app/dashboard/loca/hooks/useLocaData.ts": 1152,
     "apps/web/app/dashboard/loca/page.tsx": 1535,
     "apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx": 2015,
@@ -32,19 +31,15 @@
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialSopModal.tsx": 1405,
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.tsx": 1991,
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx": 1264,
-    "apps/web/app/dashboard/staff/page.tsx": 998,
     "apps/web/app/dashboard/telesale-competency/components/TelesaleConfigTab.tsx": 1302,
     "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx": 1035,
     "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx": 1723,
     "apps/web/app/dashboard/today/components/TodayCalendarSummary.tsx": 1330,
     "apps/web/app/dashboard/today/components/TodayStats.tsx": 1070,
     "apps/web/components/customer-detail/components/BookingsTab.tsx": 1030,
-    "apps/web/components/customer-detail/hooks/useCustomerDetail.ts": 1029,
     "apps/web/components/CustomerDetailDrawer.tsx": 1181,
     "apps/web/components/layout/SidebarNav.tsx": 1205,
     "apps/web/components/mos-chat/components/MosChatThreadChecklist.tsx": 957,
-    "apps/web/components/mos-chat/mobile/MosChatMobileMessageItem.tsx": 916,
-    "apps/web/components/notification-center/HeaderNotificationCenter.tsx": 1030,
     "apps/web/components/ui/MermaidViewer.tsx": 1102
   }
 }
