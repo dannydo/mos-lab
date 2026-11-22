@@ -863,6 +863,18 @@ async function clearTicketActiveJob(fastify: FastifyInstance, reportId: number, 
   });
 }
 
+function buildProvisioningClaimableFilter(now: Date) {
+  return [
+    {
+      ideProvisioningState: 'PENDING',
+      OR: [{ ideProvisioningLeaseExpiresAt: null }, { ideProvisioningLeaseExpiresAt: { lte: now } }],
+    },
+    { ideProvisioningState: 'LEASED', ideProvisioningLeaseExpiresAt: { lt: now } },
+  ];
+}
+
+const PROVISIONING_CLAIM_ORDER_BY = [{ ideProvisioningAttemptCount: 'asc' as const }, { createdAt: 'asc' as const }];
+
 export class InboxImplementationService {
   /**
    * Gives an opted-in local companion one bounded creation request. The stable
@@ -902,10 +914,7 @@ export class InboxImplementationService {
         ideTaskId: null,
         ideHandoffRevokedAt: null,
         ideProvisioningRequestId: { not: null },
-        OR: [
-          { ideProvisioningState: 'PENDING' },
-          { ideProvisioningState: 'LEASED', ideProvisioningLeaseExpiresAt: { lt: now } },
-        ],
+        OR: buildProvisioningClaimableFilter(now),
       },
       include: {
         report: {
@@ -927,7 +936,7 @@ export class InboxImplementationService {
           },
         },
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: PROVISIONING_CLAIM_ORDER_BY,
     });
     if (!candidate?.ideProvisioningRequestId) return null;
     const modelTier = extractModelTierFromLabel(candidate.progressLabel);
@@ -940,10 +949,7 @@ export class InboxImplementationService {
         ideTaskId: null,
         ideHandoffRevokedAt: null,
         ideProvisioningRequestId: candidate.ideProvisioningRequestId,
-        OR: [
-          { ideProvisioningState: 'PENDING' },
-          { ideProvisioningState: 'LEASED', ideProvisioningLeaseExpiresAt: { lt: now } },
-        ],
+        OR: buildProvisioningClaimableFilter(now),
       },
       data: {
         executionOwner: callerNode,
@@ -995,10 +1001,7 @@ export class InboxImplementationService {
         ideTaskId: null,
         ideHandoffRevokedAt: null,
         ideProvisioningRequestId: { not: null },
-        OR: [
-          { ideProvisioningState: 'PENDING' },
-          { ideProvisioningState: 'LEASED', ideProvisioningLeaseExpiresAt: { lt: now } },
-        ],
+        OR: buildProvisioningClaimableFilter(now),
       },
       include: {
         report: {
@@ -1020,7 +1023,7 @@ export class InboxImplementationService {
           },
         },
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: PROVISIONING_CLAIM_ORDER_BY,
     });
     if (!candidate?.ideProvisioningRequestId) return null;
     const leaseToken = randomUUID();
@@ -1031,10 +1034,7 @@ export class InboxImplementationService {
         ideTaskId: null,
         ideHandoffRevokedAt: null,
         ideProvisioningRequestId: candidate.ideProvisioningRequestId,
-        OR: [
-          { ideProvisioningState: 'PENDING' },
-          { ideProvisioningState: 'LEASED', ideProvisioningLeaseExpiresAt: { lt: now } },
-        ],
+        OR: buildProvisioningClaimableFilter(now),
       },
       data: {
         executionOwner: 'IDE',
@@ -1083,6 +1083,20 @@ export class InboxImplementationService {
       throw new InboxImplementationError('Yêu cầu provisioning IDE không hợp lệ.', 422, 'IDE_PROVISIONING_INVALID');
     if (!/^[A-Z0-9_]{3,100}$/.test(normalizedFailureCode))
       throw new InboxImplementationError('Mã lỗi provisioning IDE không hợp lệ.', 422, 'IDE_PROVISIONING_INVALID');
+    const existingJob = await fastify.prisma.crm.crmInboxImplementationJob.findUnique?.({
+      where: { id: normalizedJobId },
+      select: { ideProvisioningAttemptCount: true, executionOwner: true, progressLabel: true },
+    });
+    const attemptCount = Math.max(1, Number(existingJob?.ideProvisioningAttemptCount || 1));
+    const backoffMs = Math.min(300_000, 60_000 * 2 ** (attemptCount - 1));
+    const retryAfter = new Date(Date.now() + backoffMs);
+    const modelTier = extractModelTierFromLabel(existingJob?.progressLabel);
+    const ownerLabel = existingJob?.executionOwner
+      ? getExecutionOwnerDisplayName(existingJob.executionOwner)
+      : 'Codex IDE';
+    const progressLabel = modelTier
+      ? `Chờ ${ownerLabel} tạo handoff cục bộ. [model:${modelTier}]`
+      : `Chờ ${ownerLabel} tạo handoff cục bộ.`;
     const deferred = await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
       where: {
         id: normalizedJobId,
@@ -1094,10 +1108,10 @@ export class InboxImplementationService {
       data: {
         ideProvisioningState: 'PENDING',
         ideProvisioningLeaseToken: null,
-        ideProvisioningLeaseExpiresAt: null,
+        ideProvisioningLeaseExpiresAt: retryAfter,
         ideProvisioningFailureCode: normalizedFailureCode,
         executionPhase: 'IDE_PROVISIONING_PENDING',
-        progressLabel: 'Chờ Codex IDE tạo handoff cục bộ.',
+        progressLabel,
       },
     });
     if (!deferred.count)

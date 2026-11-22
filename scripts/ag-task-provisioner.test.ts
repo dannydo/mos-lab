@@ -715,3 +715,37 @@ test('MAI chat uses a fast model by default and honours MOS_AG_CHAT_MODEL', () =
     'gemini-3.8-flash-high'
   );
 });
+
+test('probeIsAntigravityPort + readAntigravityDaemonHubEnv supports Antigravity 2.34+ empty HTML csrfToken with hub_*.json', async () => {
+  const { createServer } = await import('node:http');
+  const { AgChatBridgeService } = await import('../apps/api/src/modules/ai/ag-chat-bridge.service.js');
+  const daemonDir = await mkdtemp(join(tmpdir(), 'ag-provisioner-hub-'));
+  const server = createServer((_req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(
+      '<!doctype html><html><head><script>window.__APP_CONFIG__ = {"productName":"antigravity","csrfToken":"","appVersion":"2.34.0"};</script></head><body></body></html>'
+    );
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+  const address = server.address();
+  const port = typeof address === 'object' && address ? address.port : 0;
+  try {
+    await writeFile(
+      join(daemonDir, `hub_${port}.json`),
+      JSON.stringify({ pid: process.pid, httpPort: port, csrfToken: 'hub-json-csrf-uuid' })
+    );
+    const detected = await AgChatBridgeService.readAntigravityDaemonHubEnv({
+      daemonDir,
+      projectId: 'proj-test',
+      probePort: probeIsAntigravityPort,
+    });
+    assert.deepEqual(detected, {
+      ANTIGRAVITY_LS_ADDRESS: `127.0.0.1:${port}`,
+      ANTIGRAVITY_CSRF_TOKEN: 'hub-json-csrf-uuid',
+      ANTIGRAVITY_PROJECT_ID: 'proj-test',
+    });
+  } finally {
+    server.close();
+    await rm(daemonDir, { recursive: true, force: true });
+  }
+});

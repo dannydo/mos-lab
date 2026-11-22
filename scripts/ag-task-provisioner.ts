@@ -467,6 +467,13 @@ export async function detectAntigravityLsEnv(): Promise<Record<string, string>> 
       ANTIGRAVITY_PROJECT_ID: projectId,
     };
   }
+  const hubEnv = await AgChatBridgeService.readAntigravityDaemonHubEnv({
+    projectId,
+    probePort: probeIsAntigravityPort,
+  });
+  if (hubEnv) {
+    return hubEnv;
+  }
   try {
     const ps = execSync('ps aux | grep "[l]anguage_server.*antigravity"', { encoding: 'utf8' });
     const matchPid = ps.match(/^\S+\s+(\d+)/);

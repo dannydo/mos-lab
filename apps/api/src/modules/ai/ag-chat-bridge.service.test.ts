@@ -1,5 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { AgChatBridgeService } from './ag-chat-bridge.service.js';
 
 describe('AgChatBridgeService.failRemoteChatJob', () => {
@@ -19,5 +22,36 @@ describe('AgChatBridgeService.failRemoteChatJob', () => {
 
   it('returns false for unknown or already finished jobs', () => {
     assert.equal(AgChatBridgeService.failRemoteChatJob('does-not-exist'), false);
+  });
+});
+
+describe('AgChatBridgeService.readAntigravityDaemonHubEnv', () => {
+  it('reads httpPort + csrfToken from live hub_*.json while skipping dead PIDs', async () => {
+    const daemonDir = await mkdtemp(join(tmpdir(), 'ag-hub-daemon-'));
+    try {
+      await writeFile(
+        join(daemonDir, 'hub_41001.json'),
+        JSON.stringify({ pid: 999001, httpPort: 41001, csrfToken: 'stale-token' })
+      );
+      await writeFile(
+        join(daemonDir, 'hub_49523.json'),
+        JSON.stringify({ pid: process.pid, httpPort: 49523, csrfToken: 'live-csrf-token-1234' })
+      );
+
+      const env = await AgChatBridgeService.readAntigravityDaemonHubEnv({
+        daemonDir,
+        projectId: 'proj-123',
+        isPidAlive: (pid) => pid === process.pid,
+        probePort: async (port) => (port === 49523 ? { ok: true } : null),
+      });
+
+      assert.deepEqual(env, {
+        ANTIGRAVITY_LS_ADDRESS: '127.0.0.1:49523',
+        ANTIGRAVITY_CSRF_TOKEN: 'live-csrf-token-1234',
+        ANTIGRAVITY_PROJECT_ID: 'proj-123',
+      });
+    } finally {
+      await rm(daemonDir, { recursive: true, force: true });
+    }
   });
 });

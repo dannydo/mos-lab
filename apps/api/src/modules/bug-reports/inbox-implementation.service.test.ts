@@ -2368,3 +2368,67 @@ test('extractModelTierFromLabel and stripModelTierMarker round-trip model tier m
   assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:pro]'), 'orchestrator_argon');
   assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree'), undefined);
 });
+
+test('claimAgTaskProvisioning prioritizes fresh jobs (attemptCount asc) and respects PENDING defer cooldown', async () => {
+  InboxWorkerStatusService.resetForTesting();
+  const captured: {
+    findArgs: { where?: { OR?: unknown }; orderBy?: unknown } | null;
+  } = { findArgs: null };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmConfig: { findMany: async () => [], upsert: async () => ({}) },
+        crmInboxImplementationJob: {
+          count: async () => 0,
+          findFirst: async (args: { where?: { OR?: unknown }; orderBy?: unknown }) => {
+            captured.findArgs = args;
+            return null;
+          },
+        },
+      },
+    },
+  };
+
+  await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'danny-codex-desktop');
+  assert.deepEqual(captured.findArgs?.orderBy, [{ ideProvisioningAttemptCount: 'asc' }, { createdAt: 'asc' }]);
+  const orFilters = captured.findArgs?.where?.OR as Array<Record<string, unknown>> | undefined;
+  assert.equal(Array.isArray(orFilters), true);
+  assert.equal(orFilters?.[0]?.ideProvisioningState, 'PENDING');
+  assert.equal(Array.isArray(orFilters?.[0]?.OR), true);
+});
+
+test('deferIdeTaskProvisioning sets exponential cooldown backoff and preserves Mac AG + model tag', async () => {
+  const captured: { updateData: Record<string, unknown> | null } = { updateData: null };
+  const before = Date.now();
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: {
+          findUnique: async () => ({
+            ideProvisioningAttemptCount: 2,
+            executionOwner: 'AG_MAC',
+            progressLabel: 'Mac AG đang tạo handoff cục bộ. [model:hydrogen]',
+          }),
+          updateMany: async (args: { data: Record<string, unknown> }) => {
+            captured.updateData = args.data;
+            return { count: 1 };
+          },
+        },
+      },
+    },
+  };
+
+  const outcome = await InboxImplementationService.deferIdeTaskProvisioning(
+    fastify as never,
+    '11111111-1111-4111-8111-111111111111',
+    '22222222-2222-4222-8222-222222222222',
+    'AGENTAPI_UNAVAILABLE'
+  );
+  assert.equal(outcome, 'DEFERRED');
+  assert.equal(captured.updateData?.ideProvisioningState, 'PENDING');
+  assert.equal(captured.updateData?.progressLabel, 'Chờ Mac AG tạo handoff cục bộ. [model:hydrogen]');
+  const retryAt = captured.updateData?.ideProvisioningLeaseExpiresAt as Date;
+  assert.ok(retryAt instanceof Date);
+  const deltaMs = retryAt.getTime() - before;
+  assert.ok(deltaMs >= 115_000 && deltaMs <= 125_000, `Expected ~120s backoff for attempt 2, got ${deltaMs}ms`);
+});
