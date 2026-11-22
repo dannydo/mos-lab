@@ -330,6 +330,7 @@ function IosAppInner() {
             isReadOnlyMentorView={state.isReadOnlyMentorView}
             onSimFastForwardToUpsell={state.handleSimFastForwardToUpsell}
             onSelectComboWallet={state.handleSelectComboWallet}
+            onSavePreCheckoutPayment={state.handleSavePreCheckoutPayment}
           />
         );
       case 4:
@@ -362,6 +363,8 @@ function IosAppInner() {
               state.setCurrentStep(1);
             }}
             staffStats={state.staffStats}
+            isReadOnlyMentorView={state.isReadOnlyMentorView}
+            onSavePreCheckoutPayment={state.handleSavePreCheckoutPayment}
           />
         );
       case 7:

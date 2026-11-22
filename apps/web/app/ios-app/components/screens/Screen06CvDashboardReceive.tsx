@@ -15,12 +15,15 @@ import {
 } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { BookingItem, resolveStaffAvatarUrl } from '../../state/mockData';
+import { computeFreshBillingLineTotals } from '../../state/iosBillingMath';
 import { StaffMonthlyStats } from '../../state/useIosAppState';
 import { resolveDisplayServiceName, getWingsMenuDetail } from './LashMaterialConstraintMatrix';
 import { resolveBookingCvRotationPoints } from './incoming/incomingBookingHelpers';
 import { CvReceiveMaterialsCard } from './servicing/CvReceiveMaterialsCard';
 import { SelfChallengeDurationCard } from './servicing/SelfChallengeDurationCard';
 import { CustomerPortfolioTriggerButton } from '../ui-kit/CustomerPortfolioTriggerButton';
+import { PreCheckoutStatusCard } from './consultation/PreCheckoutStatusCard';
+import type { SavePreCheckoutPaymentPayload } from '../modals/PreCheckoutPaymentModal';
 import { Sparkles, Eye, Play, RotateCw, Clock, ChevronLeft, AlertTriangle, Lock } from 'lucide-react';
 
 interface Screen06CvDashboardReceiveProps {
@@ -29,6 +32,8 @@ interface Screen06CvDashboardReceiveProps {
   onEditService?: () => void;
   onBack?: () => void;
   staffStats?: StaffMonthlyStats | null;
+  isReadOnlyMentorView?: boolean;
+  onSavePreCheckoutPayment?: (payload: SavePreCheckoutPaymentPayload) => Promise<void> | void;
 }
 
 export function Screen06CvDashboardReceive({
@@ -37,6 +42,8 @@ export function Screen06CvDashboardReceive({
   onEditService,
   onBack,
   staffStats,
+  isReadOnlyMentorView = false,
+  onSavePreCheckoutPayment,
 }: Screen06CvDashboardReceiveProps) {
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
@@ -462,6 +469,19 @@ export function Screen06CvDashboardReceive({
           )}
 
           <CustomerPortfolioTriggerButton booking={booking} compact />
+
+          {onSavePreCheckoutPayment && (
+            <PreCheckoutStatusCard
+              isDark={isDark}
+              booking={booking}
+              quotedServiceTotalWithVat={(() => {
+                const totals = computeFreshBillingLineTotals(booking);
+                return totals.subtotalAfterDiscount + totals.vatAmount;
+              })()}
+              isReadOnly={isReadOnlyMentorView}
+              onSavePreCheckoutPayment={onSavePreCheckoutPayment}
+            />
+          )}
 
           {/* 3. NGUYÊN VẬT LIỆU */}
           <CvReceiveMaterialsCard

@@ -526,6 +526,7 @@ export function useIosAppState(
     handleUpdateCartProducts,
     handleUpdateCombos,
     handleChoosePaymentMethod,
+    handleSavePreCheckoutPayment,
     handleRecordTip,
     handleFinishOrder,
   } = useIosBillingCheckout({
@@ -598,6 +599,7 @@ export function useIosAppState(
     handleUpdateCartProducts,
     handleUpdateCombos,
     handleChoosePaymentMethod,
+    handleSavePreCheckoutPayment,
     handleRecordTip,
     handleFinishOrder,
     handleRevertToIncoming,

@@ -11,7 +11,7 @@ import {
   type IosPostCheckoutPaymentMode,
   type IosPostCheckoutPendingDraft,
 } from '@mos-lab/shared';
-import { CheckCircle2, Clock, RefreshCw, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Clock, QrCode, RefreshCw, ShieldCheck } from 'lucide-react';
 import { CvFeather1Badge, CvFeather2Badge } from '../../ui-kit/CvFeatherLabels';
 
 export interface PostCheckoutPendingPanelProps {
@@ -159,6 +159,10 @@ export interface PostCheckoutReconciliationCardProps {
   onSetDeltaSplit: React.Dispatch<React.SetStateAction<IosPaymentBreakdown>>;
   onSetReason: (val: string) => void;
   onSubmit: () => void;
+  onOpenQr?: () => void;
+  qrPortionAmount?: number;
+  isPureTipDelta?: boolean;
+  hasQrProofAttached?: boolean;
 }
 
 export function PostCheckoutReconciliationCard({
@@ -183,6 +187,10 @@ export function PostCheckoutReconciliationCard({
   onSetDeltaSplit,
   onSetReason,
   onSubmit,
+  onOpenQr,
+  qrPortionAmount = 0,
+  isPureTipDelta = false,
+  hasQrProofAttached = false,
 }: PostCheckoutReconciliationCardProps) {
   return (
     <>
@@ -380,6 +388,32 @@ export function PostCheckoutReconciliationCard({
             {tipBreakdown.checkOutStaffName}
           </div>
         </div>
+      )}
+
+      {delta.amountToCollectNow > 0 && qrPortionAmount > 0 && onOpenQr && (
+        <button
+          type="button"
+          data-testid="post-checkout-open-qr-btn"
+          onClick={onOpenQr}
+          className={`w-full py-2.5 px-3 rounded-2xl border font-extrabold text-[12.5px] flex items-center justify-center gap-2 cursor-pointer transition-all ${
+            hasQrProofAttached
+              ? isDark
+                ? 'bg-emerald-950/50 border-emerald-500 text-emerald-300'
+                : 'bg-emerald-50 border-emerald-500 text-emerald-800'
+              : isDark
+                ? 'bg-sky-950/40 border-sky-500/70 text-sky-300 hover:bg-sky-900/50'
+                : 'bg-sky-50 border-sky-400 text-sky-900 hover:bg-sky-100'
+          }`}
+        >
+          <QrCode className="w-4 h-4 shrink-0" />
+          <span>
+            {hasQrProofAttached
+              ? `✓ Đã có bill QR (${qrPortionAmount.toLocaleString('vi-VN')}đ) · Xem lại QR`
+              : isPureTipDelta
+                ? `Mở Mã QR Tiền Tip (${qrPortionAmount.toLocaleString('vi-VN')}đ)`
+                : `Mở Mã QR Thu Bổ Sung (${qrPortionAmount.toLocaleString('vi-VN')}đ)`}
+          </span>
+        </button>
       )}
 
       <button

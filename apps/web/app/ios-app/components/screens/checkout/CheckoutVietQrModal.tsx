@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { IosCloudSyncBadge, IosCloudSyncStatus } from '../../ui-kit/IosCloudSyncBadge';
+
+export type VietQrSplitMode = 'COMBINED' | 'SEPARATE';
 
 export interface CheckoutVietQrModalProps {
   open: boolean;
@@ -18,6 +20,116 @@ export interface CheckoutVietQrModalProps {
   onTriggerFilePicker: () => void;
   onConfirmQrPaid: () => void;
   onClose: () => void;
+  /** Split Service vs Tip QR support (MOS-BUG-255) */
+  serviceQrAmount?: number;
+  serviceQrUrl?: string;
+  serviceQrContent?: string;
+  tipQrAmount?: number;
+  tipQrUrl?: string;
+  tipQrContent?: string;
+  qrSplitMode?: VietQrSplitMode;
+  onChangeQrSplitMode?: (mode: VietQrSplitMode) => void;
+  tipTransferProofPhoto?: string | null;
+  tipProofCloudSyncStatus?: IosCloudSyncStatus;
+  onTriggerTipFilePicker?: () => void;
+  modalTitle?: string;
+}
+
+function QrCopyIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
+interface BillProofUploaderBoxProps {
+  isDark: boolean;
+  label: string;
+  emptyButtonText: string;
+  savedText: string;
+  photo: string | null;
+  syncStatus: IosCloudSyncStatus;
+  onTrigger: () => void;
+  testId?: string;
+}
+
+function BillProofUploaderBox({
+  isDark,
+  label,
+  emptyButtonText,
+  savedText,
+  photo,
+  syncStatus,
+  onTrigger,
+  testId,
+}: BillProofUploaderBoxProps) {
+  return (
+    <div
+      className={`${
+        isDark ? 'bg-sky-950/40 border-sky-800/60' : 'bg-sky-50/80 border-sky-200/90'
+      } rounded-2xl p-2.5 border space-y-1.5`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-base leading-none shrink-0">📸</span>
+          <span className={`text-[11.5px] font-bold ${isDark ? 'text-sky-200' : 'text-sky-950'} truncate`}>
+            {label}
+          </span>
+        </div>
+        {(photo || syncStatus === 'uploading') && <IosCloudSyncBadge status={syncStatus} size="sm" />}
+      </div>
+
+      {photo ? (
+        <div
+          className={`flex items-center gap-2.5 ${
+            isDark ? 'bg-neutral-900 border-sky-800' : 'bg-white border-sky-200'
+          } p-2 rounded-xl border shadow-2xs`}
+        >
+          <img
+            src={photo}
+            alt={label}
+            className={`w-11 h-11 object-cover rounded-lg border ${
+              isDark ? 'border-neutral-700' : 'border-gray-200'
+            } shadow-2xs shrink-0 cursor-pointer`}
+            onClick={onTrigger}
+          />
+          <div className="flex-1 min-w-0">
+            <div className={`text-[11px] font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-800'} truncate`}>
+              {savedText}
+            </div>
+            <div className="text-[9.5px] text-[var(--mos-text-muted)]">Chạm vào ảnh để chụp lại</div>
+          </div>
+          <button
+            type="button"
+            onClick={onTrigger}
+            className={`px-2 py-1 text-[10.5px] font-bold ${
+              isDark
+                ? 'text-sky-300 bg-sky-950/60 hover:bg-sky-900/60 border-sky-700'
+                : 'text-sky-700 bg-sky-50 hover:bg-sky-100 border-sky-300'
+            } rounded-lg border cursor-pointer shrink-0 active:scale-95`}
+          >
+            Chụp lại
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          data-testid={testId}
+          onClick={onTrigger}
+          className={`w-full py-2 px-3 ${
+            isDark
+              ? 'bg-neutral-900 hover:bg-sky-950/50 border-sky-700 text-sky-300'
+              : 'bg-white hover:bg-sky-50 border-sky-300 text-sky-800'
+          } active:scale-98 transition-all rounded-xl border-2 border-dashed font-bold text-[11.5px] flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs`}
+        >
+          <span className="text-sm">📷</span>
+          <span>{emptyButtonText}</span>
+        </button>
+      )}
+    </div>
+  );
 }
 
 export function CheckoutVietQrModal({
@@ -35,8 +147,48 @@ export function CheckoutVietQrModal({
   onTriggerFilePicker,
   onConfirmQrPaid,
   onClose,
+  serviceQrAmount,
+  serviceQrUrl,
+  serviceQrContent,
+  tipQrAmount,
+  tipQrUrl,
+  tipQrContent,
+  qrSplitMode,
+  onChangeQrSplitMode,
+  tipTransferProofPhoto,
+  tipProofCloudSyncStatus = 'idle',
+  onTriggerTipFilePicker,
+  modalTitle,
 }: CheckoutVietQrModalProps) {
+  const [internalSplitMode, setInternalSplitMode] = useState<VietQrSplitMode>('COMBINED');
+
   if (!open) return null;
+
+  const effectiveServiceAmt = serviceQrAmount ?? Math.max(0, finalGrandTotal - (tipQrAmount ?? 0));
+  const effectiveTipAmt = tipQrAmount ?? 0;
+  const canSplitTwoQr = effectiveServiceAmt > 0 && effectiveTipAmt > 0 && Boolean(serviceQrUrl) && Boolean(tipQrUrl);
+  const isTipOnlyMode = effectiveServiceAmt === 0 && effectiveTipAmt > 0 && Boolean(tipQrUrl);
+  const activeMode: VietQrSplitMode = canSplitTwoQr ? (qrSplitMode ?? internalSplitMode) : 'COMBINED';
+
+  const handleSetMode = (mode: VietQrSplitMode) => {
+    setInternalSplitMode(mode);
+    onChangeQrSplitMode?.(mode);
+  };
+
+  const singleDisplayUrl = isTipOnlyMode && tipQrUrl ? tipQrUrl : vietQrUrl;
+  const singleDisplayContent = isTipOnlyMode && tipQrContent ? tipQrContent : qrTransferContent;
+  const singleDisplayAmount = isTipOnlyMode ? effectiveTipAmt : finalGrandTotal;
+
+  const requiresTipProof = activeMode === 'SEPARATE' && canSplitTwoQr && Boolean(onTriggerTipFilePicker);
+  const hasAllRequiredProofs = Boolean(transferProofPhoto) && (!requiresTipProof || Boolean(tipTransferProofPhoto));
+
+  const headerTitle =
+    modalTitle ||
+    (activeMode === 'SEPARATE' && canSplitTwoQr
+      ? 'TÁCH 2 QR: DỊCH VỤ RIÊNG · TIP RIÊNG'
+      : isTipOnlyMode
+        ? '♥ QR TIỀN TIP CHUYÊN VIÊN'
+        : 'QR THANH TOÁN DỊCH VỤ');
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 select-none">
@@ -64,192 +216,312 @@ export function CheckoutVietQrModal({
         </div>
 
         {/* Dải cam tiêu đề chuẩn Sheet */}
-        <div className="bg-[#FF9500] text-black font-black text-center py-1.5 text-[12px] tracking-wider uppercase shadow-xs">
-          QR THANH TOÁN DỊCH VỤ
+        <div className="bg-[#FF9500] text-black font-black text-center py-1.5 text-[11.5px] tracking-wider uppercase shadow-xs px-2">
+          {headerTitle}
         </div>
 
         {/* Body: Mã QR & Thông tin thanh toán (Scrollable) */}
         <div className="p-3.5 space-y-2.5 overflow-y-auto max-h-[calc(85vh-150px)]">
-          {/* Image QR Code to rõ tối đa */}
-          <div className="flex justify-center">
-            <div className="bg-white p-2 rounded-2xl border-2 border-neutral-200 shadow-sm max-w-[270px] w-full aspect-square flex items-center justify-center">
-              <img
-                src={vietQrUrl}
-                alt="VietQR Chuyển Khoản Wings"
-                className="w-full h-full object-contain rounded-xl"
-              />
-            </div>
-          </div>
-
-          {/* Thông tin chuyển khoản chi tiết */}
-          <div
-            className={`${
-              isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-gray-50 border-gray-200'
-            } rounded-2xl p-2.5 border space-y-1.5 text-[12px]`}
-          >
-            <div className="flex items-center justify-between">
-              <span className={`text-[var(--mos-text-muted)] font-bold text-[11px]`}>Nội Dung:</span>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[#E11D48] font-black text-[13px] tracking-wide tabular-nums">
-                  {qrTransferContent}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onCopyToClipboard(qrTransferContent, 'content')}
-                  title="Sao chép nội dung"
-                  aria-label="Sao chép nội dung"
-                  className={`w-6 h-6 rounded-md ${
-                    isDark
-                      ? 'bg-neutral-800 text-neutral-200 border-neutral-700 hover:bg-neutral-700'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-                  } border flex items-center justify-center text-[11px] active:scale-90 transition-transform cursor-pointer shadow-2xs`}
-                >
-                  {copySuccess === 'content' ? (
-                    <span className="text-emerald-500 font-bold text-[11px]">✓</span>
-                  ) : (
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className={`text-[var(--mos-text-muted)] font-bold text-[11px]`}>
-                {totalBillGrandTotal && totalBillGrandTotal > finalGrandTotal ? 'Phần chuyển khoản QR:' : 'Số Tiền:'}
-              </span>
-              <span className="text-[#E11D48] font-black text-[15px] tabular-nums">
-                {finalGrandTotal.toLocaleString('vi-VN')} VNĐ
-              </span>
-            </div>
-            {totalBillGrandTotal && totalBillGrandTotal > finalGrandTotal && (
-              <div className="flex items-center justify-between text-[10.5px]">
-                <span className="text-[var(--mos-text-muted)] font-medium">Tổng bill (đã chia hình thức):</span>
-                <span className="font-bold tabular-nums">{totalBillGrandTotal.toLocaleString('vi-VN')} VNĐ</span>
-              </div>
-            )}
-
-            <div className={`flex items-center justify-between ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-              <span className={`text-[var(--mos-text-muted)] font-medium text-[11px]`}>Ngân Hàng:</span>
-              <span className={`font-bold ${isDark ? 'text-neutral-100' : 'text-gray-900'}`}>Vietcombank (VCB)</span>
-            </div>
-
-            <div className={`flex items-center justify-between ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-              <span className={`text-[var(--mos-text-muted)] font-medium text-[11px]`}>Tên Tài Khoản:</span>
-              <span className={`font-black ${isDark ? 'text-neutral-100' : 'text-gray-900'} text-[11px] uppercase`}>
-                CÔNG TY TNHH WINGS&apos; LIFE
-              </span>
-            </div>
-
-            <div className={`flex items-center justify-between ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-              <span className={`text-[var(--mos-text-muted)] font-medium text-[11px]`}>Số Tài Khoản:</span>
-              <div className="flex items-center gap-1.5">
-                <span
-                  className={`font-black ${isDark ? 'text-neutral-100' : 'text-gray-900'} tabular-nums text-[13px]`}
-                >
-                  1024731897
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onCopyToClipboard('1024731897', 'acc')}
-                  title="Sao chép số tài khoản"
-                  aria-label="Sao chép số tài khoản"
-                  className={`w-6 h-6 rounded-md ${
-                    isDark
-                      ? 'bg-neutral-800 text-neutral-200 border-neutral-700 hover:bg-neutral-700'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-                  } border flex items-center justify-center text-[11px] active:scale-90 transition-transform cursor-pointer shadow-2xs`}
-                >
-                  {copySuccess === 'acc' ? (
-                    <span className="text-emerald-500 font-bold text-[11px]">✓</span>
-                  ) : (
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Chức năng xin chụp lại màn hình chuyển khoản của khách hàng */}
-          <div
-            className={`${
-              isDark ? 'bg-sky-950/40 border-sky-800/60' : 'bg-sky-50/80 border-sky-200/90'
-            } rounded-2xl p-2.5 border space-y-1.5`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="text-base leading-none">📸</span>
-                <span className={`text-[11.5px] font-bold ${isDark ? 'text-sky-200' : 'text-sky-950'}`}>
-                  Ảnh bill chuyển khoản đối soát (Bắt buộc)
-                </span>
-              </div>
-              {(transferProofPhoto || proofCloudSyncStatus === 'uploading') && (
-                <IosCloudSyncBadge status={proofCloudSyncStatus} size="sm" />
-              )}
-            </div>
-
-            {transferProofPhoto ? (
-              <div
-                className={`flex items-center gap-2.5 ${
-                  isDark ? 'bg-neutral-900 border-sky-800' : 'bg-white border-sky-200'
-                } p-2 rounded-xl border shadow-2xs`}
-              >
-                <img
-                  src={transferProofPhoto}
-                  alt="Ảnh bill đối soát"
-                  className={`w-11 h-11 object-cover rounded-lg border ${
-                    isDark ? 'border-neutral-700' : 'border-gray-200'
-                  } shadow-2xs shrink-0 cursor-pointer`}
-                  onClick={onTriggerFilePicker}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className={`text-[11px] font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-800'} truncate`}>
-                    ✓ Đã lưu ảnh bill chuyển khoản
-                  </div>
-                  <div className={`text-[9.5px] text-[var(--mos-text-muted)]`}>Chạm vào ảnh để chụp lại</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={onTriggerFilePicker}
-                  className={`px-2 py-1 text-[10.5px] font-bold ${
-                    isDark
-                      ? 'text-sky-300 bg-sky-950/60 hover:bg-sky-900/60 border-sky-700'
-                      : 'text-sky-700 bg-sky-50 hover:bg-sky-100 border-sky-300'
-                  } rounded-lg border cursor-pointer shrink-0 active:scale-95`}
-                >
-                  Chụp lại
-                </button>
-              </div>
-            ) : (
+          {/* Toggle Tách 2 QR Dịch vụ riêng & Tip riêng */}
+          {canSplitTwoQr && (
+            <div
+              className={`grid grid-cols-2 gap-1.5 p-1 rounded-2xl border ${
+                isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-gray-100 border-gray-200'
+              }`}
+            >
               <button
                 type="button"
-                onClick={onTriggerFilePicker}
-                className={`w-full py-2 px-3 ${
-                  isDark
-                    ? 'bg-neutral-900 hover:bg-sky-950/50 border-sky-700 text-sky-300'
-                    : 'bg-white hover:bg-sky-50 border-sky-300 text-sky-800'
-                } active:scale-98 transition-all rounded-xl border-2 border-dashed font-bold text-[11.5px] flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs`}
+                data-testid="qr-mode-combined-btn"
+                onClick={() => handleSetMode('COMBINED')}
+                className={`py-1.5 px-2 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
+                  activeMode === 'COMBINED'
+                    ? 'bg-[#FFB400] text-black shadow-xs'
+                    : isDark
+                      ? 'text-neutral-400 hover:text-neutral-200'
+                      : 'text-gray-600 hover:text-gray-900'
+                }`}
               >
-                <span className="text-sm">📷</span>
-                <span>Xin chụp lại màn hình chuyển khoản của khách</span>
+                1 QR Gộp (DV + Tip)
               </button>
-            )}
-          </div>
+              <button
+                type="button"
+                data-testid="qr-mode-separate-btn"
+                onClick={() => handleSetMode('SEPARATE')}
+                className={`py-1.5 px-2 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
+                  activeMode === 'SEPARATE'
+                    ? 'bg-emerald-500 text-black shadow-xs'
+                    : isDark
+                      ? 'text-neutral-400 hover:text-neutral-200'
+                      : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Tách 2 QR (DV · Tip riêng)
+              </button>
+            </div>
+          )}
+
+          {activeMode === 'SEPARATE' && canSplitTwoQr ? (
+            <div className="space-y-3" data-testid="vietqr-split-cards">
+              {/* QR 1: Dịch vụ */}
+              <div
+                className={`rounded-2xl border p-2.5 space-y-2 ${
+                  isDark ? 'bg-neutral-950 border-amber-600/40' : 'bg-amber-50/40 border-amber-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black uppercase text-[#FF9500]">1. QR Tiền Dịch Vụ</span>
+                  <span className="text-[14px] font-black text-[#E11D48] tabular-nums">
+                    {effectiveServiceAmt.toLocaleString('vi-VN')} VNĐ
+                  </span>
+                </div>
+                <div className="flex justify-center">
+                  <div className="bg-white p-1.5 rounded-xl border border-neutral-200 w-[190px] aspect-square flex items-center justify-center">
+                    <img
+                      src={serviceQrUrl}
+                      alt="VietQR Tiền Dịch Vụ"
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-[11.5px]">
+                  <span className="text-[var(--mos-text-muted)] font-bold">Nội Dung DV:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[#E11D48] font-black tabular-nums">{serviceQrContent}</span>
+                    <button
+                      type="button"
+                      onClick={() => onCopyToClipboard(serviceQrContent || '', 'service-content')}
+                      aria-label="Sao chép nội dung dịch vụ"
+                      className={`w-6 h-6 rounded-md border flex items-center justify-center cursor-pointer ${
+                        isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-gray-300'
+                      }`}
+                    >
+                      {copySuccess === 'service-content' ? (
+                        <span className="text-emerald-500 font-bold text-[11px]">✓</span>
+                      ) : (
+                        <QrCopyIcon />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <BillProofUploaderBox
+                  isDark={isDark}
+                  label="Ảnh bill Dịch vụ (Bắt buộc)"
+                  emptyButtonText="Chụp ảnh bill chuyển khoản Dịch vụ"
+                  savedText="✓ Đã lưu ảnh bill Dịch vụ"
+                  photo={transferProofPhoto}
+                  syncStatus={proofCloudSyncStatus}
+                  onTrigger={onTriggerFilePicker}
+                  testId="vietqr-service-proof-btn"
+                />
+              </div>
+
+              {/* QR 2: Tiền Tip */}
+              <div
+                className={`rounded-2xl border p-2.5 space-y-2 ${
+                  isDark ? 'bg-neutral-950 border-rose-500/40' : 'bg-rose-50/40 border-rose-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black uppercase text-rose-500">2. ♥ QR Tiền Tip Chuyên Viên</span>
+                  <span className="text-[14px] font-black text-rose-500 tabular-nums">
+                    {effectiveTipAmt.toLocaleString('vi-VN')} VNĐ
+                  </span>
+                </div>
+                <div className="flex justify-center">
+                  <div className="bg-white p-1.5 rounded-xl border border-neutral-200 w-[190px] aspect-square flex items-center justify-center">
+                    <img src={tipQrUrl} alt="VietQR Tiền Tip" className="w-full h-full object-contain rounded-lg" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-[11.5px]">
+                  <span className="text-[var(--mos-text-muted)] font-bold">Nội Dung Tip:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-rose-500 font-black tabular-nums">{tipQrContent}</span>
+                    <button
+                      type="button"
+                      onClick={() => onCopyToClipboard(tipQrContent || '', 'tip-content')}
+                      aria-label="Sao chép nội dung tip"
+                      className={`w-6 h-6 rounded-md border flex items-center justify-center cursor-pointer ${
+                        isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-gray-300'
+                      }`}
+                    >
+                      {copySuccess === 'tip-content' ? (
+                        <span className="text-emerald-500 font-bold text-[11px]">✓</span>
+                      ) : (
+                        <QrCopyIcon />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                {onTriggerTipFilePicker && (
+                  <BillProofUploaderBox
+                    isDark={isDark}
+                    label="Ảnh bill Tiền Tip (Bắt buộc)"
+                    emptyButtonText="Chụp ảnh bill chuyển khoản Tip"
+                    savedText="✓ Đã lưu ảnh bill Tiền Tip"
+                    photo={tipTransferProofPhoto ?? null}
+                    syncStatus={tipProofCloudSyncStatus}
+                    onTrigger={onTriggerTipFilePicker}
+                    testId="vietqr-tip-proof-btn"
+                  />
+                )}
+              </div>
+
+              {/* Thông tin tài khoản chung */}
+              <div
+                className={`${
+                  isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-gray-50 border-gray-200'
+                } rounded-2xl p-2.5 border space-y-1 text-[11.5px]`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--mos-text-muted)] font-medium">Ngân Hàng / STK:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-black tabular-nums">VCB · 1024731897</span>
+                    <button
+                      type="button"
+                      onClick={() => onCopyToClipboard('1024731897', 'acc')}
+                      aria-label="Sao chép số tài khoản"
+                      className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer ${
+                        isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-gray-300'
+                      }`}
+                    >
+                      {copySuccess === 'acc' ? (
+                        <span className="text-emerald-500 font-bold text-[10px]">✓</span>
+                      ) : (
+                        <QrCopyIcon />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--mos-text-muted)] font-medium">Tên Tài Khoản:</span>
+                  <span className="font-black uppercase text-[10.5px]">CÔNG TY TNHH WINGS&apos; LIFE</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Image QR Code to rõ tối đa */}
+              <div className="flex justify-center">
+                <div className="bg-white p-2 rounded-2xl border-2 border-neutral-200 shadow-sm max-w-[270px] w-full aspect-square flex items-center justify-center">
+                  <img
+                    src={singleDisplayUrl}
+                    alt="VietQR Chuyển Khoản Wings"
+                    className="w-full h-full object-contain rounded-xl"
+                  />
+                </div>
+              </div>
+
+              {/* Thông tin chuyển khoản chi tiết */}
+              <div
+                className={`${
+                  isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-gray-50 border-gray-200'
+                } rounded-2xl p-2.5 border space-y-1.5 text-[12px]`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--mos-text-muted)] font-bold text-[11px]">Nội Dung:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[#E11D48] font-black text-[13px] tracking-wide tabular-nums">
+                      {singleDisplayContent}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onCopyToClipboard(singleDisplayContent, 'content')}
+                      title="Sao chép nội dung"
+                      aria-label="Sao chép nội dung"
+                      className={`w-6 h-6 rounded-md ${
+                        isDark
+                          ? 'bg-neutral-800 text-neutral-200 border-neutral-700 hover:bg-neutral-700'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                      } border flex items-center justify-center text-[11px] active:scale-90 transition-transform cursor-pointer shadow-2xs`}
+                    >
+                      {copySuccess === 'content' ? (
+                        <span className="text-emerald-500 font-bold text-[11px]">✓</span>
+                      ) : (
+                        <QrCopyIcon />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--mos-text-muted)] font-bold text-[11px]">
+                    {totalBillGrandTotal && totalBillGrandTotal > singleDisplayAmount
+                      ? 'Phần chuyển khoản QR:'
+                      : 'Số Tiền:'}
+                  </span>
+                  <span className="text-[#E11D48] font-black text-[15px] tabular-nums">
+                    {singleDisplayAmount.toLocaleString('vi-VN')} VNĐ
+                  </span>
+                </div>
+                {totalBillGrandTotal && totalBillGrandTotal > singleDisplayAmount && (
+                  <div className="flex items-center justify-between text-[10.5px]">
+                    <span className="text-[var(--mos-text-muted)] font-medium">Tổng bill (đã chia hình thức):</span>
+                    <span className="font-bold tabular-nums">{totalBillGrandTotal.toLocaleString('vi-VN')} VNĐ</span>
+                  </div>
+                )}
+
+                <div className={`flex items-center justify-between ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
+                  <span className="text-[var(--mos-text-muted)] font-medium text-[11px]">Ngân Hàng:</span>
+                  <span className={`font-bold ${isDark ? 'text-neutral-100' : 'text-gray-900'}`}>Vietcombank (VCB)</span>
+                </div>
+
+                <div className={`flex items-center justify-between ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
+                  <span className="text-[var(--mos-text-muted)] font-medium text-[11px]">Tên Tài Khoản:</span>
+                  <span className={`font-black ${isDark ? 'text-neutral-100' : 'text-gray-900'} text-[11px] uppercase`}>
+                    CÔNG TY TNHH WINGS&apos; LIFE
+                  </span>
+                </div>
+
+                <div className={`flex items-center justify-between ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
+                  <span className="text-[var(--mos-text-muted)] font-medium text-[11px]">Số Tài Khoản:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`font-black ${isDark ? 'text-neutral-100' : 'text-gray-900'} tabular-nums text-[13px]`}
+                    >
+                      1024731897
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onCopyToClipboard('1024731897', 'acc')}
+                      title="Sao chép số tài khoản"
+                      aria-label="Sao chép số tài khoản"
+                      className={`w-6 h-6 rounded-md ${
+                        isDark
+                          ? 'bg-neutral-800 text-neutral-200 border-neutral-700 hover:bg-neutral-700'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                      } border flex items-center justify-center text-[11px] active:scale-90 transition-transform cursor-pointer shadow-2xs`}
+                    >
+                      {copySuccess === 'acc' ? (
+                        <span className="text-emerald-500 font-bold text-[11px]">✓</span>
+                      ) : (
+                        <QrCopyIcon />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <BillProofUploaderBox
+                isDark={isDark}
+                label="Ảnh bill chuyển khoản đối soát (Bắt buộc)"
+                emptyButtonText="Xin chụp lại màn hình chuyển khoản của khách"
+                savedText="✓ Đã lưu ảnh bill chuyển khoản"
+                photo={transferProofPhoto}
+                syncStatus={proofCloudSyncStatus}
+                onTrigger={onTriggerFilePicker}
+              />
+            </>
+          )}
         </div>
 
         {/* Sticky Action Footer */}
-        <div className={`p-3 bg-[var(--mos-surface)] border-[var(--mos-surface-border)] border-t space-y-2 shrink-0`}>
+        <div className="p-3 bg-[var(--mos-surface)] border-[var(--mos-surface-border)] border-t space-y-2 shrink-0">
           <button
             type="button"
             onClick={onConfirmQrPaid}
-            disabled={!transferProofPhoto}
+            disabled={!hasAllRequiredProofs}
             className={`w-full py-3 px-4 rounded-2xl ${
-              !transferProofPhoto
+              !hasAllRequiredProofs
                 ? isDark
                   ? 'bg-neutral-800 text-neutral-500 border border-neutral-700/60 cursor-not-allowed opacity-60'
                   : 'bg-neutral-200 text-neutral-400 border border-neutral-300 cursor-not-allowed opacity-60'
@@ -257,10 +529,14 @@ export function CheckoutVietQrModal({
             } font-black transition-all text-center tracking-wide flex flex-col items-center justify-center leading-snug gap-0.5`}
           >
             <span className="text-[13.5px]">
-              {!transferProofPhoto ? '🔒 BẮT BUỘC CHỤP ẢNH BILL CHUYỂN KHOẢN' : '✓ ĐÃ NHẬN TIỀN THÀNH CÔNG'}
+              {!hasAllRequiredProofs
+                ? requiresTipProof
+                  ? '🔒 BẮT BUỘC CHỤP ĐỦ 2 ẢNH BILL (DỊCH VỤ & TIP)'
+                  : '🔒 BẮT BUỘC CHỤP ẢNH BILL CHUYỂN KHOẢN'
+                : '✓ ĐÃ NHẬN TIỀN THÀNH CÔNG'}
             </span>
             <span className="text-[12px] opacity-95 font-extrabold uppercase tracking-wide">
-              {!transferProofPhoto ? 'ĐỂ ĐỐI SOÁT KẾ TOÁN & XUẤT HÓA ĐƠN' : 'XUẤT HÓA ĐƠN'}
+              {!hasAllRequiredProofs ? 'ĐỂ ĐỐI SOÁT KẾ TOÁN & XUẤT HÓA ĐƠN' : 'XUẤT HÓA ĐƠN'}
             </span>
           </button>
           <button

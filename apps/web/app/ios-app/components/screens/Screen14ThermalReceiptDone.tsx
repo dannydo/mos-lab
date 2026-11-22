@@ -31,6 +31,7 @@ import {
   PostCheckoutAuditTimeline,
   PostCheckoutDoneCtaButton,
   PostCheckoutReceiptReconciliationBox,
+  PostCheckoutTransferProofBox,
 } from './post-checkout/PostCheckoutHistorySection';
 
 interface Screen14ThermalReceiptDoneProps {
@@ -432,29 +433,7 @@ export function Screen14ThermalReceiptDone({
 
           <PostCheckoutReceiptReconciliationBox booking={booking} isDark={isDark} />
 
-          {/* Ảnh bill đối soát kế toán */}
-          {booking?.billing?.transferProofPhoto && (
-            <div
-              className={`${isDark ? 'bg-sky-950/30 border-sky-800' : 'bg-sky-50 border-sky-200'} p-2.5 rounded-xl border flex items-center justify-between gap-3`}
-            >
-              <div className="space-y-0.5 min-w-0">
-                <div
-                  className={`text-[11px] font-bold ${isDark ? 'text-sky-300' : 'text-sky-950'} flex items-center gap-1.5`}
-                >
-                  <span className="text-base leading-none">📸</span>
-                  <span>Ảnh bill chuyển khoản đối soát (VCB):</span>
-                </div>
-                <div className={`text-[10px] ${isDark ? 'text-sky-400' : 'text-sky-800'} font-medium truncate`}>
-                  Mã GD: {branchCode} {booking?.orderNumber?.replace(/\D/g, '') || booking?.id} DV TIP...
-                </div>
-              </div>
-              <img
-                src={booking.billing.transferProofPhoto}
-                alt="Bill đối soát"
-                className={`w-12 h-12 object-cover rounded-lg border ${isDark ? 'border-sky-700' : 'border-sky-300'} shadow-2xs shrink-0 cursor-pointer`}
-              />
-            </div>
-          )}
+          <PostCheckoutTransferProofBox booking={booking} isDark={isDark} branchCode={branchCode} />
 
           {/* Trạng thái gửi hóa đơn & bảo hành qua Zalo */}
           {booking?.billing?.zaloConsent?.agreed ? (
@@ -659,6 +638,7 @@ export function Screen14ThermalReceiptDone({
             isDark={isDark}
             isPendingPostAdj={isPendingPostAdj}
             onClick={() => setIsPostCheckoutOpen(true)}
+            onOpenTipQr={() => setIsPostCheckoutOpen(true)}
           />
         )}
 

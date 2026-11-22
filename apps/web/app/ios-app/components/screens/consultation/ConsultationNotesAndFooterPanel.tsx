@@ -6,7 +6,10 @@ import { FileText, ShieldCheck, CheckCircle2, Lock, ArrowRight } from 'lucide-re
 import { CvFeather2Badge } from '../../ui-kit/CvFeatherLabels';
 import { CvlCustomerNotesBanner } from '../../ui-kit/CvlCustomerNotesBanner';
 import type { ActiveActorProfile } from '../../../state/useIosAppState';
+import type { BookingItem } from '../../../state/mockData';
 import type { LashPricingAndCvPointResult } from '../LashMaterialConstraintMatrix';
+import type { SavePreCheckoutPaymentPayload } from '../../modals/PreCheckoutPaymentModal';
+import { PreCheckoutStatusCard } from './PreCheckoutStatusCard';
 
 interface ConsultationNotesAndFooterPanelProps {
   isDark: boolean;
@@ -40,6 +43,9 @@ interface ConsultationNotesAndFooterPanelProps {
   isReadOnlyMentorView?: boolean;
   simulationAttemptCount?: number;
   onSimFastForwardToUpsell?: (bookingId: number) => void;
+  booking?: BookingItem;
+  quotedServiceTotalWithVat?: number;
+  onSavePreCheckoutPayment?: (payload: SavePreCheckoutPaymentPayload) => Promise<void> | void;
 }
 
 export function ConsultationNotesAndFooterPanel({
@@ -74,6 +80,9 @@ export function ConsultationNotesAndFooterPanel({
   isReadOnlyMentorView = false,
   simulationAttemptCount = 0,
   onSimFastForwardToUpsell,
+  booking,
+  quotedServiceTotalWithVat,
+  onSavePreCheckoutPayment,
 }: ConsultationNotesAndFooterPanelProps) {
   return (
     <>
@@ -320,6 +329,17 @@ export function ConsultationNotesAndFooterPanel({
               </div>
             </div>
           )}
+
+          {/* Thu tiền dịch vụ / Tip trước khi vào phòng mi (tùy chọn) */}
+          <PreCheckoutStatusCard
+            isDark={isDark}
+            booking={booking}
+            quotedServiceTotalWithVat={
+              quotedServiceTotalWithVat ?? livePricingAndCvPoints.totalPriceWithVat
+            }
+            isReadOnly={isReadOnlyMentorView}
+            onSavePreCheckoutPayment={onSavePreCheckoutPayment}
+          />
 
           {/* Big Action Button */}
           <div className="pt-1">

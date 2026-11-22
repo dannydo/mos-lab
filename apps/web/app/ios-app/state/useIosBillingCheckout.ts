@@ -33,10 +33,14 @@ import {
   applyCartProductsUpdateToBookingDraft,
   applyCombosUpdateToBookingDraft,
   applyTargetPromotionToBookingDraft,
+  buildPreCheckoutBillingSnapshot,
+  buildPromoActionSnapshot,
   buildRecomputedCheckoutBilling,
   buildRecordedTipBillingSnapshot,
   computeFreshBillingLineTotals,
+  mergePromotionSelectionIntoBookingDraft,
   type CartProductItem,
+  type PreCheckoutPaymentDraftInput,
   type SavePromotionTarget,
 } from './iosBillingMath';
 
@@ -403,6 +407,8 @@ export function useIosBillingCheckout({
         underComboPromotion?: IosPromotionOption | null;
         cartProducts?: CartProductItem[];
         paymentBreakdown?: IosPaymentBreakdown;
+        tipTransferProofPhoto?: string;
+        qrSplitTipSeparate?: boolean;
       }
     ) => {
       const completedAt = new Date().toISOString();
@@ -416,39 +422,7 @@ export function useIosBillingCheckout({
         const checkOutShare = Math.round(tipAmount * 0.1);
         const ccShare = checkInShare + checkOutShare;
 
-        const nextBookingDraft: BookingItem = {
-          ...prev,
-          promotionId:
-            promotionSelection?.promotionId !== undefined ? promotionSelection.promotionId : prev.promotionId,
-          appliedPromotion:
-            promotionSelection?.appliedPromotion !== undefined
-              ? promotionSelection.appliedPromotion
-              : prev.appliedPromotion,
-          servicePromotionId:
-            promotionSelection?.servicePromotionId !== undefined
-              ? promotionSelection.servicePromotionId
-              : prev.servicePromotionId,
-          servicePromotion:
-            promotionSelection?.servicePromotion !== undefined
-              ? promotionSelection.servicePromotion
-              : prev.servicePromotion,
-          comboPromotionId:
-            promotionSelection?.comboPromotionId !== undefined
-              ? promotionSelection.comboPromotionId
-              : prev.comboPromotionId,
-          comboPromotion:
-            promotionSelection?.comboPromotion !== undefined ? promotionSelection.comboPromotion : prev.comboPromotion,
-          underComboPromotionId:
-            promotionSelection?.underComboPromotionId !== undefined
-              ? promotionSelection.underComboPromotionId
-              : prev.underComboPromotionId,
-          underComboPromotion:
-            promotionSelection?.underComboPromotion !== undefined
-              ? promotionSelection.underComboPromotion
-              : prev.underComboPromotion,
-          cartProducts:
-            promotionSelection?.cartProducts !== undefined ? promotionSelection.cartProducts : prev.cartProducts,
-        };
+        const nextBookingDraft = mergePromotionSelectionIntoBookingDraft(prev, promotionSelection);
 
         const {
           serviceTotal: freshServiceTotal,
@@ -496,23 +470,11 @@ export function useIosBillingCheckout({
           (isSessionWaivedIntoNewCombo ? null : nextBookingDraft.promotionId) ??
           primaryPromotion?.promotionId ??
           null;
-        promoActionSnapshot = {
-          promotionId: effectiveOrderPromoId,
-          appliedPromotion: isSessionWaivedIntoNewCombo ? null : (nextBookingDraft.appliedPromotion ?? null),
-          servicePromotionId: isSessionWaivedIntoNewCombo
-            ? null
-            : (nextBookingDraft.servicePromotion?.promotionId ?? nextBookingDraft.servicePromotionId ?? null),
-          servicePromotion: isSessionWaivedIntoNewCombo ? null : (nextBookingDraft.servicePromotion ?? null),
-          comboPromotionId: nextBookingDraft.comboPromotion?.promotionId ?? nextBookingDraft.comboPromotionId ?? null,
-          comboPromotion: nextBookingDraft.comboPromotion ?? null,
-          underComboPromotionId:
-            nextBookingDraft.underComboPromotion?.promotionId ?? nextBookingDraft.underComboPromotionId ?? null,
-          underComboPromotion: nextBookingDraft.underComboPromotion ?? null,
-          cartProducts: nextBookingDraft.cartProducts,
-          selectedCombo: nextBookingDraft.selectedCombo ?? null,
-          selectedUnderCombo: nextBookingDraft.selectedUnderCombo ?? null,
-          comboRedemption: nextBookingDraft.comboRedemption ?? null,
-        };
+        promoActionSnapshot = buildPromoActionSnapshot(
+          nextBookingDraft,
+          effectiveOrderPromoId,
+          isSessionWaivedIntoNewCombo
+        );
 
         const normalizedPayment = resolveNormalizedPaymentBreakdown(
           grandTotal,
@@ -552,6 +514,14 @@ export function useIosBillingCheckout({
           diamondUsed,
           diamondDiscountAmount,
           transferProofPhoto: proofPhoto || prev.billing?.transferProofPhoto,
+          ...(promotionSelection?.tipTransferProofPhoto || prev.billing?.tipTransferProofPhoto
+            ? { tipTransferProofPhoto: promotionSelection?.tipTransferProofPhoto || prev.billing?.tipTransferProofPhoto }
+            : {}),
+          ...(promotionSelection?.qrSplitTipSeparate !== undefined
+            ? { qrSplitTipSeparate: promotionSelection.qrSplitTipSeparate }
+            : prev.billing?.qrSplitTipSeparate !== undefined
+              ? { qrSplitTipSeparate: prev.billing.qrSplitTipSeparate }
+              : {}),
           zaloConsent: zaloConsent || prev.billing?.zaloConsent,
           grandTotal,
           completedAt,
@@ -599,6 +569,22 @@ export function useIosBillingCheckout({
       setCurrentStep(15);
     },
     [activeBookingId, actor, dispatchCompleteOrder, setBookingSegment, setCurrentStep, updateActiveBooking]
+  );
+
+  // Pre-Checkout: Lưu tiền dịch vụ và/hoặc tiền tip thu trước khi vào phòng mi (giữ nguyên tiến trình ca làm)
+  const handleSavePreCheckoutPayment = useCallback(
+    async (payload: PreCheckoutPaymentDraftInput) => {
+      const recordedAt = new Date().toISOString();
+      updateActiveBooking((prev) => ({
+        ...prev,
+        billing: buildPreCheckoutBillingSnapshot(prev, actor, payload, recordedAt),
+      }));
+      await postAction('SAVE_PRE_CHECKOUT_PAYMENT', {
+        ...payload,
+        tipAmount: payload.preCheckoutTipAmount,
+      });
+    },
+    [actor, postAction, updateActiveBooking]
   );
 
   // Step 14: Record Tip (Kinh Thánh mOS Điều răn TIP-001 & CV-002: 70% Làm mi + 10% Check-in + 10% Check-out)
@@ -677,6 +663,7 @@ export function useIosBillingCheckout({
     handleUpdateCartProducts,
     handleUpdateCombos,
     handleChoosePaymentMethod,
+    handleSavePreCheckoutPayment,
     handleRecordTip,
     handleFinishOrder,
   };
