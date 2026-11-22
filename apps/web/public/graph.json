@@ -15045,25 +15045,8 @@
       "filePath": "apps/web/app/payroll-adjustment-lab/page.tsx",
       "metadata": {
         "routePath": "/payroll-adjustment-lab",
-        "apiCallsCount": 16,
-        "apiCalls": [
-          "safeDevPayrollAdjustmentLab.calculateShadow",
-          "safeDevPayrollAdjustmentLab.validateHrCustom",
-          "safeDevPayrollAdjustmentLab.getCase",
-          "safeDevPayrollAdjustmentLab.getEligibleCase",
-          "safeDevPayrollAdjustmentLab.getHrCustomCase",
-          "safeDevPayrollAdjustmentLab.listCases",
-          "safeDevPayrollAdjustmentLab.approverGroup",
-          "safeDevPayrollAdjustmentLab.settlementReview",
-          "safeDevPayrollAdjustmentLab.lockSettlementReview",
-          "safeDevPayrollAdjustmentLab.checkApproval",
-          "safeDevPayrollAdjustmentLab.createDraft",
-          "safeDevPayrollAdjustmentLab.decideCase",
-          "safeDevPayrollAdjustmentLab.createEligibleDraft",
-          "safeDevPayrollAdjustmentLab.decideEligibleCase",
-          "safeDevPayrollAdjustmentLab.createHrCustomDraft",
-          "safeDevPayrollAdjustmentLab.decideHrCustomCase"
-        ]
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -35695,6 +35678,90 @@
       }
     },
     {
+      "id": "uicomp:SharedPoolBadges",
+      "type": "UIComponent",
+      "label": "<SharedPoolBadges />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/shared-pool-history-recovery-drawer/SharedPoolBadges.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SharedPoolBadges",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SharedPoolHistoryColumns",
+      "type": "UIComponent",
+      "label": "<SharedPoolHistoryColumns />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/shared-pool-history-recovery-drawer/SharedPoolHistoryColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SharedPoolHistoryColumns",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SharedPoolHistoryToolbar",
+      "type": "UIComponent",
+      "label": "<SharedPoolHistoryToolbar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/shared-pool-history-recovery-drawer/SharedPoolHistoryToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SharedPoolHistoryToolbar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SharedPoolLogRecoveryModal",
+      "type": "UIComponent",
+      "label": "<SharedPoolLogRecoveryModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/shared-pool-history-recovery-drawer/SharedPoolLogRecoveryModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SharedPoolLogRecoveryModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SharedPoolQuickRecoveryModal",
+      "type": "UIComponent",
+      "label": "<SharedPoolQuickRecoveryModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/shared-pool-history-recovery-drawer/SharedPoolQuickRecoveryModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SharedPoolQuickRecoveryModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:sharedPoolHistoryTypes",
+      "type": "UIComponent",
+      "label": "<sharedPoolHistoryTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/shared-pool-history-recovery-drawer/sharedPoolHistoryTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "sharedPoolHistoryTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useSharedPoolHistoryRecovery",
+      "type": "UIComponent",
+      "label": "<useSharedPoolHistoryRecovery />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/shared-pool-history-recovery-drawer/useSharedPoolHistoryRecovery.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useSharedPoolHistoryRecovery",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:CcIncomeSummaryCards",
       "type": "UIComponent",
       "label": "<CcIncomeSummaryCards />",
@@ -35775,6 +35842,126 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "CvlTrainingMentorshipConfigModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:PaystubAllowancesSection",
+      "type": "UIComponent",
+      "label": "<PaystubAllowancesSection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/cc-thu-nhap/modals/cc-paystub-detail-modal/PaystubAllowancesSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "PaystubAllowancesSection",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:PaystubFooterNotice",
+      "type": "UIComponent",
+      "label": "<PaystubFooterNotice />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/cc-thu-nhap/modals/cc-paystub-detail-modal/PaystubFooterNotice.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "PaystubFooterNotice",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:PaystubModalHeader",
+      "type": "UIComponent",
+      "label": "<PaystubModalHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/cc-thu-nhap/modals/cc-paystub-detail-modal/PaystubModalHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "PaystubModalHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:PaystubPerformanceBonusSection",
+      "type": "UIComponent",
+      "label": "<PaystubPerformanceBonusSection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/cc-thu-nhap/modals/cc-paystub-detail-modal/PaystubPerformanceBonusSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "PaystubPerformanceBonusSection",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:PaystubProfileCard",
+      "type": "UIComponent",
+      "label": "<PaystubProfileCard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/cc-thu-nhap/modals/cc-paystub-detail-modal/PaystubProfileCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "PaystubProfileCard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:PaystubTimeBonusSection",
+      "type": "UIComponent",
+      "label": "<PaystubTimeBonusSection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/cc-thu-nhap/modals/cc-paystub-detail-modal/PaystubTimeBonusSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "PaystubTimeBonusSection",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:PaystubTimeSalarySection",
+      "type": "UIComponent",
+      "label": "<PaystubTimeSalarySection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/cc-thu-nhap/modals/cc-paystub-detail-modal/PaystubTimeSalarySection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "PaystubTimeSalarySection",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:PaystubTotalsSection",
+      "type": "UIComponent",
+      "label": "<PaystubTotalsSection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/cc-thu-nhap/modals/cc-paystub-detail-modal/PaystubTotalsSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "PaystubTotalsSection",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:paystubHelpers",
+      "type": "UIComponent",
+      "label": "<paystubHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/cc-thu-nhap/modals/cc-paystub-detail-modal/paystubHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "paystubHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:types",
+      "type": "UIComponent",
+      "label": "<types />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/voice-assistant/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "types",
         "isPrimitive": false
       }
     },
@@ -36675,18 +36862,6 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "WeeklyQuizTab",
-        "isPrimitive": false
-      }
-    },
-    {
-      "id": "uicomp:types",
-      "type": "UIComponent",
-      "label": "<types />",
-      "category": "UI Feature Component",
-      "filePath": "apps/web/components/voice-assistant/types.ts",
-      "packageName": "@mos-lab/web",
-      "metadata": {
-        "componentName": "types",
         "isPrimitive": false
       }
     },
@@ -38535,6 +38710,102 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useMosChatImageLightbox",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ChecklistAssigneePopover",
+      "type": "UIComponent",
+      "label": "<ChecklistAssigneePopover />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-task-inline-checklist/ChecklistAssigneePopover.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ChecklistAssigneePopover",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ChecklistDeadlinePopover",
+      "type": "UIComponent",
+      "label": "<ChecklistDeadlinePopover />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-task-inline-checklist/ChecklistDeadlinePopover.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ChecklistDeadlinePopover",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ChecklistHeaderAndSummary",
+      "type": "UIComponent",
+      "label": "<ChecklistHeaderAndSummary />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-task-inline-checklist/ChecklistHeaderAndSummary.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ChecklistHeaderAndSummary",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ChecklistItemRow",
+      "type": "UIComponent",
+      "label": "<ChecklistItemRow />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-task-inline-checklist/ChecklistItemRow.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ChecklistItemRow",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ChecklistQuickAddRow",
+      "type": "UIComponent",
+      "label": "<ChecklistQuickAddRow />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-task-inline-checklist/ChecklistQuickAddRow.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ChecklistQuickAddRow",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:checklistHelpers",
+      "type": "UIComponent",
+      "label": "<checklistHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-task-inline-checklist/checklistHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "checklistHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:checklistTypes",
+      "type": "UIComponent",
+      "label": "<checklistTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-task-inline-checklist/checklistTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "checklistTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMosChatTaskInlineChecklist",
+      "type": "UIComponent",
+      "label": "<useMosChatTaskInlineChecklist />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-task-inline-checklist/useMosChatTaskInlineChecklist.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMosChatTaskInlineChecklist",
         "isPrimitive": false
       }
     },
@@ -61411,8 +61682,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/SopPrepCategory1DetailView.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40808,
-        "lineCount": 915,
+        "sizeBytes": 5009,
+        "lineCount": 140,
         "ext": ".tsx"
       }
     },
@@ -61700,6 +61971,110 @@
         "sizeBytes": 16126,
         "lineCount": 428,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepCriteriaTabs.tsx",
+      "type": "File",
+      "label": "SopPrepCriteriaTabs.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepCriteriaTabs.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2033,
+        "lineCount": 52,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepCriterionFormCard.tsx",
+      "type": "File",
+      "label": "SopPrepCriterionFormCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepCriterionFormCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6062,
+        "lineCount": 133,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepEvidencePreviewModal.tsx",
+      "type": "File",
+      "label": "SopPrepEvidencePreviewModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepEvidencePreviewModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4036,
+        "lineCount": 101,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepEvidenceSection.tsx",
+      "type": "File",
+      "label": "SopPrepEvidenceSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepEvidenceSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11932,
+        "lineCount": 263,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepFileTypeIcon.tsx",
+      "type": "File",
+      "label": "SopPrepFileTypeIcon.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepFileTypeIcon.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 848,
+        "lineCount": 25,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepOverviewHeader.tsx",
+      "type": "File",
+      "label": "SopPrepOverviewHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepOverviewHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5866,
+        "lineCount": 125,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/sop-prep-category1-helpers.ts",
+      "type": "File",
+      "label": "sop-prep-category1-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/sop-prep-category1-helpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2891,
+        "lineCount": 77,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/useSopPrepCategory1Detail.ts",
+      "type": "File",
+      "label": "useSopPrepCategory1Detail.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/useSopPrepCategory1Detail.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9738,
+        "lineCount": 322,
+        "ext": ".ts"
       }
     },
     {
@@ -66975,9 +67350,113 @@
       "filePath": "apps/web/app/payroll-adjustment-lab/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 39074,
-        "lineCount": 897,
+        "sizeBytes": 5396,
+        "lineCount": 124,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/AdjustmentCaseMetricsSummary.tsx",
+      "type": "File",
+      "label": "AdjustmentCaseMetricsSummary.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/AdjustmentCaseMetricsSummary.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1491,
+        "lineCount": 35,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/ApproverRehearsalSection.tsx",
+      "type": "File",
+      "label": "ApproverRehearsalSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/ApproverRehearsalSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3472,
+        "lineCount": 95,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/LabPageHeaderSection.tsx",
+      "type": "File",
+      "label": "LabPageHeaderSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/LabPageHeaderSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1458,
+        "lineCount": 44,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/LocalCaseRehearsalSection.tsx",
+      "type": "File",
+      "label": "LocalCaseRehearsalSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/LocalCaseRehearsalSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6094,
+        "lineCount": 145,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/ShadowSimulationSection.tsx",
+      "type": "File",
+      "label": "ShadowSimulationSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/ShadowSimulationSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8254,
+        "lineCount": 209,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/payrollAdjustmentLabTypes.ts",
+      "type": "File",
+      "label": "payrollAdjustmentLabTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/payrollAdjustmentLabTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 886,
+        "lineCount": 21,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/payrollAdjustmentLabUtils.ts",
+      "type": "File",
+      "label": "payrollAdjustmentLabUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/payrollAdjustmentLabUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3784,
+        "lineCount": 108,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/usePayrollAdjustmentLabPage.ts",
+      "type": "File",
+      "label": "usePayrollAdjustmentLabPage.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/usePayrollAdjustmentLabPage.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15485,
+        "lineCount": 429,
+        "ext": ".ts"
       }
     },
     {
@@ -90359,6 +90838,104 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:SharedPoolBadges:ws:apps/web",
+      "source": "uicomp:SharedPoolBadges",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolBadges:token:color:primary",
+      "source": "uicomp:SharedPoolBadges",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolHistoryColumns:ws:apps/web",
+      "source": "uicomp:SharedPoolHistoryColumns",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolHistoryColumns:token:color:primary",
+      "source": "uicomp:SharedPoolHistoryColumns",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolHistoryToolbar:ws:apps/web",
+      "source": "uicomp:SharedPoolHistoryToolbar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolHistoryToolbar:token:color:primary",
+      "source": "uicomp:SharedPoolHistoryToolbar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolLogRecoveryModal:ws:apps/web",
+      "source": "uicomp:SharedPoolLogRecoveryModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolLogRecoveryModal:token:color:primary",
+      "source": "uicomp:SharedPoolLogRecoveryModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolQuickRecoveryModal:ws:apps/web",
+      "source": "uicomp:SharedPoolQuickRecoveryModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolQuickRecoveryModal:token:color:primary",
+      "source": "uicomp:SharedPoolQuickRecoveryModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:sharedPoolHistoryTypes:ws:apps/web",
+      "source": "uicomp:sharedPoolHistoryTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:sharedPoolHistoryTypes:token:color:primary",
+      "source": "uicomp:sharedPoolHistoryTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useSharedPoolHistoryRecovery:ws:apps/web",
+      "source": "uicomp:useSharedPoolHistoryRecovery",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useSharedPoolHistoryRecovery:token:color:primary",
+      "source": "uicomp:useSharedPoolHistoryRecovery",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:CcIncomeSummaryCards:ws:apps/web",
       "source": "uicomp:CcIncomeSummaryCards",
       "target": "ws:apps/web",
@@ -90452,6 +91029,146 @@
     {
       "id": "edge:uicomp:CvlTrainingMentorshipConfigModal:token:color:primary",
       "source": "uicomp:CvlTrainingMentorshipConfigModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:PaystubAllowancesSection:ws:apps/web",
+      "source": "uicomp:PaystubAllowancesSection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:PaystubAllowancesSection:token:color:primary",
+      "source": "uicomp:PaystubAllowancesSection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:PaystubFooterNotice:ws:apps/web",
+      "source": "uicomp:PaystubFooterNotice",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:PaystubFooterNotice:token:color:primary",
+      "source": "uicomp:PaystubFooterNotice",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:PaystubModalHeader:ws:apps/web",
+      "source": "uicomp:PaystubModalHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:PaystubModalHeader:token:color:primary",
+      "source": "uicomp:PaystubModalHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:PaystubPerformanceBonusSection:ws:apps/web",
+      "source": "uicomp:PaystubPerformanceBonusSection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:PaystubPerformanceBonusSection:token:color:primary",
+      "source": "uicomp:PaystubPerformanceBonusSection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:PaystubProfileCard:ws:apps/web",
+      "source": "uicomp:PaystubProfileCard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:PaystubProfileCard:token:color:primary",
+      "source": "uicomp:PaystubProfileCard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:PaystubTimeBonusSection:ws:apps/web",
+      "source": "uicomp:PaystubTimeBonusSection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:PaystubTimeBonusSection:token:color:primary",
+      "source": "uicomp:PaystubTimeBonusSection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:PaystubTimeSalarySection:ws:apps/web",
+      "source": "uicomp:PaystubTimeSalarySection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:PaystubTimeSalarySection:token:color:primary",
+      "source": "uicomp:PaystubTimeSalarySection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:PaystubTotalsSection:ws:apps/web",
+      "source": "uicomp:PaystubTotalsSection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:PaystubTotalsSection:token:color:primary",
+      "source": "uicomp:PaystubTotalsSection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:paystubHelpers:ws:apps/web",
+      "source": "uicomp:paystubHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:paystubHelpers:token:color:primary",
+      "source": "uicomp:paystubHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:types:ws:apps/web",
+      "source": "uicomp:types",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:types:token:color:primary",
+      "source": "uicomp:types",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -91502,20 +92219,6 @@
     {
       "id": "edge:uicomp:WeeklyQuizTab:token:color:primary",
       "source": "uicomp:WeeklyQuizTab",
-      "target": "token:color:primary",
-      "type": "USES_TOKEN",
-      "label": "USES_DESIGN_TOKEN"
-    },
-    {
-      "id": "edge:uicomp:types:ws:apps/web",
-      "source": "uicomp:types",
-      "target": "ws:apps/web",
-      "type": "RENDERS",
-      "label": "DECLARED_IN_WEB"
-    },
-    {
-      "id": "edge:uicomp:types:token:color:primary",
-      "source": "uicomp:types",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -93672,6 +94375,118 @@
     {
       "id": "edge:uicomp:useMosChatImageLightbox:token:color:primary",
       "source": "uicomp:useMosChatImageLightbox",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ChecklistAssigneePopover:ws:apps/web",
+      "source": "uicomp:ChecklistAssigneePopover",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ChecklistAssigneePopover:token:color:primary",
+      "source": "uicomp:ChecklistAssigneePopover",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ChecklistDeadlinePopover:ws:apps/web",
+      "source": "uicomp:ChecklistDeadlinePopover",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ChecklistDeadlinePopover:token:color:primary",
+      "source": "uicomp:ChecklistDeadlinePopover",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ChecklistHeaderAndSummary:ws:apps/web",
+      "source": "uicomp:ChecklistHeaderAndSummary",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ChecklistHeaderAndSummary:token:color:primary",
+      "source": "uicomp:ChecklistHeaderAndSummary",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ChecklistItemRow:ws:apps/web",
+      "source": "uicomp:ChecklistItemRow",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ChecklistItemRow:token:color:primary",
+      "source": "uicomp:ChecklistItemRow",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ChecklistQuickAddRow:ws:apps/web",
+      "source": "uicomp:ChecklistQuickAddRow",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ChecklistQuickAddRow:token:color:primary",
+      "source": "uicomp:ChecklistQuickAddRow",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:checklistHelpers:ws:apps/web",
+      "source": "uicomp:checklistHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:checklistHelpers:token:color:primary",
+      "source": "uicomp:checklistHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:checklistTypes:ws:apps/web",
+      "source": "uicomp:checklistTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:checklistTypes:token:color:primary",
+      "source": "uicomp:checklistTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMosChatTaskInlineChecklist:ws:apps/web",
+      "source": "uicomp:useMosChatTaskInlineChecklist",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMosChatTaskInlineChecklist:token:color:primary",
+      "source": "uicomp:useMosChatTaskInlineChecklist",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -105311,13 +106126,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/SopPrepCategory1DetailView.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/SopPrepCategory1DetailView.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/SopPreparationTabContent.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/SopPreparationTabContent.tsx",
       "target": "ws:packages/shared",
@@ -105348,6 +106156,55 @@
     {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-table-columns.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-table-columns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepCriteriaTabs.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepCriteriaTabs.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepCriterionFormCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepCriterionFormCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepEvidencePreviewModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepEvidencePreviewModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepEvidenceSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepEvidenceSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepFileTypeIcon.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/SopPrepFileTypeIcon.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/sop-prep-category1-helpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/sop-prep-category1-helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/useSopPrepCategory1Detail.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/sop-prep-category1-detail-view/useSopPrepCategory1Detail.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -106991,8 +107848,43 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/payroll-adjustment-lab/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/payroll-adjustment-lab/page.tsx",
+      "id": "edge:file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/AdjustmentCaseMetricsSummary.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/AdjustmentCaseMetricsSummary.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/ApproverRehearsalSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/ApproverRehearsalSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/LocalCaseRehearsalSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/LocalCaseRehearsalSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/ShadowSimulationSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/ShadowSimulationSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/payrollAdjustmentLabUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/payrollAdjustmentLabUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/usePayrollAdjustmentLabPage.ts:ws:packages/shared",
+      "source": "file:apps/web/app/payroll-adjustment-lab/payroll-adjustment-lab-page-modules/usePayrollAdjustmentLabPage.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -130147,13 +131039,6 @@
       "label": "CALLS telesaleTarget.getMonths"
     },
     {
-      "id": "edge:page:/payroll-adjustment-lab:route:GET:/api/fal/cases",
-      "source": "page:/payroll-adjustment-lab",
-      "target": "route:GET:/api/fal/cases",
-      "type": "API_CALL",
-      "label": "CALLS safeDevPayrollAdjustmentLab.getCase"
-    },
-    {
       "id": "edge:page:/wings-garden:route:GET:/api/academy-sales/leads/:id/talent-assessments",
       "source": "page:/wings-garden",
       "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
@@ -131555,8 +132440,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5445,
-    "totalEdges": 8762,
+    "totalNodes": 5485,
+    "totalEdges": 8820,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -131564,17 +132449,17 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 684,
-      "File": 2147
+      "UIComponent": 708,
+      "File": 2163
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 750,
-      "USES_TOKEN": 686,
-      "IMPORTS": 1318,
+      "RENDERS": 774,
+      "USES_TOKEN": 710,
+      "IMPORTS": 1329,
       "QUERIES_MODEL": 602,
-      "API_CALL": 2861
+      "API_CALL": 2860
     },
     "fastifyRouteCount": 777,
     "prismaModelCount": 183,
