@@ -14616,8 +14616,8 @@
       "filePath": "apps/web/app/dashboard/design-system/page.tsx",
       "metadata": {
         "routePath": "/dashboard/design-system",
-        "apiCallsCount": 1,
-        "apiCalls": ["auth.me"]
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -15021,8 +15021,8 @@
       "filePath": "apps/web/app/login/page.tsx",
       "metadata": {
         "routePath": "/login",
-        "apiCallsCount": 2,
-        "apiCalls": ["auth.google", "auth.login"]
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -36031,6 +36031,90 @@
       }
     },
     {
+      "id": "uicomp:DailyCallsMobileCard",
+      "type": "UIComponent",
+      "label": "<DailyCallsMobileCard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/daily-calls-table/DailyCallsMobileCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "DailyCallsMobileCard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:DailyCallsToolbar",
+      "type": "UIComponent",
+      "label": "<DailyCallsToolbar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/daily-calls-table/DailyCallsToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "DailyCallsToolbar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:dailyCallsColumns",
+      "type": "UIComponent",
+      "label": "<dailyCallsColumns />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/daily-calls-table/dailyCallsColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "dailyCallsColumns",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:dailyCallsTableConstants",
+      "type": "UIComponent",
+      "label": "<dailyCallsTableConstants />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/daily-calls-table/dailyCallsTableConstants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "dailyCallsTableConstants",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:dailyCallsTableHelpers",
+      "type": "UIComponent",
+      "label": "<dailyCallsTableHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/daily-calls-table/dailyCallsTableHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "dailyCallsTableHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:dailyCallsTableTypes",
+      "type": "UIComponent",
+      "label": "<dailyCallsTableTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/daily-calls-table/dailyCallsTableTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "dailyCallsTableTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useDailyCallsTable",
+      "type": "UIComponent",
+      "label": "<useDailyCallsTable />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/daily-calls-table/useDailyCallsTable.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useDailyCallsTable",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:DensityStandards",
       "type": "UIComponent",
       "label": "<DensityStandards />",
@@ -39195,6 +39279,114 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useMobileTaskWorkflow",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MobileHeaderInboxBar",
+      "type": "UIComponent",
+      "label": "<MobileHeaderInboxBar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-header/MobileHeaderInboxBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileHeaderInboxBar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MobileHeaderRoomBar",
+      "type": "UIComponent",
+      "label": "<MobileHeaderRoomBar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-header/MobileHeaderRoomBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileHeaderRoomBar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MobileHeaderThreadBar",
+      "type": "UIComponent",
+      "label": "<MobileHeaderThreadBar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-header/MobileHeaderThreadBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileHeaderThreadBar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MobileInboxOverflowMenu",
+      "type": "UIComponent",
+      "label": "<MobileInboxOverflowMenu />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-header/MobileInboxOverflowMenu.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileInboxOverflowMenu",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MobileRoomHeaderIdentity",
+      "type": "UIComponent",
+      "label": "<MobileRoomHeaderIdentity />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-header/MobileRoomHeaderIdentity.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileRoomHeaderIdentity",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MobileRoomOverflowMenu",
+      "type": "UIComponent",
+      "label": "<MobileRoomOverflowMenu />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-header/MobileRoomOverflowMenu.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileRoomOverflowMenu",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MobileRoomSubtabReturnBar",
+      "type": "UIComponent",
+      "label": "<MobileRoomSubtabReturnBar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-header/MobileRoomSubtabReturnBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileRoomSubtabReturnBar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:mobileHeaderTypes",
+      "type": "UIComponent",
+      "label": "<mobileHeaderTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-header/mobileHeaderTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mobileHeaderTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMobileHeaderState",
+      "type": "UIComponent",
+      "label": "<useMobileHeaderState />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-header/useMobileHeaderState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMobileHeaderState",
         "isPrimitive": false
       }
     },
@@ -59340,6 +59532,136 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemAccessGate.tsx",
+      "type": "File",
+      "label": "DesignSystemAccessGate.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemAccessGate.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1288,
+        "lineCount": 37,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemDemoOverlays.tsx",
+      "type": "File",
+      "label": "DesignSystemDemoOverlays.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemDemoOverlays.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3247,
+        "lineCount": 103,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemGraphifyTab.tsx",
+      "type": "File",
+      "label": "DesignSystemGraphifyTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemGraphifyTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1294,
+        "lineCount": 32,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemHeaderSection.tsx",
+      "type": "File",
+      "label": "DesignSystemHeaderSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemHeaderSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3937,
+        "lineCount": 109,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemInventoryTab.tsx",
+      "type": "File",
+      "label": "DesignSystemInventoryTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemInventoryTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9274,
+        "lineCount": 224,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemResponsiveTab.tsx",
+      "type": "File",
+      "label": "DesignSystemResponsiveTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemResponsiveTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4601,
+        "lineCount": 128,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemTokensTab.tsx",
+      "type": "File",
+      "label": "DesignSystemTokensTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemTokensTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3547,
+        "lineCount": 93,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/design-system/design-system-page-modules/designSystemPageTypes.ts",
+      "type": "File",
+      "label": "designSystemPageTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/design-system/design-system-page-modules/designSystemPageTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 998,
+        "lineCount": 47,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/design-system/design-system-page-modules/designSystemPageUtils.ts",
+      "type": "File",
+      "label": "designSystemPageUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/design-system/design-system-page-modules/designSystemPageUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5182,
+        "lineCount": 130,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/design-system/design-system-page-modules/useDesignSystemPage.ts",
+      "type": "File",
+      "label": "useDesignSystemPage.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/design-system/design-system-page-modules/useDesignSystemPage.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4084,
+        "lineCount": 137,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/design-system/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -59347,8 +59669,8 @@
       "filePath": "apps/web/app/dashboard/design-system/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36845,
-        "lineCount": 885,
+        "sizeBytes": 6136,
+        "lineCount": 176,
         "ext": ".tsx"
       }
     },
@@ -62675,8 +62997,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40112,
-        "lineCount": 875,
+        "sizeBytes": 1295,
+        "lineCount": 27,
         "ext": ".tsx"
       }
     },
@@ -62964,6 +63286,110 @@
         "sizeBytes": 17129,
         "lineCount": 388,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/KpiStaffLeaderboardCard.tsx",
+      "type": "File",
+      "label": "KpiStaffLeaderboardCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/KpiStaffLeaderboardCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3488,
+        "lineCount": 88,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/KpiStatRibbon.tsx",
+      "type": "File",
+      "label": "KpiStatRibbon.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/KpiStatRibbon.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1379,
+        "lineCount": 40,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/KpiTeamMonthCard.tsx",
+      "type": "File",
+      "label": "KpiTeamMonthCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/KpiTeamMonthCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5645,
+        "lineCount": 145,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/StaffLeaderboardItemCard.tsx",
+      "type": "File",
+      "label": "StaffLeaderboardItemCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/StaffLeaderboardItemCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7451,
+        "lineCount": 197,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/TeamMonthComboHub.tsx",
+      "type": "File",
+      "label": "TeamMonthComboHub.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/TeamMonthComboHub.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5026,
+        "lineCount": 135,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/TeamMonthGaugeCard.tsx",
+      "type": "File",
+      "label": "TeamMonthGaugeCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/TeamMonthGaugeCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5730,
+        "lineCount": 162,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/kpiOverviewTypes.ts",
+      "type": "File",
+      "label": "kpiOverviewTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/kpiOverviewTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1974,
+        "lineCount": 74,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/kpiOverviewUtils.ts",
+      "type": "File",
+      "label": "kpiOverviewUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/kpiOverviewUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8299,
+        "lineCount": 218,
+        "ext": ".ts"
       }
     },
     {
@@ -66386,6 +66812,97 @@
       }
     },
     {
+      "id": "file:apps/web/app/login/login-page-modules/DevMockLoginPanel.tsx",
+      "type": "File",
+      "label": "DevMockLoginPanel.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/login/login-page-modules/DevMockLoginPanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8896,
+        "lineCount": 218,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/login/login-page-modules/LoginRoleCategoryIcon.tsx",
+      "type": "File",
+      "label": "LoginRoleCategoryIcon.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/login/login-page-modules/LoginRoleCategoryIcon.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1891,
+        "lineCount": 70,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/login/login-page-modules/PasswordLoginSection.tsx",
+      "type": "File",
+      "label": "PasswordLoginSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/login/login-page-modules/PasswordLoginSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2765,
+        "lineCount": 79,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/login/login-page-modules/SuperAdminDevAuthModal.tsx",
+      "type": "File",
+      "label": "SuperAdminDevAuthModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/login/login-page-modules/SuperAdminDevAuthModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2081,
+        "lineCount": 72,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/login/login-page-modules/loginConstants.ts",
+      "type": "File",
+      "label": "loginConstants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/login/login-page-modules/loginConstants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4006,
+        "lineCount": 122,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/login/login-page-modules/useDevDirectoryLogin.ts",
+      "type": "File",
+      "label": "useDevDirectoryLogin.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/login/login-page-modules/useDevDirectoryLogin.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4529,
+        "lineCount": 151,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/login/login-page-modules/useLoginAuth.ts",
+      "type": "File",
+      "label": "useLoginAuth.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/login/login-page-modules/useLoginAuth.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4947,
+        "lineCount": 173,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/login/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -66393,8 +66910,8 @@
       "filePath": "apps/web/app/login/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 33515,
-        "lineCount": 881,
+        "sizeBytes": 4068,
+        "lineCount": 84,
         "ext": ".tsx"
       }
     },
@@ -90234,6 +90751,104 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:DailyCallsMobileCard:ws:apps/web",
+      "source": "uicomp:DailyCallsMobileCard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:DailyCallsMobileCard:token:color:primary",
+      "source": "uicomp:DailyCallsMobileCard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:DailyCallsToolbar:ws:apps/web",
+      "source": "uicomp:DailyCallsToolbar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:DailyCallsToolbar:token:color:primary",
+      "source": "uicomp:DailyCallsToolbar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:dailyCallsColumns:ws:apps/web",
+      "source": "uicomp:dailyCallsColumns",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:dailyCallsColumns:token:color:primary",
+      "source": "uicomp:dailyCallsColumns",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:dailyCallsTableConstants:ws:apps/web",
+      "source": "uicomp:dailyCallsTableConstants",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:dailyCallsTableConstants:token:color:primary",
+      "source": "uicomp:dailyCallsTableConstants",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:dailyCallsTableHelpers:ws:apps/web",
+      "source": "uicomp:dailyCallsTableHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:dailyCallsTableHelpers:token:color:primary",
+      "source": "uicomp:dailyCallsTableHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:dailyCallsTableTypes:ws:apps/web",
+      "source": "uicomp:dailyCallsTableTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:dailyCallsTableTypes:token:color:primary",
+      "source": "uicomp:dailyCallsTableTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useDailyCallsTable:ws:apps/web",
+      "source": "uicomp:useDailyCallsTable",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useDailyCallsTable:token:color:primary",
+      "source": "uicomp:useDailyCallsTable",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:DensityStandards:ws:apps/web",
       "source": "uicomp:DensityStandards",
       "target": "ws:apps/web",
@@ -93925,6 +94540,132 @@
     {
       "id": "edge:uicomp:useMobileTaskWorkflow:token:color:primary",
       "source": "uicomp:useMobileTaskWorkflow",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MobileHeaderInboxBar:ws:apps/web",
+      "source": "uicomp:MobileHeaderInboxBar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileHeaderInboxBar:token:color:primary",
+      "source": "uicomp:MobileHeaderInboxBar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MobileHeaderRoomBar:ws:apps/web",
+      "source": "uicomp:MobileHeaderRoomBar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileHeaderRoomBar:token:color:primary",
+      "source": "uicomp:MobileHeaderRoomBar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MobileHeaderThreadBar:ws:apps/web",
+      "source": "uicomp:MobileHeaderThreadBar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileHeaderThreadBar:token:color:primary",
+      "source": "uicomp:MobileHeaderThreadBar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MobileInboxOverflowMenu:ws:apps/web",
+      "source": "uicomp:MobileInboxOverflowMenu",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileInboxOverflowMenu:token:color:primary",
+      "source": "uicomp:MobileInboxOverflowMenu",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MobileRoomHeaderIdentity:ws:apps/web",
+      "source": "uicomp:MobileRoomHeaderIdentity",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileRoomHeaderIdentity:token:color:primary",
+      "source": "uicomp:MobileRoomHeaderIdentity",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MobileRoomOverflowMenu:ws:apps/web",
+      "source": "uicomp:MobileRoomOverflowMenu",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileRoomOverflowMenu:token:color:primary",
+      "source": "uicomp:MobileRoomOverflowMenu",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MobileRoomSubtabReturnBar:ws:apps/web",
+      "source": "uicomp:MobileRoomSubtabReturnBar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileRoomSubtabReturnBar:token:color:primary",
+      "source": "uicomp:MobileRoomSubtabReturnBar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mobileHeaderTypes:ws:apps/web",
+      "source": "uicomp:mobileHeaderTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mobileHeaderTypes:token:color:primary",
+      "source": "uicomp:mobileHeaderTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMobileHeaderState:ws:apps/web",
+      "source": "uicomp:useMobileHeaderState",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMobileHeaderState:token:color:primary",
+      "source": "uicomp:useMobileHeaderState",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -103821,8 +104562,50 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/design-system/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/design-system/page.tsx",
+      "id": "edge:file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemHeaderSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemHeaderSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemInventoryTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemInventoryTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemResponsiveTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemResponsiveTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemTokensTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/design-system/design-system-page-modules/DesignSystemTokensTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/design-system/design-system-page-modules/designSystemPageTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/design-system/design-system-page-modules/designSystemPageTypes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/design-system/design-system-page-modules/designSystemPageUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/design-system/design-system-page-modules/designSystemPageUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/design-system/design-system-page-modules/useDesignSystemPage.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/design-system/design-system-page-modules/useDesignSystemPage.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -105074,13 +105857,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/PlanCloneModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/PlanCloneModal.tsx",
       "target": "ws:packages/shared",
@@ -105174,6 +105950,27 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/StaffLeaderboardItemCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/StaffLeaderboardItemCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/kpiOverviewTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/kpiOverviewTypes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/kpiOverviewUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/kpi-overview-cards/kpiOverviewUtils.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -106166,8 +106963,15 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/login/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/login/page.tsx",
+      "id": "edge:file:apps/web/app/login/login-page-modules/loginConstants.ts:ws:packages/shared",
+      "source": "file:apps/web/app/login/login-page-modules/loginConstants.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/login/login-page-modules/useLoginAuth.ts:ws:packages/shared",
+      "source": "file:apps/web/app/login/login-page-modules/useLoginAuth.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -116090,1385 +116894,6 @@
       "target": "route:POST:/api/kpi/telesale-target/celebration-quotes/reset",
       "type": "API_CALL",
       "label": "CALLS kpi.getCcXoayReport"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/academy-sales/leads/:id/talent-assessments",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/academy-sales/leads/:id/talent-assessments",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments/preview",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/leads/:id/talent-assessments",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/leads/:id/talent-assessments",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/academy-sales/talent-assessments/:id",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/academy-sales/talent-assessments/:id",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/talent-assessments/:id/print",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/talent-assessments/:id/print",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/talent-assessments/:id/payments",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/talent-assessments/:id/payments",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/academy-sales/talent-payments",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/academy-sales/talent-payments",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/academy-sales/talent-payments/:id/trace",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/academy-sales/talent-payments/:id/trace",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/academy/workshops/registration/:registrationCode/zalo/authorize",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/academy/workshops/registration/:registrationCode/zalo/authorize",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/workshops/:workshopId/menu-items",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-items",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/workshops/:workshopId/menu-templates",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-templates",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/refresh",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/refresh",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/apply",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/apply",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/workshops/:workshopId/menu-items/upload-image",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-items/upload-image",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/academy-sales/workshops/:workshopId/menu-service",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/menu-service",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/academy-sales/workshops/:workshopId/equipment-service",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/equipment-service",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/refresh",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/refresh",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/apply",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/apply",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/workshops/:workshopId/equipment-images/upload",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-images/upload",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/academy-sales/workshops/:workshopId/timeline-report",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/academy-sales/workshops/:workshopId/timeline-report",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/academy-sales/workshop-menu-templates",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/academy-sales/workshop-menu-templates",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/academy-sales/workshop-menu-templates/:templateId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/academy-sales/workshop-menu-templates/:templateId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/academy-sales/workshop-equipment-templates",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/academy-sales/workshop-equipment-templates",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/academy-sales/workshop-equipment-templates/:templateId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/academy-sales/workshop-equipment-templates/:templateId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/academy-sales/workshop-equipment-templates/:templateId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/academy-sales/workshop-equipment-templates/:templateId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/ai/avatar-nudge-message",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/ai/avatar-nudge-message",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/auth/dev-directory",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/auth/dev-directory",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/auth/login",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/auth/login",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/auth/google",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/auth/google",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/auth/me",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/auth/me",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/auth/impersonate",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/auth/impersonate",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/auth/impersonate/exit",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/auth/impersonate/exit",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/bug-reports/:id/implementation-approval",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/bug-reports/:id/implementation-approval",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/bug-reports/:id/implementation-retry",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/bug-reports/:id/implementation-retry",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/bug-reports/:id/ide-implementation-receipt",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/bug-reports/:id/ide-implementation-receipt",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/bug-reports/:id/implementation-commit-approval",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/bug-reports/:id/implementation-commit-approval",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/bug-reports/:id/implementation-deploy-approval",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/bug-reports/:id/implementation-deploy-approval",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/bug-reports/:id/implementation-request-changes",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/bug-reports/:id/implementation-request-changes",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/bug-reports/:id/comments",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/bug-reports/:id/comments",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PATCH:/api/bug-reports/:id/implementation-acceptance",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PATCH:/api/bug-reports/:id/implementation-acceptance",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/bug-reports/:id/attachments/:attachmentId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/bug-reports/:id/attachments/:attachmentId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/agent/bug-reports/:key/attachments/:attachmentId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/agent/bug-reports/:key/attachments/:attachmentId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/request-classifier/inbox-follow-ups/:id/attachments/:attachmentId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/request-classifier/inbox-follow-ups/:id/attachments/:attachmentId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/request-classifier/jobs/:id/attachments/:attachmentId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/request-classifier/jobs/:id/attachments/:attachmentId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/request-classifier/inbox-implementations/claim",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/request-classifier/inbox-implementations/claim",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/request-classifier/inbox-implementations/quality-gate-recovery-self-checks",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/request-classifier/inbox-implementations/quality-gate-recovery-self-checks",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/request-classifier/inbox-implementations/:id/quality-gate-recovery-self-check",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/quality-gate-recovery-self-check",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/request-classifier/inbox-implementations/:id/start",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/start",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/request-classifier/inbox-implementations/:id/renew",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/renew",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/request-classifier/inbox-implementations/:id/complete",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/complete",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/request-classifier/inbox-implementations/:id/commit-complete",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/commit-complete",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/request-classifier/inbox-implementations/:id/deploy-complete",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/deploy-complete",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/request-classifier/inbox-implementations/:id/progress",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/progress",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/request-classifier/inbox-implementations/:id/continue",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/continue",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/request-classifier/inbox-implementations/:id/fail",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/request-classifier/inbox-implementations/:id/fail",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/calls/:customerId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/calls/:customerId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/campaigns/:id/customers",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/campaigns/:id/customers",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/campaigns/:id/customers",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/campaigns/:id/customers",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/campaigns/:id/transfer-customers",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/campaigns/:id/transfer-customers",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/campaigns/:id/customers/:customerId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/campaigns/:id/customers/:customerId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/campaigns/:id/customers/batch-remove",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/campaigns/:id/customers/batch-remove",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/campaigns/:id/customers/:customerId/touchpoints/:touchpointId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/campaigns/:id/customers/:customerId/touchpoints/:touchpointId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/campaigns/customer/:customerId/active-promotions",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/campaigns/customer/:customerId/active-promotions",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/campaigns/:id/resume",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/campaigns/:id/resume",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/conversations/:id/members",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/chat/conversations/:id/members",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/chat/conversations/:id/members/:staffId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/chat/conversations/:id/members/:staffId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/chat/conversations/:id/nickname",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/chat/conversations/:id/nickname",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/conversations/:id/threads/:messageId/read",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/chat/conversations/:id/threads/:messageId/read",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/chat/media/:fileName",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/chat/media/:fileName",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/chat/messages/:messageId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/chat/messages/:messageId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/chat/messages/:messageId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/chat/messages/:messageId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/messages/:messageId/restore",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/chat/messages/:messageId/restore",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/messages/:messageId/reaction",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/chat/messages/:messageId/reaction",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/messages/:messageId/pin",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/chat/messages/:messageId/pin",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/messages/:messageId/buzz",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/chat/messages/:messageId/buzz",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/messages",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/chat/messages",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/messages/forward",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/chat/messages/forward",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/chat/conversations/:conversationId/messages",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/chat/conversations/:conversationId/messages",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/chat/messages/search",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/chat/messages/search",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/threads/:messageId/extract-checklist",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/cs/tickets/department-handlers",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/cs/tickets/department-handlers",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/cs/tickets/department-handlers",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/cs/tickets/department-handlers",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/cs/tickets/:id/comments",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/cs/tickets/:id/comments",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/assign",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/assign",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/revoke/preview",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/revoke/preview",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/revoke",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/revoke",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/unassign",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/unassign",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/assignment-history",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/assignment-history",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/assignment-history/:batchId/details",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/assignment-history/:batchId/details",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/assignment-history/undo",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/assignment-history/undo",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/:id/assignment-timeline",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/:id/assignment-timeline",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/retain",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/retain",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/booker-retain-quota",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/booker-retain-quota",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/appointments",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/appointments",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/missed/log",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/missed/log",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/missed/summary",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/missed/summary",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/booking/:id/logs",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/booking/:id/logs",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/booking",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/booking",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/booking/:id/promotions",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/booking/:id/promotions",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/booking/:id/reschedule-eligibility",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/booking/:id/reschedule-eligibility",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/customers/booking/:id",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/customers/booking/:id",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/booking-slots",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/booking-slots",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/customers/booking/:id",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/customers/booking/:id",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/:id/elsa-reservation",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/:id/elsa-reservation",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/customers/:id/elsa-reservation",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/customers/:id/elsa-reservation",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/:id/elsa-reservation/release",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/:id/elsa-reservation",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/:id/elsa-reservation",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/elsa/reminders",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/elsa/reminders",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/services",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/services",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/service-filter-options",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/service-filter-options",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/staff",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/staff",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/promotions",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/promotions",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/referrals",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/referrals",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/create-options",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/create-options",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/create",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/create",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/:id/notes",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/:id/notes",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/:id/notes/:noteId/unpin",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/:id/notes/:noteId/unpin",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/:id/notes/:noteId/pin",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/:id/notes/:noteId/pin",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/:id/notes",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/:id/notes",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/loca-stats",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/loca-stats",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/nyc-stats",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/nyc-stats",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/stats",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/stats",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/cv-schedule-roster",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/cv-schedule-roster",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/cv-realtime-status",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/cv-realtime-status",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/customers/:id",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/customers/:id",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/bulk-delete",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/bulk-delete",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/:id/restore",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/:id/restore",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/:id",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/:id",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/:id/history",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/:id/history",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/customers/:id",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/customers/:id",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/:id/detailed",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/:id/detailed",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/:id/bookings",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/:id/bookings",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/:id/calls",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/:id/calls",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/:id/summary",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/:id/summary",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/random-ids",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/loca-staff-activity",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/loca-staff-activity",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/loca-touchpoint",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/customers/loca-touchpoint",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/loca-touchpoints",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/loca-touchpoints",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/holiday-work/periods/:holidayId/payroll/adjustments",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/holiday-work/periods/:holidayId/payroll/adjustments",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/ios/photos/:filename",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/ios/photos/:filename",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/ios/customers/lookup",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/ios/customers/lookup",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/ios/simulation/mentees",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/ios/simulation/mentees",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/ios/customers/:customerId/history",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/ios/customers/:customerId/history",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/ios/customers/:customerId/notes",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/ios/customers/:customerId/notes",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/booker-appointments",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/kpi/booker-appointments",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/bk/games",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/kpi/bk/games",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/bk/games/:id",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/kpi/bk/games/:id",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/bk/games/:id/done-bonuses",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/kpi/bk/games/:id/team-booking-done-bonuses",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/kpi/bk/games",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/kpi/bk/games",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PATCH:/api/kpi/bk/games/:id",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PATCH:/api/kpi/bk/games/:id",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/kpi/bk/games/:id/finalize",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/kpi/bk/games/:id/finalize",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/kpi/bk/games/:id",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/kpi/bk/games/:id",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/cv-tip/customer-history",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/kpi/cv-tip/customer-history",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/cvl-training-mentorship/config",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/kpi/cvl-training-mentorship/config",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/menu-access/sidebar",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/menu-access/sidebar",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/menu-access/configuration",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/menu-access/configuration",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/menu-access/policies/:menuKey",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/menu-access/policies/:menuKey",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/menu-access/role-groups/:roleGroupId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/menu-access/inspect",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/menu-access/inspect",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/pilot/media/:filename",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/pilot/media/:filename",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/pilot/assessment-criteria",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/pilot/assessment-criteria",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/pilot/assessment-criteria",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/pilot/assessment-criteria",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PATCH:/api/pilot/assessment-criteria/:id",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PATCH:/api/pilot/assessment-criteria/:id",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:DELETE:/api/pilot/assessment-criteria/:id",
-      "source": "page:/dashboard/design-system",
-      "target": "route:DELETE:/api/pilot/assessment-criteria/:id",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/pilot/assessment-criteria/reorder",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/pilot/assessment-criteria/reorder",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/pilot/sessions/:id/assessment",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/pilot/sessions/:id/assessment",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/pilot/metrics",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/pilot/metrics",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/sms/history/:customerId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/sms/history/:customerId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/sms/user-url/:customerId",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/sms/user-url/:customerId",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/staff/media/avatars/:filename",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/staff/media/avatars/:filename",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/staff/merge",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/staff/merge",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PUT:/api/teams/:id/members",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PUT:/api/teams/:id/members",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/telemetry/frontend-issues",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/telemetry/frontend-issues",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/telemetry/frontend-issues",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/telemetry/frontend-issues/metrics",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/telemetry/frontend-issues/metrics",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:PATCH:/api/telemetry/frontend-issues/:id/status",
-      "source": "page:/dashboard/design-system",
-      "target": "route:PATCH:/api/telemetry/frontend-issues/:id/status",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/telemetry/frontend-issues/:id/convert-bug-report",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-analyze",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/telemetry/frontend-issues/:id/ag-dispatch",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/telemetry/frontend-issues/clusters",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/telemetry/frontend-issues/clusters",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/telemetry/frontend-issues/clusters/:clusterKey/dispatch",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/telemetry/frontend-issues/clusters/batch-dispatch-priority",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:POST:/api/telemetry/frontend-issues/sync",
-      "source": "page:/dashboard/design-system",
-      "target": "route:POST:/api/telemetry/frontend-issues/sync",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
     },
     {
       "id": "edge:page:/dashboard/fal:route:GET:/api/fal/cases",
@@ -130722,76 +130147,6 @@
       "label": "CALLS telesaleTarget.getMonths"
     },
     {
-      "id": "edge:page:/login:route:POST:/api/academy/workshops/registration/:registrationCode/google",
-      "source": "page:/login",
-      "target": "route:POST:/api/academy/workshops/registration/:registrationCode/google",
-      "type": "API_CALL",
-      "label": "CALLS auth.google"
-    },
-    {
-      "id": "edge:page:/login:route:POST:/api/academy/workshops/registration/:registrationCode/google/status",
-      "source": "page:/login",
-      "target": "route:POST:/api/academy/workshops/registration/:registrationCode/google/status",
-      "type": "API_CALL",
-      "label": "CALLS auth.google"
-    },
-    {
-      "id": "edge:page:/login:route:GET:/api/academy/workshops/registration/:registrationCode/zalo/authorize",
-      "source": "page:/login",
-      "target": "route:GET:/api/academy/workshops/registration/:registrationCode/zalo/authorize",
-      "type": "API_CALL",
-      "label": "CALLS auth.google"
-    },
-    {
-      "id": "edge:page:/login:route:POST:/api/academy/workshops/join-google",
-      "source": "page:/login",
-      "target": "route:POST:/api/academy/workshops/join-google",
-      "type": "API_CALL",
-      "label": "CALLS auth.google"
-    },
-    {
-      "id": "edge:page:/login:route:GET:/api/auth/dev-directory",
-      "source": "page:/login",
-      "target": "route:GET:/api/auth/dev-directory",
-      "type": "API_CALL",
-      "label": "CALLS auth.google"
-    },
-    {
-      "id": "edge:page:/login:route:POST:/api/auth/login",
-      "source": "page:/login",
-      "target": "route:POST:/api/auth/login",
-      "type": "API_CALL",
-      "label": "CALLS auth.google"
-    },
-    {
-      "id": "edge:page:/login:route:POST:/api/auth/google",
-      "source": "page:/login",
-      "target": "route:POST:/api/auth/google",
-      "type": "API_CALL",
-      "label": "CALLS auth.google"
-    },
-    {
-      "id": "edge:page:/login:route:GET:/api/auth/me",
-      "source": "page:/login",
-      "target": "route:GET:/api/auth/me",
-      "type": "API_CALL",
-      "label": "CALLS auth.google"
-    },
-    {
-      "id": "edge:page:/login:route:POST:/api/auth/impersonate",
-      "source": "page:/login",
-      "target": "route:POST:/api/auth/impersonate",
-      "type": "API_CALL",
-      "label": "CALLS auth.google"
-    },
-    {
-      "id": "edge:page:/login:route:POST:/api/auth/impersonate/exit",
-      "source": "page:/login",
-      "target": "route:POST:/api/auth/impersonate/exit",
-      "type": "API_CALL",
-      "label": "CALLS auth.google"
-    },
-    {
       "id": "edge:page:/payroll-adjustment-lab:route:GET:/api/fal/cases",
       "source": "page:/payroll-adjustment-lab",
       "target": "route:GET:/api/fal/cases",
@@ -132200,8 +131555,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5404,
-    "totalEdges": 8928,
+    "totalNodes": 5445,
+    "totalEdges": 8762,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -132209,17 +131564,17 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 668,
-      "File": 2122
+      "UIComponent": 684,
+      "File": 2147
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 734,
-      "USES_TOKEN": 670,
-      "IMPORTS": 1309,
+      "RENDERS": 750,
+      "USES_TOKEN": 686,
+      "IMPORTS": 1318,
       "QUERIES_MODEL": 602,
-      "API_CALL": 3068
+      "API_CALL": 2861
     },
     "fastifyRouteCount": 777,
     "prismaModelCount": 183,
