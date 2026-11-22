@@ -14388,8 +14388,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/payments/page.tsx",
       "metadata": {
         "routePath": "/dashboard/academy-leads/payments",
-        "apiCallsCount": 2,
-        "apiCalls": ["academySales.listTalentPaymentManagement", "academySales.recordTalentAssessmentPayment"]
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -34691,7 +34691,7 @@
       "type": "UIComponent",
       "label": "<constants />",
       "category": "UI Feature Component",
-      "filePath": "apps/web/components/booking/constants.ts",
+      "filePath": "apps/web/components/mos-bible/mos-bible-quiz-modal/constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "constants",
@@ -36507,6 +36507,114 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosBibleSurfacePortal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:BuyAttemptPopconfirm",
+      "type": "UIComponent",
+      "label": "<BuyAttemptPopconfirm />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-bible/mos-bible-quiz-modal/BuyAttemptPopconfirm.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "BuyAttemptPopconfirm",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:QuizModalHeader",
+      "type": "UIComponent",
+      "label": "<QuizModalHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-bible/mos-bible-quiz-modal/QuizModalHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "QuizModalHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SpeedQuizIdleView",
+      "type": "UIComponent",
+      "label": "<SpeedQuizIdleView />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-bible/mos-bible-quiz-modal/SpeedQuizIdleView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SpeedQuizIdleView",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SpeedQuizPlayingView",
+      "type": "UIComponent",
+      "label": "<SpeedQuizPlayingView />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-bible/mos-bible-quiz-modal/SpeedQuizPlayingView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SpeedQuizPlayingView",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SpeedQuizResultView",
+      "type": "UIComponent",
+      "label": "<SpeedQuizResultView />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-bible/mos-bible-quiz-modal/SpeedQuizResultView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SpeedQuizResultView",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SpeedQuizTab",
+      "type": "UIComponent",
+      "label": "<SpeedQuizTab />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-bible/mos-bible-quiz-modal/SpeedQuizTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SpeedQuizTab",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:WeeklyQuizTab",
+      "type": "UIComponent",
+      "label": "<WeeklyQuizTab />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-bible/mos-bible-quiz-modal/WeeklyQuizTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "WeeklyQuizTab",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:types",
+      "type": "UIComponent",
+      "label": "<types />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/voice-assistant/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "types",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMosBibleQuizModal",
+      "type": "UIComponent",
+      "label": "<useMosBibleQuizModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-bible/mos-bible-quiz-modal/useMosBibleQuizModal.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMosBibleQuizModal",
         "isPrimitive": false
       }
     },
@@ -40495,18 +40603,6 @@
       }
     },
     {
-      "id": "uicomp:types",
-      "type": "UIComponent",
-      "label": "<types />",
-      "category": "UI Feature Component",
-      "filePath": "apps/web/components/voice-assistant/types.ts",
-      "packageName": "@mos-lab/web",
-      "metadata": {
-        "componentName": "types",
-        "isPrimitive": false
-      }
-    },
-    {
       "id": "uicomp:useUnifiedProfileState",
       "type": "UIComponent",
       "label": "<useUnifiedProfileState />",
@@ -40767,6 +40863,78 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "ManageItemsModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:qaShopChecklistHelpers",
+      "type": "UIComponent",
+      "label": "<qaShopChecklistHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/qa-shop/hooks/use-qa-shop-state/qaShopChecklistHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "qaShopChecklistHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:qaShopMediaHelpers",
+      "type": "UIComponent",
+      "label": "<qaShopMediaHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/qa-shop/hooks/use-qa-shop-state/qaShopMediaHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "qaShopMediaHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useQaAuditOperations",
+      "type": "UIComponent",
+      "label": "<useQaAuditOperations />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/qa-shop/hooks/use-qa-shop-state/useQaAuditOperations.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useQaAuditOperations",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useQaCameraCapture",
+      "type": "UIComponent",
+      "label": "<useQaCameraCapture />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/qa-shop/hooks/use-qa-shop-state/useQaCameraCapture.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useQaCameraCapture",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useQaShopData",
+      "type": "UIComponent",
+      "label": "<useQaShopData />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/qa-shop/hooks/use-qa-shop-state/useQaShopData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useQaShopData",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useQaTemplateCrud",
+      "type": "UIComponent",
+      "label": "<useQaTemplateCrud />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/qa-shop/hooks/use-qa-shop-state/useQaTemplateCrud.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useQaTemplateCrud",
         "isPrimitive": false
       }
     },
@@ -55344,8 +55512,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/payments/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 37393,
-        "lineCount": 865,
+        "sizeBytes": 4960,
+        "lineCount": 120,
         "ext": ".tsx"
       }
     },
@@ -55360,6 +55528,123 @@
         "sizeBytes": 6410,
         "lineCount": 169,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentCollectionModals.tsx",
+      "type": "File",
+      "label": "PaymentCollectionModals.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentCollectionModals.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9124,
+        "lineCount": 217,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentDetailModal.tsx",
+      "type": "File",
+      "label": "PaymentDetailModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentDetailModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6664,
+        "lineCount": 158,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentManagementFilters.tsx",
+      "type": "File",
+      "label": "PaymentManagementFilters.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentManagementFilters.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1050,
+        "lineCount": 40,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentQueueSection.tsx",
+      "type": "File",
+      "label": "PaymentQueueSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentQueueSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2910,
+        "lineCount": 92,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentTraceSection.tsx",
+      "type": "File",
+      "label": "PaymentTraceSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentTraceSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6843,
+        "lineCount": 144,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/payment-management-utils.ts",
+      "type": "File",
+      "label": "payment-management-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/payments/payments-page-modules/payment-management-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 233,
+        "lineCount": 5,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/paymentQueueColumns.tsx",
+      "type": "File",
+      "label": "paymentQueueColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/payments/payments-page-modules/paymentQueueColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3781,
+        "lineCount": 126,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/usePaymentCollection.ts",
+      "type": "File",
+      "label": "usePaymentCollection.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/payments/payments-page-modules/usePaymentCollection.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4808,
+        "lineCount": 124,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/usePaymentManagementData.ts",
+      "type": "File",
+      "label": "usePaymentManagementData.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/payments/payments-page-modules/usePaymentManagementData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5194,
+        "lineCount": 162,
+        "ext": ".ts"
       }
     },
     {
@@ -58880,8 +59165,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvXoayTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32720,
-        "lineCount": 866,
+        "sizeBytes": 2927,
+        "lineCount": 105,
         "ext": ".tsx"
       }
     },
@@ -58961,6 +59246,84 @@
         "sizeBytes": 8744,
         "lineCount": 258,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayDetailTableCard.tsx",
+      "type": "File",
+      "label": "CvXoayDetailTableCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayDetailTableCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4046,
+        "lineCount": 122,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayLeaderboardCard.tsx",
+      "type": "File",
+      "label": "CvXoayLeaderboardCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayLeaderboardCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6507,
+        "lineCount": 151,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoaySummaryCards.tsx",
+      "type": "File",
+      "label": "CvXoaySummaryCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoaySummaryCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6515,
+        "lineCount": 164,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/cvXoayColumns.tsx",
+      "type": "File",
+      "label": "cvXoayColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-xoay-tab/cvXoayColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10898,
+        "lineCount": 306,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/cvXoayUtils.ts",
+      "type": "File",
+      "label": "cvXoayUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-xoay-tab/cvXoayUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7171,
+        "lineCount": 235,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/useCvXoayData.ts",
+      "type": "File",
+      "label": "useCvXoayData.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-xoay-tab/useCvXoayData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4076,
+        "lineCount": 131,
+        "ext": ".ts"
       }
     },
     {
@@ -59445,6 +59808,71 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/HolidayWorkToolbar.tsx",
+      "type": "File",
+      "label": "HolidayWorkToolbar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/holiday-work/holiday-work-page-modules/HolidayWorkToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2137,
+        "lineCount": 76,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/HolidayWorkWorkspaceSection.tsx",
+      "type": "File",
+      "label": "HolidayWorkWorkspaceSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/holiday-work/holiday-work-page-modules/HolidayWorkWorkspaceSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9598,
+        "lineCount": 282,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/holidayWorkPageHelpers.ts",
+      "type": "File",
+      "label": "holidayWorkPageHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/holiday-work/holiday-work-page-modules/holidayWorkPageHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3741,
+        "lineCount": 107,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/holidayWorkWorkspaceColumns.tsx",
+      "type": "File",
+      "label": "holidayWorkWorkspaceColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/holiday-work/holiday-work-page-modules/holidayWorkWorkspaceColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8830,
+        "lineCount": 323,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/useHolidayWorkPage.ts",
+      "type": "File",
+      "label": "useHolidayWorkPage.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/holiday-work/holiday-work-page-modules/useHolidayWorkPage.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12792,
+        "lineCount": 359,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/holiday-work/hooks/useHolidayWork.ts",
       "type": "File",
       "label": "useHolidayWork.ts",
@@ -59465,8 +59893,8 @@
       "filePath": "apps/web/app/dashboard/holiday-work/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31905,
-        "lineCount": 865,
+        "sizeBytes": 5058,
+        "lineCount": 148,
         "ext": ".tsx"
       }
     },
@@ -90366,6 +90794,132 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:BuyAttemptPopconfirm:ws:apps/web",
+      "source": "uicomp:BuyAttemptPopconfirm",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:BuyAttemptPopconfirm:token:color:primary",
+      "source": "uicomp:BuyAttemptPopconfirm",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:QuizModalHeader:ws:apps/web",
+      "source": "uicomp:QuizModalHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:QuizModalHeader:token:color:primary",
+      "source": "uicomp:QuizModalHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SpeedQuizIdleView:ws:apps/web",
+      "source": "uicomp:SpeedQuizIdleView",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SpeedQuizIdleView:token:color:primary",
+      "source": "uicomp:SpeedQuizIdleView",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SpeedQuizPlayingView:ws:apps/web",
+      "source": "uicomp:SpeedQuizPlayingView",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SpeedQuizPlayingView:token:color:primary",
+      "source": "uicomp:SpeedQuizPlayingView",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SpeedQuizResultView:ws:apps/web",
+      "source": "uicomp:SpeedQuizResultView",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SpeedQuizResultView:token:color:primary",
+      "source": "uicomp:SpeedQuizResultView",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SpeedQuizTab:ws:apps/web",
+      "source": "uicomp:SpeedQuizTab",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SpeedQuizTab:token:color:primary",
+      "source": "uicomp:SpeedQuizTab",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:WeeklyQuizTab:ws:apps/web",
+      "source": "uicomp:WeeklyQuizTab",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:WeeklyQuizTab:token:color:primary",
+      "source": "uicomp:WeeklyQuizTab",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:types:ws:apps/web",
+      "source": "uicomp:types",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:types:token:color:primary",
+      "source": "uicomp:types",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMosBibleQuizModal:ws:apps/web",
+      "source": "uicomp:useMosBibleQuizModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMosBibleQuizModal:token:color:primary",
+      "source": "uicomp:useMosBibleQuizModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:mos-bible.test:ws:apps/web",
       "source": "uicomp:mos-bible.test",
       "target": "ws:apps/web",
@@ -95014,20 +95568,6 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
-      "id": "edge:uicomp:types:ws:apps/web",
-      "source": "uicomp:types",
-      "target": "ws:apps/web",
-      "type": "RENDERS",
-      "label": "DECLARED_IN_WEB"
-    },
-    {
-      "id": "edge:uicomp:types:token:color:primary",
-      "source": "uicomp:types",
-      "target": "token:color:primary",
-      "type": "USES_TOKEN",
-      "label": "USES_DESIGN_TOKEN"
-    },
-    {
       "id": "edge:uicomp:useUnifiedProfileState:ws:apps/web",
       "source": "uicomp:useUnifiedProfileState",
       "target": "ws:apps/web",
@@ -95331,6 +95871,90 @@
     {
       "id": "edge:uicomp:ManageItemsModal:token:color:primary",
       "source": "uicomp:ManageItemsModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:qaShopChecklistHelpers:ws:apps/web",
+      "source": "uicomp:qaShopChecklistHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:qaShopChecklistHelpers:token:color:primary",
+      "source": "uicomp:qaShopChecklistHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:qaShopMediaHelpers:ws:apps/web",
+      "source": "uicomp:qaShopMediaHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:qaShopMediaHelpers:token:color:primary",
+      "source": "uicomp:qaShopMediaHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useQaAuditOperations:ws:apps/web",
+      "source": "uicomp:useQaAuditOperations",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useQaAuditOperations:token:color:primary",
+      "source": "uicomp:useQaAuditOperations",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useQaCameraCapture:ws:apps/web",
+      "source": "uicomp:useQaCameraCapture",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useQaCameraCapture:token:color:primary",
+      "source": "uicomp:useQaCameraCapture",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useQaShopData:ws:apps/web",
+      "source": "uicomp:useQaShopData",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useQaShopData:token:color:primary",
+      "source": "uicomp:useQaShopData",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useQaTemplateCrud:ws:apps/web",
+      "source": "uicomp:useQaTemplateCrud",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useQaTemplateCrud:token:color:primary",
+      "source": "uicomp:useQaTemplateCrud",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -101741,15 +102365,64 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/academy-leads/payments/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/academy-leads/payments/page.tsx",
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/payments/payment-management.helpers.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/payments/payment-management.helpers.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/academy-leads/payments/payment-management.helpers.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/academy-leads/payments/payment-management.helpers.tsx",
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentCollectionModals.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentCollectionModals.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentDetailModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentDetailModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentManagementFilters.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentManagementFilters.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentQueueSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentQueueSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentTraceSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/PaymentTraceSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/paymentQueueColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/paymentQueueColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/usePaymentCollection.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/usePaymentCollection.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/usePaymentManagementData.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/payments/payments-page-modules/usePaymentManagementData.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -103113,6 +103786,34 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayDetailTableCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayDetailTableCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-xoay-tab/cvXoayColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/cvXoayColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-xoay-tab/cvXoayUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/cvXoayUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-xoay-tab/useCvXoayData.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/useCvXoayData.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/cv/page.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cv/page.tsx",
       "target": "ws:packages/shared",
@@ -103344,15 +104045,43 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/holiday-work/hooks/useHolidayWork.ts:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/holiday-work/hooks/useHolidayWork.ts",
+      "id": "edge:file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/HolidayWorkToolbar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/HolidayWorkToolbar.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/holiday-work/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/holiday-work/page.tsx",
+      "id": "edge:file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/HolidayWorkWorkspaceSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/HolidayWorkWorkspaceSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/holidayWorkPageHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/holidayWorkPageHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/holidayWorkWorkspaceColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/holidayWorkWorkspaceColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/useHolidayWorkPage.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/holiday-work/holiday-work-page-modules/useHolidayWorkPage.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/holiday-work/hooks/useHolidayWork.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/holiday-work/hooks/useHolidayWork.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -131471,8 +132200,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5370,
-    "totalEdges": 8885,
+    "totalNodes": 5404,
+    "totalEdges": 8928,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -131480,15 +132209,15 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 654,
-      "File": 2102
+      "UIComponent": 668,
+      "File": 2122
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 720,
-      "USES_TOKEN": 656,
-      "IMPORTS": 1294,
+      "RENDERS": 734,
+      "USES_TOKEN": 670,
+      "IMPORTS": 1309,
       "QUERIES_MODEL": 602,
       "API_CALL": 3068
     },
