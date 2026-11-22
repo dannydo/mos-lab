@@ -7,20 +7,16 @@
     "apps/api/src/modules/bug-reports/inbox-implementation.service.ts": 4123,
     "apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx": 2290,
     "apps/web/app/dashboard/academy-leads/components/AcademyTalentWorkshopDrawer.tsx": 3045,
-    "apps/web/app/dashboard/bk/components/BkDoneTab.tsx": 1174,
     "apps/web/app/dashboard/bk/components/BkGameTab.tsx": 1600,
     "apps/web/app/dashboard/bk/components/BkThuNhapTab.tsx": 1986,
     "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx": 1565,
     "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx": 2891,
     "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx": 1761,
-    "apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx": 1150,
     "apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx": 1652,
     "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx": 1185,
     "apps/web/app/dashboard/customers/components/CustomerFilters.tsx": 1477,
     "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx": 3022,
-    "apps/web/app/dashboard/cv/components/CvTipTab.tsx": 1109,
     "apps/web/app/dashboard/fal/page.tsx": 1338,
-    "apps/web/app/dashboard/loca/hooks/useLocaData.ts": 1152,
     "apps/web/app/dashboard/loca/page.tsx": 1535,
     "apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx": 2015,
     "apps/web/app/dashboard/nyc/campaigns/page.tsx": 1572,
@@ -34,7 +30,6 @@
     "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx": 1723,
     "apps/web/app/dashboard/today/components/TodayCalendarSummary.tsx": 1330,
     "apps/web/components/CustomerDetailDrawer.tsx": 1181,
-    "apps/web/components/layout/SidebarNav.tsx": 1205,
-    "apps/web/components/ui/MermaidViewer.tsx": 1102
+    "apps/web/components/layout/SidebarNav.tsx": 1205
   }
 }

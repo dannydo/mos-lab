@@ -42950,6 +42950,162 @@
       }
     },
     {
+      "id": "uicomp:MermaidCanvas",
+      "type": "UIComponent",
+      "label": "<MermaidCanvas />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/MermaidCanvas.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MermaidCanvas",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:MermaidToolbar",
+      "type": "UIComponent",
+      "label": "<MermaidToolbar />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/MermaidToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MermaidToolbar",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:NodeCommentForm",
+      "type": "UIComponent",
+      "label": "<NodeCommentForm />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/NodeCommentForm.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "NodeCommentForm",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:NodeCommentList",
+      "type": "UIComponent",
+      "label": "<NodeCommentList />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/NodeCommentList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "NodeCommentList",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:NodeCommentsDrawer",
+      "type": "UIComponent",
+      "label": "<NodeCommentsDrawer />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/NodeCommentsDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "NodeCommentsDrawer",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:NodeCommentsModal",
+      "type": "UIComponent",
+      "label": "<NodeCommentsModal />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/NodeCommentsModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "NodeCommentsModal",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:NodeSelectorBanner",
+      "type": "UIComponent",
+      "label": "<NodeSelectorBanner />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/NodeSelectorBanner.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "NodeSelectorBanner",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:mermaidSvgUtils",
+      "type": "UIComponent",
+      "label": "<mermaidSvgUtils />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/mermaidSvgUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mermaidSvgUtils",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:mermaidViewerConstants",
+      "type": "UIComponent",
+      "label": "<mermaidViewerConstants />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/mermaidViewerConstants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mermaidViewerConstants",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:mermaidViewerTypes",
+      "type": "UIComponent",
+      "label": "<mermaidViewerTypes />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/mermaidViewerTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mermaidViewerTypes",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:useMermaidChartRenderer",
+      "type": "UIComponent",
+      "label": "<useMermaidChartRenderer />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/useMermaidChartRenderer.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMermaidChartRenderer",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:useMermaidNodeComments",
+      "type": "UIComponent",
+      "label": "<useMermaidNodeComments />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/useMermaidNodeComments.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMermaidNodeComments",
+        "isPrimitive": true
+      }
+    },
+    {
+      "id": "uicomp:useMermaidViewport",
+      "type": "UIComponent",
+      "label": "<useMermaidViewport />",
+      "category": "UI Primitive Component",
+      "filePath": "apps/web/components/ui/mermaid-viewer/useMermaidViewport.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMermaidViewport",
+        "isPrimitive": true
+      }
+    },
+    {
       "id": "uicomp:KatexMath",
       "type": "UIComponent",
       "label": "<KatexMath />",
@@ -57231,8 +57387,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 50038,
-        "lineCount": 1174,
+        "sizeBytes": 4454,
+        "lineCount": 142,
         "ext": ".tsx"
       }
     },
@@ -57506,6 +57662,71 @@
       "metadata": {
         "sizeBytes": 6653,
         "lineCount": 192,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-done-tab/BkDoneDetailsCard.tsx",
+      "type": "File",
+      "label": "BkDoneDetailsCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-done-tab/BkDoneDetailsCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6943,
+        "lineCount": 208,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-done-tab/BkDoneSummaryCards.tsx",
+      "type": "File",
+      "label": "BkDoneSummaryCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-done-tab/BkDoneSummaryCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11628,
+        "lineCount": 209,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-done-tab/bkDoneColumns.tsx",
+      "type": "File",
+      "label": "bkDoneColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-done-tab/bkDoneColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 19179,
+        "lineCount": 489,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-done-tab/bkDoneUtils.ts",
+      "type": "File",
+      "label": "bkDoneUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-done-tab/bkDoneUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7906,
+        "lineCount": 213,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-done-tab/useBkDoneData.ts",
+      "type": "File",
+      "label": "useBkDoneData.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-done-tab/useBkDoneData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6777,
+        "lineCount": 200,
         "ext": ".ts"
       }
     },
@@ -58830,9 +59051,191 @@
       "filePath": "apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 53065,
-        "lineCount": 1150,
+        "sizeBytes": 5632,
+        "lineCount": 172,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbAttributionCard.tsx",
+      "type": "File",
+      "label": "CbAttributionCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbAttributionCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5406,
+        "lineCount": 103,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbBottomStatusBar.tsx",
+      "type": "File",
+      "label": "CbBottomStatusBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbBottomStatusBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2980,
+        "lineCount": 79,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbDailyAnalysisTableCard.tsx",
+      "type": "File",
+      "label": "CbDailyAnalysisTableCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbDailyAnalysisTableCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5653,
+        "lineCount": 123,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbDrilldownDrawer.tsx",
+      "type": "File",
+      "label": "CbDrilldownDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbDrilldownDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2156,
+        "lineCount": 60,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbFunnelTelemetryRow.tsx",
+      "type": "File",
+      "label": "CbFunnelTelemetryRow.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbFunnelTelemetryRow.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6844,
+        "lineCount": 155,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbHeaderControlBar.tsx",
+      "type": "File",
+      "label": "CbHeaderControlBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbHeaderControlBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5455,
+        "lineCount": 139,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbMonthlyForecastCard.tsx",
+      "type": "File",
+      "label": "CbMonthlyForecastCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbMonthlyForecastCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3649,
+        "lineCount": 93,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbRunRateChartCard.tsx",
+      "type": "File",
+      "label": "CbRunRateChartCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbRunRateChartCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4400,
+        "lineCount": 127,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbTargetConfigDrawer.tsx",
+      "type": "File",
+      "label": "CbTargetConfigDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbTargetConfigDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4144,
+        "lineCount": 110,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbTelemetryStatusStates.tsx",
+      "type": "File",
+      "label": "CbTelemetryStatusStates.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbTelemetryStatusStates.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1286,
+        "lineCount": 38,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbTopRevenueCards.tsx",
+      "type": "File",
+      "label": "CbTopRevenueCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbTopRevenueCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6422,
+        "lineCount": 127,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/cb-live-telemetry-types.ts",
+      "type": "File",
+      "label": "cb-live-telemetry-types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/cb-live-telemetry-types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 722,
+        "lineCount": 33,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/cb-live-telemetry-utils.ts",
+      "type": "File",
+      "label": "cb-live-telemetry-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/cb-live-telemetry-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4048,
+        "lineCount": 117,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/useCbLiveTelemetry.ts",
+      "type": "File",
+      "label": "useCbLiveTelemetry.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/useCbLiveTelemetry.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5754,
+        "lineCount": 174,
+        "ext": ".ts"
       }
     },
     {
@@ -60312,8 +60715,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 43926,
-        "lineCount": 1109,
+        "sizeBytes": 4063,
+        "lineCount": 138,
         "ext": ".tsx"
       }
     },
@@ -60406,6 +60809,110 @@
         "sizeBytes": 8744,
         "lineCount": 258,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipDetailTableCard.tsx",
+      "type": "File",
+      "label": "CvTipDetailTableCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipDetailTableCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3732,
+        "lineCount": 112,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipHistoryModals.tsx",
+      "type": "File",
+      "label": "CvTipHistoryModals.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipHistoryModals.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4508,
+        "lineCount": 129,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipLeaderboardCard.tsx",
+      "type": "File",
+      "label": "CvTipLeaderboardCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipLeaderboardCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5760,
+        "lineCount": 138,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipSummaryCards.tsx",
+      "type": "File",
+      "label": "CvTipSummaryCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipSummaryCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8947,
+        "lineCount": 217,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/cvTipColumns.tsx",
+      "type": "File",
+      "label": "cvTipColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-tip-tab/cvTipColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14940,
+        "lineCount": 412,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/cvTipUtils.ts",
+      "type": "File",
+      "label": "cvTipUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-tip-tab/cvTipUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6034,
+        "lineCount": 172,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/useCvTipData.ts",
+      "type": "File",
+      "label": "useCvTipData.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-tip-tab/useCvTipData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5459,
+        "lineCount": 186,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/useCvTipHistoryModals.ts",
+      "type": "File",
+      "label": "useCvTipHistoryModals.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-tip-tab/useCvTipHistoryModals.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3952,
+        "lineCount": 117,
+        "ext": ".ts"
       }
     },
     {
@@ -62060,6 +62567,97 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/loca/hooks/use-loca-data/constants.ts",
+      "type": "File",
+      "label": "constants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/hooks/use-loca-data/constants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2359,
+        "lineCount": 46,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/hooks/use-loca-data/locaStorageHelpers.ts",
+      "type": "File",
+      "label": "locaStorageHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/hooks/use-loca-data/locaStorageHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5624,
+        "lineCount": 156,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/hooks/use-loca-data/types.ts",
+      "type": "File",
+      "label": "types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/hooks/use-loca-data/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 919,
+        "lineCount": 39,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaCustomerActions.ts",
+      "type": "File",
+      "label": "useLocaCustomerActions.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaCustomerActions.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4566,
+        "lineCount": 132,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaCustomersAndStats.ts",
+      "type": "File",
+      "label": "useLocaCustomersAndStats.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaCustomersAndStats.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12853,
+        "lineCount": 361,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaStaffActivity.ts",
+      "type": "File",
+      "label": "useLocaStaffActivity.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaStaffActivity.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8620,
+        "lineCount": 228,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaTouchpointConfig.ts",
+      "type": "File",
+      "label": "useLocaTouchpointConfig.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaTouchpointConfig.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4374,
+        "lineCount": 117,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/loca/hooks/useLocaData.ts",
       "type": "File",
       "label": "useLocaData.ts",
@@ -62067,8 +62665,8 @@
       "filePath": "apps/web/app/dashboard/loca/hooks/useLocaData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 43338,
-        "lineCount": 1152,
+        "sizeBytes": 10311,
+        "lineCount": 255,
         "ext": ".ts"
       }
     },
@@ -100735,6 +101333,188 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MermaidCanvas:ws:apps/web",
+      "source": "uicomp:MermaidCanvas",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MermaidCanvas:token:color:primary",
+      "source": "uicomp:MermaidCanvas",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MermaidToolbar:ws:apps/web",
+      "source": "uicomp:MermaidToolbar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MermaidToolbar:token:color:primary",
+      "source": "uicomp:MermaidToolbar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:NodeCommentForm:ws:apps/web",
+      "source": "uicomp:NodeCommentForm",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:NodeCommentForm:token:color:primary",
+      "source": "uicomp:NodeCommentForm",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:NodeCommentList:ws:apps/web",
+      "source": "uicomp:NodeCommentList",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:NodeCommentList:token:color:primary",
+      "source": "uicomp:NodeCommentList",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:NodeCommentsDrawer:ws:apps/web",
+      "source": "uicomp:NodeCommentsDrawer",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:NodeCommentsDrawer:token:color:primary",
+      "source": "uicomp:NodeCommentsDrawer",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:NodeCommentsModal:ws:apps/web",
+      "source": "uicomp:NodeCommentsModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:NodeCommentsModal:token:color:primary",
+      "source": "uicomp:NodeCommentsModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:NodeSelectorBanner:ws:apps/web",
+      "source": "uicomp:NodeSelectorBanner",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:NodeSelectorBanner:token:color:primary",
+      "source": "uicomp:NodeSelectorBanner",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mermaidSvgUtils:ws:apps/web",
+      "source": "uicomp:mermaidSvgUtils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mermaidSvgUtils:token:color:primary",
+      "source": "uicomp:mermaidSvgUtils",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mermaidViewerConstants:ws:apps/web",
+      "source": "uicomp:mermaidViewerConstants",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mermaidViewerConstants:token:color:primary",
+      "source": "uicomp:mermaidViewerConstants",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mermaidViewerTypes:ws:apps/web",
+      "source": "uicomp:mermaidViewerTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mermaidViewerTypes:token:color:primary",
+      "source": "uicomp:mermaidViewerTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMermaidChartRenderer:ws:apps/web",
+      "source": "uicomp:useMermaidChartRenderer",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMermaidChartRenderer:token:color:primary",
+      "source": "uicomp:useMermaidChartRenderer",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMermaidNodeComments:ws:apps/web",
+      "source": "uicomp:useMermaidNodeComments",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMermaidNodeComments:token:color:primary",
+      "source": "uicomp:useMermaidNodeComments",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMermaidViewport:ws:apps/web",
+      "source": "uicomp:useMermaidViewport",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMermaidViewport:token:color:primary",
+      "source": "uicomp:useMermaidViewport",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:KatexMath:ws:apps/web",
       "source": "uicomp:KatexMath",
       "target": "ws:apps/web",
@@ -106244,13 +107024,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/bk/components/BkDoneTab.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/bk/components/BkGameEditModal.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bk/components/BkGameEditModal.test.tsx",
       "target": "ws:packages/shared",
@@ -106358,6 +107131,34 @@
     {
       "id": "edge:file:apps/web/app/dashboard/bk/components/bk-booking-tab/useBkBookingData.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bk/components/bk-booking-tab/useBkBookingData.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-done-tab/BkDoneDetailsCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-done-tab/BkDoneDetailsCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-done-tab/bkDoneColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-done-tab/bkDoneColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-done-tab/bkDoneUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-done-tab/bkDoneUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-done-tab/useBkDoneData.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-done-tab/useBkDoneData.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -106930,8 +107731,78 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx",
+      "id": "edge:file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbAttributionCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbAttributionCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbBottomStatusBar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbBottomStatusBar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbDailyAnalysisTableCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbDailyAnalysisTableCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbDrilldownDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbDrilldownDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbFunnelTelemetryRow.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbFunnelTelemetryRow.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbHeaderControlBar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbHeaderControlBar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbMonthlyForecastCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbMonthlyForecastCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbTargetConfigDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbTargetConfigDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbTopRevenueCards.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbTopRevenueCards.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/cb-live-telemetry-utils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/cb-live-telemetry-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/useCbLiveTelemetry.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/useCbLiveTelemetry.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -107371,13 +108242,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/cv/components/CvTipTab.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/cv/components/CvTipTab.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/cv/components/CvXoayTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cv/components/CvXoayTab.tsx",
       "target": "ws:packages/shared",
@@ -107422,6 +108286,55 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cv/components/cv-speed/CvSpeedTrendLineChart.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cv/components/cv-speed/CvSpeedTrendLineChart.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipDetailTableCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipDetailTableCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipHistoryModals.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipHistoryModals.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipLeaderboardCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipLeaderboardCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-tip-tab/cvTipColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/cvTipColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-tip-tab/cvTipUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/cvTipUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-tip-tab/useCvTipData.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/useCvTipData.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-tip-tab/useCvTipHistoryModals.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/useCvTipHistoryModals.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -108094,6 +109007,34 @@
     {
       "id": "edge:file:apps/web/app/dashboard/loca/components/touchpoint-cell/loca-touchpoint-utils.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/loca/components/touchpoint-cell/loca-touchpoint-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/hooks/use-loca-data/locaStorageHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/hooks/use-loca-data/locaStorageHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaCustomerActions.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaCustomerActions.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaCustomersAndStats.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaCustomersAndStats.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaStaffActivity.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/hooks/use-loca-data/useLocaStaffActivity.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -134735,8 +135676,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5596,
-    "totalEdges": 8948,
+    "totalNodes": 5643,
+    "totalEdges": 8997,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -134744,15 +135685,15 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 752,
-      "File": 2230
+      "UIComponent": 765,
+      "File": 2264
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 818,
-      "USES_TOKEN": 754,
-      "IMPORTS": 1369,
+      "RENDERS": 831,
+      "USES_TOKEN": 767,
+      "IMPORTS": 1392,
       "QUERIES_MODEL": 602,
       "API_CALL": 2860
     },
