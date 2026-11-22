@@ -238,14 +238,14 @@ export function ProductQrScannerModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 select-none animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center overflow-hidden overscroll-contain pt-[max(16px,env(safe-area-inset-top,0px))] p-0 sm:p-4 select-none animate-in fade-in duration-150"
       data-testid="product-qr-scanner-modal"
     >
       <div className="fixed inset-0 bg-black/70 backdrop-blur-xs" onClick={onClose} />
       <div
         className={`relative ${
           isDark ? 'bg-[#1C1C1E] text-white border-neutral-800' : 'bg-white text-neutral-900 border-neutral-200'
-        } rounded-t-3xl sm:rounded-3xl w-full max-w-lg p-3.5 sm:p-5 shadow-2xl space-y-3 max-h-[92vh] overflow-y-auto z-10 border`}
+        } rounded-t-3xl sm:rounded-3xl w-full max-w-lg p-3.5 sm:p-5 pb-[calc(14px+env(safe-area-inset-bottom,0px))] shadow-2xl space-y-3 max-h-[88dvh] overflow-y-auto overscroll-contain touch-pan-y ios-touch-scroll z-10 border`}
       >
         {/* Header: Title Left, Close Right */}
         <div className="flex items-start justify-between gap-3 pb-2.5 border-b border-[var(--mos-surface-border)]">

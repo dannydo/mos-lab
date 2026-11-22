@@ -84,11 +84,11 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-end sm:items-center justify-center overflow-hidden overscroll-contain pt-[max(16px,env(safe-area-inset-top,0px))] p-0 sm:p-4 animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[430px] bg-[var(--mos-surface)] text-[var(--mos-text)] rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[var(--mos-surface-border)] overflow-hidden flex flex-col max-h-[92vh] animate-in slide-in-from-bottom-6 duration-200"
+        className="w-full max-w-[430px] bg-[var(--mos-surface)] text-[var(--mos-text)] rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[var(--mos-surface-border)] overflow-hidden flex flex-col max-h-[88dvh] sm:max-h-[86dvh] pb-[env(safe-area-inset-bottom,0px)] animate-in slide-in-from-bottom-6 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header: Tiêu đề góc trái · Nút đóng [✕] góc phải (Chuẩn UI Invariant) */}
@@ -127,7 +127,7 @@ export function Screen02LashHistorySheet({ item, isOpen, onClose, onApplySpecs }
         </div>
 
         {/* Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 select-none">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y ios-touch-scroll p-4 space-y-4 select-none">
           {/* Section 1: 3 Bắt Buộc Tấm Hình (Mi Trên & Mi Dưới nếu có) */}
           <div className="space-y-4">
             {[

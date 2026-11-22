@@ -193,14 +193,14 @@ export function ComboWalletDetailModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 select-none animate-in fade-in duration-200"
+      className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-xs flex items-center justify-center overflow-hidden overscroll-contain pt-[max(12px,env(safe-area-inset-top,0px))] pb-[max(12px,env(safe-area-inset-bottom,0px))] px-3 select-none animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
         style={{ colorScheme: isDark ? 'dark' : 'light' }}
-        className={`w-full max-w-[420px] max-h-[86vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col border ${dialogSurface} animate-in zoom-in-95 duration-200`}
+        className={`w-full max-w-[420px] max-h-[86dvh] rounded-3xl overflow-hidden shadow-2xl flex flex-col border ${dialogSurface} animate-in zoom-in-95 duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header: Title left, Close [X] top-right (UI Invariant) */}

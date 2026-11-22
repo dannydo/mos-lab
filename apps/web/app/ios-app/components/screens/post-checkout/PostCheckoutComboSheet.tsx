@@ -514,13 +514,13 @@ export function PostCheckoutComboSheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center overflow-hidden overscroll-contain bg-black/70 backdrop-blur-xs pt-[max(16px,env(safe-area-inset-top,0px))] px-0 sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Điều chỉnh gói Combo sau checkout"
     >
       <div
-        className={`w-full max-w-xl max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border shadow-2xl ${
+        className={`w-full max-w-xl max-h-[88dvh] sm:max-h-[86dvh] overflow-y-auto overscroll-contain touch-pan-y ios-touch-scroll pb-[env(safe-area-inset-bottom,0px)] rounded-t-3xl sm:rounded-3xl border shadow-2xl ${
           isDark ? 'bg-[#121214] border-neutral-800 text-neutral-100' : 'bg-white border-gray-200 text-gray-900'
         }`}
       >
