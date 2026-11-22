@@ -1,38 +1,19 @@
 'use client';
 
 import React from 'react';
-import {
-  Alert,
-  Badge,
-  Button,
-  Checkbox,
-  Collapse,
-  Image,
-  Input,
-  Select,
-  Tabs,
-  Upload,
-  message,
-  notification,
-  theme,
-} from 'antd';
-import { ImagePlus, Inbox, Lightbulb, ListChecks, MessageSquareWarning, Send, X } from 'lucide-react';
+import { Badge, Button, Tabs, message, notification } from 'antd';
+import { Inbox, Lightbulb, ListChecks, MessageSquareWarning, Send } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import {
-  BUG_REPORT_MAX_ATTACHMENTS,
-  BUG_REPORT_MAX_ATTACHMENT_BYTES,
   BUG_REPORT_Z_INDEX,
   isAdminOrSuperAdminRole,
   isCvRole,
   type BugReportClientError,
   type BugReportContext,
   type BugReportExpertDetails,
-  type BugReportExpertImpact,
   type BugReportRequestType,
   type CreateBugReportAttachmentRequest,
   type FeatureRequestAudience,
-  type MyBugReportItem,
-  type RequestClassificationJob,
 } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import {
@@ -44,9 +25,7 @@ import {
 import { compressImageForUpload, fileDataBase64 } from '../../lib/image-utils';
 import { safeStorage } from '../../lib/safe-storage';
 import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, IconButton, IconText } from '../ui';
-import { RichTextEditor } from '../ui/rich-text';
 import { MyBugReportsPanel } from './MyBugReportsPanel';
-import { GuidedRequestConversation } from './GuidedRequestConversation';
 import { BUG_REPORT_WORKFLOW_VISIBILITY_EVENT, BugReportWorkflowModal } from './BugReportWorkflowGuide';
 import {
   carryRequestDraft,
@@ -55,62 +34,22 @@ import {
   updateRequestDraft,
   type RequestDraftView,
 } from './bug-report-drafts';
+import {
+  EXPERT_DETAILS_PREFERENCE_KEY,
+  MAX_ATTACHMENTS,
+  MAX_ATTACHMENT_BYTES,
+  buildOptimisticBugReportItem,
+  type ReleaseMarker,
+} from './bug-report-surface.helpers';
+import { BugReportRequestForm } from './BugReportRequestForm';
 import { useMyBugReports } from './useMyBugReports';
-
-const MAX_ATTACHMENTS = BUG_REPORT_MAX_ATTACHMENTS ?? 10;
-const MAX_ATTACHMENT_BYTES = BUG_REPORT_MAX_ATTACHMENT_BYTES ?? 5 * 1024 * 1024;
-const EXPERT_DETAILS_PREFERENCE_KEY = 'mos_bug_report_expert_details_v1';
-
-const FEATURE_AUDIENCE_OPTIONS: Array<{ value: FeatureRequestAudience; label: string }> = [
-  { value: 'SELF', label: 'Cá nhân tôi' },
-  { value: 'TEAM', label: 'Đội / bộ phận của tôi' },
-  { value: 'ALL_STAFF', label: 'Tất cả nhân viên' },
-  { value: 'CUSTOMER', label: 'Khách hàng' },
-];
-const EXPERT_IMPACT_OPTIONS: Array<{ value: BugReportExpertImpact; label: string }> = [
-  { value: 'LOW', label: 'Thấp · có thể tiếp tục làm việc' },
-  { value: 'MEDIUM', label: 'Trung bình · gây bất tiện' },
-  { value: 'HIGH', label: 'Cao · chặn công việc' },
-];
-
-type ReleaseMarker = { deployedAt: string | null; commitSha: string | null };
-
-function BugReportFileThumbnail({ file }: { file: File }) {
-  const [previewUrl, setPreviewUrl] = React.useState('');
-
-  React.useEffect(() => {
-    const nextPreviewUrl = URL.createObjectURL(file);
-    setPreviewUrl(nextPreviewUrl);
-    return () => URL.revokeObjectURL(nextPreviewUrl);
-  }, [file]);
-
-  if (!previewUrl) {
-    return (
-      <span aria-label={`Đang tạo ảnh xem trước ${file.name}`} className="h-[52px] w-[52px] shrink-0 rounded-md" />
-    );
-  }
-
-  return (
-    <Image
-      alt={`Ảnh xem trước ${file.name}`}
-      src={previewUrl}
-      width={52}
-      height={52}
-      style={{ borderRadius: 6, objectFit: 'cover' }}
-      preview={{
-        mask: <span className="text-[10px] font-medium text-white">Xem</span>,
-        zIndex: BUG_REPORT_Z_INDEX.PREVIEW,
-      }}
-    />
-  );
-}
+import { useRequestClassification } from './useRequestClassification';
 
 export function BugReportSurface() {
   const pathname = usePathname();
-  const { token } = theme.useToken();
   const [open, setOpen] = React.useState(false);
   const [workflowOpen, setWorkflowOpen] = React.useState(false);
-  const [externalWorkflowOpen, setExternalWorkflowOpen] = React.useState(false);
+  const [_externalWorkflowOpen, setExternalWorkflowOpen] = React.useState(false);
   const [activeView, setActiveView] = React.useState<'bug' | 'feature' | 'history'>('bug');
   const [selectedReportKey, setSelectedReportKey] = React.useState<string | null>(null);
   const [drafts, setDrafts] = React.useState(createRequestDrafts);
@@ -126,12 +65,10 @@ export function BugReportSurface() {
   const [canViewInbox, setCanViewInbox] = React.useState(false);
   const [release, setRelease] = React.useState<ReleaseMarker | null>(null);
   const [context, setContext] = React.useState<BugReportContext | null>(null);
-  const [classification, setClassification] = React.useState<RequestClassificationJob | null>(null);
   const [conversationSessionId, setConversationSessionId] = React.useState<string | null>(null);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
   const announcedNotificationsRef = React.useRef(new Set<number>());
   const handledReviewLinkRef = React.useRef<string | null>(null);
-  const classificationVersionRef = React.useRef(0);
   const activeRequestView: RequestDraftView = activeView === 'feature' ? 'feature' : 'bug';
   const activeDraft = drafts[activeRequestView];
   const descriptionFieldId = activeRequestView === 'feature' ? 'mos-feature-description' : 'mos-bug-description';
@@ -241,89 +178,15 @@ export function BugReportSurface() {
     []
   );
 
-  React.useEffect(() => {
-    if (!open || activeView === 'history') return;
-    const description = activeDraft.description.trim();
-    const version = ++classificationVersionRef.current;
-    setClassification(null);
-    if (description.length < 3) return;
-    if (!navigator.onLine) {
-      setClassification({
-        id: `offline-${version}`,
-        status: 'FAILED',
-        recommendation: null,
-        fallbackReason: 'Bạn đang offline; vẫn có thể tự chọn Báo lỗi hoặc Yêu cầu chức năng.',
-        expiresAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-      return;
-    }
-
-    let cancelled = false;
-    let pollTimer: number | null = null;
-    const poll = async (jobId: string) => {
-      try {
-        const next = await apiClient.bugReports.classificationStatus(jobId);
-        if (cancelled || version !== classificationVersionRef.current) return;
-        setClassification(next);
-        if (next.status === 'PENDING' || next.status === 'LEASED') {
-          pollTimer = window.setTimeout(() => void poll(jobId), 1500);
-        }
-      } catch {
-        if (cancelled || version !== classificationVersionRef.current) return;
-        setClassification({
-          id: jobId,
-          status: 'FAILED',
-          recommendation: null,
-          fallbackReason: 'AI tạm thời không phản hồi; bạn vẫn có thể tự chọn loại yêu cầu.',
-          expiresAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-      }
-    };
-    const debounce = window.setTimeout(() => {
-      void (async () => {
-        try {
-          const attachments: CreateBugReportAttachmentRequest[] = await Promise.all(
-            activeDraft.files.map(async (file) => ({
-              fileName: file.name,
-              mimeType: file.type as CreateBugReportAttachmentRequest['mimeType'],
-              sizeBytes: file.size,
-              dataBase64: await fileDataBase64(file),
-            }))
-          );
-          const response = await apiClient.bugReports.classifyRequest({
-            description,
-            context: {
-              path: context?.path || pathname,
-              pageTitle: context?.pageTitle || document.title,
-              online: true,
-            },
-            attachments,
-          });
-          const job = response.data;
-          if (!job || cancelled || version !== classificationVersionRef.current) return;
-          setClassification(job);
-          void poll(job.id);
-        } catch {
-          if (cancelled || version !== classificationVersionRef.current) return;
-          setClassification({
-            id: `unavailable-${version}`,
-            status: 'FAILED',
-            recommendation: null,
-            fallbackReason: 'Không thể hỏi AI lúc này; bạn vẫn có thể tự chọn loại yêu cầu.',
-            expiresAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
-        }
-      })();
-    }, 700);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(debounce);
-      if (pollTimer !== null) window.clearTimeout(pollTimer);
-    };
-  }, [activeDraft.description, activeDraft.files, activeView, context?.pageTitle, context?.path, open, pathname]);
+  const classification = useRequestClassification({
+    open,
+    activeView,
+    description: activeDraft.description,
+    files: activeDraft.files,
+    contextPath: context?.path,
+    contextPageTitle: context?.pageTitle,
+    pathname: normalizedPathname,
+  });
 
   const showHistory = React.useCallback(
     (key?: string | null) => {
@@ -448,7 +311,7 @@ export function BugReportSurface() {
       message.warning('Hãy mô tả yêu cầu bằng ít nhất 3 ký tự.');
       return;
     }
-    // Context normally arrives when the sheet opens.  A slow release-marker
+    // Context normally arrives when the sheet opens. A slow release-marker
     // request must never leave the reporter with an enabled button that does
     // nothing; capture a fresh safe context at the submit boundary instead.
     const submissionContext = context ?? captureBugReportContext(release, null);
@@ -499,91 +362,26 @@ export function BugReportSurface() {
       setSelectedReportKey(result.key);
       setActiveView('history');
 
-      const nowIso = new Date().toISOString();
-      const optimisticItem: MyBugReportItem = {
+      const optimisticItem = buildOptimisticBugReportItem({
         id: result.id,
         key: result.key,
         requestType,
-        title: normalizedDescription,
         description: normalizedDescription,
-        status: 'NEW',
-        priority: null,
-        triageNote: null,
-        sourcePath: submissionContext.path,
-        overlay: submissionContext.overlays[0] || null,
-        attachmentCount: attachments.length,
-        commentCount: 0,
-        clarification: {
-          status: 'PENDING_AGENT',
-          summary: null,
-          clarifiedAt: null,
-        },
-        reopen: null,
-        agentProgress: {
-          stage: 'NOT_VIEWED',
-          note: null,
-          updatedAt: nowIso,
-        },
-        implementation: null,
-        nextAction: {
-          actor: 'AGENT',
-          type: 'NONE',
-          label: 'Chờ tiếp nhận',
-          detail: 'mOS đang chuẩn bị tiếp nhận yêu cầu của bạn.',
-          waitingSince: nowIso,
-        },
-        reporterExperience: {
-          state: 'RECEIVED',
-          label: 'Đã nhận yêu cầu',
-          summary: 'mOS đang xem yêu cầu và thông tin bạn đã gửi.',
-          nextAction: {
-            label: 'Bạn chưa cần làm gì',
-            detail: 'mOS sẽ báo bạn khi cần thêm thông tin hoặc có kết quả để kiểm tra.',
-          },
-          updates: [{ label: 'Đã nhận yêu cầu của bạn', occurredAt: nowIso }],
-        },
-        reporter: { id: 0, displayName: 'Tôi', role: 'CV', avatarUrl: null },
-        approvedAt: null,
-        timeline: {
-          reportedAt: nowIso,
-          approvedAt: null,
-          startedAt: null,
-          fixedAt: null,
-          closedAt: null,
-          updatedAt: nowIso,
-        },
-        createdAt: nowIso,
-        updatedAt: nowIso,
-        resolution: null,
-        evidenceAttachments: attachments.map((att, idx) => ({
-          id: -1 - idx,
-          commentId: null,
-          fileName: att.fileName,
-          mimeType: att.mimeType,
-          sizeBytes: att.sizeBytes,
-          createdAt: nowIso,
-          deletedAt: null,
-        })),
-        comments: [],
-        reviewUrl: `/dashboard?bugReview=${encodeURIComponent(result.key)}`,
-        canReview: false,
-        canReopenUnchanged: false,
-        featureRequest:
-          requestType === 'FEATURE'
-            ? {
-                reason: normalizedFeatureReason || normalizedDescription,
-                audience: featureAudience,
-                desiredOutcome: featureDesiredOutcome.trim() || null,
-              }
-            : null,
+        submissionContext,
+        attachments,
+        featureReason: normalizedFeatureReason,
+        featureAudience,
+        featureDesiredOutcome,
         expertDetails: draft.expertDetails,
-        planReview: null,
-      };
-
+      });
       myBugs.addOptimisticReport(optimisticItem);
       void myBugs.refresh({ force: true });
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || error?.message || 'Không thể gửi yêu cầu.');
+    } catch (error: unknown) {
+      const responseMessage =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null;
+      message.error(responseMessage || (error instanceof Error ? error.message : 'Không thể gửi yêu cầu.'));
     } finally {
       setSubmitting(false);
       submittingRef.current = false;
@@ -690,313 +488,43 @@ export function BugReportSurface() {
             onClose={closeReporter}
           />
         ) : (
-          <div
-            className="space-y-5"
-            onPaste={(event) => {
-              const pasted = Array.from(event.clipboardData.files).filter((file) => file.type.startsWith('image/'));
-              if (pasted.length) {
-                event.preventDefault();
-                void addFiles(pasted, activeRequestView);
-              }
+          <BugReportRequestForm
+            activeView={activeView}
+            activeRequestView={activeRequestView}
+            activeDraft={activeDraft}
+            descriptionFieldId={descriptionFieldId}
+            pathname={normalizedPathname}
+            context={context}
+            classification={classification}
+            expertDetailsExpanded={expertDetailsExpanded}
+            onExpertDetailsExpandedChange={setExpertDetailsExpanded}
+            rememberExpertDetails={rememberExpertDetails}
+            onRememberExpertDetailsChange={setExpertDetailsPreference}
+            featureReason={featureReason}
+            onFeatureReasonChange={setFeatureReason}
+            featureAudience={featureAudience}
+            onFeatureAudienceChange={setFeatureAudience}
+            featureDesiredOutcome={featureDesiredOutcome}
+            onFeatureDesiredOutcomeChange={setFeatureDesiredOutcome}
+            onConversationSession={setConversationSessionId}
+            onSwitchRequestView={switchRequestView}
+            onDescriptionChange={(nextDescription) => {
+              setDrafts((current) => updateRequestDraft(current, activeRequestView, { description: nextDescription }));
+              setConversationSessionId(null);
             }}
-          >
-            {activeView === 'feature' ? (
-              <Alert
-                type="info"
-                showIcon
-                message="Bạn chỉ cần mô tả nhu cầu — AI Agent sẽ hỏi tiếp nếu còn thiếu"
-                description="Bạn không cần viết đặc tả kỹ thuật. mOS chỉ hỏi thêm khi thật sự cần để hiểu nhu cầu."
-              />
-            ) : null}
-            {classification && ['FAILED', 'EXPIRED'].includes(classification.status) ? (
-              <Alert
-                type={
-                  classification.status === 'COMPLETED'
-                    ? 'success'
-                    : classification.status === 'FAILED' || classification.status === 'EXPIRED'
-                      ? 'warning'
-                      : 'info'
-                }
-                showIcon
-                message="Bạn vẫn có thể gửi yêu cầu ngay"
-                description={classification.fallbackReason || 'mOS sẽ xem lại loại yêu cầu sau khi bạn gửi.'}
-              />
-            ) : null}
-            <GuidedRequestConversation
-              key={`${activeRequestView}:${activeDraft.description}`}
-              description={activeDraft.description}
-              requestType={activeView === 'feature' ? 'FEATURE' : 'BUG'}
-              path={context?.path || pathname}
-              pageTitle={context?.pageTitle || document.title}
-              attachmentCount={activeDraft.files.length}
-              onSession={setConversationSessionId}
-              onTypeRecommendation={(type) => switchRequestView(type === 'FEATURE' ? 'feature' : 'bug')}
-              onApply={(value) => {
-                setDrafts((current) => updateRequestDraft(current, activeRequestView, { description: value }));
-              }}
-            />
-            <div>
-              <label htmlFor={descriptionFieldId} className="mb-2 block text-sm font-semibold">
-                {activeView === 'feature' ? 'Bạn muốn mOS giúp làm việc gì?' : 'Bạn đang gặp vấn đề gì?'}
-              </label>
-              <RichTextEditor
-                key={activeRequestView}
-                id={descriptionFieldId}
-                autoFocus
-                value={activeDraft.description}
-                onChange={(nextDescription) => {
-                  setDrafts((current) =>
-                    updateRequestDraft(current, activeRequestView, { description: nextDescription })
-                  );
-                  setConversationSessionId(null);
-                }}
-                maxLength={2000}
-                rows={5}
-                placeholder={
-                  activeView === 'feature'
-                    ? 'Ví dụ: Tôi muốn xem lịch sử khách đã đổi lịch ngay trong hồ sơ…'
-                    : 'Ví dụ: Tôi bấm Lưu nhưng popup vẫn đứng yên…'
-                }
-              />
-              <p className="mb-0 mt-3 text-xs" style={{ color: token.colorTextSecondary }}>
-                {activeView === 'feature'
-                  ? 'Không cần viết đặc tả kỹ thuật. Hãy mô tả công việc theo cách bạn đang làm hằng ngày.'
-                  : 'mOS tự đính kèm trang, popup, phiên bản và lỗi kỹ thuật gần nhất. Bạn không cần biết thuật ngữ kỹ thuật.'}
-              </p>
-            </div>
-
-            <Collapse
-              activeKey={expertDetailsExpanded ? ['expert'] : []}
-              onChange={(keys) => setExpertDetailsExpanded(keys.includes('expert'))}
-              items={[
-                {
-                  key: 'expert',
-                  label: 'Thêm chi tiết cho người quen kỹ thuật',
-                  children: (
-                    <div className="space-y-4">
-                      <p className="m-0 text-sm" style={{ color: token.colorTextSecondary }}>
-                        Không bắt buộc. Chi tiết này giúp mOS hiểu và xử lý nhanh hơn, nhưng bạn vẫn gửi được ngay.
-                      </p>
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div className="sm:col-span-2">
-                          <label htmlFor="mos-expert-reproduction" className="mb-2 block text-sm font-semibold">
-                            Bước tái hiện
-                          </label>
-                          <Input.TextArea
-                            id="mos-expert-reproduction"
-                            value={activeDraft.expertDetails.reproductionSteps || ''}
-                            onChange={(event) => updateExpertDetails({ reproductionSteps: event.target.value || null })}
-                            maxLength={1200}
-                            rows={3}
-                            placeholder="Ví dụ: Mở Danh sách lỗi → zoom browser 150% → cuộn xuống cuối trang"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="mos-expert-expected" className="mb-2 block text-sm font-semibold">
-                            Kết quả mong đợi
-                          </label>
-                          <Input.TextArea
-                            id="mos-expert-expected"
-                            value={activeDraft.expertDetails.expectedResult || ''}
-                            onChange={(event) => updateExpertDetails({ expectedResult: event.target.value || null })}
-                            maxLength={1200}
-                            rows={2}
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="mos-expert-actual" className="mb-2 block text-sm font-semibold">
-                            Kết quả thực tế
-                          </label>
-                          <Input.TextArea
-                            id="mos-expert-actual"
-                            value={activeDraft.expertDetails.actualResult || ''}
-                            onChange={(event) => updateExpertDetails({ actualResult: event.target.value || null })}
-                            maxLength={1200}
-                            rows={2}
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="mos-expert-impact" className="mb-2 block text-sm font-semibold">
-                            Mức ảnh hưởng
-                          </label>
-                          <Select
-                            id="mos-expert-impact"
-                            aria-label="Mức ảnh hưởng"
-                            value={activeDraft.expertDetails.impact || undefined}
-                            onChange={(impact) =>
-                              updateExpertDetails({ impact: (impact as BugReportExpertImpact | undefined) ?? null })
-                            }
-                            options={EXPERT_IMPACT_OPTIONS}
-                            placeholder="Chọn nếu bạn biết"
-                            allowClear
-                            className="w-full"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="mos-expert-environment" className="mb-2 block text-sm font-semibold">
-                            Môi trường
-                          </label>
-                          <Input
-                            id="mos-expert-environment"
-                            value={activeDraft.expertDetails.environment || ''}
-                            onChange={(event) => updateExpertDetails({ environment: event.target.value || null })}
-                            maxLength={500}
-                            placeholder="Ví dụ: Chrome 124 · 4K · zoom 150%"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="mos-expert-workaround" className="mb-2 block text-sm font-semibold">
-                            Cách làm tạm thời
-                          </label>
-                          <Input
-                            id="mos-expert-workaround"
-                            value={activeDraft.expertDetails.workaround || ''}
-                            onChange={(event) => updateExpertDetails({ workaround: event.target.value || null })}
-                            maxLength={1200}
-                            placeholder="Nếu có"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="mos-expert-related" className="mb-2 block text-sm font-semibold">
-                            Ticket liên quan
-                          </label>
-                          <Input
-                            id="mos-expert-related"
-                            value={activeDraft.expertDetails.relatedTicket || ''}
-                            onChange={(event) => updateExpertDetails({ relatedTicket: event.target.value || null })}
-                            maxLength={120}
-                            placeholder="Ví dụ: MOS-BUG-17"
-                          />
-                        </div>
-                      </div>
-                      {activeView === 'feature' ? (
-                        <div className="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-2">
-                          <div className="sm:col-span-2">
-                            <label htmlFor="mos-feature-reason" className="mb-2 block text-sm font-semibold">
-                              Vì sao cải tiến này cần thiết?
-                            </label>
-                            <Input.TextArea
-                              id="mos-feature-reason"
-                              value={featureReason}
-                              onChange={(event) => setFeatureReason(event.target.value)}
-                              maxLength={2000}
-                              rows={3}
-                              placeholder="Hiện tại bạn phải làm thủ công, mất thời gian hoặc dễ sai ở bước nào?"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="mos-feature-audience" className="mb-2 block text-sm font-semibold">
-                              Ai sẽ sử dụng?
-                            </label>
-                            <Select
-                              id="mos-feature-audience"
-                              aria-label="Ai sẽ sử dụng chức năng"
-                              value={featureAudience}
-                              onChange={setFeatureAudience}
-                              options={FEATURE_AUDIENCE_OPTIONS}
-                              className="w-full"
-                            />
-                          </div>
-                          <div>
-                            <label htmlFor="mos-feature-outcome" className="mb-2 block text-sm font-semibold">
-                              Kết quả mong muốn
-                            </label>
-                            <Input
-                              id="mos-feature-outcome"
-                              value={featureDesiredOutcome}
-                              onChange={(event) => setFeatureDesiredOutcome(event.target.value)}
-                              maxLength={2000}
-                              placeholder="Ví dụ: Giảm còn 1 lần bấm"
-                            />
-                          </div>
-                        </div>
-                      ) : null}
-                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
-                        <span className="text-sm" style={{ color: token.colorTextSecondary }}>
-                          Độ đủ thông tin · {activeDraft.files.length ? 'đã có ảnh' : 'ảnh là tùy chọn'} · mOS tự lưu
-                          môi trường.
-                        </span>
-                        <Checkbox
-                          checked={rememberExpertDetails}
-                          onChange={(event) => setExpertDetailsPreference(event.target.checked)}
-                        >
-                          Lưu cách nhập chi tiết này cho lần sau
-                        </Checkbox>
-                      </div>
-                    </div>
-                  ),
-                },
-              ]}
-            />
-
-            <Upload.Dragger
-              key={`${activeRequestView}-upload`}
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              showUploadList={false}
-              disabled={activeDraft.processingImages || activeDraft.files.length >= MAX_ATTACHMENTS}
-              beforeUpload={(file, selected) => {
-                if (file.uid === selected[0]?.uid) void addFiles(selected as File[], activeRequestView);
-                return Upload.LIST_IGNORE;
-              }}
-            >
-              <div className="flex flex-col items-center gap-2 py-2">
-                <AppIcon icon={ImagePlus} size="lg" style={{ color: token.colorTextSecondary }} />
-                <span className="text-sm font-medium">
-                  {activeView === 'feature' ? 'Thêm ảnh minh họa nhu cầu' : 'Thêm ảnh chụp lỗi nếu cần'}
-                </span>
-                <span className="text-xs" style={{ color: token.colorTextSecondary }}>
-                  Không bắt buộc · tối đa {MAX_ATTACHMENTS} ảnh · mỗi ảnh 5 MB
-                </span>
-              </div>
-            </Upload.Dragger>
-
-            {activeDraft.files.length > 0 && (
-              <Image.PreviewGroup
-                preview={{
-                  zIndex: BUG_REPORT_Z_INDEX.PREVIEW,
-                  countRender: (current: number, total: number) => (
-                    <span className="tabular-nums font-semibold tracking-wide">
-                      {current} / {total}
-                    </span>
-                  ),
-                }}
-              >
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {activeDraft.files.map((file, index) => (
-                    <div
-                      key={`${file.name}-${file.size}-${index}`}
-                      className="flex min-w-0 items-center gap-3 rounded-lg border p-2"
-                      style={{ borderColor: token.colorBorderSecondary, background: token.colorFillQuaternary }}
-                    >
-                      <BugReportFileThumbnail file={file} />
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-xs font-medium" title={file.name}>
-                          {file.name}
-                        </div>
-                        <div className="mt-1 text-xs" style={{ color: token.colorTextSecondary }}>
-                          {(file.size / 1024).toFixed(0)} KB · bấm ảnh để lướt xem
-                        </div>
-                      </div>
-                      <Button
-                        type="text"
-                        size="small"
-                        aria-label={`Xóa ảnh ${file.name}`}
-                        icon={<AppIcon icon={X} size="sm" />}
-                        onClick={() =>
-                          setDrafts((current) =>
-                            updateRequestDraft(current, activeRequestView, (draft) => ({
-                              files: draft.files.filter((_, itemIndex) => itemIndex !== index),
-                            }))
-                          )
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-              </Image.PreviewGroup>
-            )}
-          </div>
+            onApplyGuidedDescription={(value) => {
+              setDrafts((current) => updateRequestDraft(current, activeRequestView, { description: value }));
+            }}
+            onUpdateExpertDetails={updateExpertDetails}
+            onAddFiles={(files, draftView) => void addFiles(files, draftView)}
+            onRemoveFile={(index) =>
+              setDrafts((current) =>
+                updateRequestDraft(current, activeRequestView, (draft) => ({
+                  files: draft.files.filter((_, itemIndex) => itemIndex !== index),
+                }))
+              )
+            }
+          />
         )}
       </AdaptiveModal>
       <BugReportWorkflowModal

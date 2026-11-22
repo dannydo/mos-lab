@@ -5956,7 +5956,7 @@
         "path": "/api/ide-task-bridge/provisioning/next",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 18
+        "line": 23
       }
     },
     {
@@ -5970,7 +5970,7 @@
         "path": "/api/ag-task-bridge/provisioning/next",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 44
+        "line": 49
       }
     },
     {
@@ -5984,7 +5984,7 @@
         "path": "/api/ag-task-bridge/deploy/next",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 60
+        "line": 65
       }
     },
     {
@@ -5998,7 +5998,7 @@
         "path": "/api/ag-task-bridge/reports/:reportId/release-preview",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 106
+        "line": 111
       }
     },
     {
@@ -6012,7 +6012,7 @@
         "path": "/api/ide-task-bridge/provisioning/:jobId/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 120
+        "line": 125
       }
     },
     {
@@ -6026,7 +6026,7 @@
         "path": "/api/ide-task-bridge/provisioning/:jobId/defer",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 139
+        "line": 144
       }
     },
     {
@@ -6040,7 +6040,7 @@
         "path": "/api/ide-task-bridge/:id/bind",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 158
+        "line": 163
       }
     },
     {
@@ -6054,7 +6054,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/handoff",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 172
+        "line": 177
       }
     },
     {
@@ -6068,7 +6068,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/release-preview",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 188
+        "line": 193
       }
     },
     {
@@ -6082,7 +6082,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 213
+        "line": 218
       }
     },
     {
@@ -6096,7 +6096,7 @@
         "path": "/api/ide-task-bridge/tasks/:taskId/commit-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 230
+        "line": 235
       }
     },
     {
@@ -6110,7 +6110,7 @@
         "path": "/api/ide-release-checkpoints/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 248
+        "line": 253
       }
     },
     {
@@ -34839,6 +34839,18 @@
       }
     },
     {
+      "id": "uicomp:BugReportRequestForm",
+      "type": "UIComponent",
+      "label": "<BugReportRequestForm />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/bug-reports/BugReportRequestForm.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "BugReportRequestForm",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:BugReportSurface.test",
       "type": "UIComponent",
       "label": "<BugReportSurface.test />",
@@ -34935,6 +34947,30 @@
       }
     },
     {
+      "id": "uicomp:MyBugReportsDetailPane",
+      "type": "UIComponent",
+      "label": "<MyBugReportsDetailPane />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/bug-reports/MyBugReportsDetailPane.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MyBugReportsDetailPane",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MyBugReportsListPane",
+      "type": "UIComponent",
+      "label": "<MyBugReportsListPane />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/bug-reports/MyBugReportsListPane.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MyBugReportsListPane",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MyBugReportsPanel",
       "type": "UIComponent",
       "label": "<MyBugReportsPanel />",
@@ -34971,6 +35007,18 @@
       }
     },
     {
+      "id": "uicomp:bug-report-surface.helpers",
+      "type": "UIComponent",
+      "label": "<bug-report-surface.helpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/bug-reports/bug-report-surface.helpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "bug-report-surface.helpers",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:bug-report-workflow",
       "type": "UIComponent",
       "label": "<bug-report-workflow />",
@@ -34991,6 +35039,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "bug-report-z-index.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:my-bug-reports.helpers",
+      "type": "UIComponent",
+      "label": "<my-bug-reports.helpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/bug-reports/my-bug-reports.helpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "my-bug-reports.helpers",
         "isPrimitive": false
       }
     },
@@ -35027,6 +35087,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useMyBugReports",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useRequestClassification",
+      "type": "UIComponent",
+      "label": "<useRequestClassification />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/bug-reports/useRequestClassification.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useRequestClassification",
         "isPrimitive": false
       }
     },
@@ -40990,8 +41062,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6685,
-        "lineCount": 233,
+        "sizeBytes": 6665,
+        "lineCount": 228,
         "ext": ".ts"
       }
     },
@@ -41055,8 +41127,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-execution-time.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3318,
-        "lineCount": 125,
+        "sizeBytes": 3313,
+        "lineCount": 122,
         "ext": ".ts"
       }
     },
@@ -41341,8 +41413,8 @@
       "filePath": "apps/api/src/modules/bug-reports/routes/bug-report-ide-bridge.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10174,
-        "lineCount": 262,
+        "sizeBytes": 10183,
+        "lineCount": 267,
         "ext": ".ts"
       }
     },
@@ -41445,8 +41517,8 @@
       "filePath": "apps/api/src/modules/bug-reports/service/bug-report-agent.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18026,
-        "lineCount": 500,
+        "sizeBytes": 18018,
+        "lineCount": 496,
         "ext": ".ts"
       }
     },
@@ -41471,8 +41543,8 @@
       "filePath": "apps/api/src/modules/bug-reports/service/bug-report-dto.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8193,
-        "lineCount": 212,
+        "sizeBytes": 8204,
+        "lineCount": 218,
         "ext": ".ts"
       }
     },
@@ -41497,8 +41569,8 @@
       "filePath": "apps/api/src/modules/bug-reports/service/bug-report-lifecycle.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14588,
-        "lineCount": 363,
+        "sizeBytes": 14584,
+        "lineCount": 362,
         "ext": ".ts"
       }
     },
@@ -41510,8 +41582,8 @@
       "filePath": "apps/api/src/modules/bug-reports/service/bug-report-next-action.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21661,
-        "lineCount": 510,
+        "sizeBytes": 21678,
+        "lineCount": 513,
         "ext": ".ts"
       }
     },
@@ -42355,8 +42427,8 @@
       "filePath": "apps/api/src/modules/chat/mission-bridge/mission-bridge-actions.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19652,
-        "lineCount": 523,
+        "sizeBytes": 19624,
+        "lineCount": 519,
         "ext": ".ts"
       }
     },
@@ -42394,8 +42466,8 @@
       "filePath": "apps/api/src/modules/chat/mission-bridge/mission-bridge-sync.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9736,
-        "lineCount": 254,
+        "sizeBytes": 9712,
+        "lineCount": 252,
         "ext": ".ts"
       }
     },
@@ -49531,8 +49603,21 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 39089,
-        "lineCount": 851,
+        "sizeBytes": 20365,
+        "lineCount": 475,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bug-reports/components/BugReportDetailHeaderActions.tsx",
+      "type": "File",
+      "label": "BugReportDetailHeaderActions.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailHeaderActions.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 16582,
+        "lineCount": 375,
         "ext": ".tsx"
       }
     },
@@ -49667,6 +49752,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/bug-reports/components/BugReportTriageSection.tsx",
+      "type": "File",
+      "label": "BugReportTriageSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportTriageSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4110,
+        "lineCount": 121,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/bug-reports/components/BugReportWorkerActivity.test.tsx",
       "type": "File",
       "label": "BugReportWorkerActivity.test.tsx",
@@ -49719,6 +49817,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryClustersTab.tsx",
+      "type": "File",
+      "label": "FrontendTelemetryClustersTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryClustersTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 16038,
+        "lineCount": 315,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
       "type": "File",
       "label": "FrontendTelemetryDrawer.tsx",
@@ -49726,8 +49837,47 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 71491,
-        "lineCount": 1449,
+        "sizeBytes": 14895,
+        "lineCount": 382,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryIssueDetailDrawer.tsx",
+      "type": "File",
+      "label": "FrontendTelemetryIssueDetailDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryIssueDetailDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 19384,
+        "lineCount": 422,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryIssuesTab.tsx",
+      "type": "File",
+      "label": "FrontendTelemetryIssuesTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryIssuesTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10757,
+        "lineCount": 294,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryKpiRow.tsx",
+      "type": "File",
+      "label": "FrontendTelemetryKpiRow.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryKpiRow.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6638,
+        "lineCount": 146,
         "ext": ".tsx"
       }
     },
@@ -49745,6 +49895,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/bug-reports/components/frontend-telemetry.shared.tsx",
+      "type": "File",
+      "label": "frontend-telemetry.shared.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bug-reports/components/frontend-telemetry.shared.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3131,
+        "lineCount": 61,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/bug-reports/components/useBugReportInboxColumns.tsx",
       "type": "File",
       "label": "useBugReportInboxColumns.tsx",
@@ -49755,6 +49918,19 @@
         "sizeBytes": 4994,
         "lineCount": 146,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.helpers.ts",
+      "type": "File",
+      "label": "useBugReportDetail.helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.helpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3554,
+        "lineCount": 96,
+        "ext": ".ts"
       }
     },
     {
@@ -49778,8 +49954,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25354,
-        "lineCount": 659,
+        "sizeBytes": 19302,
+        "lineCount": 534,
         "ext": ".ts"
       }
     },
@@ -57812,8 +57988,8 @@
       "filePath": "packages/shared/src/types/bug-report/execution-timing.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3410,
-        "lineCount": 128,
+        "sizeBytes": 3396,
+        "lineCount": 122,
         "ext": ".ts"
       }
     },
@@ -57838,8 +58014,8 @@
       "filePath": "packages/shared/src/types/bug-report/ticket-core.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 15738,
-        "lineCount": 513,
+        "sizeBytes": 15733,
+        "lineCount": 510,
         "ext": ".ts"
       }
     },
@@ -77843,6 +78019,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:BugReportRequestForm:ws:apps/web",
+      "source": "uicomp:BugReportRequestForm",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:BugReportRequestForm:token:color:primary",
+      "source": "uicomp:BugReportRequestForm",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:BugReportSurface.test:ws:apps/web",
       "source": "uicomp:BugReportSurface.test",
       "target": "ws:apps/web",
@@ -77955,6 +78145,34 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MyBugReportsDetailPane:ws:apps/web",
+      "source": "uicomp:MyBugReportsDetailPane",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MyBugReportsDetailPane:token:color:primary",
+      "source": "uicomp:MyBugReportsDetailPane",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MyBugReportsListPane:ws:apps/web",
+      "source": "uicomp:MyBugReportsListPane",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MyBugReportsListPane:token:color:primary",
+      "source": "uicomp:MyBugReportsListPane",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MyBugReportsPanel:ws:apps/web",
       "source": "uicomp:MyBugReportsPanel",
       "target": "ws:apps/web",
@@ -77997,6 +78215,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:bug-report-surface.helpers:ws:apps/web",
+      "source": "uicomp:bug-report-surface.helpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:bug-report-surface.helpers:token:color:primary",
+      "source": "uicomp:bug-report-surface.helpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:bug-report-workflow:ws:apps/web",
       "source": "uicomp:bug-report-workflow",
       "target": "ws:apps/web",
@@ -78020,6 +78252,20 @@
     {
       "id": "edge:uicomp:bug-report-z-index.test:token:color:primary",
       "source": "uicomp:bug-report-z-index.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:my-bug-reports.helpers:ws:apps/web",
+      "source": "uicomp:my-bug-reports.helpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:my-bug-reports.helpers:token:color:primary",
+      "source": "uicomp:my-bug-reports.helpers",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -78062,6 +78308,20 @@
     {
       "id": "edge:uicomp:useMyBugReports:token:color:primary",
       "source": "uicomp:useMyBugReports",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useRequestClassification:ws:apps/web",
+      "source": "uicomp:useRequestClassification",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useRequestClassification:token:color:primary",
+      "source": "uicomp:useRequestClassification",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -87146,6 +87406,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/bug-reports/components/BugReportDetailHeaderActions.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bug-reports/components/BugReportDetailHeaderActions.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/bug-reports/components/BugReportDiagnosticsSection.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bug-reports/components/BugReportDiagnosticsSection.tsx",
       "target": "ws:packages/shared",
@@ -87209,6 +87476,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/bug-reports/components/BugReportTriageSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bug-reports/components/BugReportTriageSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/bug-reports/components/BugReportWorkerActivity.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bug-reports/components/BugReportWorkerActivity.test.tsx",
       "target": "ws:packages/shared",
@@ -87237,8 +87511,36 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryClustersTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryClustersTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryIssueDetailDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryIssueDetailDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryIssuesTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryIssuesTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryKpiRow.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bug-reports/components/FrontendTelemetryKpiRow.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -87251,8 +87553,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/bug-reports/components/frontend-telemetry.shared.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bug-reports/components/frontend-telemetry.shared.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/bug-reports/components/useBugReportInboxColumns.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bug-reports/components/useBugReportInboxColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.helpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.helpers.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -123610,8 +123926,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4545,
-    "totalEdges": 9261,
+    "totalNodes": 4559,
+    "totalEdges": 9281,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -123619,15 +123935,15 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 490,
-      "File": 1441
+      "UIComponent": 496,
+      "File": 1449
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 556,
-      "USES_TOKEN": 492,
-      "IMPORTS": 838,
+      "RENDERS": 562,
+      "USES_TOKEN": 498,
+      "IMPORTS": 846,
       "QUERIES_MODEL": 452,
       "API_CALL": 4378
     },

@@ -14,42 +14,13 @@ import type {
 } from '@mos-lab/shared';
 import { parseDuplicateKey } from '../bug-report-presenters';
 import type { useBugReports } from './useBugReports';
-
-function summaryToInitialDetail(summary: BugReportSummary): BugReportDetail {
-  return {
-    ...summary,
-    businessContext: null,
-    triageNote: summary.triageNote ?? null,
-    duplicateOfId: null,
-    duplicateOfKey: null,
-    approvedBy: null,
-    resolvedAt: null,
-    closedAt: null,
-    context: {
-      capturedAt: summary.createdAt,
-      path: summary.sourcePath,
-      query: {},
-      pageTitle: summary.title,
-      overlays: summary.overlay ? [summary.overlay] : [],
-      themeMode: 'unknown',
-      viewport: { width: 1440, height: 900, devicePixelRatio: 1 },
-      userAgent: '',
-      online: true,
-      timeZone: 'Asia/Ho_Chi_Minh',
-      webCommit: null,
-      apiCommit: null,
-      apiDeployedAt: null,
-      recentApiFailures: [],
-      recentClientErrors: [],
-      errorBoundary: null,
-    },
-    resolution: null,
-    attachments: [],
-    comments: [],
-    audits: [],
-    executionTiming: null,
-  };
-}
+import {
+  applyOptimisticApprovalStage,
+  buildApprovalQueuedNote,
+  buildApprovalSuccessMessage,
+  extractDetailErrorMessage,
+  summaryToInitialDetail,
+} from './useBugReportDetail.helpers';
 
 export type BugReportDetailOptions = Pick<
   ReturnType<typeof useBugReports>,
@@ -108,26 +79,10 @@ export function useBugReportDetail({
 
   const hydrateForm = useCallback(
     (report: BugReportDetail) => {
-      const effectiveReport =
-        deployApprovalReceived && report.agentProgress.stage === 'AWAITING_DANNY_DEPLOY_APPROVAL'
-          ? {
-              ...report,
-              agentProgress: {
-                ...report.agentProgress,
-                stage: 'QUEUED_FOR_DEPLOY' as const,
-                note: 'Danny đã duyệt deploy; đang tự động merge main và triển khai production.',
-              },
-            }
-          : commitApprovalReceived && report.agentProgress.stage === 'AWAITING_DANNY_COMMIT_REVIEW'
-            ? {
-                ...report,
-                agentProgress: {
-                  ...report.agentProgress,
-                  stage: 'QUEUED_FOR_COMMIT' as const,
-                  note: 'Danny đã duyệt commit; worker Mac đang chờ nhận đúng bản diff đã review.',
-                },
-              }
-            : report;
+      const effectiveReport = applyOptimisticApprovalStage(report, {
+        commitApprovalReceived,
+        deployApprovalReceived,
+      });
       setDetail(effectiveReport);
       setStatus(effectiveReport.status);
       setPriority(effectiveReport.priority);
@@ -234,11 +189,7 @@ export function useBugReportDetail({
                 : 'Đã cập nhật ticket.'
         );
       } catch (error) {
-        const responseMessage =
-          error && typeof error === 'object' && 'response' in error
-            ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-            : null;
-        messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể cập nhật ticket.'));
+        messageApi.error(extractDetailErrorMessage(error, 'Không thể cập nhật ticket.'));
       } finally {
         setSaving(false);
       }
@@ -264,11 +215,7 @@ export function useBugReportDetail({
         messageApi.success('Đã xác nhận sửa đúng và đóng ticket.');
         return true;
       } catch (error) {
-        const responseMessage =
-          error && typeof error === 'object' && 'response' in error
-            ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-            : null;
-        messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể đóng ticket.'));
+        messageApi.error(extractDetailErrorMessage(error, 'Không thể đóng ticket.'));
         return false;
       } finally {
         setSaving(false);
@@ -300,14 +247,7 @@ export function useBugReportDetail({
                 ...current,
                 agentProgress: {
                   stage: 'QUEUED_FOR_FIX',
-                  note:
-                    executionOwner === 'AG_WIN'
-                      ? 'Đã duyệt cho Win AG; đang xếp hàng handoff.'
-                      : executionOwner === 'AG_MAC'
-                        ? 'Đã duyệt cho Mac AG; đang xếp hàng handoff.'
-                        : executionOwner === 'AG'
-                          ? 'Đã duyệt cho Antigravity (AG); đang xếp hàng handoff.'
-                          : 'Đã duyệt code/test; đang xếp hàng cho Win AG (tự tràn sang Mac AG nếu đầy slot).',
+                  note: buildApprovalQueuedNote(executionOwner),
                   updatedAt: new Date().toISOString(),
                 },
               }
@@ -318,28 +258,10 @@ export function useBugReportDetail({
         void getDetail(outcome.reportId)
           .then(hydrateForm)
           .catch(() => undefined);
-        messageApi.success(
-          outcome.implementationQueued
-            ? executionOwner === 'AG_WIN'
-              ? 'Đã tạo job code/test cho Win AG.'
-              : executionOwner === 'AG_MAC'
-                ? 'Đã tạo job code/test cho Mac AG.'
-                : executionOwner === 'AG'
-                  ? 'Đã tạo job code/test cho Antigravity (AG).'
-                  : 'Đã tạo job code/test trong worktree riêng.'
-            : outcome.planRequested
-              ? 'Đã lưu duyệt; worker đang làm mới plan native trước khi chạy code.'
-              : 'Đã lưu duyệt implementation.'
-        );
+        messageApi.success(buildApprovalSuccessMessage(outcome, executionOwner));
       } catch (error) {
         setApprovalReceived(false);
-        const responseMessage =
-          error && typeof error === 'object' && 'response' in error
-            ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-            : null;
-        messageApi.error(
-          responseMessage || (error instanceof Error ? error.message : 'Không thể duyệt implementation.')
-        );
+        messageApi.error(extractDetailErrorMessage(error, 'Không thể duyệt implementation.'));
       } finally {
         approvalPending.current = false;
         setSaving(false);
@@ -407,107 +329,72 @@ export function useBugReportDetail({
     [approvalReceived, detail, hydrateForm, messageApi, requestPlanChanges]
   );
 
-  const retryCodeExecution = useCallback(async () => {
-    if (!detail) return;
-    setSaving(true);
-    try {
-      const outcome = await retryImplementation(detail.id);
-      if (outcome.implementationQueued) {
-        setStatus('IN_PROGRESS');
-        setDetail((current) => (current ? { ...current, status: 'IN_PROGRESS' } : current));
+  const runQueuedRetryAction = useCallback(
+    async (
+      action: (id: number) => Promise<{ reportId: number; implementationQueued: boolean }>,
+      successText: string,
+      errorFallback: string
+    ) => {
+      if (!detail) return;
+      setSaving(true);
+      try {
+        const outcome = await action(detail.id);
+        if (outcome.implementationQueued) {
+          setStatus('IN_PROGRESS');
+          setDetail((current) => (current ? { ...current, status: 'IN_PROGRESS' } : current));
+        }
+        void getDetail(outcome.reportId)
+          .then(hydrateForm)
+          .catch(() => undefined);
+        messageApi.success(successText);
+      } catch (error) {
+        messageApi.error(extractDetailErrorMessage(error, errorFallback));
+      } finally {
+        setSaving(false);
       }
-      void getDetail(outcome.reportId)
-        .then(hydrateForm)
-        .catch(() => undefined);
-      messageApi.success('Đã tạo đúng một retry liên kết trong worktree mới.');
-    } catch (error) {
-      const responseMessage =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : null;
-      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể retry implementation.'));
-    } finally {
-      setSaving(false);
-    }
-  }, [detail, getDetail, hydrateForm, messageApi, retryImplementation]);
+    },
+    [detail, getDetail, hydrateForm, messageApi]
+  );
 
-  const authorizeWorkerRecoveryRetry = useCallback(async () => {
-    if (!detail) return;
-    setSaving(true);
-    try {
-      const outcome = await authorizeWorkerRecoveryRetryAction(detail.id);
-      if (outcome.implementationQueued) {
-        setStatus('IN_PROGRESS');
-        setDetail((current) => (current ? { ...current, status: 'IN_PROGRESS' } : current));
-      }
-      void getDetail(outcome.reportId)
-        .then(hydrateForm)
-        .catch(() => undefined);
-      messageApi.success('Đã cấp một retry khôi phục Worker trong worktree mới.');
-    } catch (error) {
-      const responseMessage =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : null;
-      messageApi.error(
-        responseMessage || (error instanceof Error ? error.message : 'Không thể cấp retry khôi phục Worker.')
-      );
-    } finally {
-      setSaving(false);
-    }
-  }, [authorizeWorkerRecoveryRetryAction, detail, getDetail, hydrateForm, messageApi]);
+  const retryCodeExecution = useCallback(
+    () =>
+      runQueuedRetryAction(
+        retryImplementation,
+        'Đã tạo đúng một retry liên kết trong worktree mới.',
+        'Không thể retry implementation.'
+      ),
+    [retryImplementation, runQueuedRetryAction]
+  );
 
-  const authorizeSchemaRecoveryRetry = useCallback(async () => {
-    if (!detail) return;
-    setSaving(true);
-    try {
-      const outcome = await authorizeSchemaRecoveryRetryAction(detail.id);
-      if (outcome.implementationQueued) {
-        setStatus('IN_PROGRESS');
-        setDetail((current) => (current ? { ...current, status: 'IN_PROGRESS' } : current));
-      }
-      void getDetail(outcome.reportId)
-        .then(hydrateForm)
-        .catch(() => undefined);
-      messageApi.success('Đã cấp một retry sau khi sửa schema trong worktree mới.');
-    } catch (error) {
-      const responseMessage =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : null;
-      messageApi.error(
-        responseMessage || (error instanceof Error ? error.message : 'Không thể cấp retry sau khi sửa schema.')
-      );
-    } finally {
-      setSaving(false);
-    }
-  }, [authorizeSchemaRecoveryRetryAction, detail, getDetail, hydrateForm, messageApi]);
+  const authorizeWorkerRecoveryRetry = useCallback(
+    () =>
+      runQueuedRetryAction(
+        authorizeWorkerRecoveryRetryAction,
+        'Đã cấp một retry khôi phục Worker trong worktree mới.',
+        'Không thể cấp retry khôi phục Worker.'
+      ),
+    [authorizeWorkerRecoveryRetryAction, runQueuedRetryAction]
+  );
 
-  const authorizeQualityGateRecoveryRetry = useCallback(async () => {
-    if (!detail) return;
-    setSaving(true);
-    try {
-      const outcome = await authorizeQualityGateRecoveryRetryAction(detail.id);
-      if (outcome.implementationQueued) {
-        setStatus('IN_PROGRESS');
-        setDetail((current) => (current ? { ...current, status: 'IN_PROGRESS' } : current));
-      }
-      void getDetail(outcome.reportId)
-        .then(hydrateForm)
-        .catch(() => undefined);
-      messageApi.success('Đã cấp retry sau khi sửa cổng kiểm thử trong worktree mới.');
-    } catch (error) {
-      const responseMessage =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : null;
-      messageApi.error(
-        responseMessage || (error instanceof Error ? error.message : 'Không thể cấp retry sau khi sửa cổng kiểm thử.')
-      );
-    } finally {
-      setSaving(false);
-    }
-  }, [authorizeQualityGateRecoveryRetryAction, detail, getDetail, hydrateForm, messageApi]);
+  const authorizeSchemaRecoveryRetry = useCallback(
+    () =>
+      runQueuedRetryAction(
+        authorizeSchemaRecoveryRetryAction,
+        'Đã cấp một retry sau khi sửa schema trong worktree mới.',
+        'Không thể cấp retry sau khi sửa schema.'
+      ),
+    [authorizeSchemaRecoveryRetryAction, runQueuedRetryAction]
+  );
+
+  const authorizeQualityGateRecoveryRetry = useCallback(
+    () =>
+      runQueuedRetryAction(
+        authorizeQualityGateRecoveryRetryAction,
+        'Đã cấp retry sau khi sửa cổng kiểm thử trong worktree mới.',
+        'Không thể cấp retry sau khi sửa cổng kiểm thử.'
+      ),
+    [authorizeQualityGateRecoveryRetryAction, runQueuedRetryAction]
+  );
 
   const authorizeBuildLockRecoveryRetry = useCallback(async () => {
     if (!detail) return;
@@ -532,11 +419,7 @@ export function useBugReportDetail({
       hydrateForm(refreshed);
       messageApi.success('Đã kích hoạt AG làm rõ lại ticket.');
     } catch (error) {
-      const responseMessage =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : null;
-      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Kích hoạt làm rõ thất bại.'));
+      messageApi.error(extractDetailErrorMessage(error, 'Kích hoạt làm rõ thất bại.'));
     } finally {
       setSaving(false);
     }
@@ -569,11 +452,7 @@ export function useBugReportDetail({
     } catch (error) {
       commitPending.current = false;
       setCommitApprovalReceived(false);
-      const responseMessage =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : null;
-      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể duyệt commit.'));
+      messageApi.error(extractDetailErrorMessage(error, 'Không thể duyệt commit.'));
     } finally {
       commitPending.current = false;
       setSaving(false);
@@ -609,11 +488,7 @@ export function useBugReportDetail({
     } catch (error) {
       deployPending.current = false;
       setDeployApprovalReceived(false);
-      const responseMessage =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : null;
-      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể duyệt deploy.'));
+      messageApi.error(extractDetailErrorMessage(error, 'Không thể duyệt deploy.'));
     } finally {
       deployPending.current = false;
       setSaving(false);
