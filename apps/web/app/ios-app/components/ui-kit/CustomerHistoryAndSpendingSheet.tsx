@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertCircle, Cake, Calendar, CreditCard, History, RefreshCw, X } from 'lucide-react';
 import {
   getCustomerBirthdayThisMonthStatus,
@@ -60,6 +61,26 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lightboxPayload, setLightboxPayload] = useState<LashPhotoComparePayload | null>(null);
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
+  const [dragOffsetY, setDragOffsetY] = useState(0);
+  const [isPullingSheet, setIsPullingSheet] = useState(false);
+  const scrollBodyRef = useRef<HTMLDivElement>(null);
+  const swipeStateRef = useRef<{
+    active: boolean;
+    startX: number;
+    startY: number;
+    lastDy: number;
+    startTime: number;
+    startedInScrollBody: boolean;
+    pulling: boolean;
+  }>({
+    active: false,
+    startX: 0,
+    startY: 0,
+    lastDy: 0,
+    startTime: 0,
+    startedInScrollBody: false,
+    pulling: false,
+  });
 
   const loadHistory = useCallback(
     async (signal?: AbortSignal) => {
@@ -102,12 +123,112 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
   );
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setDragOffsetY(0);
+      setIsPullingSheet(false);
+      return;
+    }
+    setDragOffsetY(0);
+    setIsPullingSheet(false);
     setActiveTab(customerFacingMode ? 'LASH_PHOTOS' : initialTab);
     const controller = new AbortController();
     void loadHistory(controller.signal);
     return () => controller.abort();
   }, [isOpen, initialTab, customerFacingMode, loadHistory]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !lightboxPayload && !isAddNoteOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, lightboxPayload, isAddNoteOpen, onClose]);
+
+  const handleSheetTouchStart = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      if (lightboxPayload || isAddNoteOpen || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const scrollBodyEl = scrollBodyRef.current;
+      const startedInScrollBody = Boolean(
+        scrollBodyEl && e.target instanceof Node && scrollBodyEl.contains(e.target)
+      );
+      if (startedInScrollBody && (scrollBodyEl?.scrollTop ?? 0) > 0) {
+        swipeStateRef.current.active = false;
+        return;
+      }
+      swipeStateRef.current = {
+        active: true,
+        startX: touch.clientX,
+        startY: touch.clientY,
+        lastDy: 0,
+        startTime: Date.now(),
+        startedInScrollBody,
+        pulling: false,
+      };
+    },
+    [lightboxPayload, isAddNoteOpen]
+  );
+
+  const handleSheetTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    const swipe = swipeStateRef.current;
+    if (!swipe.active || e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const dx = touch.clientX - swipe.startX;
+    const dy = touch.clientY - swipe.startY;
+
+    if (swipe.startedInScrollBody && !swipe.pulling && (scrollBodyRef.current?.scrollTop ?? 0) > 0) {
+      swipe.active = false;
+      swipe.lastDy = 0;
+      return;
+    }
+
+    if (!swipe.pulling) {
+      const minThreshold = swipe.startedInScrollBody ? 8 : 6;
+      if (dy < -6) {
+        swipe.active = false;
+        swipe.lastDy = 0;
+        return;
+      }
+      if (dy <= minThreshold || Math.abs(dy) <= Math.abs(dx) * 1.15) {
+        return;
+      }
+      swipe.pulling = true;
+      setIsPullingSheet(true);
+    }
+
+    const clampedDy = Math.max(0, Math.min(dy, 360));
+    swipe.lastDy = clampedDy;
+    setDragOffsetY(clampedDy);
+  }, []);
+
+  const handleSheetTouchEnd = useCallback(() => {
+    const swipe = swipeStateRef.current;
+    if (!swipe.active) return;
+    swipe.active = false;
+
+    if (swipe.pulling) {
+      const pulledDy = swipe.lastDy;
+      const elapsed = Math.max(1, Date.now() - swipe.startTime);
+      const velocity = pulledDy / elapsed;
+      const shouldDismiss = pulledDy >= 80 || (velocity >= 0.45 && pulledDy >= 36);
+      swipe.lastDy = 0;
+      swipe.pulling = false;
+      setDragOffsetY(0);
+      setIsPullingSheet(false);
+      if (shouldDismiss) {
+        onClose();
+      }
+      return;
+    }
+
+    swipe.lastDy = 0;
+    setDragOffsetY(0);
+    setIsPullingSheet(false);
+  }, [onClose]);
 
   if (!isOpen) return null;
 
@@ -129,9 +250,10 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
     return diamondTxns.length;
   };
 
-  return (
+  const sheetContent = (
     <div
-      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/65 backdrop-blur-sm p-0 sm:p-4"
+      data-testid="customer-history-backdrop"
+      className="ios-app-font-scope fixed inset-0 z-[110] flex items-end sm:items-center justify-center overflow-hidden overscroll-contain bg-black/65 backdrop-blur-sm pt-[max(16px,env(safe-area-inset-top,0px))] px-0 sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Lịch sử ghé thăm và chi tiêu khách hàng"
@@ -140,13 +262,32 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
       }}
     >
       <div
-        className={`relative flex max-h-[92vh] w-full max-w-[430px] flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl border shadow-2xl ${
+        data-testid="customer-history-sheet"
+        onTouchStart={handleSheetTouchStart}
+        onTouchMove={handleSheetTouchMove}
+        onTouchEnd={handleSheetTouchEnd}
+        onTouchCancel={handleSheetTouchEnd}
+        style={dragOffsetY > 0 ? { transform: `translateY(${dragOffsetY}px)` } : undefined}
+        className={`relative flex max-h-[88dvh] sm:max-h-[86dvh] w-full max-w-[430px] flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl border shadow-2xl pb-[env(safe-area-inset-bottom,0px)] ${
+          isPullingSheet ? '' : 'transition-transform duration-150 ease-out'
+        } ${
           isDark ? 'border-slate-700/80 bg-slate-950 text-white' : 'border-slate-200 bg-slate-50 text-slate-900'
         }`}
       >
+        {/* iOS Drag Handle Pill for Swipe-Down-to-Dismiss */}
+        <div
+          data-testid="customer-history-drag-handle"
+          className={`flex shrink-0 cursor-grab items-center justify-center pt-2 pb-1 touch-none active:cursor-grabbing ${
+            isDark ? 'bg-slate-900/90' : 'bg-white'
+          }`}
+        >
+          <div className={`h-1 w-10 rounded-full ${isDark ? 'bg-slate-600/80' : 'bg-slate-300'}`} />
+        </div>
+
         {/* Header (Drawer Close Button Invariant: Title Top-Left, [X] Top-Right) */}
         <div
-          className={`flex items-center justify-between gap-3 border-b px-4 py-3.5 ${
+          data-testid="customer-history-sheet-header"
+          className={`flex shrink-0 touch-none items-center justify-between gap-3 border-b px-4 pt-1.5 pb-3 ${
             isDark ? 'border-slate-800 bg-slate-900/90' : 'border-slate-200 bg-white'
           }`}
         >
@@ -197,7 +338,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
               type="button"
               onClick={() => void loadHistory()}
               aria-label="Làm mới lịch sử"
-              className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
+              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors touch-manipulation cursor-pointer ${
                 isDark
                   ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700'
                   : 'border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -209,7 +350,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
               type="button"
               onClick={onClose}
               aria-label="Đóng lịch sử khách hàng"
-              className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
+              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors touch-manipulation cursor-pointer ${
                 isDark
                   ? 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700'
                   : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -223,7 +364,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
         {/* KPI Spending & Visit Summary (ẩn hoàn toàn khi ở chế độ đưa khách xem) */}
         {!customerFacingMode && (
           <div
-            className={`grid grid-cols-2 gap-2 border-b px-4 py-3 ${isDark ? 'border-slate-800/80 bg-slate-900/40' : 'border-slate-200 bg-white/80'}`}
+            className={`grid shrink-0 grid-cols-2 gap-2 border-b px-4 py-3 ${isDark ? 'border-slate-800/80 bg-slate-900/40' : 'border-slate-200 bg-white/80'}`}
           >
             <div
               className={`rounded-2xl border p-2.5 ${isDark ? 'border-emerald-500/25 bg-emerald-950/30' : 'border-emerald-200 bg-emerald-50/70'}`}
@@ -276,7 +417,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
         {/* Segmented Tabs (BỘ MI | TẤT CẢ | THANH TOÁN | FIX | THƯỞNG) - Ẩn tab tài chính khi đưa khách xem */}
         {!customerFacingMode && (
           <div
-            className={`border-b px-3 py-2 ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}
+            className={`shrink-0 border-b px-3 py-2 ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}
           >
             <div
               role="tablist"
@@ -315,7 +456,11 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
         )}
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
+        <div
+          ref={scrollBodyRef}
+          data-testid="customer-history-scroll-body"
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y ios-touch-scroll px-4 py-3 space-y-2.5"
+        >
           {errorMsg && effectiveTab !== 'LASH_PHOTOS' ? (
             <div
               className={`flex flex-col items-center justify-center rounded-2xl border p-6 text-center ${
@@ -481,4 +626,9 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
       )}
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(sheetContent, document.body);
+  }
+  return sheetContent;
 };

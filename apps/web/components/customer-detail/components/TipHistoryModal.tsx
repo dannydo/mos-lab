@@ -5,8 +5,10 @@ import { Button, Table, Tag } from 'antd';
 import { DollarOutlined } from '@ant-design/icons';
 import { ColumnsType } from 'antd/es/table';
 import { useTheme } from '../../../context/ThemeContext';
+import { useResponsiveTier } from '../../../hooks/useResponsiveTier';
 import { formatVND } from '../../../lib/format-utils';
 import { AdaptiveModal } from '../../ui';
+import { renderDesktopResizableModal } from './modalResizeRender';
 
 interface TipTransaction {
   id: number;
@@ -96,6 +98,7 @@ export const TipHistoryModal: React.FC<TipHistoryModalProps> = ({
   handleModalDragStart,
 }) => {
   const { themeMode } = useTheme();
+  const isMobile = useResponsiveTier() === 'mobile';
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => {
@@ -236,6 +239,9 @@ export const TipHistoryModal: React.FC<TipHistoryModalProps> = ({
       }
       open={open}
       onCancel={onCancel}
+      zIndex={2100}
+      maskClosable
+      closable
       footer={[
         <Button key="close" type="primary" onClick={onCancel}>
           Đóng
@@ -245,60 +251,11 @@ export const TipHistoryModal: React.FC<TipHistoryModalProps> = ({
       styles={{
         body: { padding: '12px 0 0 0' },
       }}
-      modalRender={(modal) => {
-        if (React.isValidElement(modal)) {
-          return React.cloneElement(modal as SafeAny, {
-            style: {
-              ...(modal.props as SafeAny)?.style,
-              position: 'relative',
-            },
-            children: (
-              <>
-                {(modal.props as SafeAny)?.children}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    right: '-4px',
-                    bottom: 0,
-                    width: '8px',
-                    cursor: 'ew-resize',
-                    zIndex: 10000,
-                    transition: 'background 0.2s',
-                  }}
-                  onMouseDown={(e) => handleModalDragStart(e, 'right')}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(82, 196, 26, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent';
-                  }}
-                />
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: '-4px',
-                    bottom: 0,
-                    width: '8px',
-                    cursor: 'ew-resize',
-                    zIndex: 10000,
-                    transition: 'background 0.2s',
-                  }}
-                  onMouseDown={(e) => handleModalDragStart(e, 'left')}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(82, 196, 26, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent';
-                  }}
-                />
-              </>
-            ),
-          });
-        }
-        return modal;
-      }}
+      modalRender={
+        isMobile
+          ? undefined
+          : (modal) => renderDesktopResizableModal(modal, isMobile, handleModalDragStart, 'rgba(82, 196, 26, 0.3)')
+      }
     >
       <Table
         components={components}
