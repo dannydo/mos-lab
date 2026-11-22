@@ -1,12 +1,19 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { Input, theme, Tabs } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Input, Tabs, theme } from 'antd';
 import * as Icons from '@ant-design/icons';
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
-import { getDynamicLucideIcon, getCustomIconComponent, CUSTOM_ICONS } from './IconSystem';
+import { CUSTOM_ICONS } from './IconSystem';
 import { AdaptiveModal } from './ui/AdaptiveOverlay';
 import { getViewportSize, useResponsiveTier } from '../hooks/useResponsiveTier';
+import { IconPickerGrid } from './icon-picker/IconPickerGrid';
+import {
+  ICON_PICKER_HEIGHT_STORAGE_KEY,
+  ICON_PICKER_WIDTH_STORAGE_KEY,
+  POPULAR_EMOJIS,
+  type IconPickerTabKey,
+} from './icon-picker/popular-emojis';
 
 interface IconPickerModalProps {
   open: boolean;
@@ -15,57 +22,12 @@ interface IconPickerModalProps {
   value?: string;
 }
 
-interface IconButtonProps {
-  name: string;
-  isSelected: boolean;
-  onSelect: () => void;
-  icon: React.ReactNode;
-  label: string;
-  token: SafeAny;
-}
-
-const IconButton: React.FC<IconButtonProps> = ({ name, isSelected, onSelect, icon, label, token }) => {
-  return (
-    <button
-      onClick={onSelect}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '8px',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        height: '70px',
-        gap: '6px',
-      }}
-      title={name}
-      className={isSelected ? 'icon-picker-btn icon-picker-btn-selected' : 'icon-picker-btn'}
-    >
-      {icon}
-      <span
-        style={{
-          fontSize: '10px',
-          fontWeight: '500',
-          maxWidth: '100%',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          color: isSelected ? token.colorPrimary : token.colorTextSecondary,
-        }}
-      >
-        {label}
-      </span>
-    </button>
-  );
-};
-
 export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose, onSelect, value }) => {
   const { token } = theme.useToken();
   const responsiveTier = useResponsiveTier();
   const isCompact = responsiveTier === 'mobile' || responsiveTier === 'tablet';
   const [searchText, setSearchText] = useState('');
-  const [activeTab, setActiveTab] = useState<'antd' | 'lucide' | 'emoji' | 'custom'>('antd');
+  const [activeTab, setActiveTab] = useState<IconPickerTabKey>('antd');
 
   // 1. Persistent Size States
   const [modalWidth, setModalWidth] = useState<number>(600);
@@ -76,8 +38,8 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedWidth = localStorage.getItem('mos_icon_picker_width');
-      const savedHeight = localStorage.getItem('mos_icon_picker_height');
+      const savedWidth = localStorage.getItem(ICON_PICKER_WIDTH_STORAGE_KEY);
+      const savedHeight = localStorage.getItem(ICON_PICKER_HEIGHT_STORAGE_KEY);
       if (savedWidth) setModalWidth(Number(savedWidth));
       if (savedHeight) setModalHeight(Number(savedHeight));
 
@@ -127,268 +89,7 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
     return lucideIcons.filter((name) => name.toLowerCase().includes(query));
   }, [searchText, lucideIcons]);
 
-  // 5. Get and filter Custom icons
-  const POPULAR_EMOJIS = [
-    // Smileys & Emotion
-    '😃',
-    '😄',
-    '😁',
-    '😆',
-    '😅',
-    '😂',
-    '🤣',
-    '😊',
-    '😇',
-    '🙂',
-    '🙃',
-    '😉',
-    '😌',
-    '😍',
-    '🥰',
-    '😘',
-    '😗',
-    '😙',
-    '😚',
-    '😋',
-    '😛',
-    '😝',
-    '😜',
-    '🤪',
-    '🤨',
-    '🧐',
-    '🤓',
-    '😎',
-    '🤩',
-    '🥳',
-    '😏',
-    '😒',
-    '😞',
-    '😔',
-    '😟',
-    '😕',
-    '🙁',
-    '☹️',
-    '😣',
-    '😖',
-    '😫',
-    '😩',
-    '🥺',
-    '😢',
-    '😭',
-    '😤',
-    '😠',
-    '😡',
-    '🤬',
-    '🤯',
-    '😳',
-    '🥵',
-    '🥶',
-    '😱',
-    '😨',
-    '😰',
-    '😥',
-    '😓',
-    '🤗',
-    '🤔',
-    '🤭',
-    '🤫',
-    '🤥',
-    '😶',
-    '😐',
-    '😑',
-    '😬',
-    '🙄',
-    '😯',
-    '😦',
-    '😧',
-    '😮',
-    '😲',
-    '🥱',
-    '😴',
-    '🤤',
-    '😪',
-    '😵',
-    '🤐',
-    '🥴',
-    '🤢',
-    '🤮',
-    '🤧',
-    '😷',
-    '🤒',
-    '🤕',
-    '🤑',
-    '🤠',
-    '😈',
-    '👿',
-    '👹',
-    '👺',
-    '🤡',
-    '💩',
-    '👻',
-    '💀',
-    // Hands & Gestures
-    '👋',
-    '🤚',
-    '🖐️',
-    '✋',
-    '🖖',
-    '👌',
-    '🤏',
-    '✌️',
-    '🤞',
-    '🤟',
-    '🤘',
-    '🤙',
-    '👈',
-    '👉',
-    '👆',
-    '🖕',
-    '👇',
-    '☝️',
-    '👍',
-    '👎',
-    '✊',
-    '👊',
-    '🤛',
-    '🤜',
-    '👏',
-    '🙌',
-    '👐',
-    '🤲',
-    '🤝',
-    '🙏',
-    '✍️',
-    '💅',
-    '🤳',
-    '💪',
-    '🦾',
-    '🦵',
-    '🦶',
-    '👂',
-    '👃',
-    '🧠',
-    '🫀',
-    '🫁',
-    '🦷',
-    '🦴',
-    '👀',
-    '👁️',
-    '👅',
-    '👄',
-    // Hearts & Romance
-    '💋',
-    '❤️',
-    '🧡',
-    '💛',
-    '💚',
-    '💙',
-    '💜',
-    '🖤',
-    '🤍',
-    '🤎',
-    '💔',
-    '❣️',
-    '💕',
-    '💞',
-    '💓',
-    '💗',
-    '💖',
-    '💘',
-    '💝',
-    '💟',
-    '💌',
-    '💍',
-    '💎',
-    // Beauty, Gifts & Objects
-    '💄',
-    '💇‍♀️',
-    '💇‍♂️',
-    '💆‍♀️',
-    '💆‍♂️',
-    '🛍️',
-    '👑',
-    '🎁',
-    '🎀',
-    '🎈',
-    '🎉',
-    '🎊',
-    '🎋',
-    '🎍',
-    '🎎',
-    '🎏',
-    '🎐',
-    '🎑',
-    '🧧',
-    '📱',
-    '💻',
-    '⏰',
-    '📅',
-    '🔔',
-    '🛏️',
-    '☕',
-    '🍹',
-    '🍷',
-    '🍺',
-    '🥂',
-    '🍾',
-    '🎂',
-    '🍰',
-    '🧁',
-    '🍭',
-    '🍬',
-    '🍫',
-    '🍿',
-    '🍩',
-    '🍪',
-    // Status, Sparkles & Nature
-    '✨',
-    '⭐',
-    '🌟',
-    '💫',
-    '💥',
-    '🔥',
-    '⚡',
-    '🌈',
-    '☀️',
-    '🌙',
-    '☁️',
-    '❄️',
-    '💧',
-    '🌊',
-    '🏆',
-    '🏅',
-    '🥇',
-    '🥈',
-    '🥉',
-    '🎯',
-    '🚀',
-    '💯',
-    '✅',
-    '❌',
-    '⚠️',
-    '🛑',
-    '🔴',
-    '🟢',
-    '🔵',
-    '🟡',
-    '🟠',
-    '🟣',
-    '⚫',
-    '⚪',
-    '🌺',
-    '🌸',
-    '🌼',
-    '🌻',
-    '🌹',
-    '🌷',
-    '🌱',
-    '🌲',
-    '🌴',
-    '🍀',
-    '🍁',
-    '🍂',
-  ];
-
+  // 5. Get and filter Emoji & Custom icons
   const filteredEmojis = useMemo(() => {
     if (!searchText) return POPULAR_EMOJIS;
     return POPULAR_EMOJIS.filter((e) => e.includes(searchText.trim()));
@@ -428,11 +129,11 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
 
       // Persist values in localStorage
       setModalWidth((currWidth) => {
-        localStorage.setItem('mos_icon_picker_width', String(currWidth));
+        localStorage.setItem(ICON_PICKER_WIDTH_STORAGE_KEY, String(currWidth));
         return currWidth;
       });
       setModalHeight((currHeight) => {
-        localStorage.setItem('mos_icon_picker_height', String(currHeight));
+        localStorage.setItem(ICON_PICKER_HEIGHT_STORAGE_KEY, String(currHeight));
         return currHeight;
       });
     };
@@ -475,7 +176,7 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
 
       <Tabs
         activeKey={activeTab}
-        onChange={(key) => setActiveTab(key as 'antd' | 'lucide' | 'emoji' | 'custom')}
+        onChange={(key) => setActiveTab(key as IconPickerTabKey)}
         style={{ marginBottom: '12px' }}
         size="small"
         items={[
@@ -486,154 +187,21 @@ export const IconPickerModal: React.FC<IconPickerModalProps> = ({ open, onClose,
         ]}
       />
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(auto-fill, minmax(${isCompact ? 72 : 90}px, 1fr))`,
-          gap: '8px',
-          height: isCompact ? 'calc(100dvh - 198px)' : `${modalHeight}px`,
-          overflowY: 'auto',
-          padding: '4px',
-          border: `1px solid ${token.colorBorder}`,
-          borderRadius: '6px',
-          background: token.colorBgContainer,
-        }}
-      >
-        <style>{`
-          .icon-picker-btn {
-            background: ${token.colorBgContainer} !important;
-            border: 1px solid ${token.colorBorder} !important;
-            color: ${token.colorText} !important;
-            transition: all 0.2s ease-in-out !important;
-          }
-          .icon-picker-btn:hover {
-            border-color: ${token.colorPrimary} !important;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            background: ${token.colorBgTextHover} !important;
-          }
-          .icon-picker-btn-selected {
-            border: 2px solid ${token.colorPrimary} !important;
-            background: ${token.colorPrimaryBg || 'rgba(212, 168, 75, 0.15)'} !important;
-            color: ${token.colorPrimary} !important;
-          }
-        `}</style>
-
-        {activeTab === 'antd'
-          ? filteredAntdIcons.map((name) => {
-              const IconComp = (Icons as SafeAny)[name];
-              const isSelected = value === name;
-              return (
-                <IconButton
-                  key={name}
-                  name={name}
-                  isSelected={isSelected}
-                  onSelect={() => {
-                    onSelect(name);
-                    onClose();
-                  }}
-                  icon={
-                    IconComp &&
-                    React.createElement(IconComp, {
-                      style: {
-                        fontSize: '20px',
-                        color: isSelected ? token.colorPrimary : token.colorTextSecondary,
-                      },
-                    })
-                  }
-                  label={name.replace('Outlined', '')}
-                  token={token}
-                />
-              );
-            })
-          : activeTab === 'lucide'
-            ? filteredLucideIcons.map((name) => {
-                const IconComp = getDynamicLucideIcon(name);
-                const isSelected = value === `lucide:${name}`;
-                return (
-                  <IconButton
-                    key={name}
-                    name={name}
-                    isSelected={isSelected}
-                    onSelect={() => {
-                      onSelect(`lucide:${name}`);
-                      onClose();
-                    }}
-                    icon={
-                      IconComp &&
-                      React.createElement(IconComp, {
-                        size: 20,
-                        style: {
-                          color: isSelected ? token.colorPrimary : token.colorTextSecondary,
-                        },
-                      })
-                    }
-                    label={name}
-                    token={token}
-                  />
-                );
-              })
-            : activeTab === 'emoji'
-              ? filteredEmojis.map((emoji, idx) => {
-                  const isSelected = value === emoji;
-                  return (
-                    <IconButton
-                      key={`${emoji}-${idx}`}
-                      name={emoji}
-                      isSelected={isSelected}
-                      onSelect={() => {
-                        onSelect(emoji);
-                        onClose();
-                      }}
-                      icon={<span style={{ fontSize: '22px' }}>{emoji}</span>}
-                      label={emoji}
-                      token={token}
-                    />
-                  );
-                })
-              : filteredCustomIcons.map((name) => {
-                  const isSelected = value === name;
-                  const customIcon = getCustomIconComponent(name, {
-                    size: 20,
-                    style: {
-                      color: isSelected ? token.colorPrimary : token.colorTextSecondary,
-                    },
-                  });
-                  return (
-                    <IconButton
-                      key={name}
-                      name={name}
-                      isSelected={isSelected}
-                      onSelect={() => {
-                        onSelect(name);
-                        onClose();
-                      }}
-                      icon={customIcon}
-                      label={name.replace('custom:', '')}
-                      token={token}
-                    />
-                  );
-                })}
-
-        {hasNoIcons && (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '24px', color: token.colorTextSecondary }}>
-            <div className="text-xs text-slate-400">Không tìm thấy icon sẵn có trùng khớp.</div>
-            {searchText && (
-              <button
-                type="button"
-                onClick={() => {
-                  onSelect(searchText.trim());
-                  onClose();
-                }}
-                className="mt-3 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg shadow-sm transition-all inline-flex items-center gap-1.5"
-              >
-                <span>Dùng Emoji / Icon tùy chỉnh:</span>
-                <span className="font-bold text-amber-300 text-sm">&quot;{searchText.trim()}&quot;</span>
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+      <IconPickerGrid
+        activeTab={activeTab}
+        isCompact={isCompact}
+        modalHeight={modalHeight}
+        token={token}
+        value={value}
+        searchText={searchText}
+        filteredAntdIcons={filteredAntdIcons}
+        filteredLucideIcons={filteredLucideIcons}
+        filteredEmojis={filteredEmojis}
+        filteredCustomIcons={filteredCustomIcons}
+        hasNoIcons={hasNoIcons}
+        onSelect={onSelect}
+        onClose={onClose}
+      />
 
       {!isCompact && (
         <div

@@ -35433,6 +35433,42 @@
       }
     },
     {
+      "id": "uicomp:AddToCampaignResultModal",
+      "type": "UIComponent",
+      "label": "<AddToCampaignResultModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/add-to-campaign/AddToCampaignResultModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "AddToCampaignResultModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:AddToCampaignSelectModal",
+      "type": "UIComponent",
+      "label": "<AddToCampaignSelectModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/add-to-campaign/AddToCampaignSelectModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "AddToCampaignSelectModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:add-to-campaign-utils",
+      "type": "UIComponent",
+      "label": "<add-to-campaign-utils />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/add-to-campaign/add-to-campaign-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "add-to-campaign-utils",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:CampaignBatchModals",
       "type": "UIComponent",
       "label": "<CampaignBatchModals />",
@@ -35849,6 +35885,30 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "RangeFilterField",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:IconPickerGrid",
+      "type": "UIComponent",
+      "label": "<IconPickerGrid />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/icon-picker/IconPickerGrid.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "IconPickerGrid",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:popular-emojis",
+      "type": "UIComponent",
+      "label": "<popular-emojis />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/icon-picker/popular-emojis.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "popular-emojis",
         "isPrimitive": false
       }
     },
@@ -51503,8 +51563,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopDesignManager.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29512,
-        "lineCount": 686,
+        "sizeBytes": 16384,
+        "lineCount": 420,
         "ext": ".tsx"
       }
     },
@@ -52038,6 +52098,45 @@
       "metadata": {
         "sizeBytes": 8467,
         "lineCount": 213,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/workshop-design/WorkshopDesignEditorDrawers.tsx",
+      "type": "File",
+      "label": "WorkshopDesignEditorDrawers.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/workshop-design/WorkshopDesignEditorDrawers.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5509,
+        "lineCount": 145,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/workshop-design/WorkshopDesignItemCard.tsx",
+      "type": "File",
+      "label": "WorkshopDesignItemCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/workshop-design/WorkshopDesignItemCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6939,
+        "lineCount": 157,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/workshop-design/workshop-design-utils.ts",
+      "type": "File",
+      "label": "workshop-design-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/workshop-design/workshop-design-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2496,
+        "lineCount": 64,
         "ext": ".ts"
       }
     },
@@ -82999,6 +83098,48 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:AddToCampaignResultModal:ws:apps/web",
+      "source": "uicomp:AddToCampaignResultModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:AddToCampaignResultModal:token:color:primary",
+      "source": "uicomp:AddToCampaignResultModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:AddToCampaignSelectModal:ws:apps/web",
+      "source": "uicomp:AddToCampaignSelectModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:AddToCampaignSelectModal:token:color:primary",
+      "source": "uicomp:AddToCampaignSelectModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:add-to-campaign-utils:ws:apps/web",
+      "source": "uicomp:add-to-campaign-utils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:add-to-campaign-utils:token:color:primary",
+      "source": "uicomp:add-to-campaign-utils",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:CampaignBatchModals:ws:apps/web",
       "source": "uicomp:CampaignBatchModals",
       "target": "ws:apps/web",
@@ -83484,6 +83625,34 @@
     {
       "id": "edge:uicomp:RangeFilterField:token:color:primary",
       "source": "uicomp:RangeFilterField",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:IconPickerGrid:ws:apps/web",
+      "source": "uicomp:IconPickerGrid",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:IconPickerGrid:token:color:primary",
+      "source": "uicomp:IconPickerGrid",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:popular-emojis:ws:apps/web",
+      "source": "uicomp:popular-emojis",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:popular-emojis:token:color:primary",
+      "source": "uicomp:popular-emojis",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -93235,6 +93404,27 @@
     {
       "id": "edge:file:apps/web/app/dashboard/academy-leads/components/useAcademyWorkshopTalentAssessment.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/academy-leads/components/useAcademyWorkshopTalentAssessment.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/workshop-design/WorkshopDesignEditorDrawers.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/workshop-design/WorkshopDesignEditorDrawers.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/workshop-design/WorkshopDesignItemCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/workshop-design/WorkshopDesignItemCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/workshop-design/workshop-design-utils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/workshop-design/workshop-design-utils.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -130565,8 +130755,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4893,
-    "totalEdges": 9620,
+    "totalNodes": 4901,
+    "totalEdges": 9633,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -130574,15 +130764,15 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 554,
-      "File": 1725
+      "UIComponent": 559,
+      "File": 1728
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 620,
-      "USES_TOKEN": 556,
-      "IMPORTS": 1022,
+      "RENDERS": 625,
+      "USES_TOKEN": 561,
+      "IMPORTS": 1025,
       "QUERIES_MODEL": 541,
       "API_CALL": 4336
     },
