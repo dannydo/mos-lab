@@ -9530,34 +9530,6 @@
       }
     },
     {
-      "id": "route:GET:/api/customers",
-      "type": "FastifyRoute",
-      "label": "GET /api/customers",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/customers",
-        "module": "customers",
-        "handler": "inlineHandler",
-        "line": 29
-      }
-    },
-    {
-      "id": "route:GET:/api/customers/random-ids",
-      "type": "FastifyRoute",
-      "label": "GET /api/customers/random-ids",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/customers/random-ids",
-        "module": "customers",
-        "handler": "inlineHandler",
-        "line": 1843
-      }
-    },
-    {
       "id": "route:GET:/api/saved-filters",
       "type": "FastifyRoute",
       "label": "GET /api/saved-filters",
@@ -9828,13 +9800,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/nyc/config",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/nyc/config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 45
+        "line": 70
       }
     },
     {
@@ -9842,13 +9814,13 @@
       "type": "FastifyRoute",
       "label": "PUT /api/nyc/config",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "metadata": {
         "method": "PUT",
         "path": "/api/nyc/config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 96
+        "line": 121
       }
     },
     {
@@ -9856,13 +9828,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/loca/config",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/loca/config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 154
+        "line": 179
       }
     },
     {
@@ -9870,13 +9842,13 @@
       "type": "FastifyRoute",
       "label": "PUT /api/loca/config",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "metadata": {
         "method": "PUT",
         "path": "/api/loca/config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 191
+        "line": 216
       }
     },
     {
@@ -9884,13 +9856,13 @@
       "type": "FastifyRoute",
       "label": "GET /api/dashboard/vat-config",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/dashboard/vat-config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 240
+        "line": 265
       }
     },
     {
@@ -9898,41 +9870,13 @@
       "type": "FastifyRoute",
       "label": "PUT /api/dashboard/vat-config",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "metadata": {
         "method": "PUT",
         "path": "/api/dashboard/vat-config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 258
-      }
-    },
-    {
-      "id": "route:GET:/api/dashboard/today",
-      "type": "FastifyRoute",
-      "label": "GET /api/dashboard/today",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/dashboard/today",
-        "module": "customers",
-        "handler": "inlineHandler",
-        "line": 1406
-      }
-    },
-    {
-      "id": "route:GET:/api/dashboard/today/revenue-hourly",
-      "type": "FastifyRoute",
-      "label": "GET /api/dashboard/today/revenue-hourly",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/dashboard/today/revenue-hourly",
-        "module": "customers",
-        "handler": "inlineHandler",
-        "line": 1489
+        "line": 283
       }
     },
     {
@@ -9940,13 +9884,41 @@
       "type": "FastifyRoute",
       "label": "GET /api/dashboard/today/revenue-detail",
       "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-detail.routes.ts",
       "metadata": {
         "method": "GET",
         "path": "/api/dashboard/today/revenue-detail",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1860
+        "line": 8
+      }
+    },
+    {
+      "id": "route:GET:/api/dashboard/today/revenue-hourly",
+      "type": "FastifyRoute",
+      "label": "GET /api/dashboard/today/revenue-hourly",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-hourly.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/dashboard/today/revenue-hourly",
+        "module": "customers",
+        "handler": "inlineHandler",
+        "line": 8
+      }
+    },
+    {
+      "id": "route:GET:/api/dashboard/today",
+      "type": "FastifyRoute",
+      "label": "GET /api/dashboard/today",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-today.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/dashboard/today",
+        "module": "customers",
+        "handler": "inlineHandler",
+        "line": 85
       }
     },
     {
@@ -10087,6 +10059,34 @@
         "module": "customers",
         "handler": "inlineHandler",
         "line": 16
+      }
+    },
+    {
+      "id": "route:GET:/api/customers",
+      "type": "FastifyRoute",
+      "label": "GET /api/customers",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/customers/routes/list/customer-list-main.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/customers",
+        "module": "customers",
+        "handler": "inlineHandler",
+        "line": 18
+      }
+    },
+    {
+      "id": "route:GET:/api/customers/random-ids",
+      "type": "FastifyRoute",
+      "label": "GET /api/customers/random-ids",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/customers/random-ids",
+        "module": "customers",
+        "handler": "inlineHandler",
+        "line": 11
       }
     },
     {
@@ -34665,6 +34665,66 @@
       }
     },
     {
+      "id": "uicomp:RescheduleConfirmationModals",
+      "type": "UIComponent",
+      "label": "<RescheduleConfirmationModals />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/booking/reschedule/RescheduleConfirmationModals.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "RescheduleConfirmationModals",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:RescheduleTemplateSection",
+      "type": "UIComponent",
+      "label": "<RescheduleTemplateSection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/booking/reschedule/RescheduleTemplateSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "RescheduleTemplateSection",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:rescheduleUtils",
+      "type": "UIComponent",
+      "label": "<rescheduleUtils />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/booking/reschedule/rescheduleUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "rescheduleUtils",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useRescheduleBookingForm",
+      "type": "UIComponent",
+      "label": "<useRescheduleBookingForm />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/booking/reschedule/useRescheduleBookingForm.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useRescheduleBookingForm",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useRescheduleTemplates",
+      "type": "UIComponent",
+      "label": "<useRescheduleTemplates />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/booking/reschedule/useRescheduleTemplates.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useRescheduleTemplates",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:updateBookingPayload.test",
       "type": "UIComponent",
       "label": "<updateBookingPayload.test />",
@@ -37617,6 +37677,138 @@
       }
     },
     {
+      "id": "uicomp:DockedMainChatView",
+      "type": "UIComponent",
+      "label": "<DockedMainChatView />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/docked-windows/DockedMainChatView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "DockedMainChatView",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:DockedTasksView",
+      "type": "UIComponent",
+      "label": "<DockedTasksView />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/docked-windows/DockedTasksView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "DockedTasksView",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:DockedThreadView",
+      "type": "UIComponent",
+      "label": "<DockedThreadView />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/docked-windows/DockedThreadView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "DockedThreadView",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:DockedWindowHeader",
+      "type": "UIComponent",
+      "label": "<DockedWindowHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/docked-windows/DockedWindowHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "DockedWindowHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:dockedWindowTypes",
+      "type": "UIComponent",
+      "label": "<dockedWindowTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/docked-windows/dockedWindowTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "dockedWindowTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useDockedWindowController",
+      "type": "UIComponent",
+      "label": "<useDockedWindowController />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/docked-windows/useDockedWindowController.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useDockedWindowController",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:GwDrawerFastSheetView",
+      "type": "UIComponent",
+      "label": "<GwDrawerFastSheetView />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/google-workspace-drawer/GwDrawerFastSheetView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "GwDrawerFastSheetView",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:GwDrawerHeaderAndToolbar",
+      "type": "UIComponent",
+      "label": "<GwDrawerHeaderAndToolbar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/google-workspace-drawer/GwDrawerHeaderAndToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "GwDrawerHeaderAndToolbar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:GwDrawerViewport",
+      "type": "UIComponent",
+      "label": "<GwDrawerViewport />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/google-workspace-drawer/GwDrawerViewport.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "GwDrawerViewport",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:gwDrawerUtils",
+      "type": "UIComponent",
+      "label": "<gwDrawerUtils />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/google-workspace-drawer/gwDrawerUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "gwDrawerUtils",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useGwDrawerController",
+      "type": "UIComponent",
+      "label": "<useGwDrawerController />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/google-workspace-drawer/useGwDrawerController.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useGwDrawerController",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:chat-constants",
       "type": "UIComponent",
       "label": "<chat-constants />",
@@ -38313,6 +38505,54 @@
       }
     },
     {
+      "id": "uicomp:MobileAppModalsAndSheets",
+      "type": "UIComponent",
+      "label": "<MobileAppModalsAndSheets />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/app/MobileAppModalsAndSheets.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileAppModalsAndSheets",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MobileQuickTaskModal",
+      "type": "UIComponent",
+      "label": "<MobileQuickTaskModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/app/MobileQuickTaskModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MobileQuickTaskModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMobileAppNavigation",
+      "type": "UIComponent",
+      "label": "<useMobileAppNavigation />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/app/useMobileAppNavigation.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMobileAppNavigation",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMobileTaskWorkflow",
+      "type": "UIComponent",
+      "label": "<useMobileTaskWorkflow />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/app/useMobileTaskWorkflow.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMobileTaskWorkflow",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatAccessControlLists",
       "type": "UIComponent",
       "label": "<MosChatAccessControlLists />",
@@ -38441,6 +38681,138 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "mos-chat-stickers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:RichEditorFooterAndLinkModal",
+      "type": "UIComponent",
+      "label": "<RichEditorFooterAndLinkModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/rich-editor/RichEditorFooterAndLinkModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "RichEditorFooterAndLinkModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:RichEditorHeader",
+      "type": "UIComponent",
+      "label": "<RichEditorHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/rich-editor/RichEditorHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "RichEditorHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:RichEditorToolbar",
+      "type": "UIComponent",
+      "label": "<RichEditorToolbar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/rich-editor/RichEditorToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "RichEditorToolbar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:RichEditorWorkspace",
+      "type": "UIComponent",
+      "label": "<RichEditorWorkspace />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/rich-editor/RichEditorWorkspace.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "RichEditorWorkspace",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:richEditorUtils",
+      "type": "UIComponent",
+      "label": "<richEditorUtils />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/rich-editor/richEditorUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "richEditorUtils",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useRichEditorActions",
+      "type": "UIComponent",
+      "label": "<useRichEditorActions />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/rich-editor/useRichEditorActions.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useRichEditorActions",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatGoogleSmartChip",
+      "type": "UIComponent",
+      "label": "<MosChatGoogleSmartChip />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/rich-text/MosChatGoogleSmartChip.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatGoogleSmartChip",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:parseInlineRichText",
+      "type": "UIComponent",
+      "label": "<parseInlineRichText />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/rich-text/parseInlineRichText.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "parseInlineRichText",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:renderHtmlAndTableBlocks",
+      "type": "UIComponent",
+      "label": "<renderHtmlAndTableBlocks />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/rich-text/renderHtmlAndTableBlocks.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "renderHtmlAndTableBlocks",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:renderRichTextBlocks",
+      "type": "UIComponent",
+      "label": "<renderRichTextBlocks />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/rich-text/renderRichTextBlocks.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "renderRichTextBlocks",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:richTextUtils",
+      "type": "UIComponent",
+      "label": "<richTextUtils />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/rich-text/richTextUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "richTextUtils",
         "isPrimitive": false
       }
     },
@@ -38765,6 +39137,66 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "google-workspace-bridge",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:chat-avatar-and-task-people",
+      "type": "UIComponent",
+      "label": "<chat-avatar-and-task-people />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/helpers/chat-avatar-and-task-people.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "chat-avatar-and-task-people",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:chat-media-helpers",
+      "type": "UIComponent",
+      "label": "<chat-media-helpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/helpers/chat-media-helpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "chat-media-helpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:chat-mentions-and-membership",
+      "type": "UIComponent",
+      "label": "<chat-mentions-and-membership />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/helpers/chat-mentions-and-membership.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "chat-mentions-and-membership",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:chat-messages-and-receipts",
+      "type": "UIComponent",
+      "label": "<chat-messages-and-receipts />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/helpers/chat-messages-and-receipts.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "chat-messages-and-receipts",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:chat-staff-and-alerts",
+      "type": "UIComponent",
+      "label": "<chat-staff-and-alerts />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/helpers/chat-staff-and-alerts.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "chat-staff-and-alerts",
         "isPrimitive": false
       }
     },
@@ -42329,8 +42761,8 @@
       "filePath": "apps/api/src/modules/chat/chat-google-workspace.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 57948,
-        "lineCount": 1623,
+        "sizeBytes": 4767,
+        "lineCount": 134,
         "ext": ".ts"
       }
     },
@@ -42446,8 +42878,8 @@
       "filePath": "apps/api/src/modules/chat/chat-repository.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 55101,
-        "lineCount": 1456,
+        "sizeBytes": 900,
+        "lineCount": 26,
         "ext": ".ts"
       }
     },
@@ -42615,8 +43047,8 @@
       "filePath": "apps/api/src/modules/chat/chat-web-push.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 29487,
-        "lineCount": 879,
+        "sizeBytes": 5893,
+        "lineCount": 190,
         "ext": ".ts"
       }
     },
@@ -42654,8 +43086,73 @@
       "filePath": "apps/api/src/modules/chat/chat-workflow.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 26236,
-        "lineCount": 726,
+        "sizeBytes": 316,
+        "lineCount": 12,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/google-workspace/gw-auth-cache.ts",
+      "type": "File",
+      "label": "gw-auth-cache.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/google-workspace/gw-auth-cache.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8579,
+        "lineCount": 263,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/google-workspace/gw-canva.fetcher.ts",
+      "type": "File",
+      "label": "gw-canva.fetcher.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/google-workspace/gw-canva.fetcher.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6604,
+        "lineCount": 194,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/google-workspace/gw-context.helper.ts",
+      "type": "File",
+      "label": "gw-context.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/google-workspace/gw-context.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9950,
+        "lineCount": 250,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/google-workspace/gw-google.fetcher.ts",
+      "type": "File",
+      "label": "gw-google.fetcher.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/google-workspace/gw-google.fetcher.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15179,
+        "lineCount": 442,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/google-workspace/gw-parsers.ts",
+      "type": "File",
+      "label": "gw-parsers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/google-workspace/gw-parsers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15131,
+        "lineCount": 452,
         "ext": ".ts"
       }
     },
@@ -42708,6 +43205,71 @@
       "metadata": {
         "sizeBytes": 9712,
         "lineCount": 252,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/repository/repo-bot-append.ts",
+      "type": "File",
+      "label": "repo-bot-append.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/repository/repo-bot-append.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15481,
+        "lineCount": 416,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/repository/repo-bulk-sync.ts",
+      "type": "File",
+      "label": "repo-bulk-sync.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/repository/repo-bulk-sync.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9667,
+        "lineCount": 259,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/repository/repo-read-and-migrate.ts",
+      "type": "File",
+      "label": "repo-read-and-migrate.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/repository/repo-read-and-migrate.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11088,
+        "lineCount": 294,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/repository/repo-schema-and-lock.ts",
+      "type": "File",
+      "label": "repo-schema-and-lock.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/repository/repo-schema-and-lock.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10956,
+        "lineCount": 271,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/repository/repo-single-upsert.ts",
+      "type": "File",
+      "label": "repo-single-upsert.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/repository/repo-single-upsert.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9520,
+        "lineCount": 264,
         "ext": ".ts"
       }
     },
@@ -42916,6 +43478,71 @@
       "metadata": {
         "sizeBytes": 3510,
         "lineCount": 76,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/web-push/web-push-crypto.ts",
+      "type": "File",
+      "label": "web-push-crypto.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/web-push/web-push-crypto.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3875,
+        "lineCount": 106,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/web-push/web-push-store.ts",
+      "type": "File",
+      "label": "web-push-store.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/web-push/web-push-store.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7628,
+        "lineCount": 247,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/web-push/web-push-targeting.ts",
+      "type": "File",
+      "label": "web-push-targeting.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/web-push/web-push-targeting.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13559,
+        "lineCount": 390,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/workflow/workflow-execution.service.ts",
+      "type": "File",
+      "label": "workflow-execution.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/workflow/workflow-execution.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13477,
+        "lineCount": 374,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/workflow/workflow-state-store.ts",
+      "type": "File",
+      "label": "workflow-state-store.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/workflow/workflow-state-store.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13032,
+        "lineCount": 358,
         "ext": ".ts"
       }
     },
@@ -43239,8 +43866,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 95009,
-        "lineCount": 2301,
+        "sizeBytes": 396,
+        "lineCount": 9,
         "ext": ".ts"
       }
     },
@@ -43323,6 +43950,97 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
+      "type": "File",
+      "label": "dashboard-config.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 12308,
+        "lineCount": 320,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-detail.routes.ts",
+      "type": "File",
+      "label": "dashboard-revenue-detail.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-detail.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9236,
+        "lineCount": 215,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-hourly.routes.ts",
+      "type": "File",
+      "label": "dashboard-revenue-hourly.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-hourly.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13497,
+        "lineCount": 334,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-branches.helper.ts",
+      "type": "File",
+      "label": "dashboard-today-branches.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-today-branches.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13400,
+        "lineCount": 362,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-cc.helper.ts",
+      "type": "File",
+      "label": "dashboard-today-cc.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-today-cc.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10886,
+        "lineCount": 339,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-data.helper.ts",
+      "type": "File",
+      "label": "dashboard-today-data.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-today-data.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 17977,
+        "lineCount": 460,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today.routes.ts",
+      "type": "File",
+      "label": "dashboard-today.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-today.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5574,
+        "lineCount": 167,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/customers/routes/dashboard-revenue-cv-guard.test.ts",
       "type": "File",
       "label": "dashboard-revenue-cv-guard.test.ts",
@@ -43343,8 +44061,8 @@
       "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 85694,
-        "lineCount": 2125,
+        "sizeBytes": 753,
+        "lineCount": 15,
         "ext": ".ts"
       }
     },
@@ -43449,6 +44167,97 @@
       "metadata": {
         "sizeBytes": 13987,
         "lineCount": 405,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts",
+      "type": "File",
+      "label": "customer-list-hydrate.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 17714,
+        "lineCount": 478,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/list/customer-list-main.routes.ts",
+      "type": "File",
+      "label": "customer-list-main.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/list/customer-list-main.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6657,
+        "lineCount": 188,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/list/customer-list-new-loca.helper.ts",
+      "type": "File",
+      "label": "customer-list-new-loca.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/list/customer-list-new-loca.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9338,
+        "lineCount": 209,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/list/customer-list-prefilter.helper.ts",
+      "type": "File",
+      "label": "customer-list-prefilter.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/list/customer-list-prefilter.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14545,
+        "lineCount": 425,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/list/customer-list-query.helper.ts",
+      "type": "File",
+      "label": "customer-list-query.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/list/customer-list-query.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 20919,
+        "lineCount": 545,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/list/customer-list.types.ts",
+      "type": "File",
+      "label": "customer-list.types.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/list/customer-list.types.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1838,
+        "lineCount": 74,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts",
+      "type": "File",
+      "label": "customer-random-ids.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 20314,
+        "lineCount": 468,
         "ext": ".ts"
       }
     },
@@ -43941,8 +44750,8 @@
       "filePath": "apps/api/src/modules/funds/fund.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 59073,
-        "lineCount": 1483,
+        "sizeBytes": 4381,
+        "lineCount": 145,
         "ext": ".ts"
       }
     },
@@ -43956,6 +44765,84 @@
       "metadata": {
         "sizeBytes": 8792,
         "lineCount": 266,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/funds/services/fund-admin.service.ts",
+      "type": "File",
+      "label": "fund-admin.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/funds/services/fund-admin.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10527,
+        "lineCount": 272,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/funds/services/fund-disbursement.service.ts",
+      "type": "File",
+      "label": "fund-disbursement.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/funds/services/fund-disbursement.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14696,
+        "lineCount": 345,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/funds/services/fund-ledger.service.ts",
+      "type": "File",
+      "label": "fund-ledger.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/funds/services/fund-ledger.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11861,
+        "lineCount": 312,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/funds/services/fund-proposals.service.ts",
+      "type": "File",
+      "label": "fund-proposals.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/funds/services/fund-proposals.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7824,
+        "lineCount": 212,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/funds/services/fund-queries.service.ts",
+      "type": "File",
+      "label": "fund-queries.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/funds/services/fund-queries.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 12687,
+        "lineCount": 356,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/funds/services/fund-types.ts",
+      "type": "File",
+      "label": "fund-types.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/funds/services/fund-types.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 314,
+        "lineCount": 18,
         "ext": ".ts"
       }
     },
@@ -45286,6 +46173,71 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-daily-sales.service.ts",
+      "type": "File",
+      "label": "cc-kpi-daily-sales.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-daily-sales.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 21859,
+        "lineCount": 531,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-helpers.ts",
+      "type": "File",
+      "label": "cc-kpi-helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-helpers.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9732,
+        "lineCount": 258,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-specs-and-leaderboard.ts",
+      "type": "File",
+      "label": "cc-kpi-specs-and-leaderboard.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-specs-and-leaderboard.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9660,
+        "lineCount": 282,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-staff-and-tip.service.ts",
+      "type": "File",
+      "label": "cc-kpi-staff-and-tip.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-staff-and-tip.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4716,
+        "lineCount": 119,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-xoay.service.ts",
+      "type": "File",
+      "label": "cc-kpi-xoay.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-xoay.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 18339,
+        "lineCount": 434,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/services/cc-kpi.service.test.ts",
       "type": "File",
       "label": "cc-kpi.service.test.ts",
@@ -45306,8 +46258,8 @@
       "filePath": "apps/api/src/modules/kpi/services/cc-kpi.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 67169,
-        "lineCount": 1673,
+        "sizeBytes": 6035,
+        "lineCount": 181,
         "ext": ".ts"
       }
     },
@@ -46534,6 +47486,84 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/telemetry/services/telemetry-analysis.ts",
+      "type": "File",
+      "label": "telemetry-analysis.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/telemetry/services/telemetry-analysis.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15433,
+        "lineCount": 282,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/telemetry/services/telemetry-cluster-dispatch.service.ts",
+      "type": "File",
+      "label": "telemetry-cluster-dispatch.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/telemetry/services/telemetry-cluster-dispatch.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11789,
+        "lineCount": 349,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/telemetry/services/telemetry-clusters.ts",
+      "type": "File",
+      "label": "telemetry-clusters.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/telemetry/services/telemetry-clusters.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7544,
+        "lineCount": 160,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/telemetry/services/telemetry-dispatch.service.ts",
+      "type": "File",
+      "label": "telemetry-dispatch.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/telemetry/services/telemetry-dispatch.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8489,
+        "lineCount": 252,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/telemetry/services/telemetry-queries.service.ts",
+      "type": "File",
+      "label": "telemetry-queries.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/telemetry/services/telemetry-queries.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14926,
+        "lineCount": 479,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/telemetry/services/telemetry-store.ts",
+      "type": "File",
+      "label": "telemetry-store.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/telemetry/services/telemetry-store.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5643,
+        "lineCount": 187,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/telemetry/telemetry.service.test.ts",
       "type": "File",
       "label": "telemetry.service.test.ts",
@@ -46554,8 +47584,8 @@
       "filePath": "apps/api/src/modules/telemetry/telemetry.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 64247,
-        "lineCount": 1661,
+        "sizeBytes": 3702,
+        "lineCount": 120,
         "ext": ".ts"
       }
     },
@@ -50922,8 +51952,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcThuongTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 52864,
-        "lineCount": 1328,
+        "sizeBytes": 8117,
+        "lineCount": 230,
         "ext": ".tsx"
       }
     },
@@ -50977,6 +52007,58 @@
         "sizeBytes": 2738,
         "lineCount": 88,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-thuong/CcThuongKpiCards.tsx",
+      "type": "File",
+      "label": "CcThuongKpiCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-thuong/CcThuongKpiCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8321,
+        "lineCount": 231,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-thuong/CcThuongLeaderboardCard.tsx",
+      "type": "File",
+      "label": "CcThuongLeaderboardCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-thuong/CcThuongLeaderboardCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 19220,
+        "lineCount": 444,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-thuong/ccThuongDailyColumns.tsx",
+      "type": "File",
+      "label": "ccThuongDailyColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-thuong/ccThuongDailyColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5050,
+        "lineCount": 157,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-thuong/useCcThuongData.ts",
+      "type": "File",
+      "label": "useCcThuongData.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-thuong/useCcThuongData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14332,
+        "lineCount": 432,
+        "ext": ".ts"
       }
     },
     {
@@ -64139,20 +65221,6 @@
       "label": "REGISTERED_IN"
     },
     {
-      "id": "edge:route:GET:/api/customers:ws:apps/api",
-      "source": "route:GET:/api/customers",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:GET:/api/customers/random-ids:ws:apps/api",
-      "source": "route:GET:/api/customers/random-ids",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
       "id": "edge:route:GET:/api/saved-filters:ws:apps/api",
       "source": "route:GET:/api/saved-filters",
       "target": "ws:apps/api",
@@ -64328,8 +65396,8 @@
       "label": "REGISTERED_IN"
     },
     {
-      "id": "edge:route:GET:/api/dashboard/today:ws:apps/api",
-      "source": "route:GET:/api/dashboard/today",
+      "id": "edge:route:GET:/api/dashboard/today/revenue-detail:ws:apps/api",
+      "source": "route:GET:/api/dashboard/today/revenue-detail",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -64342,8 +65410,8 @@
       "label": "REGISTERED_IN"
     },
     {
-      "id": "edge:route:GET:/api/dashboard/today/revenue-detail:ws:apps/api",
-      "source": "route:GET:/api/dashboard/today/revenue-detail",
+      "id": "edge:route:GET:/api/dashboard/today:ws:apps/api",
+      "source": "route:GET:/api/dashboard/today",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -64414,6 +65482,20 @@
     {
       "id": "edge:route:GET:/api/customers/:id/summary:ws:apps/api",
       "source": "route:GET:/api/customers/:id/summary",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/customers:ws:apps/api",
+      "source": "route:GET:/api/customers",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/customers/random-ids:ws:apps/api",
+      "source": "route:GET:/api/customers/random-ids",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -78636,6 +79718,76 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:RescheduleConfirmationModals:ws:apps/web",
+      "source": "uicomp:RescheduleConfirmationModals",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:RescheduleConfirmationModals:token:color:primary",
+      "source": "uicomp:RescheduleConfirmationModals",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:RescheduleTemplateSection:ws:apps/web",
+      "source": "uicomp:RescheduleTemplateSection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:RescheduleTemplateSection:token:color:primary",
+      "source": "uicomp:RescheduleTemplateSection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:rescheduleUtils:ws:apps/web",
+      "source": "uicomp:rescheduleUtils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:rescheduleUtils:token:color:primary",
+      "source": "uicomp:rescheduleUtils",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useRescheduleBookingForm:ws:apps/web",
+      "source": "uicomp:useRescheduleBookingForm",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useRescheduleBookingForm:token:color:primary",
+      "source": "uicomp:useRescheduleBookingForm",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useRescheduleTemplates:ws:apps/web",
+      "source": "uicomp:useRescheduleTemplates",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useRescheduleTemplates:token:color:primary",
+      "source": "uicomp:useRescheduleTemplates",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:updateBookingPayload.test:ws:apps/web",
       "source": "uicomp:updateBookingPayload.test",
       "target": "ws:apps/web",
@@ -82080,6 +83232,160 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:DockedMainChatView:ws:apps/web",
+      "source": "uicomp:DockedMainChatView",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:DockedMainChatView:token:color:primary",
+      "source": "uicomp:DockedMainChatView",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:DockedTasksView:ws:apps/web",
+      "source": "uicomp:DockedTasksView",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:DockedTasksView:token:color:primary",
+      "source": "uicomp:DockedTasksView",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:DockedThreadView:ws:apps/web",
+      "source": "uicomp:DockedThreadView",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:DockedThreadView:token:color:primary",
+      "source": "uicomp:DockedThreadView",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:DockedWindowHeader:ws:apps/web",
+      "source": "uicomp:DockedWindowHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:DockedWindowHeader:token:color:primary",
+      "source": "uicomp:DockedWindowHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:dockedWindowTypes:ws:apps/web",
+      "source": "uicomp:dockedWindowTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:dockedWindowTypes:token:color:primary",
+      "source": "uicomp:dockedWindowTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useDockedWindowController:ws:apps/web",
+      "source": "uicomp:useDockedWindowController",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useDockedWindowController:token:color:primary",
+      "source": "uicomp:useDockedWindowController",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:GwDrawerFastSheetView:ws:apps/web",
+      "source": "uicomp:GwDrawerFastSheetView",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:GwDrawerFastSheetView:token:color:primary",
+      "source": "uicomp:GwDrawerFastSheetView",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:GwDrawerHeaderAndToolbar:ws:apps/web",
+      "source": "uicomp:GwDrawerHeaderAndToolbar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:GwDrawerHeaderAndToolbar:token:color:primary",
+      "source": "uicomp:GwDrawerHeaderAndToolbar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:GwDrawerViewport:ws:apps/web",
+      "source": "uicomp:GwDrawerViewport",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:GwDrawerViewport:token:color:primary",
+      "source": "uicomp:GwDrawerViewport",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:gwDrawerUtils:ws:apps/web",
+      "source": "uicomp:gwDrawerUtils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:gwDrawerUtils:token:color:primary",
+      "source": "uicomp:gwDrawerUtils",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useGwDrawerController:ws:apps/web",
+      "source": "uicomp:useGwDrawerController",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useGwDrawerController:token:color:primary",
+      "source": "uicomp:useGwDrawerController",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:chat-constants:ws:apps/web",
       "source": "uicomp:chat-constants",
       "target": "ws:apps/web",
@@ -82892,6 +84198,62 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MobileAppModalsAndSheets:ws:apps/web",
+      "source": "uicomp:MobileAppModalsAndSheets",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileAppModalsAndSheets:token:color:primary",
+      "source": "uicomp:MobileAppModalsAndSheets",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MobileQuickTaskModal:ws:apps/web",
+      "source": "uicomp:MobileQuickTaskModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MobileQuickTaskModal:token:color:primary",
+      "source": "uicomp:MobileQuickTaskModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMobileAppNavigation:ws:apps/web",
+      "source": "uicomp:useMobileAppNavigation",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMobileAppNavigation:token:color:primary",
+      "source": "uicomp:useMobileAppNavigation",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMobileTaskWorkflow:ws:apps/web",
+      "source": "uicomp:useMobileTaskWorkflow",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMobileTaskWorkflow:token:color:primary",
+      "source": "uicomp:useMobileTaskWorkflow",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatAccessControlLists:ws:apps/web",
       "source": "uicomp:MosChatAccessControlLists",
       "target": "ws:apps/web",
@@ -83041,6 +84403,160 @@
     {
       "id": "edge:uicomp:mos-chat-stickers:token:color:primary",
       "source": "uicomp:mos-chat-stickers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:RichEditorFooterAndLinkModal:ws:apps/web",
+      "source": "uicomp:RichEditorFooterAndLinkModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:RichEditorFooterAndLinkModal:token:color:primary",
+      "source": "uicomp:RichEditorFooterAndLinkModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:RichEditorHeader:ws:apps/web",
+      "source": "uicomp:RichEditorHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:RichEditorHeader:token:color:primary",
+      "source": "uicomp:RichEditorHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:RichEditorToolbar:ws:apps/web",
+      "source": "uicomp:RichEditorToolbar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:RichEditorToolbar:token:color:primary",
+      "source": "uicomp:RichEditorToolbar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:RichEditorWorkspace:ws:apps/web",
+      "source": "uicomp:RichEditorWorkspace",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:RichEditorWorkspace:token:color:primary",
+      "source": "uicomp:RichEditorWorkspace",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:richEditorUtils:ws:apps/web",
+      "source": "uicomp:richEditorUtils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:richEditorUtils:token:color:primary",
+      "source": "uicomp:richEditorUtils",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useRichEditorActions:ws:apps/web",
+      "source": "uicomp:useRichEditorActions",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useRichEditorActions:token:color:primary",
+      "source": "uicomp:useRichEditorActions",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatGoogleSmartChip:ws:apps/web",
+      "source": "uicomp:MosChatGoogleSmartChip",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatGoogleSmartChip:token:color:primary",
+      "source": "uicomp:MosChatGoogleSmartChip",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:parseInlineRichText:ws:apps/web",
+      "source": "uicomp:parseInlineRichText",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:parseInlineRichText:token:color:primary",
+      "source": "uicomp:parseInlineRichText",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:renderHtmlAndTableBlocks:ws:apps/web",
+      "source": "uicomp:renderHtmlAndTableBlocks",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:renderHtmlAndTableBlocks:token:color:primary",
+      "source": "uicomp:renderHtmlAndTableBlocks",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:renderRichTextBlocks:ws:apps/web",
+      "source": "uicomp:renderRichTextBlocks",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:renderRichTextBlocks:token:color:primary",
+      "source": "uicomp:renderRichTextBlocks",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:richTextUtils:ws:apps/web",
+      "source": "uicomp:richTextUtils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:richTextUtils:token:color:primary",
+      "source": "uicomp:richTextUtils",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -83419,6 +84935,76 @@
     {
       "id": "edge:uicomp:google-workspace-bridge:token:color:primary",
       "source": "uicomp:google-workspace-bridge",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:chat-avatar-and-task-people:ws:apps/web",
+      "source": "uicomp:chat-avatar-and-task-people",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:chat-avatar-and-task-people:token:color:primary",
+      "source": "uicomp:chat-avatar-and-task-people",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:chat-media-helpers:ws:apps/web",
+      "source": "uicomp:chat-media-helpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:chat-media-helpers:token:color:primary",
+      "source": "uicomp:chat-media-helpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:chat-mentions-and-membership:ws:apps/web",
+      "source": "uicomp:chat-mentions-and-membership",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:chat-mentions-and-membership:token:color:primary",
+      "source": "uicomp:chat-mentions-and-membership",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:chat-messages-and-receipts:ws:apps/web",
+      "source": "uicomp:chat-messages-and-receipts",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:chat-messages-and-receipts:token:color:primary",
+      "source": "uicomp:chat-messages-and-receipts",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:chat-staff-and-alerts:ws:apps/web",
+      "source": "uicomp:chat-staff-and-alerts",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:chat-staff-and-alerts:token:color:primary",
+      "source": "uicomp:chat-staff-and-alerts",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -85944,13 +87530,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/chat/chat-repository.service.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/chat/chat-repository.service.ts",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/api/src/modules/chat/chat-search.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-search.test.ts",
       "target": "ws:packages/shared",
@@ -86049,8 +87628,36 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/chat/chat-workflow.service.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/chat/chat-workflow.service.ts",
+      "id": "edge:file:apps/api/src/modules/chat/google-workspace/gw-auth-cache.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/google-workspace/gw-auth-cache.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/google-workspace/gw-canva.fetcher.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/google-workspace/gw-canva.fetcher.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/google-workspace/gw-context.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/google-workspace/gw-context.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/google-workspace/gw-google.fetcher.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/google-workspace/gw-google.fetcher.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/google-workspace/gw-parsers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/google-workspace/gw-parsers.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -86079,6 +87686,41 @@
     {
       "id": "edge:file:apps/api/src/modules/chat/mission-bridge/mission-bridge-sync.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/mission-bridge/mission-bridge-sync.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/repository/repo-bot-append.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/repository/repo-bot-append.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/repository/repo-bulk-sync.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/repository/repo-bulk-sync.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/repository/repo-read-and-migrate.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/repository/repo-read-and-migrate.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/repository/repo-schema-and-lock.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/repository/repo-schema-and-lock.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/repository/repo-single-upsert.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/repository/repo-single-upsert.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -86184,6 +87826,34 @@
     {
       "id": "edge:file:apps/api/src/modules/chat/routes/workflows.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/routes/workflows.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/web-push/web-push-store.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/web-push/web-push-store.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/web-push/web-push-targeting.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/web-push/web-push-targeting.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/workflow/workflow-execution.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/workflow/workflow-execution.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/workflow/workflow-state-store.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/workflow/workflow-state-store.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -86301,13 +87971,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/api/src/modules/customers/routes/customer-meta.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/customers/routes/customer-meta.routes.ts",
       "target": "ws:packages/shared",
@@ -86350,15 +88013,57 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard-revenue-cv-guard.test.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/customers/routes/dashboard-revenue-cv-guard.test.ts",
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard.routes.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-detail.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-detail.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-hourly.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-hourly.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-branches.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-branches.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-cc.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-cc.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-data.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-data.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-today.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard-revenue-cv-guard.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard-revenue-cv-guard.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -86408,6 +88113,55 @@
     {
       "id": "edge:file:apps/api/src/modules/customers/routes/helpers.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/customers/routes/helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-main.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-main.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-new-loca.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-new-loca.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-prefilter.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-prefilter.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-query.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-query.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list.types.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list.types.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -86548,6 +88302,41 @@
     {
       "id": "edge:file:apps/api/src/modules/funds/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/funds/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/funds/services/fund-admin.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/funds/services/fund-admin.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/funds/services/fund-disbursement.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/funds/services/fund-disbursement.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/funds/services/fund-ledger.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/funds/services/fund-ledger.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/funds/services/fund-proposals.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/funds/services/fund-proposals.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/funds/services/fund-queries.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/funds/services/fund-queries.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -87141,6 +88930,41 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-daily-sales.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-daily-sales.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-helpers.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-specs-and-leaderboard.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-specs-and-leaderboard.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-staff-and-tip.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-staff-and-tip.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-xoay.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-xoay.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/kpi/services/cc-kpi.service.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/services/cc-kpi.service.test.ts",
       "target": "ws:packages/shared",
@@ -87528,6 +89352,48 @@
     {
       "id": "edge:file:apps/api/src/modules/telemetry/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/telemetry/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/services/telemetry-analysis.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/telemetry/services/telemetry-analysis.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/services/telemetry-cluster-dispatch.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/telemetry/services/telemetry-cluster-dispatch.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/services/telemetry-clusters.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/telemetry/services/telemetry-clusters.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/services/telemetry-dispatch.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/telemetry/services/telemetry-dispatch.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/services/telemetry-queries.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/telemetry/services/telemetry-queries.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/services/telemetry-store.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/telemetry/services/telemetry-store.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -88884,13 +90750,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/cc/components/CcThuongTab.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/cc/components/CcThuongTab.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/cc/components/CcThuongTransactionsModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/CcThuongTransactionsModal.tsx",
       "target": "ws:packages/shared",
@@ -88907,6 +90766,27 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cc/components/CcXoayTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/CcXoayTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-thuong/CcThuongLeaderboardCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-thuong/CcThuongLeaderboardCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-thuong/ccThuongDailyColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-thuong/ccThuongDailyColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-thuong/useCcThuongData.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-thuong/useCcThuongData.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -92888,69 +94768,6 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "target": "prisma:crm:CrmStaff",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmDailyPlan",
-      "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "target": "prisma:crm:CrmDailyPlan",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmCallLog",
-      "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "target": "prisma:crm:CrmCallLog",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmCustomerAssignment",
-      "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "target": "prisma:crm:CrmCustomerAssignment",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmAssignmentHistory",
-      "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "target": "prisma:crm:CrmAssignmentHistory",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmAllocationBatchItem",
-      "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "target": "prisma:crm:CrmAllocationBatchItem",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmLocaTouchpoint",
-      "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "target": "prisma:crm:CrmLocaTouchpoint",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmCampaignCustomer",
-      "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "target": "prisma:crm:CrmCampaignCustomer",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmCustomerElsaReservation",
-      "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "target": "prisma:crm:CrmCustomerElsaReservation",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
       "id": "edge:file:apps/api/src/modules/customers/routes/customer-meta.routes.ts:prisma:crm:CrmStaff",
       "source": "file:apps/api/src/modules/customers/routes/customer-meta.routes.ts",
       "target": "prisma:crm:CrmStaff",
@@ -93028,43 +94845,57 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard.routes.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "target": "prisma:crm:CrmStaff",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard.routes.ts:prisma:crm:CrmConfig",
-      "source": "file:apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "target": "prisma:crm:CrmConfig",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard.routes.ts:prisma:legacy:order",
-      "source": "file:apps/api/src/modules/customers/routes/dashboard.routes.ts",
-      "target": "prisma:legacy:order",
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-hourly.routes.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-hourly.routes.ts",
+      "target": "prisma:crm:CrmConfig",
       "type": "QUERIES_MODEL",
-      "label": "READS_LEGACY_MODEL"
+      "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard.routes.ts:prisma:legacy:order_service",
-      "source": "file:apps/api/src/modules/customers/routes/dashboard.routes.ts",
-      "target": "prisma:legacy:order_service",
-      "type": "QUERIES_MODEL",
-      "label": "READS_LEGACY_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard.routes.ts:prisma:legacy:service_language",
-      "source": "file:apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-branches.helper.ts:prisma:legacy:service_language",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-branches.helper.ts",
       "target": "prisma:legacy:service_language",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard.routes.ts:prisma:legacy:user_service_balance",
-      "source": "file:apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-data.helper.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-data.helper.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-data.helper.ts:prisma:legacy:order",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-data.helper.ts",
+      "target": "prisma:legacy:order",
+      "type": "QUERIES_MODEL",
+      "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-data.helper.ts:prisma:legacy:order_service",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-data.helper.ts",
+      "target": "prisma:legacy:order_service",
+      "type": "QUERIES_MODEL",
+      "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-data.helper.ts:prisma:legacy:user_service_balance",
+      "source": "file:apps/api/src/modules/customers/routes/dashboard/dashboard-today-data.helper.ts",
       "target": "prisma:legacy:user_service_balance",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
@@ -93194,6 +95025,104 @@
       "target": "prisma:legacy:user_contact",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts:prisma:crm:CrmDailyPlan",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts",
+      "target": "prisma:crm:CrmDailyPlan",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts:prisma:crm:CrmCallLog",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts",
+      "target": "prisma:crm:CrmCallLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts:prisma:crm:CrmCustomerAssignment",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts",
+      "target": "prisma:crm:CrmCustomerAssignment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts:prisma:crm:CrmAssignmentHistory",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts",
+      "target": "prisma:crm:CrmAssignmentHistory",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts:prisma:crm:CrmAllocationBatchItem",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts",
+      "target": "prisma:crm:CrmAllocationBatchItem",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts:prisma:crm:CrmLocaTouchpoint",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts",
+      "target": "prisma:crm:CrmLocaTouchpoint",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts:prisma:crm:CrmCustomerElsaReservation",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-hydrate.helper.ts",
+      "target": "prisma:crm:CrmCustomerElsaReservation",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-prefilter.helper.ts:prisma:crm:CrmCustomerAssignment",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-prefilter.helper.ts",
+      "target": "prisma:crm:CrmCustomerAssignment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-prefilter.helper.ts:prisma:crm:CrmAllocationBatchItem",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-prefilter.helper.ts",
+      "target": "prisma:crm:CrmAllocationBatchItem",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-list-prefilter.helper.ts:prisma:crm:CrmCampaignCustomer",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-list-prefilter.helper.ts",
+      "target": "prisma:crm:CrmCampaignCustomer",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts:prisma:crm:CrmCustomerAssignment",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts",
+      "target": "prisma:crm:CrmCustomerAssignment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts:prisma:crm:CrmAllocationBatchItem",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts",
+      "target": "prisma:crm:CrmAllocationBatchItem",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts:prisma:crm:CrmCampaignCustomer",
+      "source": "file:apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts",
+      "target": "prisma:crm:CrmCampaignCustomer",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/customers/routes/loca-staff-activity.routes.ts:prisma:crm:CrmStaff",
@@ -93784,8 +95713,8 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/cc-kpi.service.ts:prisma:crm:CrmLashTypeBenchmark",
-      "source": "file:apps/api/src/modules/kpi/services/cc-kpi.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-xoay.service.ts:prisma:crm:CrmLashTypeBenchmark",
+      "source": "file:apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-xoay.service.ts",
       "target": "prisma:crm:CrmLashTypeBenchmark",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
@@ -94393,15 +96322,43 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/telemetry/telemetry.service.ts:prisma:crm:CrmBugReport",
-      "source": "file:apps/api/src/modules/telemetry/telemetry.service.ts",
+      "id": "edge:file:apps/api/src/modules/telemetry/services/telemetry-cluster-dispatch.service.ts:prisma:crm:CrmBugReport",
+      "source": "file:apps/api/src/modules/telemetry/services/telemetry-cluster-dispatch.service.ts",
       "target": "prisma:crm:CrmBugReport",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/telemetry/telemetry.service.ts:prisma:crm:CrmFrontendIssue",
-      "source": "file:apps/api/src/modules/telemetry/telemetry.service.ts",
+      "id": "edge:file:apps/api/src/modules/telemetry/services/telemetry-cluster-dispatch.service.ts:prisma:crm:CrmFrontendIssue",
+      "source": "file:apps/api/src/modules/telemetry/services/telemetry-cluster-dispatch.service.ts",
+      "target": "prisma:crm:CrmFrontendIssue",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/services/telemetry-dispatch.service.ts:prisma:crm:CrmBugReport",
+      "source": "file:apps/api/src/modules/telemetry/services/telemetry-dispatch.service.ts",
+      "target": "prisma:crm:CrmBugReport",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/services/telemetry-dispatch.service.ts:prisma:crm:CrmFrontendIssue",
+      "source": "file:apps/api/src/modules/telemetry/services/telemetry-dispatch.service.ts",
+      "target": "prisma:crm:CrmFrontendIssue",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/services/telemetry-queries.service.ts:prisma:crm:CrmBugReport",
+      "source": "file:apps/api/src/modules/telemetry/services/telemetry-queries.service.ts",
+      "target": "prisma:crm:CrmBugReport",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/telemetry/services/telemetry-queries.service.ts:prisma:crm:CrmFrontendIssue",
+      "source": "file:apps/api/src/modules/telemetry/services/telemetry-queries.service.ts",
       "target": "prisma:crm:CrmFrontendIssue",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
@@ -95422,20 +97379,6 @@
       "label": "CALLS auth.me"
     },
     {
-      "id": "edge:page:/chat:route:GET:/api/customers",
-      "source": "page:/chat",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/chat:route:GET:/api/customers/random-ids",
-      "source": "page:/chat",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
       "id": "edge:page:/chat:route:GET:/api/customers/services",
       "source": "page:/chat",
       "target": "route:GET:/api/customers/services",
@@ -95614,6 +97557,20 @@
       "id": "edge:page:/chat:route:GET:/api/customers/:id/summary",
       "source": "page:/chat",
       "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/customers/random-ids",
+      "source": "page:/chat",
+      "target": "route:GET:/api/customers/random-ids",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -99349,20 +101306,6 @@
       "label": "CALLS customers.getMissedSummary"
     },
     {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/random-ids",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
       "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/services",
       "source": "page:/dashboard/appointments",
       "target": "route:GET:/api/customers/services",
@@ -99541,6 +101484,20 @@
       "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/:id/summary",
       "source": "page:/dashboard/appointments",
       "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS customers.getMissedSummary"
+    },
+    {
+      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers",
+      "source": "page:/dashboard/appointments",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS customers.getMissedSummary"
+    },
+    {
+      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/random-ids",
+      "source": "page:/dashboard/appointments",
+      "target": "route:GET:/api/customers/random-ids",
       "type": "API_CALL",
       "label": "CALLS customers.getMissedSummary"
     },
@@ -100420,20 +102377,6 @@
       "label": "CALLS auth.me"
     },
     {
-      "id": "edge:page:/dashboard/architecture:route:GET:/api/customers",
-      "source": "page:/dashboard/architecture",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/architecture:route:GET:/api/customers/random-ids",
-      "source": "page:/dashboard/architecture",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/customers/services",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/customers/services",
@@ -100612,6 +102555,20 @@
       "id": "edge:page:/dashboard/architecture:route:GET:/api/customers/:id/summary",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/customers",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/customers/random-ids",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/customers/random-ids",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -102912,20 +104869,6 @@
       "label": "CALLS auth.me"
     },
     {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/random-ids",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
       "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/services",
       "source": "page:/dashboard/design-system",
       "target": "route:GET:/api/customers/services",
@@ -103104,6 +105047,20 @@
       "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/:id/summary",
       "source": "page:/dashboard/design-system",
       "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/random-ids",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/customers/random-ids",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -106650,20 +108607,6 @@
       "label": "CALLS campaigns.update"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/customers",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/customers/random-ids",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/saved-filters",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/saved-filters",
@@ -106839,9 +108782,9 @@
       "label": "CALLS campaigns.update"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/dashboard/today",
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/dashboard/today/revenue-detail",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/dashboard/today",
+      "target": "route:GET:/api/dashboard/today/revenue-detail",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -106853,9 +108796,9 @@
       "label": "CALLS campaigns.update"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/dashboard/today/revenue-detail",
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/dashboard/today",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/dashboard/today/revenue-detail",
+      "target": "route:GET:/api/dashboard/today",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -106926,6 +108869,20 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/customers/:id/summary",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/customers",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/customers/random-ids",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/customers/random-ids",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -112089,20 +114046,6 @@
       "label": "CALLS customers.getStaff"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/customers",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS customers.getStaff"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/customers/random-ids",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS customers.getStaff"
-    },
-    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/saved-filters",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/saved-filters",
@@ -112278,9 +114221,9 @@
       "label": "CALLS campaigns.delete"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/dashboard/today",
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/dashboard/today/revenue-detail",
       "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/dashboard/today",
+      "target": "route:GET:/api/dashboard/today/revenue-detail",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -112292,9 +114235,9 @@
       "label": "CALLS campaigns.delete"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/dashboard/today/revenue-detail",
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/dashboard/today",
       "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/dashboard/today/revenue-detail",
+      "target": "route:GET:/api/dashboard/today",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -112365,6 +114308,20 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/customers/:id/summary",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/customers",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/customers/random-ids",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/customers/random-ids",
       "type": "API_CALL",
       "label": "CALLS customers.getStaff"
     },
@@ -115015,9 +116972,9 @@
       "label": "CALLS dashboard.getToday"
     },
     {
-      "id": "edge:page:/dashboard:route:GET:/api/dashboard/today",
+      "id": "edge:page:/dashboard:route:GET:/api/dashboard/today/revenue-detail",
       "source": "page:/dashboard",
-      "target": "route:GET:/api/dashboard/today",
+      "target": "route:GET:/api/dashboard/today/revenue-detail",
       "type": "API_CALL",
       "label": "CALLS dashboard.getToday"
     },
@@ -115029,9 +116986,9 @@
       "label": "CALLS dashboard.getToday"
     },
     {
-      "id": "edge:page:/dashboard:route:GET:/api/dashboard/today/revenue-detail",
+      "id": "edge:page:/dashboard:route:GET:/api/dashboard/today",
       "source": "page:/dashboard",
-      "target": "route:GET:/api/dashboard/today/revenue-detail",
+      "target": "route:GET:/api/dashboard/today",
       "type": "API_CALL",
       "label": "CALLS dashboard.getToday"
     },
@@ -115897,20 +117854,6 @@
       "label": "CALLS customers.getReferrals"
     },
     {
-      "id": "edge:page:/dashboard/referrals:route:GET:/api/customers",
-      "source": "page:/dashboard/referrals",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS customers.getReferrals"
-    },
-    {
-      "id": "edge:page:/dashboard/referrals:route:GET:/api/customers/random-ids",
-      "source": "page:/dashboard/referrals",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS customers.getReferrals"
-    },
-    {
       "id": "edge:page:/dashboard/referrals:route:GET:/api/customers/services",
       "source": "page:/dashboard/referrals",
       "target": "route:GET:/api/customers/services",
@@ -116089,6 +118032,20 @@
       "id": "edge:page:/dashboard/referrals:route:GET:/api/customers/:id/summary",
       "source": "page:/dashboard/referrals",
       "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS customers.getReferrals"
+    },
+    {
+      "id": "edge:page:/dashboard/referrals:route:GET:/api/customers",
+      "source": "page:/dashboard/referrals",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS customers.getReferrals"
+    },
+    {
+      "id": "edge:page:/dashboard/referrals:route:GET:/api/customers/random-ids",
+      "source": "page:/dashboard/referrals",
+      "target": "route:GET:/api/customers/random-ids",
       "type": "API_CALL",
       "label": "CALLS customers.getReferrals"
     },
@@ -116359,20 +118316,6 @@
       "label": "CALLS customers.getAppointments"
     },
     {
-      "id": "edge:page:/dashboard/schedule-calendar:route:GET:/api/customers",
-      "source": "page:/dashboard/schedule-calendar",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS customers.getAppointments"
-    },
-    {
-      "id": "edge:page:/dashboard/schedule-calendar:route:GET:/api/customers/random-ids",
-      "source": "page:/dashboard/schedule-calendar",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS customers.getAppointments"
-    },
-    {
       "id": "edge:page:/dashboard/schedule-calendar:route:GET:/api/customers/services",
       "source": "page:/dashboard/schedule-calendar",
       "target": "route:GET:/api/customers/services",
@@ -116551,6 +118494,20 @@
       "id": "edge:page:/dashboard/schedule-calendar:route:GET:/api/customers/:id/summary",
       "source": "page:/dashboard/schedule-calendar",
       "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS customers.getAppointments"
+    },
+    {
+      "id": "edge:page:/dashboard/schedule-calendar:route:GET:/api/customers",
+      "source": "page:/dashboard/schedule-calendar",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS customers.getAppointments"
+    },
+    {
+      "id": "edge:page:/dashboard/schedule-calendar:route:GET:/api/customers/random-ids",
+      "source": "page:/dashboard/schedule-calendar",
+      "target": "route:GET:/api/customers/random-ids",
       "type": "API_CALL",
       "label": "CALLS customers.getAppointments"
     },
@@ -117437,20 +119394,6 @@
       "label": "CALLS auth.me"
     },
     {
-      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/customers",
-      "source": "page:/dashboard/staff/menu-access",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/customers/random-ids",
-      "source": "page:/dashboard/staff/menu-access",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
       "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/customers/services",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:GET:/api/customers/services",
@@ -117629,6 +119572,20 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/customers/:id/summary",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/customers",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/customers/random-ids",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/customers/random-ids",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -121084,20 +123041,6 @@
       "label": "CALLS teams.update"
     },
     {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/customers",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/customers/random-ids",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/saved-filters",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/saved-filters",
@@ -121273,9 +123216,9 @@
       "label": "CALLS teams.update"
     },
     {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/dashboard/today",
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/dashboard/today/revenue-detail",
       "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/dashboard/today",
+      "target": "route:GET:/api/dashboard/today/revenue-detail",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -121287,9 +123230,9 @@
       "label": "CALLS teams.update"
     },
     {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/dashboard/today/revenue-detail",
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/dashboard/today",
       "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/dashboard/today/revenue-detail",
+      "target": "route:GET:/api/dashboard/today",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -121360,6 +123303,20 @@
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/customers/:id/summary",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/customers",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/customers/random-ids",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/customers/random-ids",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -124367,20 +126324,6 @@
       "label": "CALLS auth.me"
     },
     {
-      "id": "edge:page:/wings-garden:route:GET:/api/customers",
-      "source": "page:/wings-garden",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/wings-garden:route:GET:/api/customers/random-ids",
-      "source": "page:/wings-garden",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
       "id": "edge:page:/wings-garden:route:GET:/api/customers/services",
       "source": "page:/wings-garden",
       "target": "route:GET:/api/customers/services",
@@ -124559,6 +126502,20 @@
       "id": "edge:page:/wings-garden:route:GET:/api/customers/:id/summary",
       "source": "page:/wings-garden",
       "target": "route:GET:/api/customers/:id/summary",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/customers/random-ids",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/customers/random-ids",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -124921,8 +126878,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4623,
-    "totalEdges": 9309,
+    "totalNodes": 4709,
+    "totalEdges": 9434,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -124930,16 +126887,16 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 511,
-      "File": 1498
+      "UIComponent": 547,
+      "File": 1548
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 577,
-      "USES_TOKEN": 513,
-      "IMPORTS": 868,
-      "QUERIES_MODEL": 470,
+      "RENDERS": 613,
+      "USES_TOKEN": 549,
+      "IMPORTS": 910,
+      "QUERIES_MODEL": 481,
       "API_CALL": 4336
     },
     "fastifyRouteCount": 782,
@@ -128051,20 +130008,6 @@
     },
     {
       "method": "GET",
-      "path": "/api/customers",
-      "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "customers"
-    },
-    {
-      "method": "GET",
-      "path": "/api/customers/random-ids",
-      "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "customers"
-    },
-    {
-      "method": "GET",
       "path": "/api/saved-filters",
       "filePath": "apps/api/src/modules/customers/routes/customer-meta.routes.ts",
       "handler": "inlineHandler",
@@ -128199,63 +130142,63 @@
     {
       "method": "GET",
       "path": "/api/nyc/config",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "customers"
     },
     {
       "method": "PUT",
       "path": "/api/nyc/config",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "customers"
     },
     {
       "method": "GET",
       "path": "/api/loca/config",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "customers"
     },
     {
       "method": "PUT",
       "path": "/api/loca/config",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "customers"
     },
     {
       "method": "GET",
       "path": "/api/dashboard/vat-config",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "customers"
     },
     {
       "method": "PUT",
       "path": "/api/dashboard/vat-config",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "customers"
-    },
-    {
-      "method": "GET",
-      "path": "/api/dashboard/today",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "customers"
-    },
-    {
-      "method": "GET",
-      "path": "/api/dashboard/today/revenue-hourly",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-config.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "customers"
     },
     {
       "method": "GET",
       "path": "/api/dashboard/today/revenue-detail",
-      "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-detail.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "customers"
+    },
+    {
+      "method": "GET",
+      "path": "/api/dashboard/today/revenue-hourly",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-revenue-hourly.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "customers"
+    },
+    {
+      "method": "GET",
+      "path": "/api/dashboard/today",
+      "filePath": "apps/api/src/modules/customers/routes/dashboard/dashboard-today.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "customers"
     },
@@ -128326,6 +130269,20 @@
       "method": "GET",
       "path": "/api/customers/:id/summary",
       "filePath": "apps/api/src/modules/customers/routes/detail/customer-summary.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "customers"
+    },
+    {
+      "method": "GET",
+      "path": "/api/customers",
+      "filePath": "apps/api/src/modules/customers/routes/list/customer-list-main.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "customers"
+    },
+    {
+      "method": "GET",
+      "path": "/api/customers/random-ids",
+      "filePath": "apps/api/src/modules/customers/routes/list/customer-random-ids.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "customers"
     },
