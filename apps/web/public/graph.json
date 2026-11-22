@@ -14407,8 +14407,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/page.tsx",
       "metadata": {
         "routePath": "/dashboard/academy-leads/workshops/[slug]/live",
-        "apiCallsCount": 1,
-        "apiCalls": ["academySales.workshops"]
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -14479,8 +14479,8 @@
       "filePath": "apps/web/app/dashboard/branches/page.tsx",
       "metadata": {
         "routePath": "/dashboard/branches",
-        "apiCallsCount": 1,
-        "apiCalls": ["catalog.branches"]
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -38120,6 +38120,78 @@
       }
     },
     {
+      "id": "uicomp:LightboxBottomBar",
+      "type": "UIComponent",
+      "label": "<LightboxBottomBar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-image-lightbox-viewer/LightboxBottomBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "LightboxBottomBar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:LightboxOverlays",
+      "type": "UIComponent",
+      "label": "<LightboxOverlays />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-image-lightbox-viewer/LightboxOverlays.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "LightboxOverlays",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:LightboxTopToolbar",
+      "type": "UIComponent",
+      "label": "<LightboxTopToolbar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-image-lightbox-viewer/LightboxTopToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "LightboxTopToolbar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:lightboxContextMenu",
+      "type": "UIComponent",
+      "label": "<lightboxContextMenu />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-image-lightbox-viewer/lightboxContextMenu.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "lightboxContextMenu",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:lightboxTypes",
+      "type": "UIComponent",
+      "label": "<lightboxTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-image-lightbox-viewer/lightboxTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "lightboxTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMosChatImageLightbox",
+      "type": "UIComponent",
+      "label": "<useMosChatImageLightbox />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/mos-chat-image-lightbox-viewer/useMosChatImageLightbox.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMosChatImageLightbox",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:chat-constants",
       "type": "UIComponent",
       "label": "<chat-constants />",
@@ -54791,6 +54863,97 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlAgendaSection.tsx",
+      "type": "File",
+      "label": "LiveControlAgendaSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlAgendaSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9126,
+        "lineCount": 213,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlGameSection.tsx",
+      "type": "File",
+      "label": "LiveControlGameSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlGameSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10048,
+        "lineCount": 238,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlHeaderActions.tsx",
+      "type": "File",
+      "label": "LiveControlHeaderActions.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlHeaderActions.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2230,
+        "lineCount": 60,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlLeaderboard.tsx",
+      "type": "File",
+      "label": "LiveControlLeaderboard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlLeaderboard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1237,
+        "lineCount": 34,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlMetrics.tsx",
+      "type": "File",
+      "label": "LiveControlMetrics.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlMetrics.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1112,
+        "lineCount": 40,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/live-control-constants.ts",
+      "type": "File",
+      "label": "live-control-constants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/live-control-constants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3449,
+        "lineCount": 103,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/useWorkshopLiveControl.ts",
+      "type": "File",
+      "label": "useWorkshopLiveControl.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/useWorkshopLiveControl.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8435,
+        "lineCount": 234,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -54798,8 +54961,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 34306,
-        "lineCount": 805,
+        "sizeBytes": 2703,
+        "lineCount": 77,
         "ext": ".tsx"
       }
     },
@@ -55454,6 +55617,123 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/branches/branches-page-modules/BranchStoreTypeBadge.tsx",
+      "type": "File",
+      "label": "BranchStoreTypeBadge.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/branches/branches-page-modules/BranchStoreTypeBadge.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1198,
+        "lineCount": 49,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/branches/branches-page-modules/BranchToggleActiveAction.tsx",
+      "type": "File",
+      "label": "BranchToggleActiveAction.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/branches/branches-page-modules/BranchToggleActiveAction.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1749,
+        "lineCount": 57,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/branches/branches-page-modules/BranchesFilterToolbar.tsx",
+      "type": "File",
+      "label": "BranchesFilterToolbar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/branches/branches-page-modules/BranchesFilterToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2131,
+        "lineCount": 71,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/branches/branches-page-modules/BranchesGridView.tsx",
+      "type": "File",
+      "label": "BranchesGridView.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/branches/branches-page-modules/BranchesGridView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6861,
+        "lineCount": 183,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/branches/branches-page-modules/BranchesHeaderActions.tsx",
+      "type": "File",
+      "label": "BranchesHeaderActions.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/branches/branches-page-modules/BranchesHeaderActions.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1540,
+        "lineCount": 60,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/branches/branches-page-modules/BranchesKpiGrid.tsx",
+      "type": "File",
+      "label": "BranchesKpiGrid.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/branches/branches-page-modules/BranchesKpiGrid.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2188,
+        "lineCount": 93,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/branches/branches-page-modules/branchesPageTypes.ts",
+      "type": "File",
+      "label": "branchesPageTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/branches/branches-page-modules/branchesPageTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3672,
+        "lineCount": 110,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/branches/branches-page-modules/branchesTableColumns.tsx",
+      "type": "File",
+      "label": "branchesTableColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/branches/branches-page-modules/branchesTableColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6328,
+        "lineCount": 160,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/branches/branches-page-modules/useBranchesPage.ts",
+      "type": "File",
+      "label": "useBranchesPage.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/branches/branches-page-modules/useBranchesPage.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8527,
+        "lineCount": 275,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/branches/components/BranchDetailDrawer.tsx",
       "type": "File",
       "label": "BranchDetailDrawer.tsx",
@@ -55487,8 +55767,8 @@
       "filePath": "apps/web/app/dashboard/branches/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30941,
-        "lineCount": 804,
+        "sizeBytes": 5066,
+        "lineCount": 164,
         "ext": ".tsx"
       }
     },
@@ -58724,8 +59004,8 @@
       "filePath": "apps/web/app/dashboard/loca/components/LocaColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27643,
-        "lineCount": 803,
+        "sizeBytes": 236,
+        "lineCount": 6,
         "ext": ".tsx"
       }
     },
@@ -58753,6 +59033,84 @@
         "sizeBytes": 8117,
         "lineCount": 239,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/components/loca-columns/LocaColumnCells.tsx",
+      "type": "File",
+      "label": "LocaColumnCells.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/components/loca-columns/LocaColumnCells.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4383,
+        "lineCount": 120,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/components/loca-columns/locaAllColumns.tsx",
+      "type": "File",
+      "label": "locaAllColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/components/loca-columns/locaAllColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9310,
+        "lineCount": 293,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/components/loca-columns/locaColumnHelpers.ts",
+      "type": "File",
+      "label": "locaColumnHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/components/loca-columns/locaColumnHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4432,
+        "lineCount": 113,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/components/loca-columns/locaNewColumns.tsx",
+      "type": "File",
+      "label": "locaNewColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/components/loca-columns/locaNewColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4644,
+        "lineCount": 156,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/components/loca-columns/locaTouchpointColumns.tsx",
+      "type": "File",
+      "label": "locaTouchpointColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/components/loca-columns/locaTouchpointColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2793,
+        "lineCount": 84,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/components/loca-columns/types.ts",
+      "type": "File",
+      "label": "types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/components/loca-columns/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1137,
+        "lineCount": 43,
+        "ext": ".ts"
       }
     },
     {
@@ -60830,8 +61188,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvJournalModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32351,
-        "lineCount": 824,
+        "sizeBytes": 4922,
+        "lineCount": 140,
         "ext": ".tsx"
       }
     },
@@ -60924,6 +61282,97 @@
         "sizeBytes": 17129,
         "lineCount": 388,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/TvJournalFiltersBar.tsx",
+      "type": "File",
+      "label": "TvJournalFiltersBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/TvJournalFiltersBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4230,
+        "lineCount": 122,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/TvJournalHeader.tsx",
+      "type": "File",
+      "label": "TvJournalHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/TvJournalHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3329,
+        "lineCount": 87,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/TvJournalOverviewCards.tsx",
+      "type": "File",
+      "label": "TvJournalOverviewCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/TvJournalOverviewCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4585,
+        "lineCount": 123,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/tvJournalColumns.tsx",
+      "type": "File",
+      "label": "tvJournalColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/tvJournalColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10077,
+        "lineCount": 291,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/tvJournalTypes.ts",
+      "type": "File",
+      "label": "tvJournalTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/tvJournalTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 545,
+        "lineCount": 22,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/tvJournalUtils.ts",
+      "type": "File",
+      "label": "tvJournalUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/tvJournalUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4312,
+        "lineCount": 118,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/useTelesaleTvJournal.ts",
+      "type": "File",
+      "label": "useTelesaleTvJournal.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/useTelesaleTvJournal.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2907,
+        "lineCount": 87,
+        "ext": ".ts"
       }
     },
     {
@@ -90407,6 +90856,90 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:LightboxBottomBar:ws:apps/web",
+      "source": "uicomp:LightboxBottomBar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:LightboxBottomBar:token:color:primary",
+      "source": "uicomp:LightboxBottomBar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:LightboxOverlays:ws:apps/web",
+      "source": "uicomp:LightboxOverlays",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:LightboxOverlays:token:color:primary",
+      "source": "uicomp:LightboxOverlays",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:LightboxTopToolbar:ws:apps/web",
+      "source": "uicomp:LightboxTopToolbar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:LightboxTopToolbar:token:color:primary",
+      "source": "uicomp:LightboxTopToolbar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:lightboxContextMenu:ws:apps/web",
+      "source": "uicomp:lightboxContextMenu",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:lightboxContextMenu:token:color:primary",
+      "source": "uicomp:lightboxContextMenu",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:lightboxTypes:ws:apps/web",
+      "source": "uicomp:lightboxTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:lightboxTypes:token:color:primary",
+      "source": "uicomp:lightboxTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMosChatImageLightbox:ws:apps/web",
+      "source": "uicomp:useMosChatImageLightbox",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMosChatImageLightbox:token:color:primary",
+      "source": "uicomp:useMosChatImageLightbox",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:chat-constants:ws:apps/web",
       "source": "uicomp:chat-constants",
       "target": "ws:apps/web",
@@ -99332,8 +99865,50 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/page.tsx",
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlAgendaSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlAgendaSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlGameSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlGameSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlHeaderActions.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlHeaderActions.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlLeaderboard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlLeaderboard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlMetrics.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/LiveControlMetrics.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/live-control-constants.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/live-control-constants.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/useWorkshopLiveControl.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/workshops/[slug]/live/live-page-modules/useWorkshopLiveControl.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -99605,6 +100180,55 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/branches/branches-page-modules/BranchStoreTypeBadge.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/branches/branches-page-modules/BranchStoreTypeBadge.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/branches/branches-page-modules/BranchToggleActiveAction.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/branches/branches-page-modules/BranchToggleActiveAction.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/branches/branches-page-modules/BranchesGridView.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/branches/branches-page-modules/BranchesGridView.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/branches/branches-page-modules/BranchesKpiGrid.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/branches/branches-page-modules/BranchesKpiGrid.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/branches/branches-page-modules/branchesPageTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/branches/branches-page-modules/branchesPageTypes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/branches/branches-page-modules/branchesTableColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/branches/branches-page-modules/branchesTableColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/branches/branches-page-modules/useBranchesPage.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/branches/branches-page-modules/useBranchesPage.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/branches/components/BranchDetailDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/branches/components/BranchDetailDrawer.tsx",
       "target": "ws:packages/shared",
@@ -99614,13 +100238,6 @@
     {
       "id": "edge:file:apps/web/app/dashboard/branches/components/BranchFormDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/branches/components/BranchFormDrawer.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
-      "id": "edge:file:apps/web/app/dashboard/branches/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/branches/page.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -100928,13 +101545,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/loca/components/LocaColumns.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/loca/components/LocaColumns.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/loca/components/LocaStaffActivityTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/loca/components/LocaStaffActivityTab.tsx",
       "target": "ws:packages/shared",
@@ -100944,6 +101554,48 @@
     {
       "id": "edge:file:apps/web/app/dashboard/loca/components/LocaTouchpointCell.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/loca/components/LocaTouchpointCell.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/components/loca-columns/LocaColumnCells.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/components/loca-columns/LocaColumnCells.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/components/loca-columns/locaAllColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/components/loca-columns/locaAllColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/components/loca-columns/locaColumnHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/components/loca-columns/locaColumnHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/components/loca-columns/locaNewColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/components/loca-columns/locaNewColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/components/loca-columns/locaTouchpointColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/components/loca-columns/locaTouchpointColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/components/loca-columns/types.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/components/loca-columns/types.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -101714,6 +102366,34 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/TvJournalOverviewCards.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/TvJournalOverviewCards.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/tvJournalColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/tvJournalColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/tvJournalUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/tvJournalUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/useTelesaleTvJournal.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/useTelesaleTvJournal.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -109244,685 +109924,6 @@
       "label": "CALLS academySales.updateCourse"
     },
     {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy/workshops/registration/:registrationCode",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy/workshops/registration/:registrationCode",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy/workshops/registration/:registrationCode",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy/workshops/registration/:registrationCode",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy/workshops/registration/:registrationCode/google",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy/workshops/registration/:registrationCode/google",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy/workshops/registration/:registrationCode/google/status",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy/workshops/registration/:registrationCode/google/status",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy/workshops/registration/:registrationCode/zalo/authorize",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy/workshops/registration/:registrationCode/zalo/authorize",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy/workshops/registration/zalo/callback",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy/workshops/registration/zalo/callback",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy/workshops/registration/:registrationCode/zalo",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy/workshops/registration/:registrationCode/zalo",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy/workshops/registration/:registrationCode/zalo/status",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy/workshops/registration/:registrationCode/zalo/status",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy/workshops/shared/:displayCode",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy/workshops/shared/:displayCode",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy/workshops/select-participant",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy/workshops/select-participant",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy/workshops/join-google",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy/workshops/join-google",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy/workshops/redeem",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy/workshops/redeem",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy/workshops/display/redeem",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy/workshops/display/redeem",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy/workshops/state",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy/workshops/state",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy/workshops/answer",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy/workshops/answer",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy/workshops/ws",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy/workshops/ws",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy-sales/workshops",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy-sales/workshops",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy-sales/workshops/resources",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy-sales/workshops/resources",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy-sales/workshops/slug/:slug",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy-sales/workshops/slug/:slug",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy-sales/workshops/:workshopId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy-sales/workshops/:workshopId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy-sales/workshops/:workshopId/clone-preview",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy-sales/workshops/:workshopId/clone-preview",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/clone",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/clone",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/hero-image/upload",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/hero-image/upload",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/quiz-images/upload",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/quiz-images/upload",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/menu-items",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-items",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/menu-templates",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-templates",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/refresh",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/refresh",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/apply",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-templates/:templateId/apply",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/menu-items/upload-image",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/menu-items/upload-image",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/menu-service",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/menu-service",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/equipment-service",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/equipment-service",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/design-service",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/design-service",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:DELETE:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/menu-items/:menuItemId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/refresh",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/refresh",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/apply",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-templates/:templateId/apply",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/equipment-images/upload",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-images/upload",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/equipment-packages/:equipmentPackageId/images/:imageId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/designs",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/designs",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/design-templates",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/design-templates",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/design-templates/:templateId/refresh",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/design-templates/:templateId/refresh",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/design-templates/:templateId/apply",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/design-templates/:templateId/apply",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/design-images/upload",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/design-images/upload",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/designs/:designId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/designs/:designId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:DELETE:/api/academy-sales/workshops/:workshopId/designs/:designId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/designs/:designId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/designs/:designId/images",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/designs/:designId/images",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/designs/:designId/images/:imageId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/designs/:designId/images/:imageId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:DELETE:/api/academy-sales/workshops/:workshopId/designs/:designId/images/:imageId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/designs/:designId/images/:imageId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId/command",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId/command",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/agenda",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/agenda",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/agenda/reorder",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/agenda/reorder",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:DELETE:/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/agenda/:agendaItemId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy-sales/workshops/:workshopId/timeline-report",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy-sales/workshops/:workshopId/timeline-report",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy-sales/workshops/:workshopId/live-state",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy-sales/workshops/:workshopId/live-state",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/display-settings",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/display-settings",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/quizzes",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/quizzes",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/quizzes/:quizId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/quizzes/:quizId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/agenda-item",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/agenda-item",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/clone",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/clone",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/save-template",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/save-template",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/template/refresh",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/template/refresh",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/quizzes/from-template/:templateId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/quizzes/from-template/:templateId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions/:questionId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions/:questionId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:DELETE:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions/:questionId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/questions/:questionId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/command",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/quizzes/:quizId/command",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy-sales/workshops/:workshopId/rewards",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy-sales/workshops/:workshopId/rewards",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/rewards/:rewardId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/rewards/:rewardId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy-sales/workshops/:workshopId/bonuses",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy-sales/workshops/:workshopId/bonuses",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/bonuses/:bonusId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/bonuses/:bonusId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy-sales/workshops/:workshopId/participants",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy-sales/workshops/:workshopId/participants",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/participants",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/walk-ins",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/walk-ins",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/scan-check-in",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/scan-check-in",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy-sales/workshops/:workshopId/participants/:participantId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy-sales/workshops/:workshopId/participants/:participantId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/care",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/care",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/participants/:participantId/selections",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/participants/:participantId/selections",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/check-in",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/check-in",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/reissue-qr",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/reissue-qr",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:DELETE:/api/academy-sales/workshops/:workshopId/participants/:participantId/fee/:paymentId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/waive-fee",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/waive-fee",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:PUT:/api/academy-sales/workshops/:workshopId/participants/:participantId/pricing",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:PUT:/api/academy-sales/workshops/:workshopId/participants/:participantId/pricing",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/consent",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/consent",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/photos/upload-intent",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/photos/upload-intent",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/photos/confirm",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/photos/confirm",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/instructor",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:POST:/api/academy-sales/workshops/:workshopId/participants/:participantId/instructor",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/workshops/[slug]/live:route:GET:/api/academy-sales/workshops/:workshopId/talent-leaderboard",
-      "source": "page:/dashboard/academy-leads/workshops/[slug]/live",
-      "target": "route:GET:/api/academy-sales/workshops/:workshopId/talent-leaderboard",
-      "type": "API_CALL",
-      "label": "CALLS academySales.workshops"
-    },
-    {
       "id": "edge:page:/dashboard/academy-leads/workshops/[slug]:route:GET:/api/academy/workshops/registration/:registrationCode",
       "source": "page:/dashboard/academy-leads/workshops/[slug]",
       "target": "route:GET:/api/academy/workshops/registration/:registrationCode",
@@ -112658,223 +112659,6 @@
       "target": "route:POST:/api/telemetry/frontend-issues/sync",
       "type": "API_CALL",
       "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/stats-summary",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/stats-summary",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/item-history",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/item-history",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/lash-benchmarks",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/lash-benchmarks",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/lash-benchmarks/seed",
-      "source": "page:/dashboard/branches",
-      "target": "route:POST:/api/catalog/lash-benchmarks/seed",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/branches/stats",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/branches/stats",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/combos",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/combos",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/combo-live",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/combo-live",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/combos/:id",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/combos/:id",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/combos",
-      "source": "page:/dashboard/branches",
-      "target": "route:POST:/api/catalog/combos",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:PUT:/api/catalog/combos/:id",
-      "source": "page:/dashboard/branches",
-      "target": "route:PUT:/api/catalog/combos/:id",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:DELETE:/api/catalog/combos/:id",
-      "source": "page:/dashboard/branches",
-      "target": "route:DELETE:/api/catalog/combos/:id",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/products",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/products",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/products/:id",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/products/:id",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/products",
-      "source": "page:/dashboard/branches",
-      "target": "route:POST:/api/catalog/products",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:PUT:/api/catalog/products/:id",
-      "source": "page:/dashboard/branches",
-      "target": "route:PUT:/api/catalog/products/:id",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:DELETE:/api/catalog/products/:id",
-      "source": "page:/dashboard/branches",
-      "target": "route:DELETE:/api/catalog/products/:id",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/groups",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/groups",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/types",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/types",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/services",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/services",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/services/select",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/services/select",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/services/:id",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/services/:id",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/services",
-      "source": "page:/dashboard/branches",
-      "target": "route:POST:/api/catalog/services",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/catalog/services/:id/live-combo-check",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/catalog/services/:id/live-combo-check",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:PUT:/api/catalog/services/:id",
-      "source": "page:/dashboard/branches",
-      "target": "route:PUT:/api/catalog/services/:id",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:PATCH:/api/catalog/services/:id",
-      "source": "page:/dashboard/branches",
-      "target": "route:PATCH:/api/catalog/services/:id",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:DELETE:/api/catalog/services/:id",
-      "source": "page:/dashboard/branches",
-      "target": "route:DELETE:/api/catalog/services/:id",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/services/:id/restore",
-      "source": "page:/dashboard/branches",
-      "target": "route:POST:/api/catalog/services/:id/restore",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/services/reorder",
-      "source": "page:/dashboard/branches",
-      "target": "route:POST:/api/catalog/services/reorder",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:POST:/api/catalog/services/bulk-status",
-      "source": "page:/dashboard/branches",
-      "target": "route:POST:/api/catalog/services/bulk-status",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/ios/services/catalog",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/ios/services/catalog",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
-    },
-    {
-      "id": "edge:page:/dashboard/branches:route:GET:/api/ios/products/catalog",
-      "source": "page:/dashboard/branches",
-      "target": "route:GET:/api/ios/products/catalog",
-      "type": "API_CALL",
-      "label": "CALLS catalog.branches"
     },
     {
       "id": "edge:page:/dashboard/bug-reports:route:PATCH:/api/bug-reports/:id/triage",
@@ -135880,8 +135664,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5226,
-    "totalEdges": 9773,
+    "totalNodes": 5261,
+    "totalEdges": 9678,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -135889,17 +135673,17 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 614,
-      "File": 1998
+      "UIComponent": 620,
+      "File": 2027
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 680,
-      "USES_TOKEN": 616,
-      "IMPORTS": 1230,
+      "RENDERS": 686,
+      "USES_TOKEN": 622,
+      "IMPORTS": 1251,
       "QUERIES_MODEL": 602,
-      "API_CALL": 4100
+      "API_CALL": 3972
     },
     "fastifyRouteCount": 777,
     "prismaModelCount": 183,
