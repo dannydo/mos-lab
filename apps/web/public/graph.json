@@ -39662,6 +39662,102 @@
       }
     },
     {
+      "id": "uicomp:ConversationActionSheet",
+      "type": "UIComponent",
+      "label": "<ConversationActionSheet />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-inbox/ConversationActionSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ConversationActionSheet",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:InboxColleagueSearchSection",
+      "type": "UIComponent",
+      "label": "<InboxColleagueSearchSection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-inbox/InboxColleagueSearchSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "InboxColleagueSearchSection",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:InboxConversationItem",
+      "type": "UIComponent",
+      "label": "<InboxConversationItem />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-inbox/InboxConversationItem.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "InboxConversationItem",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:InboxSearchAndFilterBar",
+      "type": "UIComponent",
+      "label": "<InboxSearchAndFilterBar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-inbox/InboxSearchAndFilterBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "InboxSearchAndFilterBar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:NewDmDirectoryModal",
+      "type": "UIComponent",
+      "label": "<NewDmDirectoryModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-inbox/NewDmDirectoryModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "NewDmDirectoryModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:inboxHelpers",
+      "type": "UIComponent",
+      "label": "<inboxHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-inbox/inboxHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "inboxHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:inboxTypes",
+      "type": "UIComponent",
+      "label": "<inboxTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-inbox/inboxTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "inboxTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMobileInboxState",
+      "type": "UIComponent",
+      "label": "<useMobileInboxState />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-inbox/useMobileInboxState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMobileInboxState",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:TaskDetailActionFooter",
       "type": "UIComponent",
       "label": "<TaskDetailActionFooter />",
@@ -55169,8 +55265,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantOverlays.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 42637,
-        "lineCount": 989,
+        "sizeBytes": 4640,
+        "lineCount": 156,
         "ext": ".tsx"
       }
     },
@@ -55483,6 +55579,97 @@
       "metadata": {
         "sizeBytes": 1126,
         "lineCount": 20,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/AddExistingParticipantsModal.tsx",
+      "type": "File",
+      "label": "AddExistingParticipantsModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/AddExistingParticipantsModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3465,
+        "lineCount": 103,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/ParticipantCareDrawer.tsx",
+      "type": "File",
+      "label": "ParticipantCareDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/ParticipantCareDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13638,
+        "lineCount": 339,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/ParticipantFeeModal.tsx",
+      "type": "File",
+      "label": "ParticipantFeeModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/ParticipantFeeModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12108,
+        "lineCount": 283,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/ParticipantPricingSection.tsx",
+      "type": "File",
+      "label": "ParticipantPricingSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/ParticipantPricingSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5968,
+        "lineCount": 137,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/WalkInParticipantModal.tsx",
+      "type": "File",
+      "label": "WalkInParticipantModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/WalkInParticipantModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2282,
+        "lineCount": 68,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/participant-overlay-types.ts",
+      "type": "File",
+      "label": "participant-overlay-types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/participant-overlay-types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7381,
+        "lineCount": 220,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/useWorkshopParticipantPricing.ts",
+      "type": "File",
+      "label": "useWorkshopParticipantPricing.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/useWorkshopParticipantPricing.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2283,
+        "lineCount": 67,
         "ext": ".ts"
       }
     },
@@ -60265,8 +60452,8 @@
       "filePath": "apps/web/app/dashboard/funds/components/FundDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36073,
-        "lineCount": 952,
+        "sizeBytes": 5258,
+        "lineCount": 143,
         "ext": ".tsx"
       }
     },
@@ -60294,6 +60481,136 @@
         "sizeBytes": 22082,
         "lineCount": 629,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundDrawerHeader.tsx",
+      "type": "File",
+      "label": "FundDrawerHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-detail-drawer/FundDrawerHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2938,
+        "lineCount": 97,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundLedgerTab.tsx",
+      "type": "File",
+      "label": "FundLedgerTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-detail-drawer/FundLedgerTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2373,
+        "lineCount": 77,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundOperationalModals.tsx",
+      "type": "File",
+      "label": "FundOperationalModals.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-detail-drawer/FundOperationalModals.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3731,
+        "lineCount": 141,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundOverviewTab.tsx",
+      "type": "File",
+      "label": "FundOverviewTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-detail-drawer/FundOverviewTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8116,
+        "lineCount": 172,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundPeriodsTab.tsx",
+      "type": "File",
+      "label": "FundPeriodsTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-detail-drawer/FundPeriodsTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4343,
+        "lineCount": 90,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundProposalsTab.tsx",
+      "type": "File",
+      "label": "FundProposalsTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-detail-drawer/FundProposalsTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2085,
+        "lineCount": 67,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundStatusBadge.tsx",
+      "type": "File",
+      "label": "FundStatusBadge.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-detail-drawer/FundStatusBadge.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 993,
+        "lineCount": 31,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/fundDetailHelpers.ts",
+      "type": "File",
+      "label": "fundDetailHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-detail-drawer/fundDetailHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2187,
+        "lineCount": 64,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/types.ts",
+      "type": "File",
+      "label": "types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-detail-drawer/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1153,
+        "lineCount": 54,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/useFundDetailOperations.ts",
+      "type": "File",
+      "label": "useFundDetailOperations.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fund-detail-drawer/useFundDetailOperations.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12817,
+        "lineCount": 378,
+        "ext": ".ts"
       }
     },
     {
@@ -61220,6 +61537,84 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/nyc/nyc-page-modules/NycHeaderBanner.tsx",
+      "type": "File",
+      "label": "NycHeaderBanner.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/nyc/nyc-page-modules/NycHeaderBanner.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6609,
+        "lineCount": 160,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/nyc/nyc-page-modules/NycToolbarSection.tsx",
+      "type": "File",
+      "label": "NycToolbarSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/nyc/nyc-page-modules/NycToolbarSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7093,
+        "lineCount": 188,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/nyc/nyc-page-modules/NycTouchpointSettingsModal.tsx",
+      "type": "File",
+      "label": "NycTouchpointSettingsModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/nyc/nyc-page-modules/NycTouchpointSettingsModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8573,
+        "lineCount": 214,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/nyc/nyc-page-modules/nycPageTypes.ts",
+      "type": "File",
+      "label": "nycPageTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/nyc/nyc-page-modules/nycPageTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1080,
+        "lineCount": 42,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/nyc/nyc-page-modules/nycPageUtils.ts",
+      "type": "File",
+      "label": "nycPageUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/nyc/nyc-page-modules/nycPageUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1965,
+        "lineCount": 52,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/nyc/nyc-page-modules/useNycPageController.ts",
+      "type": "File",
+      "label": "useNycPageController.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/nyc/nyc-page-modules/useNycPageController.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9699,
+        "lineCount": 335,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/nyc/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -61227,8 +61622,8 @@
       "filePath": "apps/web/app/dashboard/nyc/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36136,
-        "lineCount": 966,
+        "sizeBytes": 9224,
+        "lineCount": 286,
         "ext": ".tsx"
       }
     },
@@ -64314,6 +64709,58 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/today/hooks/use-today-data/todayDataTypes.ts",
+      "type": "File",
+      "label": "todayDataTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/hooks/use-today-data/todayDataTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4280,
+        "lineCount": 173,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/hooks/use-today-data/todayDataUtils.ts",
+      "type": "File",
+      "label": "todayDataUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/hooks/use-today-data/todayDataUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15366,
+        "lineCount": 432,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/hooks/use-today-data/useTodayFetching.ts",
+      "type": "File",
+      "label": "useTodayFetching.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/hooks/use-today-data/useTodayFetching.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10108,
+        "lineCount": 274,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/hooks/use-today-data/useTodayFilters.ts",
+      "type": "File",
+      "label": "useTodayFilters.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/hooks/use-today-data/useTodayFilters.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6991,
+        "lineCount": 188,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/today/hooks/useTodayData.ts",
       "type": "File",
       "label": "useTodayData.ts",
@@ -64321,8 +64768,8 @@
       "filePath": "apps/web/app/dashboard/today/hooks/useTodayData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 34852,
-        "lineCount": 955,
+        "sizeBytes": 6274,
+        "lineCount": 205,
         "ext": ".ts"
       }
     },
@@ -95486,6 +95933,118 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:ConversationActionSheet:ws:apps/web",
+      "source": "uicomp:ConversationActionSheet",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ConversationActionSheet:token:color:primary",
+      "source": "uicomp:ConversationActionSheet",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:InboxColleagueSearchSection:ws:apps/web",
+      "source": "uicomp:InboxColleagueSearchSection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:InboxColleagueSearchSection:token:color:primary",
+      "source": "uicomp:InboxColleagueSearchSection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:InboxConversationItem:ws:apps/web",
+      "source": "uicomp:InboxConversationItem",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:InboxConversationItem:token:color:primary",
+      "source": "uicomp:InboxConversationItem",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:InboxSearchAndFilterBar:ws:apps/web",
+      "source": "uicomp:InboxSearchAndFilterBar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:InboxSearchAndFilterBar:token:color:primary",
+      "source": "uicomp:InboxSearchAndFilterBar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:NewDmDirectoryModal:ws:apps/web",
+      "source": "uicomp:NewDmDirectoryModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:NewDmDirectoryModal:token:color:primary",
+      "source": "uicomp:NewDmDirectoryModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:inboxHelpers:ws:apps/web",
+      "source": "uicomp:inboxHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:inboxHelpers:token:color:primary",
+      "source": "uicomp:inboxHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:inboxTypes:ws:apps/web",
+      "source": "uicomp:inboxTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:inboxTypes:token:color:primary",
+      "source": "uicomp:inboxTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMobileInboxState:ws:apps/web",
+      "source": "uicomp:useMobileInboxState",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMobileInboxState:token:color:primary",
+      "source": "uicomp:useMobileInboxState",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:TaskDetailActionFooter:ws:apps/web",
       "source": "uicomp:TaskDetailActionFooter",
       "target": "ws:apps/web",
@@ -103599,13 +104158,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantOverlays.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantOverlays.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantSelectionsModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantSelectionsModal.tsx",
       "target": "ws:packages/shared",
@@ -103713,6 +104265,55 @@
     {
       "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-equipment-manager/useAcademyWorkshopEquipmentManager.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-equipment-manager/useAcademyWorkshopEquipmentManager.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/AddExistingParticipantsModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/AddExistingParticipantsModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/ParticipantCareDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/ParticipantCareDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/ParticipantFeeModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/ParticipantFeeModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/ParticipantPricingSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/ParticipantPricingSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/WalkInParticipantModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/WalkInParticipantModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/participant-overlay-types.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/participant-overlay-types.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/useWorkshopParticipantPricing.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-workshop-participant-overlays/useWorkshopParticipantPricing.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -105573,13 +106174,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/funds/components/FundDetailDrawer.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/funds/components/FundDetailDrawer.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/funds/components/FundFormModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/funds/components/FundFormModal.tsx",
       "target": "ws:packages/shared",
@@ -105589,6 +106183,48 @@
     {
       "id": "edge:file:apps/web/app/dashboard/funds/components/FundModals.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/funds/components/FundModals.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundLedgerTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundLedgerTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundOperationalModals.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundOperationalModals.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundProposalsTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundProposalsTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundStatusBadge.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/FundStatusBadge.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-detail-drawer/types.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/types.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fund-detail-drawer/useFundDetailOperations.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fund-detail-drawer/useFundDetailOperations.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -105979,8 +106615,29 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/nyc/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/nyc/page.tsx",
+      "id": "edge:file:apps/web/app/dashboard/nyc/nyc-page-modules/NycHeaderBanner.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/nyc/nyc-page-modules/NycHeaderBanner.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/nyc/nyc-page-modules/nycPageTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/nyc/nyc-page-modules/nycPageTypes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/nyc/nyc-page-modules/nycPageUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/nyc/nyc-page-modules/nycPageUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/nyc/nyc-page-modules/useNycPageController.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/nyc/nyc-page-modules/useNycPageController.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -107008,8 +107665,15 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/today/hooks/useTodayData.ts:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/today/hooks/useTodayData.ts",
+      "id": "edge:file:apps/web/app/dashboard/today/hooks/use-today-data/todayDataUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/hooks/use-today-data/todayDataUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/today/hooks/use-today-data/useTodayFetching.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/today/hooks/use-today-data/useTodayFetching.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -132440,8 +133104,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5485,
-    "totalEdges": 8820,
+    "totalNodes": 5520,
+    "totalEdges": 8851,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -132449,15 +133113,15 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 708,
-      "File": 2163
+      "UIComponent": 716,
+      "File": 2190
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 774,
-      "USES_TOKEN": 710,
-      "IMPORTS": 1329,
+      "RENDERS": 782,
+      "USES_TOKEN": 718,
+      "IMPORTS": 1344,
       "QUERIES_MODEL": 602,
       "API_CALL": 2860
     },

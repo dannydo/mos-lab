@@ -1,190 +1,55 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
-import { apiClient } from '../../../../lib/api-client';
-import { DEFAULT_BOOKER_TEAMS, BookerTeamConfig } from '../components/BookerTeamConfigModal';
-import type { RevenueHourlyResponse } from '@mos-lab/shared';
-import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
+import { usePreviousReportPeriod } from '~/hooks/usePreviousReportPeriod';
 import { useTodaySandbox } from '../context/SandboxModeContext';
+import type { UseTodayDataOptions } from './use-today-data/todayDataTypes';
 import {
-  getTrainingMockBranchesData,
-  getTrainingMockBookings,
-  getSalesMockBranchesData,
-  getSalesMockBookings,
-} from './mockTodayData';
+  buildActiveShopData,
+  buildAllComingList,
+  combineBookingsWithCategory,
+  computeBookingBranchCounts,
+  filterAndSortComingList,
+  filterBookingsList,
+  getBranchLabel,
+  getDashboardDateRange,
+} from './use-today-data/todayDataUtils';
+import { useTodayFetching } from './use-today-data/useTodayFetching';
+import { useTodayFilters } from './use-today-data/useTodayFilters';
 
-dayjs.extend(isoWeek);
-
-export interface BookingData {
-  key: string;
-  customerId?: number;
-  customer: string;
-  avatar?: string | null;
-  phone: string;
-  group: 'combo_live' | 'combo_dead' | 'single';
-  promo: string | null;
-  booker: string;
-  channel?: string;
-  category?: 'combo' | 'oc' | 'other';
-  createdTime: string;
-  avatarColor?: string;
-  code?: string;
-  email?: string;
-  ltv?: string;
-  bookingsCount?: number;
-  diamonds?: number;
-  frequency?: string;
-  gender?: string;
-  dob?: string;
-  daysAway?: string;
-  favoriteDay?: string;
-  oc?: string;
-  historyService?: string;
-  historyBranch?: string;
-  historyCv?: string;
-  historyCcIn?: string;
-  historyCcOut?: string;
-  historyBooker?: string;
-  historyDate?: string;
-  historyStatus?: string;
-  historyNote?: string;
-  branchName?: string;
-  bookingDateTime?: string;
-  requestedCv?: string;
-  bookingNote?: string;
-  status?: 'completed' | 'serving' | 'arrived' | 'confirmed' | 'pending' | 'late';
-}
-
-export interface ComingClientData {
-  key: string;
-  customerId?: number;
-  time: string;
-  customer: string;
-  avatar?: string | null;
-  phone: string;
-  group: 'combo_live' | 'combo_dead' | 'single';
-  promo: string | null;
-  booker: string;
-  channel?: string;
-  category?: string;
-  branchKey?: string;
-  cc: string;
-  cv: string;
-  service: string;
-  status: 'completed' | 'serving' | 'arrived' | 'confirmed' | 'pending' | 'late';
-  avatarColor?: string;
-  code?: string;
-  email?: string;
-  ltv?: string;
-  price?: number;
-  tax?: number;
-  bookingsCount?: number;
-  diamonds?: number;
-  frequency?: string;
-  gender?: string;
-  dob?: string;
-  daysAway?: string;
-  favoriteDay?: string;
-  oc?: string;
-  historyService?: string;
-  historyBranch?: string;
-  historyCv?: string;
-  historyCcIn?: string;
-  historyCcOut?: string;
-  historyBooker?: string;
-  historyDate?: string;
-  historyStatus?: string;
-  historyNote?: string;
-}
-
-export interface ShopCCData {
-  name: string;
-  doing: string;
-  clients: number;
-  combos: number;
-  revenue: number;
-  revLe?: number;
-  revCombo?: number;
-  revProduct?: number;
-  netRevenue?: number;
-  netLe?: number;
-  netCombo?: number;
-  netProduct?: number;
-  shift: 'sáng' | 'chiều' | 'full' | 'off';
-  attendance: 'none' | 'checked_in' | 'checked_out' | 'late';
-}
-
-export interface ShopCVData {
-  id?: number;
-  name: string;
-  avatarUrl?: string | null;
-  branchName?: string;
-  doing: string;
-  clients: number;
-  bookedCount?: number;
-  doneCount?: number;
-  shift: 'sáng' | 'chiều' | 'full' | 'off';
-  attendance: 'none' | 'checked_in' | 'checked_out' | 'late';
-  status: 'busy' | 'available';
-  isOff?: boolean;
-  offReason?: string;
-  offType?: string;
-}
-
-export interface BranchDetail {
-  revLe: number;
-  revCombo: number;
-  revProduct: number;
-  netLe?: number;
-  netCombo?: number;
-  netProduct?: number;
-  cc: ShopCCData[];
-  cv: ShopCVData[];
-  coming: ComingClientData[];
-}
-
-export interface UseTodayDataOptions {
-  onSuccess?: (msg: string) => void;
-  onError?: (msg: string) => void;
-}
-
-interface PreviousTodaySnapshot {
-  branchesData: Record<string, BranchDetail>;
-  bookingsCombo: BookingData[];
-  bookingsOc: BookingData[];
-  bookingsOther: BookingData[];
-}
-
-function getDashboardDateRange(date: dayjs.Dayjs, mode: 'day' | 'week' | 'month') {
-  if (mode === 'week') {
-    return {
-      dateFrom: date.startOf('isoWeek').format('YYYY-MM-DD'),
-      dateTo: date.endOf('isoWeek').format('YYYY-MM-DD'),
-    };
-  }
-  if (mode === 'month') {
-    return {
-      dateFrom: date.startOf('month').format('YYYY-MM-DD'),
-      dateTo: date.endOf('month').format('YYYY-MM-DD'),
-    };
-  }
-  const dateValue = date.format('YYYY-MM-DD');
-  return { dateFrom: dateValue, dateTo: dateValue };
-}
+export type {
+  BookingData,
+  ComingClientData,
+  ShopCCData,
+  ShopCVData,
+  BranchDetail,
+  UseTodayDataOptions,
+} from './use-today-data/todayDataTypes';
 
 export function useTodayData(options?: UseTodayDataOptions) {
   const sandbox = useTodaySandbox();
   const optionsRef = useRef(options);
-  const dashboardRequestVersion = useRef(0);
-  const revenueRequestVersion = useRef(0);
   useEffect(() => {
     optionsRef.current = options;
   }, [options]);
-  const [loading, setLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null);
-  const [dateRangeMode, setDateRangeMode] = useState<'day' | 'week' | 'month'>('day');
+
+  const filters = useTodayFilters();
+  const {
+    selectedDate,
+    dateRangeMode,
+    bookingFilter,
+    bookingBranch,
+    comingBranch,
+    comingCategory,
+    shopBranch,
+    selectedBooker,
+    teamConfig,
+    showTax,
+    showRevenueView,
+    resetCountdown,
+  } = filters;
+
   const comparisonRange = useMemo<[dayjs.Dayjs, dayjs.Dayjs] | undefined>(() => {
     if (!selectedDate) return undefined;
     const { dateFrom, dateTo } = getDashboardDateRange(selectedDate, dateRangeMode);
@@ -192,681 +57,71 @@ export function useTodayData(options?: UseTodayDataOptions) {
   }, [dateRangeMode, selectedDate]);
   const previousPeriod = usePreviousReportPeriod(comparisonRange, dateRangeMode);
 
-  // Auto-refresh states
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [refreshInterval, setRefreshInterval] = useState(60); // default to 60s
-  const [countdown, setCountdown] = useState(60);
-  const [refreshResetSignal, setRefreshResetSignal] = useState(0);
-  const [silentLoading, setSilentLoading] = useState(false);
-
-  // Tabs states
-  const [bookingFilter, setBookingFilter] = useState<'all' | 'combo' | 'oc' | 'other'>('all');
-  const [bookingBranch, setBookingBranch] = useState<'all' | 'detham' | 'estella'>('all');
-  const [comingBranch, setComingBranch] = useState<'detham' | 'estella' | 'all'>('detham');
-  const [comingCategory, setComingCategory] = useState<'all' | 'combo' | 'oc' | 'other'>('all');
-  const [shopBranch, setShopBranch] = useState<'detham' | 'estella' | 'all'>('detham');
-  const [selectedBooker, setSelectedBooker] = useState<string | null>(null);
-  const [teamConfig, setTeamConfig] = useState<BookerTeamConfig>(DEFAULT_BOOKER_TEAMS);
-  const [teamModalVisible, setTeamModalVisible] = useState(false);
-
-  // Drawer states
-  const [drawerVisible, setDrawerVisible] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<SafeAny | null>(null);
-  const [showTax, setShowTax] = useState(true);
-
-  // Data states
-  const [branchesData, setBranchesData] = useState<Record<string, BranchDetail>>({
-    detham: { revLe: 0, revCombo: 0, revProduct: 0, cc: [], cv: [], coming: [] },
-    pxl: { revLe: 0, revCombo: 0, revProduct: 0, cc: [], cv: [], coming: [] },
-    estella: { revLe: 0, revCombo: 0, revProduct: 0, cc: [], cv: [], coming: [] },
+  const fetching = useTodayFetching({
+    sandbox,
+    selectedDate,
+    dateRangeMode,
+    previousPeriod,
+    bookingBranch,
+    selectedBooker,
+    showRevenueView,
+    optionsRef,
   });
-
-  const [bookingsCombo, setBookingsCombo] = useState<BookingData[]>([]);
-  const [bookingsOc, setBookingsOc] = useState<BookingData[]>([]);
-  const [bookingsOther, setBookingsOther] = useState<BookingData[]>([]);
-  const [previousDashboardData, setPreviousDashboardData] = useState<PreviousTodaySnapshot | null>(null);
-
-  // Revenue View states
-  const [revenueData, setRevenueData] = useState<RevenueHourlyResponse | null>(null);
-  const [previousRevenueData, setPreviousRevenueData] = useState<RevenueHourlyResponse | null>(null);
-  const [revenueLoading, setRevenueLoading] = useState(false);
-  const [showRevenueView, setShowRevenueView] = useState(false);
-
-  // Load persisted states on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-
-      const persistedTeamConfig = localStorage.getItem('booker_team_config');
-      if (persistedTeamConfig) {
-        try {
-          const parsed = JSON.parse(persistedTeamConfig);
-          if (parsed && typeof parsed === 'object') {
-            setTeamConfig(parsed);
-          }
-        } catch (e) {
-          // ignore
-        }
-      }
-      const persistedDateMode = urlParams.get('dateRangeMode') || localStorage.getItem('today_date_range_mode');
-      if (persistedDateMode && ['day', 'week', 'month'].includes(persistedDateMode)) {
-        setDateRangeMode(persistedDateMode as 'day' | 'week' | 'month');
-      }
-
-      const persistedDate = urlParams.get('date') || localStorage.getItem('today_selected_date');
-      setSelectedDate(persistedDate ? dayjs(persistedDate) : dayjs());
-
-      const persistedShowTax = localStorage.getItem('today_show_tax');
-      if (persistedShowTax !== null) setShowTax(persistedShowTax === 'true');
-
-      const persistedRevenueView = localStorage.getItem('today_show_revenue_view');
-      if (persistedRevenueView !== null) setShowRevenueView(persistedRevenueView === 'true');
-
-      const urlBookingFilter = urlParams.get('bookingFilter') || urlParams.get('tab');
-      const persistedBookingFilter = urlBookingFilter || localStorage.getItem('today_booking_filter');
-      if (persistedBookingFilter && ['all', 'combo', 'oc', 'other'].includes(persistedBookingFilter)) {
-        setBookingFilter(persistedBookingFilter as SafeAny);
-      }
-
-      const urlBookingBranch = urlParams.get('bookingBranch');
-      const persistedBookingBranch = urlBookingBranch || localStorage.getItem('today_booking_branch');
-      if (persistedBookingBranch && ['all', 'detham', 'estella'].includes(persistedBookingBranch)) {
-        setBookingBranch(persistedBookingBranch as SafeAny);
-      }
-
-      const urlComingBranch = urlParams.get('comingBranch');
-      const persistedComingBranch = urlComingBranch || localStorage.getItem('today_coming_branch');
-      if (persistedComingBranch && ['detham', 'estella', 'all'].includes(persistedComingBranch)) {
-        setComingBranch(persistedComingBranch as SafeAny);
-      }
-
-      const urlComingCategory = urlParams.get('comingCategory');
-      const persistedComingCategory = urlComingCategory || localStorage.getItem('today_coming_category');
-      if (persistedComingCategory && ['all', 'combo', 'oc', 'other'].includes(persistedComingCategory)) {
-        setComingCategory(persistedComingCategory as SafeAny);
-      }
-
-      const urlShopBranch = urlParams.get('shopBranch');
-      const persistedShopBranch = urlShopBranch || localStorage.getItem('today_shop_branch');
-      if (persistedShopBranch && ['detham', 'estella', 'all'].includes(persistedShopBranch)) {
-        setShopBranch(persistedShopBranch as SafeAny);
-      }
-
-      const urlBooker = urlParams.get('booker');
-      const persistedBooker = urlBooker || localStorage.getItem('today_selected_booker');
-      if (persistedBooker) {
-        setSelectedBooker(persistedBooker);
-      }
-
-      const persistedAutoRefresh = localStorage.getItem('today_auto_refresh');
-      if (persistedAutoRefresh !== null) setAutoRefresh(persistedAutoRefresh === 'true');
-
-      const persistedRefreshInterval = localStorage.getItem('today_refresh_interval');
-      if (persistedRefreshInterval !== null) {
-        const parsed = parseInt(persistedRefreshInterval, 10);
-        if (!isNaN(parsed)) {
-          setRefreshInterval(parsed);
-          setCountdown(parsed);
-        }
-      }
-    }
-  }, []);
-
-  const openCustomerDrawer = (record: SafeAny) => {
-    setSelectedCustomer(record);
-    setDrawerVisible(true);
-  };
-
-  const fetchDashboardData = useCallback(
-    async (
-      date: dayjs.Dayjs,
-      mode: 'day' | 'week' | 'month' = 'day',
-      isSilent = false,
-      includePreviousPeriod = true
-    ) => {
-      const requestVersion = ++dashboardRequestVersion.current;
-      if (!isSilent) {
-        setLoading(true);
-      } else {
-        setSilentLoading(true);
-      }
-
-      if (sandbox.isSandbox) {
-        if (sandbox.mode === 'training') {
-          const mockBranches = getTrainingMockBranchesData(sandbox.staffOverrides);
-          const mockBookings = getTrainingMockBookings();
-          setBranchesData(mockBranches);
-          setBookingsCombo(mockBookings.combo);
-          setBookingsOc(mockBookings.oc);
-          setBookingsOther(mockBookings.other);
-          setPreviousDashboardData(null);
-        } else if (sandbox.mode === 'sales') {
-          const mockBranches = getSalesMockBranchesData(sandbox.simulatedCombos, sandbox.simulatedProducts);
-          const mockBookings = getSalesMockBookings(sandbox.simulatedCombos, sandbox.simulatedProducts);
-          setBranchesData(mockBranches);
-          setBookingsCombo(mockBookings.combo);
-          setBookingsOc(mockBookings.oc);
-          setBookingsOther(mockBookings.other);
-          setPreviousDashboardData(null);
-        }
-        if (!isSilent) {
-          setLoading(false);
-        } else {
-          setSilentLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const previousRequest =
-          includePreviousPeriod && previousPeriod
-            ? apiClient.dashboard.getToday(previousPeriod.params).catch((error) => {
-                console.error('Fetch previous dashboard period error:', error);
-                return null;
-              })
-            : Promise.resolve(null);
-        const [response, previousData] = await Promise.all([
-          apiClient.dashboard.getToday(getDashboardDateRange(date, mode)),
-          previousRequest,
-        ]);
-        if (requestVersion !== dashboardRequestVersion.current) return;
-        const data = response as SafeAny;
-        setBranchesData(data.branchesData);
-        setBookingsCombo(data.bookingsCombo);
-        setBookingsOc(data.bookingsOc || []);
-        setBookingsOther(data.bookingsOther);
-        setPreviousDashboardData(
-          previousData
-            ? {
-                branchesData: previousData.branchesData as Record<string, BranchDetail>,
-                bookingsCombo: previousData.bookingsCombo as BookingData[],
-                bookingsOc: (previousData.bookingsOc || []) as BookingData[],
-                bookingsOther: previousData.bookingsOther as BookingData[],
-              }
-            : null
-        );
-      } catch (err) {
-        if (requestVersion !== dashboardRequestVersion.current) return;
-        console.error('Fetch dashboard today error:', err);
-        if (!isSilent) {
-          optionsRef.current?.onError?.('Lỗi khi tải dữ liệu vận hành thực tế!');
-        }
-      } finally {
-        if (requestVersion !== dashboardRequestVersion.current) return;
-        if (!isSilent) {
-          setLoading(false);
-        } else {
-          setSilentLoading(false);
-        }
-      }
-    },
-    [previousPeriod, sandbox.isSandbox, sandbox.mode, sandbox.staffOverrides, sandbox.simulatedCombos, sandbox.simulatedProducts]
-  );
-
-  const fetchRevenueData = useCallback(
-    async (date: dayjs.Dayjs, mode: 'day' | 'week' | 'month' = 'day', includePreviousPeriod = true) => {
-      const requestVersion = ++revenueRequestVersion.current;
-      setRevenueLoading(true);
-
-      if (sandbox.isSandbox) {
-        const totalRev =
-          sandbox.mode === 'sales' ? 12_050_000 + sandbox.totalSimulatedRevenue : 8_130_000;
-        const mockHourly: SafeAny = {
-          summary: {
-            totalRevenue: totalRev,
-            comboRevenue:
-              sandbox.mode === 'sales' ? 7_500_000 + sandbox.totalSimulatedComboRevenue : 4_500_000,
-            singleRevenue: 2_100_000,
-            productRevenue:
-              sandbox.mode === 'sales' ? 1_050_000 + sandbox.totalSimulatedProductRevenue : 530_000,
-            completedOrders: 18,
-            aov: Math.round(totalRev / 18),
-          },
-          hourlyBreakdown: [],
-          branchHourlyMatrix: [],
-        };
-        if (requestVersion === revenueRequestVersion.current) {
-          setRevenueData(mockHourly);
-          setPreviousRevenueData(null);
-          setRevenueLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const revParams: SafeAny = { ...getDashboardDateRange(date, mode) };
-        if (bookingBranch !== 'all') revParams.branchKey = bookingBranch;
-        if (selectedBooker && selectedBooker !== 'all') revParams.bookerFilter = selectedBooker;
-        const previousRevenueParams: SafeAny =
-          includePreviousPeriod && previousPeriod ? { ...previousPeriod.params } : null;
-        if (previousRevenueParams && bookingBranch !== 'all') previousRevenueParams.branchKey = bookingBranch;
-        if (previousRevenueParams && selectedBooker && selectedBooker !== 'all') {
-          previousRevenueParams.bookerFilter = selectedBooker;
-        }
-        const previousRevenueRequest = previousRevenueParams
-          ? apiClient.dashboard.getRevenueHourly(previousRevenueParams).catch((error) => {
-              console.error('Fetch previous revenue period error:', error);
-              return null;
-            })
-          : Promise.resolve(null);
-        const [revData, previousRevenue] = await Promise.all([
-          apiClient.dashboard.getRevenueHourly(revParams),
-          previousRevenueRequest,
-        ]);
-        if (requestVersion === revenueRequestVersion.current) {
-          setRevenueData(revData);
-          setPreviousRevenueData(previousRevenue);
-        }
-      } catch (err) {
-        if (requestVersion === revenueRequestVersion.current) {
-          console.error('Fetch revenue hourly error:', err);
-        }
-      } finally {
-        if (requestVersion === revenueRequestVersion.current) setRevenueLoading(false);
-      }
-    },
-    [bookingBranch, previousPeriod, sandbox.isSandbox, sandbox.mode, sandbox.totalSimulatedRevenue, sandbox.totalSimulatedComboRevenue, sandbox.totalSimulatedProductRevenue, selectedBooker]
-  );
-
-  const refreshTodayData = useCallback(
-    async (
-      date: dayjs.Dayjs,
-      mode: 'day' | 'week' | 'month' = 'day',
-      isSilent = false,
-      includePreviousPeriod = true
-    ) => {
-      const requests = [fetchDashboardData(date, mode, isSilent, includePreviousPeriod)];
-      if (showRevenueView) {
-        requests.push(fetchRevenueData(date, mode, includePreviousPeriod));
-      }
-      await Promise.all(requests);
-    },
-    [fetchDashboardData, fetchRevenueData, showRevenueView]
-  );
-
-  useEffect(() => {
-    if (selectedDate) {
-      void fetchDashboardData(selectedDate, dateRangeMode);
-    }
-  }, [selectedDate, dateRangeMode, fetchDashboardData]);
-
-  // Revenue is opt-in: avoid two additional requests until the user opens the revenue view.
-  useEffect(() => {
-    if (showRevenueView && selectedDate) {
-      void fetchRevenueData(selectedDate, dateRangeMode);
-    }
-  }, [showRevenueView, selectedDate, dateRangeMode, fetchRevenueData]);
-
-  // Synchronize mock data immediately when sandbox state changes
-  useEffect(() => {
-    if (!sandbox.isSandbox) return;
-    if (sandbox.mode === 'training') {
-      const mockBranches = getTrainingMockBranchesData(sandbox.staffOverrides);
-      const mockBookings = getTrainingMockBookings();
-      setBranchesData(mockBranches);
-      setBookingsCombo(mockBookings.combo);
-      setBookingsOc(mockBookings.oc);
-      setBookingsOther(mockBookings.other);
-      setPreviousDashboardData(null);
-    } else if (sandbox.mode === 'sales') {
-      const mockBranches = getSalesMockBranchesData(sandbox.simulatedCombos, sandbox.simulatedProducts);
-      const mockBookings = getSalesMockBookings(sandbox.simulatedCombos, sandbox.simulatedProducts);
-      setBranchesData(mockBranches);
-      setBookingsCombo(mockBookings.combo);
-      setBookingsOc(mockBookings.oc);
-      setBookingsOther(mockBookings.other);
-      setPreviousDashboardData(null);
-    }
-  }, [
-    sandbox.isSandbox,
-    sandbox.mode,
-    sandbox.staffOverrides,
-    sandbox.simulatedCombos,
-    sandbox.simulatedProducts,
-  ]);
-
-  // When switching back to live data, immediately fetch real data
-  useEffect(() => {
-    if (sandbox.mode === 'live' && selectedDate) {
-      void fetchDashboardData(selectedDate, dateRangeMode);
-      if (showRevenueView) {
-        void fetchRevenueData(selectedDate, dateRangeMode);
-      }
-    }
-  }, [sandbox.mode, selectedDate, dateRangeMode, showRevenueView, fetchDashboardData, fetchRevenueData]);
-
-  // Instantly refresh today dashboard tables when popup/modal updates data
-  useEffect(() => {
-    const handleDataChanged = () => {
-      if (selectedDate) {
-        void refreshTodayData(selectedDate, dateRangeMode, true, false);
-      }
-    };
-    window.addEventListener('mos-data-updated', handleDataChanged);
-    window.addEventListener('mos-call-log-saved', handleDataChanged);
-    window.addEventListener('mos-customer-updated', handleDataChanged);
-    window.addEventListener('mos-booking-updated', handleDataChanged);
-    return () => {
-      window.removeEventListener('mos-data-updated', handleDataChanged);
-      window.removeEventListener('mos-call-log-saved', handleDataChanged);
-      window.removeEventListener('mos-customer-updated', handleDataChanged);
-      window.removeEventListener('mos-booking-updated', handleDataChanged);
-    };
-  }, [selectedDate, dateRangeMode, refreshTodayData]);
-
-  const dateBounds = useMemo(() => {
-    if (!selectedDate) {
-      const todayStr = dayjs().format('YYYY-MM-DD');
-      return { dateFrom: todayStr, dateTo: todayStr, label: '' };
-    }
-
-    if (dateRangeMode === 'week') {
-      const startOfWeek = selectedDate.startOf('isoWeek');
-      const endOfWeek = selectedDate.endOf('isoWeek');
-      return {
-        dateFrom: startOfWeek.format('YYYY-MM-DD'),
-        dateTo: endOfWeek.format('YYYY-MM-DD'),
-        label: `Tuần ${selectedDate.isoWeek()} (${startOfWeek.format('DD/MM')} - ${endOfWeek.format('DD/MM/YYYY')})`,
-      };
-    }
-
-    if (dateRangeMode === 'month') {
-      const startOfMonth = selectedDate.startOf('month');
-      const endOfMonth = selectedDate.endOf('month');
-      return {
-        dateFrom: startOfMonth.format('YYYY-MM-DD'),
-        dateTo: endOfMonth.format('YYYY-MM-DD'),
-        label: `Tháng ${selectedDate.format('MM/YYYY')}`,
-      };
-    }
-
-    const dateStr = selectedDate.format('YYYY-MM-DD');
-    return {
-      dateFrom: dateStr,
-      dateTo: dateStr,
-      label: selectedDate.format('DD/MM/YYYY'),
-    };
-  }, [selectedDate, dateRangeMode]);
-
-  const handlePrevDate = () => {
-    if (!selectedDate) return;
-    let newDate = selectedDate;
-    if (dateRangeMode === 'day') newDate = selectedDate.subtract(1, 'day');
-    else if (dateRangeMode === 'week') newDate = selectedDate.subtract(1, 'week');
-    else if (dateRangeMode === 'month') newDate = selectedDate.subtract(1, 'month');
-
-    setSelectedDate(newDate);
-    localStorage.setItem('today_selected_date', newDate.format('YYYY-MM-DD'));
-  };
-
-  const handleNextDate = () => {
-    if (!selectedDate) return;
-    let newDate = selectedDate;
-    if (dateRangeMode === 'day') newDate = selectedDate.add(1, 'day');
-    else if (dateRangeMode === 'week') newDate = selectedDate.add(1, 'week');
-    else if (dateRangeMode === 'month') newDate = selectedDate.add(1, 'month');
-
-    setSelectedDate(newDate);
-    localStorage.setItem('today_selected_date', newDate.format('YYYY-MM-DD'));
-  };
-
-  const changeDateRangeMode = (mode: 'day' | 'week' | 'month') => {
-    setDateRangeMode(mode);
-    localStorage.setItem('today_date_range_mode', mode);
-  };
+  const {
+    branchesData,
+    bookingsCombo,
+    bookingsOc,
+    bookingsOther,
+    previousDashboardData,
+    fetchDashboardData,
+    refreshTodayData,
+  } = fetching;
 
   const triggerSilentRefresh = useCallback(() => {
     if (!selectedDate) return;
     void refreshTodayData(selectedDate, dateRangeMode, true, false);
   }, [selectedDate, dateRangeMode, refreshTodayData]);
 
-  // Reset countdown signal if selectedDate changes or refreshInterval changes
-  useEffect(() => {
-    setCountdown(refreshInterval);
-    setRefreshResetSignal((s) => s + 1);
-  }, [selectedDate, refreshInterval]);
-
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     if (selectedDate) {
       await refreshTodayData(selectedDate, dateRangeMode);
       optionsRef.current?.onSuccess?.('Đã làm mới dữ liệu vận hành từ cơ sở dữ liệu!');
-      setCountdown(refreshInterval);
-      setRefreshResetSignal((s) => s + 1);
+      resetCountdown();
     }
-  };
+  }, [selectedDate, dateRangeMode, refreshTodayData, resetCountdown]);
 
-  const getBranchLabel = (key: string) => {
-    if (key === 'detham') return 'Đề Thám';
-    if (key === 'pxl') return 'PXL';
-    if (key === 'estella') return 'Estella';
-    return '';
-  };
-
-  const allBookings = useMemo(() => {
-    const combined = [
-      ...bookingsCombo.map((b) => ({ ...b, category: 'combo' as const })),
-      ...bookingsOc.map((b) => ({ ...b, category: 'oc' as const })),
-      ...bookingsOther.map((b) => ({ ...b, category: 'other' as const })),
-    ];
-    return combined.sort((a, b) => Number(b.key) - Number(a.key));
-  }, [bookingsCombo, bookingsOc, bookingsOther]);
+  const allBookings = useMemo(
+    () => combineBookingsWithCategory(bookingsCombo, bookingsOc, bookingsOther, true),
+    [bookingsCombo, bookingsOc, bookingsOther]
+  );
 
   const previousAllBookings = useMemo(() => {
     if (!previousDashboardData) return [];
-    return [
-      ...previousDashboardData.bookingsCombo.map((b) => ({ ...b, category: 'combo' as const })),
-      ...previousDashboardData.bookingsOc.map((b) => ({ ...b, category: 'oc' as const })),
-      ...previousDashboardData.bookingsOther.map((b) => ({ ...b, category: 'other' as const })),
-    ];
+    return combineBookingsWithCategory(
+      previousDashboardData.bookingsCombo,
+      previousDashboardData.bookingsOc,
+      previousDashboardData.bookingsOther
+    );
   }, [previousDashboardData]);
 
-  const matchesBookerFilter = useCallback(
-    (bookerName: string | undefined, filter: string | null) => {
-      if (!filter || filter === 'all') return true;
-      const name = (bookerName || '').trim().toLowerCase();
-      if (!name) return false;
+  const bookingBranchCounts = useMemo(() => computeBookingBranchCounts(allBookings), [allBookings]);
 
-      if (filter === 'team:telesales') {
-        return (teamConfig.telesales || []).some((n) => n.trim().toLowerCase() === name);
-      }
-      if (filter === 'team:control_cs') {
-        return (teamConfig.control_cs || []).some((n) => n.trim().toLowerCase() === name);
-      }
-      if (filter === 'team:other') {
-        return (teamConfig.other || []).some((n) => n.trim().toLowerCase() === name);
-      }
-
-      return name === filter.trim().toLowerCase();
-    },
-    [teamConfig]
+  const filteredBookings = useMemo(
+    () => filterBookingsList(allBookings, bookingFilter, bookingBranch, selectedBooker, teamConfig),
+    [allBookings, bookingFilter, bookingBranch, selectedBooker, teamConfig]
   );
 
-  const saveTeamConfig = useCallback((newConfig: BookerTeamConfig) => {
-    setTeamConfig(newConfig);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('booker_team_config', JSON.stringify(newConfig));
-    }
-  }, []);
+  const allComingList = useMemo(() => buildAllComingList(branchesData), [branchesData]);
 
-  const bookingBranchCounts = useMemo(() => {
-    let dt = 0;
-    let ep = 0;
-    allBookings.forEach((b) => {
-      if (b.branchName === 'Đề Thám') dt++;
-      else if (b.branchName === 'Estella') ep++;
-    });
-    return { dt, ep, total: allBookings.length };
-  }, [allBookings]);
+  const activeComingList = useMemo(
+    () => filterAndSortComingList(allComingList, comingBranch, comingCategory, selectedBooker, teamConfig),
+    [allComingList, comingBranch, comingCategory, selectedBooker, teamConfig]
+  );
 
-  const filteredBookings = useMemo(() => {
-    return allBookings.filter((b) => {
-      if (bookingFilter !== 'all' && b.category !== bookingFilter) {
-        return false;
-      }
-      if (bookingBranch !== 'all') {
-        if (bookingBranch === 'detham' && b.branchName !== 'Đề Thám') return false;
-        if (bookingBranch === 'estella' && b.branchName !== 'Estella') return false;
-      }
-      if (!matchesBookerFilter(b.booker, selectedBooker)) {
-        return false;
-      }
-      return true;
-    });
-  }, [allBookings, bookingFilter, bookingBranch, selectedBooker, matchesBookerFilter]);
-
-  const allComingList = useMemo(() => {
-    return Object.keys(branchesData).flatMap((branchKey) =>
-      (branchesData[branchKey].coming || []).map((item) => ({
-        ...item,
-        branchName: getBranchLabel(branchKey),
-        branchKey,
-      }))
-    );
-  }, [branchesData]);
-
-  const activeComingList = useMemo(() => {
-    const filtered = allComingList.filter((item) => {
-      if (comingBranch !== 'all' && item.branchKey !== comingBranch) {
-        return false;
-      }
-      if (comingCategory !== 'all' && item.category !== comingCategory) {
-        return false;
-      }
-      if (!matchesBookerFilter(item.booker, selectedBooker)) {
-        return false;
-      }
-      return true;
-    });
-
-    return [...filtered].sort((a, b) => a.time.localeCompare(b.time));
-  }, [allComingList, comingBranch, comingCategory, selectedBooker, matchesBookerFilter]);
-
-  const activeShopData = useMemo(() => {
-    const raw =
-      shopBranch === 'all'
-        ? {
-            revLe: Object.values(branchesData).reduce((sum, b) => sum + (b.revLe || 0), 0),
-            revCombo: Object.values(branchesData).reduce((sum, b) => sum + (b.revCombo || 0), 0),
-            revProduct: Object.values(branchesData).reduce((sum, b) => sum + (b.revProduct || 0), 0),
-            netLe: Object.values(branchesData).reduce((sum, b) => sum + (b.netLe || 0), 0),
-            netCombo: Object.values(branchesData).reduce((sum, b) => sum + (b.netCombo || 0), 0),
-            netProduct: Object.values(branchesData).reduce((sum, b) => sum + (b.netProduct || 0), 0),
-            cc: Object.entries(branchesData).flatMap(([branchKey, b]) =>
-              b.cc.map((item) => ({ ...item, branchName: getBranchLabel(branchKey) }))
-            ),
-            cv: Object.entries(branchesData).flatMap(([branchKey, b]) =>
-              b.cv.map((item) => ({ ...item, branchName: getBranchLabel(branchKey) }))
-            ),
-            coming: [] as SafeAny[],
-          }
-        : {
-            ...branchesData[shopBranch],
-            cc: (branchesData[shopBranch]?.cc || []).map((item) => ({
-              ...item,
-              branchName: getBranchLabel(shopBranch),
-            })),
-            cv: (branchesData[shopBranch]?.cv || []).map((item) => ({
-              ...item,
-              branchName: getBranchLabel(shopBranch),
-            })),
-          };
-
-    const rawCvList = raw.cv || [];
-    const sortedCv = [...rawCvList].sort((a: ShopCVData, b: ShopCVData) => {
-      const aIsWorking = !a.isOff && a.attendance !== 'checked_out';
-      const bIsWorking = !b.isOff && b.attendance !== 'checked_out';
-
-      if (aIsWorking && !bIsWorking) return -1;
-      if (!aIsWorking && bIsWorking) return 1;
-
-      const aBooked = a.bookedCount ?? a.clients ?? 0;
-      const bBooked = b.bookedCount ?? b.clients ?? 0;
-      const aDone = a.doneCount ?? a.clients ?? 0;
-      const bDone = b.doneCount ?? b.clients ?? 0;
-
-      return bBooked - aBooked || bDone - aDone || (a.name || '').localeCompare(b.name || '');
-    });
-
-    return {
-      revLe: showTax ? raw.revLe || 0 : raw.netLe || 0,
-      revCombo: showTax ? raw.revCombo || 0 : raw.netCombo || 0,
-      revProduct: showTax ? raw.revProduct || 0 : raw.netProduct || 0,
-      cc: (raw.cc || []).map((c: SafeAny) => ({
-        ...c,
-        revLe: showTax ? c.revLe || 0 : c.netLe || 0,
-        revCombo: showTax ? c.revCombo || 0 : c.netCombo || 0,
-        revProduct: showTax ? c.revProduct || 0 : c.netProduct || 0,
-        revenue: showTax ? c.revenue || 0 : c.netRevenue || 0,
-      })),
-      cv: sortedCv,
-      coming: raw.coming || [],
-    };
-  }, [branchesData, shopBranch, showTax]);
-
-  const changeBookingFilter = useCallback((val: 'all' | 'combo' | 'oc' | 'other') => {
-    setBookingFilter(val);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('today_booking_filter', val);
-      const url = new URL(window.location.href);
-      url.searchParams.set('bookingFilter', val);
-      window.history.replaceState(null, '', url.pathname + url.search);
-    }
-  }, []);
-
-  const changeBookingBranch = useCallback((val: 'all' | 'detham' | 'estella') => {
-    setBookingBranch(val);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('today_booking_branch', val);
-      const url = new URL(window.location.href);
-      url.searchParams.set('bookingBranch', val);
-      window.history.replaceState(null, '', url.pathname + url.search);
-    }
-  }, []);
-
-  const changeComingBranch = useCallback((val: 'detham' | 'estella' | 'all') => {
-    setComingBranch(val);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('today_coming_branch', val);
-      const url = new URL(window.location.href);
-      url.searchParams.set('comingBranch', val);
-      window.history.replaceState(null, '', url.pathname + url.search);
-    }
-  }, []);
-
-  const changeComingCategory = useCallback((val: 'all' | 'combo' | 'oc' | 'other') => {
-    setComingCategory(val);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('today_coming_category', val);
-      const url = new URL(window.location.href);
-      url.searchParams.set('comingCategory', val);
-      window.history.replaceState(null, '', url.pathname + url.search);
-    }
-  }, []);
-
-  const changeShopBranch = useCallback((val: 'detham' | 'estella' | 'all') => {
-    setShopBranch(val);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('today_shop_branch', val);
-      const url = new URL(window.location.href);
-      url.searchParams.set('shopBranch', val);
-      window.history.replaceState(null, '', url.pathname + url.search);
-    }
-  }, []);
-
-  const changeSelectedBooker = useCallback((val: string | null) => {
-    setSelectedBooker(val);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (val) {
-        localStorage.setItem('today_selected_booker', val);
-        url.searchParams.set('booker', val);
-      } else {
-        localStorage.removeItem('today_selected_booker');
-        url.searchParams.delete('booker');
-      }
-      window.history.replaceState(null, '', url.pathname + url.search);
-    }
-  }, []);
+  const activeShopData = useMemo(
+    () => buildActiveShopData(branchesData, shopBranch, showTax),
+    [branchesData, shopBranch, showTax]
+  );
 
   return {
     // Sandbox state
@@ -875,14 +130,14 @@ export function useTodayData(options?: UseTodayDataOptions) {
     sandboxMode: sandbox.mode,
 
     // states
-    loading,
+    loading: fetching.loading,
     selectedDate,
     dateRangeMode,
-    autoRefresh,
-    refreshInterval,
-    countdown,
-    refreshResetSignal,
-    silentLoading,
+    autoRefresh: filters.autoRefresh,
+    refreshInterval: filters.refreshInterval,
+    countdown: filters.countdown,
+    refreshResetSignal: filters.refreshResetSignal,
+    silentLoading: fetching.silentLoading,
     bookingFilter,
     bookingBranch,
     comingBranch,
@@ -890,9 +145,9 @@ export function useTodayData(options?: UseTodayDataOptions) {
     shopBranch,
     selectedBooker,
     teamConfig,
-    teamModalVisible,
-    drawerVisible,
-    selectedCustomer,
+    teamModalVisible: filters.teamModalVisible,
+    drawerVisible: filters.drawerVisible,
+    selectedCustomer: filters.selectedCustomer,
     showTax,
     branchesData,
     bookingsCombo,
@@ -909,46 +164,41 @@ export function useTodayData(options?: UseTodayDataOptions) {
     allComingList,
     activeComingList,
     activeShopData,
-    dateBounds,
+    dateBounds: filters.dateBounds,
 
     // setters
-    setSelectedDate,
-    setDateRangeMode: changeDateRangeMode,
-    setAutoRefresh,
-    setRefreshInterval,
-    setCountdown,
-    setBookingFilter: changeBookingFilter,
-    setBookingBranch: changeBookingBranch,
-    setComingBranch: changeComingBranch,
-    setComingCategory: changeComingCategory,
-    setShopBranch: changeShopBranch,
-    setSelectedBooker: changeSelectedBooker,
-    setTeamConfig,
-    setTeamModalVisible,
-    saveTeamConfig,
-    setDrawerVisible,
-    setSelectedCustomer,
-    setShowTax,
+    setSelectedDate: filters.setSelectedDate,
+    setDateRangeMode: filters.setDateRangeMode,
+    setAutoRefresh: filters.setAutoRefresh,
+    setRefreshInterval: filters.setRefreshInterval,
+    setCountdown: filters.setCountdown,
+    setBookingFilter: filters.setBookingFilter,
+    setBookingBranch: filters.setBookingBranch,
+    setComingBranch: filters.setComingBranch,
+    setComingCategory: filters.setComingCategory,
+    setShopBranch: filters.setShopBranch,
+    setSelectedBooker: filters.setSelectedBooker,
+    setTeamConfig: filters.setTeamConfig,
+    setTeamModalVisible: filters.setTeamModalVisible,
+    saveTeamConfig: filters.saveTeamConfig,
+    setDrawerVisible: filters.setDrawerVisible,
+    setSelectedCustomer: filters.setSelectedCustomer,
+    setShowTax: filters.setShowTax,
 
     // Revenue View
-    revenueData,
-    previousRevenueData,
-    revenueLoading,
+    revenueData: fetching.revenueData,
+    previousRevenueData: fetching.previousRevenueData,
+    revenueLoading: fetching.revenueLoading,
     showRevenueView,
-    setShowRevenueView: (val: boolean) => {
-      setShowRevenueView(val);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('today_show_revenue_view', String(val));
-      }
-    },
+    setShowRevenueView: filters.setShowRevenueView,
 
     // functions
-    openCustomerDrawer,
+    openCustomerDrawer: filters.openCustomerDrawer,
     fetchDashboardData,
     handleRefresh,
     triggerSilentRefresh,
-    handlePrevDate,
-    handleNextDate,
+    handlePrevDate: filters.handlePrevDate,
+    handleNextDate: filters.handleNextDate,
     getBranchLabel,
   };
 }
