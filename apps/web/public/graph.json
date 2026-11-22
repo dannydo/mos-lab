@@ -34569,6 +34569,18 @@
       }
     },
     {
+      "id": "uicomp:SlotBookingTooltipContent",
+      "type": "UIComponent",
+      "label": "<SlotBookingTooltipContent />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/booking/SlotBookingTooltipContent.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SlotBookingTooltipContent",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:SlotMatrixGrid.test",
       "type": "UIComponent",
       "label": "<SlotMatrixGrid.test />",
@@ -55619,9 +55631,48 @@
       "filePath": "apps/web/app/dashboard/loca/components/LocaTouchpointCell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27709,
-        "lineCount": 721,
+        "sizeBytes": 8117,
+        "lineCount": 239,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/components/touchpoint-cell/LocaTouchpointPopoverContent.tsx",
+      "type": "File",
+      "label": "LocaTouchpointPopoverContent.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/components/touchpoint-cell/LocaTouchpointPopoverContent.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9257,
+        "lineCount": 256,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/components/touchpoint-cell/LocaTouchpointTooltip.tsx",
+      "type": "File",
+      "label": "LocaTouchpointTooltip.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/components/touchpoint-cell/LocaTouchpointTooltip.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4950,
+        "lineCount": 134,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/loca/components/touchpoint-cell/loca-touchpoint-utils.ts",
+      "type": "File",
+      "label": "loca-touchpoint-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/loca/components/touchpoint-cell/loca-touchpoint-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5517,
+        "lineCount": 114,
+        "ext": ".ts"
       }
     },
     {
@@ -57471,6 +57522,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/today/components/TodayControlToolbar.tsx",
+      "type": "File",
+      "label": "TodayControlToolbar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/TodayControlToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11038,
+        "lineCount": 321,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/today/components/TodayShopAttendanceCard.tsx",
+      "type": "File",
+      "label": "TodayShopAttendanceCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/today/components/TodayShopAttendanceCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4815,
+        "lineCount": 130,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/today/components/TodayStaffAttendance.tsx",
       "type": "File",
       "label": "TodayStaffAttendance.tsx",
@@ -57543,8 +57620,8 @@
       "filePath": "apps/web/app/dashboard/today/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27787,
-        "lineCount": 725,
+        "sizeBytes": 11838,
+        "lineCount": 316,
         "ext": ".tsx"
       }
     },
@@ -82389,6 +82466,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:SlotBookingTooltipContent:ws:apps/web",
+      "source": "uicomp:SlotBookingTooltipContent",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SlotBookingTooltipContent:token:color:primary",
+      "source": "uicomp:SlotBookingTooltipContent",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:SlotMatrixGrid.test:ws:apps/web",
       "source": "uicomp:SlotMatrixGrid.test",
       "target": "ws:apps/web",
@@ -95138,6 +95229,27 @@
     {
       "id": "edge:file:apps/web/app/dashboard/loca/components/LocaTouchpointCell.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/loca/components/LocaTouchpointCell.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/components/touchpoint-cell/LocaTouchpointPopoverContent.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/components/touchpoint-cell/LocaTouchpointPopoverContent.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/components/touchpoint-cell/LocaTouchpointTooltip.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/components/touchpoint-cell/LocaTouchpointTooltip.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/loca/components/touchpoint-cell/loca-touchpoint-utils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/loca/components/touchpoint-cell/loca-touchpoint-utils.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -131166,8 +131278,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4924,
-    "totalEdges": 9649,
+    "totalNodes": 4930,
+    "totalEdges": 9654,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -131175,15 +131287,15 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 559,
-      "File": 1751
+      "UIComponent": 560,
+      "File": 1756
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 625,
-      "USES_TOKEN": 561,
-      "IMPORTS": 1041,
+      "RENDERS": 626,
+      "USES_TOKEN": 562,
+      "IMPORTS": 1044,
       "QUERIES_MODEL": 541,
       "API_CALL": 4336
     },

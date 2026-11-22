@@ -2,10 +2,8 @@
 // Touch for Turbopack cache refresh - tab labels update
 
 import '../../suppress-warnings';
-import React, { useEffect, useState } from 'react';
-import { Card, theme, Radio, Space, Row, Col, Spin, Button, Select, Tag, message } from 'antd';
-import { ClockCircleOutlined, ShopOutlined, CalendarOutlined, UnorderedListOutlined } from '@ant-design/icons';
-import { RefreshCw } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Col, Row, Spin, message, theme } from 'antd';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
@@ -17,8 +15,8 @@ import { TodaySandboxProvider, useTodaySandbox } from './context/SandboxModeCont
 import TodayStats from './components/TodayStats';
 import TodayBookingsTable from './components/TodayBookingsTable';
 import TodayComingTable from './components/TodayComingTable';
-import TodayStaffAttendance from './components/TodayStaffAttendance';
-import { IconButton, PageHeader, ReportPeriodNavigator, ToolbarToggle } from '../../../components/ui';
+import { TodayControlToolbar } from './components/TodayControlToolbar';
+import { TodayShopAttendanceCard } from './components/TodayShopAttendanceCard';
 
 dayjs.extend(isoWeek);
 
@@ -31,94 +29,6 @@ const TodayCalendarSummary = dynamic(() => import('./components/TodayCalendarSum
   ),
 });
 const BookerTeamConfigModal = dynamic(() => import('./components/BookerTeamConfigModal'), { ssr: false });
-
-const RealtimeClock = React.memo(() => {
-  const { token } = theme.useToken();
-  const [time, setTime] = useState('');
-  useEffect(() => {
-    const updateTime = () => {
-      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
-      setTime(dayjs().format('HH:mm:ss - DD/MM/YYYY'));
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
-  return (
-    <strong
-      style={{
-        color: token.colorPrimary,
-        fontSize: '14px',
-        fontVariantNumeric: 'tabular-nums',
-        fontFeatureSettings: '"tnum"',
-      }}
-    >
-      {time}
-    </strong>
-  );
-});
-RealtimeClock.displayName = 'RealtimeClock';
-
-const AutoRefreshCountdown = React.memo(
-  ({
-    autoRefresh,
-    refreshInterval,
-    resetSignal,
-    onExpire,
-  }: {
-    autoRefresh: boolean;
-    refreshInterval: number;
-    resetSignal: number;
-    onExpire: () => void;
-  }) => {
-    const [secondsLeft, setSecondsLeft] = useState(refreshInterval);
-    const onExpireRef = React.useRef(onExpire);
-
-    useEffect(() => {
-      onExpireRef.current = onExpire;
-    }, [onExpire]);
-
-    useEffect(() => {
-      setSecondsLeft(refreshInterval);
-    }, [refreshInterval, resetSignal]);
-
-    useEffect(() => {
-      if (!autoRefresh) return;
-
-      const tick = () => {
-        if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
-          return;
-        }
-        setSecondsLeft((prev) => {
-          if (prev <= 1) {
-            onExpireRef.current();
-            return refreshInterval;
-          }
-          return prev - 1;
-        });
-      };
-
-      const timer = setInterval(tick, 1000);
-
-      const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
-          onExpireRef.current();
-          setSecondsLeft(refreshInterval);
-        }
-      };
-
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      return () => {
-        clearInterval(timer);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-      };
-    }, [autoRefresh, refreshInterval]);
-
-    if (!autoRefresh) return null;
-    return <span className="tabular-nums">({secondsLeft}s)</span>;
-  }
-);
-AutoRefreshCountdown.displayName = 'AutoRefreshCountdown';
 
 function TodayDashboardContent() {
   const { themeMode } = useTheme();
@@ -172,202 +82,43 @@ function TodayDashboardContent() {
       className="responsive-page responsive-workspace today-page"
       style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
     >
-      {/* Title & Control Header */}
-      <PageHeader
-        className="today-page-header"
-        title="Control Board Hôm Nay"
-        tag={<Tag className="today-page-header-context">Today operations</Tag>}
-        subtitle="Giám sát thời gian thực lịch đặt mới, luồng khách đến và trạng thái phục vụ của CC & CV"
-        icon={<ClockCircleOutlined />}
-        extra={
-          <div className="today-header-toolbar">
-            <div className="today-realtime-clock">
-              <span>Thời gian thực tế</span>
-              <RealtimeClock />
-            </div>
-            <ReportPeriodNavigator
-              mode={data.dateRangeMode}
-              value={data.selectedDate}
-              label={periodLabel}
-              onModeChange={data.setDateRangeMode}
-              onPrevious={data.handlePrevDate}
-              onNext={data.handleNextDate}
-              onValueChange={(date) => {
-                data.setSelectedDate(date);
-                localStorage.setItem('today_selected_date', date.format('YYYY-MM-DD'));
-              }}
-            />
-
-            <IconButton
-              label="Làm mới dữ liệu"
-              icon={RefreshCw}
-              iconClassName={data.loading || data.silentLoading ? 'animate-spin' : ''}
-              onClick={data.handleRefresh}
-              className="today-refresh-action"
-            />
-
-            {data.selectedDate?.isSame(dayjs(), 'day') && (
-              <>
-                <ToolbarToggle
-                  className="today-auto-refresh-control"
-                  label={
-                    <span>
-                      F5{' '}
-                      <AutoRefreshCountdown
-                        autoRefresh={data.autoRefresh}
-                        refreshInterval={data.refreshInterval}
-                        resetSignal={data.refreshResetSignal}
-                        onExpire={data.triggerSilentRefresh}
-                      />
-                    </span>
-                  }
-                  aria-label="Bật hoặc tắt tự động làm mới"
-                  checked={data.autoRefresh}
-                  onChange={(checked) => {
-                    data.setAutoRefresh(checked);
-                    localStorage.setItem('today_auto_refresh', String(checked));
-                  }}
-                />
-                {data.autoRefresh && (
-                  <Select
-                    aria-label="Chu kỳ tự động làm mới"
-                    value={data.refreshInterval}
-                    onChange={(val) => {
-                      data.setRefreshInterval(val);
-                      localStorage.setItem('today_refresh_interval', String(val));
-                    }}
-                    options={[
-                      { value: 15, label: '15s' },
-                      { value: 30, label: '30s' },
-                      { value: 60, label: '1m' },
-                      { value: 180, label: '3m' },
-                    ]}
-                    style={{ width: '70px' }}
-                  />
-                )}
-              </>
-            )}
-          </div>
-        }
+      <TodayControlToolbar
+        selectedDate={data.selectedDate}
+        dateRangeMode={data.dateRangeMode}
+        periodLabel={periodLabel}
+        loading={data.loading}
+        silentLoading={data.silentLoading}
+        autoRefresh={data.autoRefresh}
+        refreshInterval={data.refreshInterval}
+        refreshResetSignal={data.refreshResetSignal}
+        mainViewMode={mainViewMode}
+        sandboxMode={sandbox.mode}
+        isSandbox={sandbox.isSandbox}
+        onDateRangeModeChange={data.setDateRangeMode}
+        onPrevDate={data.handlePrevDate}
+        onNextDate={data.handleNextDate}
+        onSelectDate={(date) => {
+          data.setSelectedDate(date);
+          localStorage.setItem('today_selected_date', date.format('YYYY-MM-DD'));
+        }}
+        onRefresh={data.handleRefresh}
+        onToggleAutoRefresh={(checked) => {
+          data.setAutoRefresh(checked);
+          localStorage.setItem('today_auto_refresh', String(checked));
+        }}
+        onChangeRefreshInterval={(val) => {
+          data.setRefreshInterval(val);
+          localStorage.setItem('today_refresh_interval', String(val));
+        }}
+        onTriggerSilentRefresh={data.triggerSilentRefresh}
+        onChangeMainViewMode={(mode) => {
+          setMainViewMode(mode);
+          localStorage.setItem('today_main_view_mode', mode);
+        }}
+        onChangeSandboxMode={(mode) => sandbox.setMode(mode)}
+        onResetTrainingState={sandbox.resetTrainingState}
+        onResetSalesState={sandbox.resetSalesState}
       />
-
-      {/* VIEW MODE TOGGLE BAR & SANDBOX MODE SELECTOR */}
-      <div className="flex justify-between items-center mb-1 flex-wrap gap-3">
-        <Radio.Group
-          value={mainViewMode}
-          onChange={(e) => {
-            const val = e.target.value;
-            setMainViewMode(val);
-            localStorage.setItem('today_main_view_mode', val);
-          }}
-          optionType="button"
-          buttonStyle="solid"
-          size="middle"
-        >
-          <Radio.Button value="operations">
-            <Space size="small">
-              <UnorderedListOutlined />
-              <span className="font-semibold">Bảng Vận Hành</span>
-            </Space>
-          </Radio.Button>
-          <Radio.Button value="calendar">
-            <Space size="small">
-              <CalendarOutlined className={mainViewMode === 'calendar' ? 'text-amber-500' : ''} />
-              <span className="font-semibold">Lịch Tổng Quan</span>
-            </Space>
-          </Radio.Button>
-        </Radio.Group>
-
-        {/* Sandbox Mode Selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            Chế độ Sandbox:
-          </span>
-          <Select
-            aria-label="Chọn chế độ Sandbox giả lập"
-            value={sandbox.mode}
-            onChange={(val) => sandbox.setMode(val)}
-            className="w-72"
-            options={[
-              {
-                value: 'live',
-                label: (
-                  <Space size={6}>
-                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
-                    <span>Chế độ Thực tế (Live)</span>
-                  </Space>
-                ),
-              },
-              {
-                value: 'training',
-                label: (
-                  <Space size={6}>
-                    <span className="inline-block w-2 h-2 rounded-full bg-blue-500" />
-                    <span>Training Check-in / Bấm giờ</span>
-                  </Space>
-                ),
-              },
-              {
-                value: 'sales',
-                label: (
-                  <Space size={6}>
-                    <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
-                    <span>Sales Simulation (Chốt Combo & Quà)</span>
-                  </Space>
-                ),
-              },
-            ]}
-          />
-        </div>
-      </div>
-
-      {/* Sandbox Mode Banner */}
-      {sandbox.isSandbox && (
-        <div
-          role="status"
-          aria-live="polite"
-          className={`rounded-lg p-3 flex justify-between items-center flex-wrap gap-3 border ${
-            sandbox.mode === 'training'
-              ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900'
-              : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900'
-          }`}
-        >
-          <div className="flex items-center gap-2.5">
-            <Tag
-              color={sandbox.mode === 'training' ? 'processing' : 'warning'}
-              className="font-semibold text-xs m-0"
-            >
-              {sandbox.mode === 'training'
-                ? '🧪 SANDBOX: TRAINING CHECK-IN & BẤM GIỜ'
-                : '💎 SANDBOX: SALES SIMULATION'}
-            </Tag>
-            <span className="text-xs text-slate-700 dark:text-slate-200">
-              {sandbox.mode === 'training'
-                ? 'Đang ở chế độ giả lập chấm công ca, check-in, bấm giờ làm mi và check-out để training nhân sự. Dữ liệu độc lập, không ghi MySQL thật.'
-                : 'Đang ở chế độ mô phỏng chốt combo 10 tặng 6, combo mi dưỡng và quà tặng để lập kế hoạch & training bán hàng.'}
-            </span>
-          </div>
-          <Space>
-            {sandbox.mode === 'training' ? (
-              <Button size="small" onClick={sandbox.resetTrainingState} aria-label="Đặt lại phòng tập training">
-                Đặt lại phòng tập
-              </Button>
-            ) : (
-              <Button size="small" onClick={sandbox.resetSalesState} aria-label="Đặt lại kịch bản bán">
-                Đặt lại kịch bản
-              </Button>
-            )}
-            <Button
-              size="small"
-              type="primary"
-              onClick={() => sandbox.setMode('live')}
-              aria-label="Trở về dữ liệu thực tế"
-            >
-              Trở về Live Data
-            </Button>
-          </Space>
-        </div>
-      )}
 
       <Spin spinning={data.loading}>
         {mainViewMode === 'calendar' ? (
@@ -446,182 +197,22 @@ function TodayDashboardContent() {
 
               {/* STAFF ATTENDANCE PANEL */}
               <Col xs={24} lg={24} className="today-secondary-mobile-hidden">
-                <Card
-                  title={
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: '12px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <ShopOutlined style={{ color: '#D4A84B' }} />
-                        <span style={{ fontSize: '15px', fontWeight: 'bold' }}>
-                          Tình hình nhân sự & Thực tế phục vụ tại cửa hàng
-                        </span>
-                      </div>
-
-                      <Space size="middle">
-                        <Select
-                          aria-label="Chi nhánh theo dõi"
-                          value={data.shopBranch}
-                          onChange={(val) => {
-                            data.setShopBranch(val);
-                            localStorage.setItem('today_shop_branch', val);
-                          }}
-                          options={[
-                            { value: 'all', label: 'Tất cả' },
-                            { value: 'detham', label: 'Đề Thám' },
-                            { value: 'estella', label: 'Estella Place' },
-                          ]}
-
-                          style={{ width: '200px' }}
-                        />
-
-                        <ToolbarToggle
-                          className="today-vat-toggle"
-                          label="VAT"
-                          aria-label="Hiển thị doanh thu sau thuế VAT"
-                          checked={data.showTax}
-                          onChange={(checked) => {
-                            data.setShowTax(checked);
-                            localStorage.setItem('today_show_tax', String(checked));
-                          }}
-                        />
-                      </Space>
-                    </div>
-                  }
-                  styles={{ body: { padding: '16px' } }}
-                  style={{
-                    background: token.colorBgContainer,
-                    borderColor: token.colorBorderSecondary,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                <TodayShopAttendanceCard
+                  themeMode={themeMode}
+                  token={token}
+                  shopBranch={data.shopBranch}
+                  onChangeShopBranch={(val) => {
+                    data.setShopBranch(val);
+                    localStorage.setItem('today_shop_branch', val);
                   }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontWeight: 'bold',
-                        fontSize: '13px',
-                        color: token.colorTextSecondary,
-                        marginBottom: '12px',
-                      }}
-                    >
-                      Phân Phối Doanh Thu Hôm Nay (Revenue Breakdown)
-                    </div>
-                    <Row gutter={[12, 12]} style={{ marginBottom: '24px' }}>
-                      <Col xs={12} sm={12} md={6}>
-                        <Card
-                          size="small"
-                          style={{
-                            background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5',
-                            border: `1px solid ${token.colorBorderSecondary}`,
-                          }}
-                        >
-                          <span style={{ fontSize: '11px', color: token.colorTextDescription }}>Doanh Thu Single</span>
-                          <div
-                            className="tabular-nums font-mono"
-                            style={{ fontSize: '20px', fontWeight: 'bold', color: token.colorText, marginTop: '4px' }}
-                          >
-                            {data.activeShopData.revLe.toLocaleString('vi-VN')} đ
-                          </div>
-                        </Card>
-                      </Col>
-
-                      <Col xs={12} sm={12} md={6}>
-                        <Card
-                          size="small"
-                          style={{
-                            background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5',
-                            border: `1px solid ${token.colorBorderSecondary}`,
-                          }}
-                        >
-                          <span style={{ fontSize: '11px', color: themeMode === 'dark' ? '#D4A84B' : '#855b0e' }}>
-                            Doanh Thu Combo
-                          </span>
-                          <div
-                            className="tabular-nums font-mono"
-                            style={{
-                              fontSize: '20px',
-                              fontWeight: 'bold',
-                              color: themeMode === 'dark' ? '#D4A84B' : '#855b0e',
-                              marginTop: '4px',
-                            }}
-                          >
-                            {data.activeShopData.revCombo.toLocaleString('vi-VN')} đ
-                          </div>
-                        </Card>
-                      </Col>
-
-                      <Col xs={12} sm={12} md={6}>
-                        <Card
-                          size="small"
-                          style={{
-                            background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5',
-                            border: `1px solid ${token.colorBorderSecondary}`,
-                          }}
-                        >
-                          <span style={{ fontSize: '11px', color: themeMode === 'dark' ? '#52c41a' : '#15803d' }}>
-                            Doanh Thu Sản Phẩm
-                          </span>
-                          <div
-                            className="tabular-nums font-mono"
-                            style={{
-                              fontSize: '20px',
-                              fontWeight: 'bold',
-                              color: themeMode === 'dark' ? '#52c41a' : '#15803d',
-                              marginTop: '4px',
-                            }}
-                          >
-                            {data.activeShopData.revProduct.toLocaleString('vi-VN')} đ
-                          </div>
-                        </Card>
-                      </Col>
-
-                      <Col xs={12} sm={12} md={6}>
-                        <Card
-                          size="small"
-                          style={{
-                            background: themeMode === 'dark' ? '#1e293b' : '#f5f5f5',
-                            border: `1px solid ${token.colorBorderSecondary}`,
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: '11px',
-                              color: themeMode === 'dark' ? '#60a5fa' : '#1d4ed8',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            ∑ Doanh Thu
-                          </span>
-                          <div
-                            className="tabular-nums font-mono"
-                            style={{
-                              fontSize: '20px',
-                              fontWeight: 'bold',
-                              color: themeMode === 'dark' ? '#60a5fa' : '#1d4ed8',
-                              marginTop: '4px',
-                            }}
-                          >
-                            {activeShopTotalRevenue.toLocaleString('vi-VN')} đ
-                          </div>
-                        </Card>
-                      </Col>
-                    </Row>
-                  </div>
-
-                  {/* CC & CV Table split */}
-                  <TodayStaffAttendance
-                    themeMode={themeMode}
-                    token={token}
-                    ccList={data.activeShopData.cc}
-                    cvList={data.activeShopData.cv}
-                  />
-                </Card>
+                  showTax={data.showTax}
+                  onToggleShowTax={(checked) => {
+                    data.setShowTax(checked);
+                    localStorage.setItem('today_show_tax', String(checked));
+                  }}
+                  activeShopData={data.activeShopData}
+                  activeShopTotalRevenue={activeShopTotalRevenue}
+                />
               </Col>
             </Row>
           </div>
