@@ -6,13 +6,11 @@
   "files": {
     "apps/api/src/modules/bug-reports/inbox-implementation.service.ts": 4123,
     "apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx": 2290,
-    "apps/web/app/dashboard/academy-leads/campaigns/[slug]/page.tsx": 798,
     "apps/web/app/dashboard/academy-leads/components/AcademyTalentWorkshopDrawer.tsx": 3045,
     "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantOverlays.tsx": 989,
     "apps/web/app/dashboard/academy-leads/page.tsx": 818,
     "apps/web/app/dashboard/academy-leads/payments/page.tsx": 865,
     "apps/web/app/dashboard/academy-leads/workshops/[slug]/live/page.tsx": 805,
-    "apps/web/app/dashboard/appointments/page.tsx": 802,
     "apps/web/app/dashboard/bk/components/BkBookingTab.tsx": 825,
     "apps/web/app/dashboard/bk/components/BkDoneTab.tsx": 1174,
     "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx": 1101,
@@ -44,7 +42,6 @@
     "apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx": 2015,
     "apps/web/app/dashboard/nyc/campaigns/page.tsx": 1572,
     "apps/web/app/dashboard/nyc/page.tsx": 966,
-    "apps/web/app/dashboard/omicall/page.tsx": 802,
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.tsx": 1452,
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.tsx": 2149,
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx": 1922,
@@ -53,7 +50,6 @@
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx": 1264,
     "apps/web/app/dashboard/pilot-dark-lashes/components/SopPrepCategory1DetailView.tsx": 915,
     "apps/web/app/dashboard/plans/page.tsx": 837,
-    "apps/web/app/dashboard/qa-shop/components/DailyAuditTab.tsx": 797,
     "apps/web/app/dashboard/schedule-calendar/page.tsx": 848,
     "apps/web/app/dashboard/staff/page.tsx": 998,
     "apps/web/app/dashboard/staff/teams/page.tsx": 849,
@@ -88,7 +84,6 @@
     "apps/web/components/notification-center/HeaderNotificationCenter.tsx": 1030,
     "apps/web/components/profile/UnifiedProfileSheet.tsx": 853,
     "apps/web/components/qa-shop/hooks/useQaShopState.ts": 866,
-    "apps/web/components/sms/SMSModal.tsx": 799,
     "apps/web/components/telesales/components/TelesalesBackFace.tsx": 832,
     "apps/web/components/ui/MermaidViewer.tsx": 1102
   }

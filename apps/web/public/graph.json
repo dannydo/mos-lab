@@ -14301,21 +14301,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/campaigns/[slug]/page.tsx",
       "metadata": {
         "routePath": "/dashboard/academy-leads/campaigns/[slug]",
-        "apiCallsCount": 12,
-        "apiCalls": [
-          "academySales.campaigns",
-          "academySales.listStaff",
-          "academySales.listCourses",
-          "academySales.listTalentInstructors",
-          "academySales.updateCourse",
-          "academySales.createCourse",
-          "academySales.listTalentAssessments",
-          "academySales.updateTalentAssessment",
-          "academySales.createTalentAssessment",
-          "academySales.previewTalentAssessmentQuote",
-          "academySales.printTalentAssessmentInvoice",
-          "academySales.recordTalentAssessmentPayment"
-        ]
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -14456,8 +14443,8 @@
       "filePath": "apps/web/app/dashboard/appointments/page.tsx",
       "metadata": {
         "routePath": "/dashboard/appointments",
-        "apiCallsCount": 1,
-        "apiCalls": ["customers.getMissedSummary"]
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -14849,14 +14836,8 @@
       "filePath": "apps/web/app/dashboard/omicall/page.tsx",
       "metadata": {
         "routePath": "/dashboard/omicall",
-        "apiCallsCount": 5,
-        "apiCalls": [
-          "staff.list",
-          "omicall.listLogs",
-          "omicall.getConfigs",
-          "omicall.saveConfig",
-          "omicall.deleteConfig"
-        ]
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -40479,6 +40460,114 @@
       }
     },
     {
+      "id": "uicomp:SmsEditorPane",
+      "type": "UIComponent",
+      "label": "<SmsEditorPane />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/sms/smsmodal/SmsEditorPane.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SmsEditorPane",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SmsHistoryPane",
+      "type": "UIComponent",
+      "label": "<SmsHistoryPane />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/sms/smsmodal/SmsHistoryPane.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SmsHistoryPane",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SmsModalHeader",
+      "type": "UIComponent",
+      "label": "<SmsModalHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/sms/smsmodal/SmsModalHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SmsModalHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SmsResizeHandles",
+      "type": "UIComponent",
+      "label": "<SmsResizeHandles />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/sms/smsmodal/SmsResizeHandles.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SmsResizeHandles",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SmsSaveTemplateModal",
+      "type": "UIComponent",
+      "label": "<SmsSaveTemplateModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/sms/smsmodal/SmsSaveTemplateModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SmsSaveTemplateModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:smsModalHelpers",
+      "type": "UIComponent",
+      "label": "<smsModalHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/sms/smsmodal/smsModalHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "smsModalHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:smsModalTypes",
+      "type": "UIComponent",
+      "label": "<smsModalTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/sms/smsmodal/smsModalTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "smsModalTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useSmsModalResize",
+      "type": "UIComponent",
+      "label": "<useSmsModalResize />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/sms/smsmodal/useSmsModalResize.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useSmsModalResize",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useSmsModalState",
+      "type": "UIComponent",
+      "label": "<useSmsModalState />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/sms/smsmodal/useSmsModalState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useSmsModalState",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:SendOnboardingEmailModal",
       "type": "UIComponent",
       "label": "<SendOnboardingEmailModal />",
@@ -41429,188 +41518,6 @@
       }
     },
     {
-      "id": "file:apps/api/src/generated/crm-client/client.d.ts",
-      "type": "File",
-      "label": "client.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/client.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 23,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/crm-client/default.d.ts",
-      "type": "File",
-      "label": "default.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/default.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 23,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/crm-client/edge.d.ts",
-      "type": "File",
-      "label": "edge.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/edge.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 25,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/crm-client/index.d.ts",
-      "type": "File",
-      "label": "index.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/index.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 14826611,
-        "lineCount": 326540,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/crm-client/runtime/index-browser.d.ts",
-      "type": "File",
-      "label": "index-browser.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/runtime/index-browser.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 11915,
-        "lineCount": 371,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/crm-client/runtime/library.d.ts",
-      "type": "File",
-      "label": "library.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/runtime/library.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 129753,
-        "lineCount": 3983,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/crm-client/wasm.d.ts",
-      "type": "File",
-      "label": "wasm.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/wasm.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 25,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/client.d.ts",
-      "type": "File",
-      "label": "client.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/client.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 23,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/default.d.ts",
-      "type": "File",
-      "label": "default.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/default.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 23,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/edge.d.ts",
-      "type": "File",
-      "label": "edge.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/edge.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 25,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/index.d.ts",
-      "type": "File",
-      "label": "index.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/index.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 983545,
-        "lineCount": 25990,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/runtime/index-browser.d.ts",
-      "type": "File",
-      "label": "index-browser.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/runtime/index-browser.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 11915,
-        "lineCount": 371,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/runtime/library.d.ts",
-      "type": "File",
-      "label": "library.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/runtime/library.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 129753,
-        "lineCount": 3983,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/wasm.d.ts",
-      "type": "File",
-      "label": "wasm.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/wasm.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 25,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
       "id": "file:apps/api/src/middlewares/auth.test.ts",
       "type": "File",
       "label": "auth.test.ts",
@@ -42515,8 +42422,8 @@
       "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2419,
-        "lineCount": 58,
+        "sizeBytes": 1172,
+        "lineCount": 24,
         "ext": ".ts"
       }
     },
@@ -42528,8 +42435,8 @@
       "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20426,
-        "lineCount": 575,
+        "sizeBytes": 17663,
+        "lineCount": 506,
         "ext": ".ts"
       }
     },
@@ -43243,8 +43150,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 88024,
-        "lineCount": 2435,
+        "sizeBytes": 85415,
+        "lineCount": 2371,
         "ext": ".ts"
       }
     },
@@ -43256,8 +43163,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 165188,
-        "lineCount": 4137,
+        "sizeBytes": 164385,
+        "lineCount": 4123,
         "ext": ".ts"
       }
     },
@@ -53500,9 +53407,100 @@
       "filePath": "apps/web/app/dashboard/academy-leads/campaigns/[slug]/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31154,
-        "lineCount": 798,
+        "sizeBytes": 8527,
+        "lineCount": 204,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignDetailHeaderActions.tsx",
+      "type": "File",
+      "label": "CampaignDetailHeaderActions.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignDetailHeaderActions.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1902,
+        "lineCount": 59,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignDetailOverlays.tsx",
+      "type": "File",
+      "label": "CampaignDetailOverlays.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignDetailOverlays.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5681,
+        "lineCount": 168,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignDetailSummarySection.tsx",
+      "type": "File",
+      "label": "CampaignDetailSummarySection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignDetailSummarySection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3401,
+        "lineCount": 104,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignLeadToolbarFilters.tsx",
+      "type": "File",
+      "label": "CampaignLeadToolbarFilters.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignLeadToolbarFilters.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1806,
+        "lineCount": 56,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignOperationalLeadsSection.tsx",
+      "type": "File",
+      "label": "CampaignOperationalLeadsSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignOperationalLeadsSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3353,
+        "lineCount": 104,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/useCampaignDetailState.ts",
+      "type": "File",
+      "label": "useCampaignDetailState.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/useCampaignDetailState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11374,
+        "lineCount": 316,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/useCampaignTalentWorkshop.ts",
+      "type": "File",
+      "label": "useCampaignTalentWorkshop.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/useCampaignTalentWorkshop.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8489,
+        "lineCount": 222,
+        "ext": ".ts"
       }
     },
     {
@@ -54832,6 +54830,123 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentColumnSettingsPopover.tsx",
+      "type": "File",
+      "label": "AppointmentColumnSettingsPopover.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentColumnSettingsPopover.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2871,
+        "lineCount": 87,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsMissedSection.tsx",
+      "type": "File",
+      "label": "AppointmentsMissedSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsMissedSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2520,
+        "lineCount": 63,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsOverlays.tsx",
+      "type": "File",
+      "label": "AppointmentsOverlays.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsOverlays.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3472,
+        "lineCount": 106,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsTabBar.tsx",
+      "type": "File",
+      "label": "AppointmentsTabBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsTabBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5748,
+        "lineCount": 140,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsTablePanel.tsx",
+      "type": "File",
+      "label": "AppointmentsTablePanel.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsTablePanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3279,
+        "lineCount": 108,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsToolbar.tsx",
+      "type": "File",
+      "label": "AppointmentsToolbar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5226,
+        "lineCount": 150,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/appointments/appointments-page-modules/appointmentsPageConstants.ts",
+      "type": "File",
+      "label": "appointmentsPageConstants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/appointments/appointments-page-modules/appointmentsPageConstants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4913,
+        "lineCount": 144,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/appointments/appointments-page-modules/useAppointmentsColumns.ts",
+      "type": "File",
+      "label": "useAppointmentsColumns.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/appointments/appointments-page-modules/useAppointmentsColumns.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3143,
+        "lineCount": 115,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/appointments/appointments-page-modules/useAppointmentsMissedSummary.ts",
+      "type": "File",
+      "label": "useAppointmentsMissedSummary.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/appointments/appointments-page-modules/useAppointmentsMissedSummary.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1963,
+        "lineCount": 63,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/appointments/components/AppointmentColumns.tsx",
       "type": "File",
       "label": "AppointmentColumns.tsx",
@@ -54995,8 +55110,8 @@
       "filePath": "apps/web/app/dashboard/appointments/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29830,
-        "lineCount": 802,
+        "sizeBytes": 6256,
+        "lineCount": 196,
         "ext": ".tsx"
       }
     },
@@ -58784,6 +58899,97 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallConfigModal.tsx",
+      "type": "File",
+      "label": "OmicallConfigModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallConfigModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2085,
+        "lineCount": 62,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallConfigsTabContent.tsx",
+      "type": "File",
+      "label": "OmicallConfigsTabContent.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallConfigsTabContent.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1204,
+        "lineCount": 36,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsFiltersToolbar.tsx",
+      "type": "File",
+      "label": "OmicallLogsFiltersToolbar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsFiltersToolbar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3990,
+        "lineCount": 127,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsTabContent.tsx",
+      "type": "File",
+      "label": "OmicallLogsTabContent.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsTabContent.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2492,
+        "lineCount": 94,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/omicall/omicall-page-modules/omicallColumns.tsx",
+      "type": "File",
+      "label": "omicallColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/omicallColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7625,
+        "lineCount": 256,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/omicall/omicall-page-modules/omicallPageTypes.ts",
+      "type": "File",
+      "label": "omicallPageTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/omicallPageTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4078,
+        "lineCount": 139,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/omicall/omicall-page-modules/useOmicallLogsPage.ts",
+      "type": "File",
+      "label": "useOmicallLogsPage.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/useOmicallLogsPage.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9795,
+        "lineCount": 328,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/omicall/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -58791,8 +58997,8 @@
       "filePath": "apps/web/app/dashboard/omicall/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26693,
-        "lineCount": 802,
+        "sizeBytes": 5054,
+        "lineCount": 166,
         "ext": ".tsx"
       }
     },
@@ -59675,8 +59881,8 @@
       "filePath": "apps/web/app/dashboard/qa-shop/components/DailyAuditTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32808,
-        "lineCount": 797,
+        "sizeBytes": 3057,
+        "lineCount": 93,
         "ext": ".tsx"
       }
     },
@@ -59704,6 +59910,136 @@
         "sizeBytes": 18310,
         "lineCount": 496,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/AuditChecklistItemRow.tsx",
+      "type": "File",
+      "label": "AuditChecklistItemRow.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/qa-shop/components/daily-audit-tab/AuditChecklistItemRow.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5009,
+        "lineCount": 113,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/AuditChecklistSectionList.tsx",
+      "type": "File",
+      "label": "AuditChecklistSectionList.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/qa-shop/components/daily-audit-tab/AuditChecklistSectionList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4535,
+        "lineCount": 129,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/ComplianceScoreCard.tsx",
+      "type": "File",
+      "label": "ComplianceScoreCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/qa-shop/components/daily-audit-tab/ComplianceScoreCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4923,
+        "lineCount": 108,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/DailyAuditFooter.tsx",
+      "type": "File",
+      "label": "DailyAuditFooter.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/qa-shop/components/daily-audit-tab/DailyAuditFooter.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3538,
+        "lineCount": 91,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/DailyAuditToolbarCard.tsx",
+      "type": "File",
+      "label": "DailyAuditToolbarCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/qa-shop/components/daily-audit-tab/DailyAuditToolbarCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4267,
+        "lineCount": 115,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/ItemStatusToggle.tsx",
+      "type": "File",
+      "label": "ItemStatusToggle.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/qa-shop/components/daily-audit-tab/ItemStatusToggle.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3606,
+        "lineCount": 80,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/SeverityDotIndicator.tsx",
+      "type": "File",
+      "label": "SeverityDotIndicator.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/qa-shop/components/daily-audit-tab/SeverityDotIndicator.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 891,
+        "lineCount": 26,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/dailyAuditUtils.ts",
+      "type": "File",
+      "label": "dailyAuditUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/qa-shop/components/daily-audit-tab/dailyAuditUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3888,
+        "lineCount": 139,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/types.ts",
+      "type": "File",
+      "label": "types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/qa-shop/components/daily-audit-tab/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1823,
+        "lineCount": 66,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/useDailyAuditState.ts",
+      "type": "File",
+      "label": "useDailyAuditState.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/qa-shop/components/daily-audit-tab/useDailyAuditState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5367,
+        "lineCount": 173,
+        "ext": ".ts"
       }
     },
     {
@@ -92801,6 +93137,132 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:SmsEditorPane:ws:apps/web",
+      "source": "uicomp:SmsEditorPane",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SmsEditorPane:token:color:primary",
+      "source": "uicomp:SmsEditorPane",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SmsHistoryPane:ws:apps/web",
+      "source": "uicomp:SmsHistoryPane",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SmsHistoryPane:token:color:primary",
+      "source": "uicomp:SmsHistoryPane",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SmsModalHeader:ws:apps/web",
+      "source": "uicomp:SmsModalHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SmsModalHeader:token:color:primary",
+      "source": "uicomp:SmsModalHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SmsResizeHandles:ws:apps/web",
+      "source": "uicomp:SmsResizeHandles",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SmsResizeHandles:token:color:primary",
+      "source": "uicomp:SmsResizeHandles",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SmsSaveTemplateModal:ws:apps/web",
+      "source": "uicomp:SmsSaveTemplateModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SmsSaveTemplateModal:token:color:primary",
+      "source": "uicomp:SmsSaveTemplateModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:smsModalHelpers:ws:apps/web",
+      "source": "uicomp:smsModalHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:smsModalHelpers:token:color:primary",
+      "source": "uicomp:smsModalHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:smsModalTypes:ws:apps/web",
+      "source": "uicomp:smsModalTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:smsModalTypes:token:color:primary",
+      "source": "uicomp:smsModalTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useSmsModalResize:ws:apps/web",
+      "source": "uicomp:useSmsModalResize",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useSmsModalResize:token:color:primary",
+      "source": "uicomp:useSmsModalResize",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useSmsModalState:ws:apps/web",
+      "source": "uicomp:useSmsModalState",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useSmsModalState:token:color:primary",
+      "source": "uicomp:useSmsModalState",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:SendOnboardingEmailModal:ws:apps/web",
       "source": "uicomp:SendOnboardingEmailModal",
       "target": "ws:apps/web",
@@ -98282,8 +98744,50 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/page.tsx",
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignDetailHeaderActions.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignDetailHeaderActions.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignDetailOverlays.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignDetailOverlays.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignDetailSummarySection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignDetailSummarySection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignLeadToolbarFilters.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignLeadToolbarFilters.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignOperationalLeadsSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/CampaignOperationalLeadsSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/useCampaignDetailState.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/useCampaignDetailState.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/useCampaignTalentWorkshop.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/slug-page-modules/useCampaignTalentWorkshop.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -98849,6 +99353,55 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsMissedSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsMissedSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsOverlays.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsOverlays.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsTablePanel.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsTablePanel.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsToolbar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/appointments/appointments-page-modules/AppointmentsToolbar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/appointments/appointments-page-modules/appointmentsPageConstants.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/appointments/appointments-page-modules/appointmentsPageConstants.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/appointments/appointments-page-modules/useAppointmentsColumns.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/appointments/appointments-page-modules/useAppointmentsColumns.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/appointments/appointments-page-modules/useAppointmentsMissedSummary.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/appointments/appointments-page-modules/useAppointmentsMissedSummary.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/appointments/components/MissedReasonModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/appointments/components/MissedReasonModal.tsx",
       "target": "ws:packages/shared",
@@ -98907,13 +99460,6 @@
     {
       "id": "edge:file:apps/web/app/dashboard/appointments/hooks/useAppointmentsData.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/appointments/hooks/useAppointmentsData.ts",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
-      "id": "edge:file:apps/web/app/dashboard/appointments/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/appointments/page.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -100473,8 +101019,15 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/omicall/page.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/omicall/page.tsx",
+      "id": "edge:file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsFiltersToolbar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsFiltersToolbar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/omicall/omicall-page-modules/omicallPageTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/omicall/omicall-page-modules/omicallPageTypes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -100739,15 +101292,64 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/qa-shop/components/DailyAuditTab.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/qa-shop/components/DailyAuditTab.tsx",
+      "id": "edge:file:apps/web/app/dashboard/qa-shop/components/HistoryLogsTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/qa-shop/components/HistoryLogsTab.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/qa-shop/components/HistoryLogsTab.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/qa-shop/components/HistoryLogsTab.tsx",
+      "id": "edge:file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/AuditChecklistItemRow.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/AuditChecklistItemRow.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/AuditChecklistSectionList.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/AuditChecklistSectionList.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/DailyAuditToolbarCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/DailyAuditToolbarCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/ItemStatusToggle.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/ItemStatusToggle.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/SeverityDotIndicator.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/SeverityDotIndicator.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/dailyAuditUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/dailyAuditUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/types.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/types.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/useDailyAuditState.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/qa-shop/components/daily-audit-tab/useDailyAuditState.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -107977,461 +108579,6 @@
       "label": "CALLS auth.me"
     },
     {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/academy-sales/campaigns",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/campaigns",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/academy-sales/campaigns",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/campaigns",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/academy-sales/campaigns/sidebar",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/campaigns/sidebar",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/academy-sales/campaigns/slug/:slug",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/campaigns/slug/:slug",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/academy-sales/campaigns/:id",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/campaigns/:id",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:PUT:/api/academy-sales/campaigns/:id",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:PUT:/api/academy-sales/campaigns/:id",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/academy-sales/campaigns/:id/status",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/campaigns/:id/status",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/academy-sales/campaigns/:id/archive",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/campaigns/:id/archive",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/academy-sales/campaigns/:id/clone",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/campaigns/:id/clone",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/academy-sales/campaigns/:id/restore",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/campaigns/:id/restore",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:DELETE:/api/academy-sales/campaigns/:id",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:DELETE:/api/academy-sales/campaigns/:id",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/academy-sales/campaigns/:id/leads",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/campaigns/:id/leads",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/academy-sales/campaigns/:id/leads",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/campaigns/:id/leads",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:DELETE:/api/academy-sales/campaigns/:id/leads/:leadId",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:DELETE:/api/academy-sales/campaigns/:id/leads/:leadId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/academy-sales/campaigns/:id/leads/:leadId/touchpoints/:touchpointId",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/campaigns/:id/leads/:leadId/touchpoints/:touchpointId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/academy-sales/campaigns/:id/stats",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/campaigns/:id/stats",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/academy-sales/courses",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/academy-sales/courses",
-      "type": "API_CALL",
-      "label": "CALLS academySales.updateCourse"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/academy-sales/courses",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/academy-sales/courses",
-      "type": "API_CALL",
-      "label": "CALLS academySales.updateCourse"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:PUT:/api/academy-sales/courses/:id",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:PUT:/api/academy-sales/courses/:id",
-      "type": "API_CALL",
-      "label": "CALLS academySales.updateCourse"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/customers",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns/:id/customers",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/customers",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/customers",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/transfer-customers",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/transfer-customers",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:DELETE:/api/campaigns/:id/customers/:customerId",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:DELETE:/api/campaigns/:id/customers/:customerId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/customers/batch-remove",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/customers/batch-remove",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/customers/:customerId/touchpoints/:touchpointId",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/customers/:customerId/touchpoints/:touchpointId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/promotions",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns/:id/promotions",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/promotions",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/promotions",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:DELETE:/api/campaigns/:id/promotions/:promotionId",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:DELETE:/api/campaigns/:id/promotions/:promotionId",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/stats",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns/:id/stats",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/customer/:customerId/active-promotions",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns/customer/:customerId/active-promotions",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns/:id",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/slug/:slug",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns/slug/:slug",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:PUT:/api/campaigns/:id",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:PUT:/api/campaigns/:id",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:DELETE:/api/campaigns/:id",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:DELETE:/api/campaigns/:id",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/end",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/end",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/complete",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/complete",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/pause",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/pause",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/resume",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/resume",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/archive",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/archive",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/unarchive",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/unarchive",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/reopen",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/reopen",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/restore",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/restore",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/clone",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/clone",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/shared-pool/overview",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns/:id/shared-pool/overview",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/staff-performance",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns/:id/staff-performance",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/shared-pool/staff-performance",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns/:id/shared-pool/staff-performance",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/claim",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/shared-pool/claim",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/release",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/shared-pool/release",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/status",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/shared-pool/status",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/sync-call",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/shared-pool/sync-call",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/advance-batch",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/shared-pool/advance-batch",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/toggle-pause",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/shared-pool/toggle-pause",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/manager-action",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/shared-pool/manager-action",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/batch-manager-action",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/shared-pool/batch-manager-action",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/shared-pool/history",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns/:id/shared-pool/history",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/recovery",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/campaigns/:id/shared-pool/recovery",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/shared-pool/stream",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/campaigns/:id/shared-pool/stream",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/cs/campaigns",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/cs/campaigns",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/cs/campaigns",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/cs/campaigns",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:PUT:/api/cs/campaigns/:id",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:PUT:/api/cs/campaigns/:id",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/cs/campaigns/:id/activate",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:POST:/api/cs/campaigns/:id/activate",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/cs/campaigns/:id/tasks",
-      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
-      "target": "route:GET:/api/cs/campaigns/:id/tasks",
-      "type": "API_CALL",
-      "label": "CALLS academySales.campaigns"
-    },
-    {
       "id": "edge:page:/dashboard/academy-leads/campaigns:route:GET:/api/academy-sales/campaigns",
       "source": "page:/dashboard/academy-leads/campaigns",
       "target": "route:GET:/api/academy-sales/campaigns",
@@ -111132,468 +111279,6 @@
       "target": "route:GET:/api/academy-sales/workshops/:workshopId/talent-leaderboard",
       "type": "API_CALL",
       "label": "CALLS academySales.workshops"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/campaigns/:id/customers",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/campaigns/:id/customers",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/campaigns/:id/customers",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/campaigns/:id/customers",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/campaigns/:id/transfer-customers",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/campaigns/:id/transfer-customers",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:DELETE:/api/campaigns/:id/customers/:customerId",
-      "source": "page:/dashboard/appointments",
-      "target": "route:DELETE:/api/campaigns/:id/customers/:customerId",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/campaigns/:id/customers/batch-remove",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/campaigns/:id/customers/batch-remove",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/campaigns/:id/customers/:customerId/touchpoints/:touchpointId",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/campaigns/:id/customers/:customerId/touchpoints/:touchpointId",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/assign",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/assign",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/revoke/preview",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/revoke/preview",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/revoke",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/revoke",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/unassign",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/unassign",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/assignment-history",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/assignment-history",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/assignment-history/:batchId/details",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/assignment-history/:batchId/details",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/assignment-history/undo",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/assignment-history/undo",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/:id/assignment-timeline",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/:id/assignment-timeline",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/retain",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/retain",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/booker-retain-quota",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/booker-retain-quota",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/appointments",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/appointments",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/missed/log",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/missed/log",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/missed/summary",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/missed/summary",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/booking/:id/logs",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/booking/:id/logs",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/booking",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/booking",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/booking/:id/promotions",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/booking/:id/promotions",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/booking/:id/reschedule-eligibility",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/booking/:id/reschedule-eligibility",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:DELETE:/api/customers/booking/:id",
-      "source": "page:/dashboard/appointments",
-      "target": "route:DELETE:/api/customers/booking/:id",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/booking-slots",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/booking-slots",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:PUT:/api/customers/booking/:id",
-      "source": "page:/dashboard/appointments",
-      "target": "route:PUT:/api/customers/booking/:id",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/:id/elsa-reservation",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/:id/elsa-reservation",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:PUT:/api/customers/:id/elsa-reservation",
-      "source": "page:/dashboard/appointments",
-      "target": "route:PUT:/api/customers/:id/elsa-reservation",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/:id/elsa-reservation/release",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/:id/elsa-reservation",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/:id/elsa-reservation",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/elsa/reminders",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/elsa/reminders",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/services",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/services",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/service-filter-options",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/service-filter-options",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/staff",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/staff",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/promotions",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/promotions",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/referrals",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/referrals",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/create-options",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/create-options",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/create",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/create",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/:id/notes",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/:id/notes",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/:id/notes/:noteId/unpin",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/:id/notes/:noteId/unpin",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/:id/notes/:noteId/pin",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/:id/notes/:noteId/pin",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/:id/notes",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/:id/notes",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/loca-stats",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/loca-stats",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/nyc-stats",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/nyc-stats",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/stats",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/stats",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/cv-schedule-roster",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/cv-schedule-roster",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/cv-realtime-status",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/cv-realtime-status",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:DELETE:/api/customers/:id",
-      "source": "page:/dashboard/appointments",
-      "target": "route:DELETE:/api/customers/:id",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/bulk-delete",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/bulk-delete",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/:id/restore",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/:id/restore",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/:id",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/:id",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/:id/history",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/:id/history",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:PUT:/api/customers/:id",
-      "source": "page:/dashboard/appointments",
-      "target": "route:PUT:/api/customers/:id",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/:id/detailed",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/:id/detailed",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/:id/bookings",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/:id/bookings",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/:id/calls",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/:id/calls",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/:id/summary",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/:id/summary",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/random-ids",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/random-ids",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/loca-staff-activity",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/loca-staff-activity",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/loca-touchpoint",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/customers/loca-touchpoint",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/loca-touchpoints",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/customers/loca-touchpoints",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/ios/customers/lookup",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/ios/customers/lookup",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:GET:/api/ios/customers/:customerId/history",
-      "source": "page:/dashboard/appointments",
-      "target": "route:GET:/api/ios/customers/:customerId/history",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
-    },
-    {
-      "id": "edge:page:/dashboard/appointments:route:POST:/api/ios/customers/:customerId/notes",
-      "source": "page:/dashboard/appointments",
-      "target": "route:POST:/api/ios/customers/:customerId/notes",
-      "type": "API_CALL",
-      "label": "CALLS customers.getMissedSummary"
     },
     {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/academy-sales/leads/:id/talent-assessments",
@@ -126436,545 +126121,6 @@
       "label": "CALLS campaigns.delete"
     },
     {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/academy-sales/staff",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/academy-sales/staff",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/campaigns/:id/staff-performance",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/campaigns/:id/staff-performance",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/campaigns/:id/shared-pool/staff-performance",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/campaigns/:id/shared-pool/staff-performance",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/career/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/career/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/chat/access-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/chat/access-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:PUT:/api/chat/access-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:PUT:/api/chat/access-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:DELETE:/api/chat/conversations/:id/members/:staffId",
-      "source": "page:/dashboard/omicall",
-      "target": "route:DELETE:/api/chat/conversations/:id/members/:staffId",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/chat/push/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/chat/push/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/chat/threads/:messageId/extract-checklist",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/cs/dashboard/staff-rankings",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/cs/dashboard/staff-rankings",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/cs/dashboard/staff-performance",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/cs/dashboard/staff-performance",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/customers/staff",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/customers/staff",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/nyc/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/nyc/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:PUT:/api/nyc/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:PUT:/api/nyc/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/loca/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/loca/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:PUT:/api/loca/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:PUT:/api/loca/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/dashboard/vat-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/dashboard/vat-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:PUT:/api/dashboard/vat-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:PUT:/api/dashboard/vat-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/customers/loca-staff-activity",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/customers/loca-staff-activity",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/gamification/daily-sales-bonus/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/gamification/daily-sales-bonus/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/gamification/daily-sales-bonus/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/gamification/daily-sales-bonus/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/ios/staff/checkout-eligible",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/ios/staff/checkout-eligible",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/kpi/salary-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/kpi/salary-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/kpi/salary-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/kpi/salary-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/kpi/staff-levels",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/kpi/staff-levels",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/kpi/staff-levels",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/kpi/staff-levels",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/kpi/bk/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/kpi/bk/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/kpi/bk/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/kpi/bk/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/kpi/cc-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/kpi/cc-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/kpi/cc-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/kpi/cc-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/kpi/cv-seniority-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/kpi/cv-seniority-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/kpi/cv-seniority-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/kpi/cv-seniority-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/kpi/cv-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/kpi/cv-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/kpi/cv-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/kpi/cv-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/kpi/cvl-training-mentorship/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/kpi/cvl-training-mentorship/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:PUT:/api/kpi/cvl-training-mentorship/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:PUT:/api/kpi/cvl-training-mentorship/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/kpi/financial-goals/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/kpi/financial-goals/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/kpi/financial-goals/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/kpi/financial-goals/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/kpi/package-audit/list",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/kpi/package-audit/list",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/kpi/telesale-target/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/kpi/telesale-target/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/menu-access/configuration",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/menu-access/configuration",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/omicall/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/omicall/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.listLogs"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/omicall/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/omicall/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.listLogs"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/omicall/sip-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/omicall/sip-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.listLogs"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:DELETE:/api/omicall/config/:staffId",
-      "source": "page:/dashboard/omicall",
-      "target": "route:DELETE:/api/omicall/config/:staffId",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/omicall/diagnostic",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/omicall/diagnostic",
-      "type": "API_CALL",
-      "label": "CALLS omicall.listLogs"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/omicall/logs/latest",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/omicall/logs/latest",
-      "type": "API_CALL",
-      "label": "CALLS omicall.listLogs"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/omicall/logs",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/omicall/logs",
-      "type": "API_CALL",
-      "label": "CALLS omicall.listLogs"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/omicall/logs/:id/play",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/omicall/logs/:id/play",
-      "type": "API_CALL",
-      "label": "CALLS omicall.listLogs"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/omicall/logs/:id/verify",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/omicall/logs/:id/verify",
-      "type": "API_CALL",
-      "label": "CALLS omicall.listLogs"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/omicall/webhook",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/omicall/webhook",
-      "type": "API_CALL",
-      "label": "CALLS omicall.listLogs"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/post-hub/reward-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/post-hub/reward-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:PUT:/api/post-hub/reward-config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:PUT:/api/post-hub/reward-config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/post-hub/leaderboard/:staffId/daily",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/post-hub/leaderboard/:staffId/daily",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/staff/media/avatars/:filename",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/staff/media/avatars/:filename",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/staff/avatar/upload",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/staff/avatar/upload",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/staff",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/staff",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/staff/bulk-update",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/staff/bulk-update",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:DELETE:/api/staff/:id",
-      "source": "page:/dashboard/omicall",
-      "target": "route:DELETE:/api/staff/:id",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/staff/legacy",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/staff/legacy",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/staff/sync-legacy",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/staff/sync-legacy",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/staff/merge",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/staff/merge",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/staff/off-days",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/staff/off-days",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/staff/:id/off-days",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/staff/:id/off-days",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/staff/:id/send-onboarding-email",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/staff/:id/send-onboarding-email",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/staff/bulk-send-onboarding-email",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/staff/bulk-send-onboarding-email",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/staff",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/staff",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/staff/:id",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/staff/:id",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/staff/:id/audit-logs",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/staff/:id/audit-logs",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/staff/roles/telesales-profile",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/staff/roles/telesales-profile",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:PUT:/api/staff/:id",
-      "source": "page:/dashboard/omicall",
-      "target": "route:PUT:/api/staff/:id",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/table-config/:tableId",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/table-config/:tableId",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/table-config/:tableId",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/table-config/:tableId",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:POST:/api/table-config/:tableId/reset",
-      "source": "page:/dashboard/omicall",
-      "target": "route:POST:/api/table-config/:tableId/reset",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/teams/staff-ids/:code",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/teams/staff-ids/:code",
-      "type": "API_CALL",
-      "label": "CALLS staff.list"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/telesale-competency/config-versions",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/telesale-competency/config-versions",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
-      "id": "edge:page:/dashboard/omicall:route:GET:/api/telesale-competency/config",
-      "source": "page:/dashboard/omicall",
-      "target": "route:GET:/api/telesale-competency/config",
-      "type": "API_CALL",
-      "label": "CALLS omicall.deleteConfig"
-    },
-    {
       "id": "edge:page:/dashboard:route:GET:/api/bug-reports/timing/dashboard",
       "source": "page:/dashboard",
       "target": "route:GET:/api/bug-reports/timing/dashboard",
@@ -136734,8 +135880,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5198,
-    "totalEdges": 9943,
+    "totalNodes": 5226,
+    "totalEdges": 9773,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -136743,17 +135889,17 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 605,
-      "File": 1979
+      "UIComponent": 614,
+      "File": 1998
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 671,
-      "USES_TOKEN": 607,
-      "IMPORTS": 1210,
+      "RENDERS": 680,
+      "USES_TOKEN": 616,
+      "IMPORTS": 1230,
       "QUERIES_MODEL": 602,
-      "API_CALL": 4308
+      "API_CALL": 4100
     },
     "fastifyRouteCount": 777,
     "prismaModelCount": 183,
