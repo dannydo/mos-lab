@@ -18,8 +18,29 @@ function createTestApp() {
           username: `staff_${where.id}`,
           displayName: `Thảo My ${where.id}`,
           role: 'technician',
+          legacyStaffId: where.id,
           careerProgression: null,
         }),
+        findMany: async () => [
+          {
+            id: 10,
+            username: 'staff_dt',
+            displayName: 'Phương Nhi',
+            role: 'lt',
+            legacyStaffId: 49076,
+            isActive: true,
+            careerProgression: null,
+          },
+          {
+            id: 20,
+            username: 'staff_ep',
+            displayName: 'HânEmBé',
+            role: 'lt',
+            legacyStaffId: 47510,
+            isActive: true,
+            careerProgression: null,
+          },
+        ],
         update: async ({ data }: any) => ({ id: 1, role: data.role }),
       },
       crmCareerProgression: {
@@ -29,6 +50,49 @@ function createTestApp() {
     },
     legacy: {
       $queryRawUnsafe: async (sql: string) => {
+        if (sql.includes('full_set_count') && sql.includes('GROUP BY os.assigned_staff_id')) {
+          return [
+            {
+              assigned_staff_id: 49076,
+              full_set_count: 69,
+              combo_retain_count: 10,
+              single_retain_count: 5,
+              service_revenue: 32799726,
+            },
+            {
+              assigned_staff_id: 47510,
+              full_set_count: 87,
+              combo_retain_count: 29,
+              single_retain_count: 7,
+              service_revenue: 47916599,
+            },
+          ];
+        }
+        if (sql.includes('full_set_count')) {
+          return [
+            {
+              full_set_count: 87,
+              combo_retain_count: 29,
+              single_retain_count: 7,
+              service_revenue: 47916599,
+            },
+          ];
+        }
+        if (sql.includes('shift_hours') && sql.includes('GROUP BY sws.user_id')) {
+          return [
+            { user_id: 49076, shift_hours: 205 },
+            { user_id: 47510, shift_hours: 207 },
+          ];
+        }
+        if (sql.includes('shift_hours')) {
+          return [{ shift_hours: 207 }];
+        }
+        if (sql.includes('store_order_count') && sql.includes('GROUP BY os.assigned_staff_id')) {
+          return [
+            { assigned_staff_id: 49076, client_store_id: 6, store_order_count: 180 },
+            { assigned_staff_id: 47510, client_store_id: 16, store_order_count: 260 },
+          ];
+        }
         if (sql.includes('COUNT(os.id)') || sql.includes('COUNT(DISTINCT os.order_id)') || sql.includes('total_orders'))
           return [{ total_orders: 340 }];
         if (sql.includes('fix_count')) return [{ fix_count: 4 }];
@@ -199,4 +263,51 @@ test('GET /career/staff/:id allows CV to view another staff career status withou
   const body = JSON.parse(res.body);
   assert.equal(body.success, true);
   assert.equal(body.data.staffId, 99);
+  assert.equal(body.data.metrics.servicesPerHour, 0.59);
+  assert.equal(body.data.metrics.productivity?.totalCompletedServices, 123);
+  assert.equal(body.data.metrics.productivity?.actualWorkingHours, 207);
+});
+
+test('GET /career/staff-list supports branch filter (ALL, DE_THAM, ESTELLA) and returns SPH & Revenue/Hour', async () => {
+  const app = createTestApp();
+  await app.register(careerRoutes);
+
+  const allRes = await app.inject({
+    method: 'GET',
+    url: '/career/staff-list?branch=ALL',
+    headers: { 'x-test-role': 'admin' },
+  });
+  assert.equal(allRes.statusCode, 200);
+  const allBody = JSON.parse(allRes.body);
+  assert.equal(allBody.data.length, 2);
+  const han = allBody.data.find((s: any) => s.id === 20);
+  assert.equal(han.storeId, 16);
+  assert.equal(han.branchCode, 'EP');
+  assert.equal(han.servicesPerHour, 0.59);
+  assert.equal(han.revenuePerHour, Math.round(47916599 / 207));
+  assert.equal(han.fullSetCount, 87);
+  assert.equal(han.comboRetainCount, 29);
+  assert.equal(han.singleRetainCount, 7);
+
+  const dtRes = await app.inject({
+    method: 'GET',
+    url: '/career/staff-list?branch=DE_THAM',
+    headers: { 'x-test-role': 'admin' },
+  });
+  assert.equal(dtRes.statusCode, 200);
+  const dtBody = JSON.parse(dtRes.body);
+  assert.equal(dtBody.data.length, 1);
+  assert.equal(dtBody.data[0].id, 10);
+  assert.equal(dtBody.data[0].branchCode, 'DT');
+
+  const epRes = await app.inject({
+    method: 'GET',
+    url: '/career/staff-list?branch=ESTELLA',
+    headers: { 'x-test-role': 'admin' },
+  });
+  assert.equal(epRes.statusCode, 200);
+  const epBody = JSON.parse(epRes.body);
+  assert.equal(epBody.data.length, 1);
+  assert.equal(epBody.data[0].id, 20);
+  assert.equal(epBody.data[0].branchCode, 'EP');
 });

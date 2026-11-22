@@ -2,7 +2,78 @@ export type CareerRole = 'KTV' | 'CV' | 'CV_PLUS' | 'CV_PLUS_PLUS' | 'FM' | 'CHO
 
 export type CareerPeriod = 'last_30_days' | 'this_month' | 'last_month' | 'last_3_months';
 
+export type CareerBranchFilter = 'ALL' | 'DE_THAM' | 'ESTELLA';
+
 export type CareerProgressionStatus = 'IN_PROGRESS' | 'TRIAL_GATE' | 'QUALIFIED' | 'PROMOTED' | 'SPECIALIST_PATH';
+
+export interface StaffHourlyProductivity {
+  /** Tổng lượt làm mi hoàn tất trong kỳ (Full set + Dặm Combo + Dặm lẻ) */
+  totalCompletedServices: number;
+  /** Số lượt Full set (service_type = 'Normal') */
+  fullSetCount: number;
+  /** Số lượt Dặm Combo (service_type = 'Retain' & user_service_type = 'combo') */
+  comboRetainCount: number;
+  /** Số lượt Dặm lẻ (service_type = 'Retain' & user_service_type != 'combo') */
+  singleRetainCount: number;
+  /** Tổng thời gian làm việc thực tế trong kỳ (giờ công ca) */
+  actualWorkingHours: number;
+  /** Chỉ số Hiệu suất Giờ (SPH - Services Per Hour) = totalCompletedServices / actualWorkingHours */
+  servicesPerHour: number;
+  /** Tổng doanh thu dịch vụ làm mi hoàn tất trong kỳ (VNĐ) */
+  serviceRevenue: number;
+  /** Doanh thu phục vụ trên mỗi giờ công (Revenue Per Hour, VNĐ/giờ) */
+  revenuePerHour: number;
+  /** Nguồn giờ công sử dụng ('SHIFT' | 'PAYROLL' | 'NONE') */
+  workingHoursSource?: 'SHIFT' | 'PAYROLL' | 'NONE';
+}
+
+/**
+ * Chuẩn hóa bộ lọc chi nhánh trên Career Path sang storeId tương ứng (ALL -> null, DE_THAM -> 6, ESTELLA -> 16)
+ */
+export function resolveCareerBranchFilterStoreId(branch?: string | null): number | null {
+  const normalized = String(branch || '')
+    .trim()
+    .toUpperCase();
+  if (!normalized || normalized === 'ALL') return null;
+  if (normalized === 'DE_THAM' || normalized === 'DT' || normalized === '6' || normalized.includes('DE THAM') || normalized.includes('ĐỀ THÁM')) {
+    return 6;
+  }
+  if (normalized === 'ESTELLA' || normalized === 'EP' || normalized === '16' || normalized.includes('ESTELLA')) {
+    return 16;
+  }
+  return null;
+}
+
+/**
+ * Chuẩn hóa bộ lọc chi nhánh về mã CareerBranchFilter ('ALL' | 'DE_THAM' | 'ESTELLA')
+ */
+export function normalizeCareerBranchFilter(branch?: string | null): CareerBranchFilter {
+  const storeId = resolveCareerBranchFilterStoreId(branch);
+  if (storeId === 6) return 'DE_THAM';
+  if (storeId === 16) return 'ESTELLA';
+  return 'ALL';
+}
+
+/**
+ * Kiểm tra một nhân sự có thuộc bộ lọc chi nhánh Career Path đang chọn hay không
+ */
+export function matchesCareerBranchFilter(
+  staff: { storeId?: number | null; branchCode?: string | null; branchName?: string | null },
+  branchFilter?: CareerBranchFilter | string | null
+): boolean {
+  const targetStoreId = resolveCareerBranchFilterStoreId(branchFilter);
+  if (targetStoreId === null) return true;
+  if (Number(staff.storeId) === targetStoreId) return true;
+  const code = String(staff.branchCode || '').trim().toUpperCase();
+  const name = String(staff.branchName || '').trim().toUpperCase();
+  if (targetStoreId === 6) {
+    return code === 'DT' || name.includes('ĐỀ THÁM') || name.includes('DE THAM');
+  }
+  if (targetStoreId === 16) {
+    return code === 'EP' || name.includes('ESTELLA');
+  }
+  return false;
+}
 
 export interface CvToCvPlusRequirements {
   /** Số ca nối mi tối thiểu cần hoàn thành trong 3 tháng liên tiếp */
@@ -462,6 +533,15 @@ export interface CareerStaffSummary {
   branchAvgTip?: number;
   period?: CareerPeriod;
   targetOrders?: number;
+  servicesPerHour?: number;
+  revenuePerHour?: number;
+  actualWorkingHours?: number;
+  totalCompletedServices?: number;
+  fullSetCount?: number;
+  comboRetainCount?: number;
+  singleRetainCount?: number;
+  serviceRevenue?: number;
+  productivity?: StaffHourlyProductivity;
 }
 
 export interface StaffCareerStatus {
@@ -512,6 +592,12 @@ export interface StaffCareerStatus {
     facilityScore?: number | null;
     inventoryLossRate?: number | null;
     googleReviewsCount?: number | null;
+    servicesPerHour?: number;
+    revenuePerHour?: number;
+    actualWorkingHours?: number;
+    totalCompletedServices?: number;
+    serviceRevenue?: number;
+    productivity?: StaffHourlyProductivity;
     qaAudit?: {
       totalAudits: number;
       requiredAudits: number;

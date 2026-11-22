@@ -26,16 +26,20 @@ import {
   CircleUser,
   CreditCard,
   Gem,
+  Gauge,
+  TrendingUp,
   MapPin,
 } from 'lucide-react';
 import { StatusTag, DataTable } from '../../../../components/ui';
 import { WingRoleLabel } from './IslandGameIcon';
-import type {
-  CareerStaffSummary,
-  CareerRole,
-  CareerPeriod,
-  BananaTransactionCategory,
-  CareerProgressionConfig,
+import {
+  normalizeCareerBranchFilter,
+  type CareerStaffSummary,
+  type CareerRole,
+  type CareerPeriod,
+  type CareerBranchFilter,
+  type BananaTransactionCategory,
+  type CareerProgressionConfig,
 } from '@mos-lab/shared';
 import {
   formatCareerRoleName,
@@ -55,7 +59,7 @@ export interface StaffCareerSelectorProps {
   lastSyncedAt?: string | null;
   activeRoleFilter?: string;
   onRoleFilterChange?: (role: string) => void;
-  activeBranchFilter?: string;
+  activeBranchFilter?: CareerBranchFilter | string;
   onBranchFilterChange?: (branch: string) => void;
   period?: CareerPeriod;
   onPeriodChange?: (period: CareerPeriod) => void;
@@ -129,7 +133,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   config,
 }) => {
   const [internalRoleFilter, setInternalRoleFilter] = useState('ALL');
-  const [internalBranchFilter, setInternalBranchFilter] = useState('ALL');
+  const [internalBranchFilter, setInternalBranchFilter] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [internalMode, setInternalMode] = useState<CareerSelectorMode>(() => {
     if (typeof window !== 'undefined') {
@@ -169,7 +173,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     else setInternalRoleFilter(role);
   };
 
-  const currentBranchFilter = onBranchFilterChange ? activeBranchFilter : internalBranchFilter;
+  const currentBranchFilter: string = onBranchFilterChange ? activeBranchFilter : internalBranchFilter;
   const setBranchFilter = (branch: string) => {
     if (onBranchFilterChange) onBranchFilterChange(branch);
     else setInternalBranchFilter(branch);
@@ -263,7 +267,11 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
           {!compact && <span className="hidden xl:inline">Chi nhánh:</span>}
         </span>
         {branchOptions.map((branch) => {
-          const isActive = currentBranchFilter === branch.key;
+          const isActive =
+            currentBranchFilter === branch.key ||
+            (branch.key !== 'ALL' &&
+              normalizeCareerBranchFilter(currentBranchFilter) !== 'ALL' &&
+              normalizeCareerBranchFilter(currentBranchFilter) === normalizeCareerBranchFilter(branch.key));
           const label = branch.key === 'ALL' ? 'Tất cả' : branch.label;
           return (
             <Tooltip
@@ -978,6 +986,113 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
         );
       },
     },
+    {
+      title: (
+        <Tooltip
+          title={`SPH (Services Per Hour): Số lượt làm mi hoàn tất (Full set + Dặm Combo + Dặm lẻ) / 1 Giờ công thực tế trong ${currentPeriodLabel.toLowerCase()}`}
+        >
+          <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-[11px] font-bold text-sky-700 dark:text-sky-300">
+            <Gauge className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <span>SPH</span>
+          </span>
+        </Tooltip>
+      ),
+      key: 'servicesPerHour',
+      dataIndex: 'servicesPerHour',
+      width: 78,
+      align: 'center',
+      sorter: (a, b) => (a.servicesPerHour ?? a.productivity?.servicesPerHour ?? 0) - (b.servicesPerHour ?? b.productivity?.servicesPerHour ?? 0),
+      render: (_, staff) => {
+        const prod = staff.productivity;
+        const sph = staff.servicesPerHour ?? prod?.servicesPerHour ?? 0;
+        const hours = staff.actualWorkingHours ?? prod?.actualWorkingHours ?? 0;
+        const totalSvc = staff.totalCompletedServices ?? prod?.totalCompletedServices ?? 0;
+        const fullSet = staff.fullSetCount ?? prod?.fullSetCount ?? 0;
+        const comboRetain = staff.comboRetainCount ?? prod?.comboRetainCount ?? 0;
+        const singleRetain = staff.singleRetainCount ?? prod?.singleRetainCount ?? 0;
+
+        if (hours <= 0) {
+          return (
+            <Tooltip title={`Chưa có dữ liệu giờ công ca trong ${currentPeriodLabel.toLowerCase()}`}>
+              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums border border-slate-200 dark:border-slate-700 text-slate-400">
+                —
+              </span>
+            </Tooltip>
+          );
+        }
+
+        const badgeClass =
+          sph >= 0.45
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
+            : sph >= 0.3
+              ? 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/25'
+              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25';
+
+        return (
+          <Tooltip
+            title={`Hiệu suất ${sph.toFixed(2)} lượt/giờ = ${totalSvc} lượt (${fullSet} Full set · ${comboRetain} Dặm Combo · ${singleRetain} Dặm lẻ) / ${hours}h ca`}
+          >
+            <span
+              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${badgeClass}`}
+            >
+              {sph.toFixed(2)}/h
+            </span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: (
+        <Tooltip
+          title={`Doanh thu / Giờ công (Revenue/Hour): Tổng doanh thu dịch vụ làm mi / Giờ công thực tế trong ${currentPeriodLabel.toLowerCase()}`}
+        >
+          <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>DT/h</span>
+          </span>
+        </Tooltip>
+      ),
+      key: 'revenuePerHour',
+      dataIndex: 'revenuePerHour',
+      width: 82,
+      align: 'center',
+      sorter: (a, b) => (a.revenuePerHour ?? a.productivity?.revenuePerHour ?? 0) - (b.revenuePerHour ?? b.productivity?.revenuePerHour ?? 0),
+      render: (_, staff) => {
+        const prod = staff.productivity;
+        const rph = staff.revenuePerHour ?? prod?.revenuePerHour ?? 0;
+        const hours = staff.actualWorkingHours ?? prod?.actualWorkingHours ?? 0;
+        const rev = staff.serviceRevenue ?? prod?.serviceRevenue ?? 0;
+
+        if (hours <= 0) {
+          return (
+            <Tooltip title={`Chưa có dữ liệu giờ công ca trong ${currentPeriodLabel.toLowerCase()}`}>
+              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums border border-slate-200 dark:border-slate-700 text-slate-400">
+                —
+              </span>
+            </Tooltip>
+          );
+        }
+
+        const badgeClass =
+          rph >= 180000
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
+            : rph >= 120000
+              ? 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/25'
+              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25';
+
+        return (
+          <Tooltip
+            title={`Doanh thu/giờ: ${rph.toLocaleString('vi-VN')}đ/h = ${rev.toLocaleString('vi-VN')}đ / ${hours}h ca`}
+          >
+            <span
+              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${badgeClass}`}
+            >
+              {Math.round(rph / 1000)}K/h
+            </span>
+          </Tooltip>
+        );
+      },
+    },
   ];
 
   if (currentMode === 'ultra_compact') {
@@ -1094,10 +1209,14 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                         <span>{staff.displayName}</span>
                         {getRoleBadge(staff.careerRole, true)}
                       </div>
-                      <div className="text-[10px] text-slate-300">{getStatusLabel(overallStatus)}</div>
+                      <div className="text-[10px] text-slate-300">
+                        {staff.branchName ? `${staff.branchName} · ` : ''}
+                        {getStatusLabel(overallStatus)}
+                      </div>
                       <div className="text-[10px] font-mono text-amber-300 border-t border-white/10 pt-1">
-                        {staff.ordersCount || 0} mi · {tipRate}% tip · {getStaffComboPercent(staff)}% combo ·{' '}
-                        {balance.toLocaleString('vi-VN')} 🍌
+                        {staff.ordersCount || 0} mi ·{' '}
+                        {(staff.servicesPerHour ?? staff.productivity?.servicesPerHour ?? 0).toFixed(2)}/h · {tipRate}% tip ·{' '}
+                        {getStaffComboPercent(staff)}% combo · {balance.toLocaleString('vi-VN')} 🍌
                       </div>
                     </div>
                   }
@@ -1330,11 +1449,30 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                         {staff.displayName}
                       </span>
                       <span className="scale-90 origin-left shrink-0">{getRoleBadge(staff.careerRole, true)}</span>
+                      {staff.branchCode && (
+                        <span
+                          className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full border shrink-0 ${
+                            staff.branchCode === 'EP'
+                              ? 'bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/25'
+                              : 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25'
+                          }`}
+                        >
+                          {staff.branchCode}
+                        </span>
+                      )}
                     </div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-mono mt-0.5 whitespace-nowrap">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-mono mt-0.5 whitespace-nowrap tabular-nums">
                       <span className="font-semibold text-slate-700 dark:text-slate-300">
                         {staff.ordersCount || 0} mi
                       </span>
+                      {(staff.actualWorkingHours ?? staff.productivity?.actualWorkingHours ?? 0) > 0 && (
+                        <>
+                          <span>·</span>
+                          <span className="text-sky-600 dark:text-sky-400 font-bold">
+                            {(staff.servicesPerHour ?? staff.productivity?.servicesPerHour ?? 0).toFixed(2)}/h
+                          </span>
+                        </>
+                      )}
                       <span>·</span>
                       <span className="text-emerald-600 dark:text-emerald-400 font-bold">{tipRate}% tip</span>
                       <span>·</span>
@@ -1442,7 +1580,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             rowKey="id"
             size="small"
             pagination={false}
-            scroll={{ y: 520 }}
+            stickyPrimaryColumn
+            scroll={{ x: 'max-content', y: 520 }}
             onRow={(record) => ({
               onClick: () => onSelectStaff(record.id),
               className: 'cursor-pointer group',
@@ -1715,6 +1854,23 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-slate-600 dark:text-slate-300">
               Combo: <strong>{getStaffComboPercent(selectedStaff)}%</strong>
+            </span>
+            <span className="text-slate-400">·</span>
+            <span className="tabular-nums text-sky-600 dark:text-sky-400 font-semibold">
+              SPH:{' '}
+              <strong>
+                {(selectedStaff.servicesPerHour ?? selectedStaff.productivity?.servicesPerHour ?? 0).toFixed(2)}/h
+              </strong>
+            </span>
+            <span className="text-slate-400">·</span>
+            <span className="tabular-nums text-emerald-600 dark:text-emerald-400 font-semibold">
+              DT/h:{' '}
+              <strong>
+                {Math.round(
+                  (selectedStaff.revenuePerHour ?? selectedStaff.productivity?.revenuePerHour ?? 0) / 1000
+                ).toLocaleString('vi-VN')}
+                K
+              </strong>
             </span>
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-amber-600 dark:text-amber-400 font-bold">

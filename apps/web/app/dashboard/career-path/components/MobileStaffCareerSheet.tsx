@@ -18,14 +18,18 @@ import {
   Feather,
   Gem,
   Wallet,
+  Gauge,
+  TrendingUp,
   MapPin,
 } from 'lucide-react';
 import { StatusTag } from '../../../../components/ui';
 import { WingRoleLabel, LashIcon } from './IslandGameIcon';
 import {
   normalizeCvFeatherRole,
+  normalizeCareerBranchFilter,
   type CareerStaffSummary,
   type CareerRole,
+  type CareerBranchFilter,
   type CareerProgressionConfig,
 } from '@mos-lab/shared';
 import { buildCareerBranchOptions, matchesCareerBranchFilter, matchesCareerRoleFilter } from '../career-path.constants';
@@ -35,7 +39,7 @@ export interface MobileStaffCareerSheetProps {
   selectedStaffId: number | null;
   onSelectStaff: (staffId: number) => void;
   config?: CareerProgressionConfig;
-  activeBranchFilter?: string;
+  activeBranchFilter?: CareerBranchFilter | string;
   onBranchFilterChange?: (branch: string) => void;
   onClose: () => void;
 }
@@ -57,21 +61,23 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
   selectedStaffId,
   onSelectStaff,
   config,
-  activeBranchFilter = 'ALL',
+  activeBranchFilter,
   onBranchFilterChange,
   onClose,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeRoleFilter, setActiveRoleFilter] = useState('ALL');
-  const [internalBranchFilter, setInternalBranchFilter] = useState('ALL');
-  const currentBranchFilter = onBranchFilterChange ? activeBranchFilter : internalBranchFilter;
+  const [internalBranchFilter, setInternalBranchFilter] = useState<string>('ALL');
+  const [highlightedId, setHighlightedId] = useState<number | null>(selectedStaffId);
+  const selectedRef = useRef<HTMLDivElement | null>(null);
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const currentBranchFilter: string =
+    onBranchFilterChange && activeBranchFilter !== undefined ? activeBranchFilter : internalBranchFilter;
   const setBranchFilter = (branch: string) => {
     if (onBranchFilterChange) onBranchFilterChange(branch);
     else setInternalBranchFilter(branch);
   };
-  const [highlightedId, setHighlightedId] = useState<number | null>(selectedStaffId);
-  const selectedRef = useRef<HTMLDivElement | null>(null);
-  const listContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Benchmarks from config
   const cvReq = config?.cvToCvPlus || config?.cvToCc;
@@ -425,7 +431,11 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
               <MapPin className="w-3 h-3 text-rose-500" />
             </span>
             {branchOptions.map((branch) => {
-              const isActive = currentBranchFilter === branch.key;
+              const isActive =
+                currentBranchFilter === branch.key ||
+                (branch.key !== 'ALL' &&
+                  normalizeCareerBranchFilter(currentBranchFilter) !== 'ALL' &&
+                  normalizeCareerBranchFilter(currentBranchFilter) === normalizeCareerBranchFilter(branch.key));
               const label = branch.key === 'ALL' ? 'Tất cả chi nhánh' : branch.label;
               return (
                 <button
@@ -667,6 +677,28 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Hourly Productivity Strip (SPH & Revenue/Hour) */}
+                {(staff.actualWorkingHours ?? staff.productivity?.actualWorkingHours ?? 0) > 0 && (
+                  <div className="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800/70 flex items-center justify-between gap-2 text-[10px] tabular-nums">
+                    <span className="inline-flex items-center gap-1 text-sky-700 dark:text-sky-300 font-bold">
+                      <Gauge className="w-3 h-3 text-sky-500 shrink-0" />
+                      <span>
+                        SPH: {(staff.servicesPerHour ?? staff.productivity?.servicesPerHour ?? 0).toFixed(2)} lượt/h
+                      </span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-bold">
+                      <TrendingUp className="w-3 h-3 text-emerald-500 shrink-0" />
+                      <span>
+                        DT/h:{' '}
+                        {Math.round(
+                          (staff.revenuePerHour ?? staff.productivity?.revenuePerHour ?? 0) / 1000
+                        ).toLocaleString('vi-VN')}
+                        K
+                      </span>
+                    </span>
+                  </div>
+                )}
               </div>
             );
           })

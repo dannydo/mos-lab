@@ -1,5 +1,11 @@
 import type { CareerProgressionConfig, CareerStaffSummary, StaffCareerStatus } from '@mos-lab/shared';
-import { DEFAULT_CAREER_PROGRESSION_CONFIG, calculateComboBonus, formatComboTierBracketLabel } from '@mos-lab/shared';
+import {
+  DEFAULT_CAREER_PROGRESSION_CONFIG,
+  calculateComboBonus,
+  formatComboTierBracketLabel,
+  matchesCareerBranchFilter as matchesSharedCareerBranchFilter,
+  resolveCareerBranchFilterStoreId,
+} from '@mos-lab/shared';
 
 export { calculateComboBonus, formatComboTierBracketLabel };
 
@@ -379,6 +385,9 @@ export function matchesCareerBranchFilter(
   branchFilter: string
 ): boolean {
   if (!branchFilter || branchFilter === 'ALL') return true;
+  if (resolveCareerBranchFilterStoreId(branchFilter) !== null) {
+    return matchesSharedCareerBranchFilter(staff, branchFilter);
+  }
   return getStaffBranchKey(staff) === branchFilter;
 }
 
