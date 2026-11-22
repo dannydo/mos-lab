@@ -16,7 +16,6 @@
     "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx": 1565,
     "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx": 2891,
     "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx": 1761,
-    "apps/web/app/dashboard/career-path/page.tsx": 846,
     "apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx": 1150,
     "apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx": 1652,
     "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx": 1185,
@@ -29,7 +28,6 @@
     "apps/web/app/dashboard/funds/components/FundDetailDrawer.tsx": 952,
     "apps/web/app/dashboard/funds/components/FundFormModal.tsx": 979,
     "apps/web/app/dashboard/holiday-work/page.tsx": 865,
-    "apps/web/app/dashboard/loca/components/LocaStaffActivityTab.tsx": 857,
     "apps/web/app/dashboard/loca/hooks/useLocaData.ts": 1152,
     "apps/web/app/dashboard/loca/page.tsx": 1535,
     "apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx": 2015,
@@ -42,9 +40,7 @@
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.tsx": 1991,
     "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx": 1264,
     "apps/web/app/dashboard/pilot-dark-lashes/components/SopPrepCategory1DetailView.tsx": 915,
-    "apps/web/app/dashboard/schedule-calendar/page.tsx": 848,
     "apps/web/app/dashboard/staff/page.tsx": 998,
-    "apps/web/app/dashboard/staff/teams/page.tsx": 849,
     "apps/web/app/dashboard/telesale-competency/components/TelesaleConfigTab.tsx": 1302,
     "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx": 875,
     "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx": 1035,
@@ -68,7 +64,6 @@
     "apps/web/components/mos-chat/mobile/MosChatMobileInbox.tsx": 901,
     "apps/web/components/mos-chat/mobile/MosChatMobileMessageItem.tsx": 916,
     "apps/web/components/notification-center/HeaderNotificationCenter.tsx": 1030,
-    "apps/web/components/profile/UnifiedProfileSheet.tsx": 853,
     "apps/web/components/qa-shop/hooks/useQaShopState.ts": 866,
     "apps/web/components/ui/MermaidViewer.tsx": 1102
   }
