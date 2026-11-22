@@ -16,6 +16,7 @@ import {
   InboxImplementationService,
   implementationReportInclude,
   isInboxImplementationExecutionEligible,
+  resolveInboxImplementationCheckpointGate,
   evaluateInboxImplementationQualityGate,
   qualityTestsForCheckpointApproval,
 } from './inbox-implementation.service.js';
@@ -123,7 +124,7 @@ type Verifier = typeof verifyIdeProductionRelease;
 async function resolveEvidence(db: Prisma.TransactionClient, reportId: number, verify: Verifier) {
   const report = await db.crmBugReport.findUnique({ where: { id: reportId }, include: implementationReportInclude() });
   if (!report) fail('BUG_NOT_FOUND', 'Không tìm thấy ticket.');
-  const gate = isInboxImplementationExecutionEligible(report!);
+  const gate = resolveInboxImplementationCheckpointGate(report!);
   if (
     !gate.eligible ||
     !gate.plan ||

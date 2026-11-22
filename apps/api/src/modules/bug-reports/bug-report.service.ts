@@ -2572,6 +2572,27 @@ export class BugReportService {
 
     const now = new Date();
     const updated = await fastify.prisma.crm.$transaction(async (tx) => {
+      // Reopening from temporary defer must restore the prior triageNote (or null) instead of
+      // overwriting it with the UI reopen note and poisoning Gate 1 sourceVersion for active jobs.
+      let nextTriageNote = note;
+      if (
+        previousStatus === 'REJECTED' &&
+        status === 'NEW' &&
+        note === 'Mở lại ticket sau thời gian tạm hoãn' &&
+        existing.triageNote?.startsWith('[Tạm hoãn]')
+      ) {
+        const auditDelegate = (tx as { crmBugReportAudit?: { findFirst?: unknown } }).crmBugReportAudit;
+        const rejectAudit =
+          typeof auditDelegate?.findFirst === 'function'
+            ? await tx.crmBugReportAudit.findFirst({
+                where: { reportId: id, action: 'STATUS_REJECTED' },
+                orderBy: { id: 'desc' },
+              })
+            : null;
+        const prevSnapshot = safeJsonParse<{ triageNote?: unknown } | null>(rejectAudit?.beforeJson ?? null, null);
+        nextTriageNote = typeof prevSnapshot?.triageNote === 'string' ? prevSnapshot.triageNote : null;
+      }
+
       const row = await tx.crmBugReport.update({
         where: { id },
         data: {
@@ -2580,7 +2601,7 @@ export class BugReportService {
           statusSort: STATUS_SORT[status],
           prioritySort: priority ? PRIORITY_SORT[priority] : 4,
           businessContext,
-          triageNote: note,
+          triageNote: nextTriageNote,
           clarificationStatus,
           clarificationSummary:
             clarificationStatus === 'READY' && existing.clarificationStatus !== 'READY'

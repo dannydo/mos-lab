@@ -11,6 +11,7 @@ import {
   evaluateInboxImplementationQualityGate,
   isInboxImplementationExecutionEligible,
   isInboxImplementationEligible,
+  resolveInboxImplementationCheckpointGate,
   normalizeInboxImplementationResult,
   qualityTestsForCheckpointApproval,
   recoverLegacyDeployQualityEvidence,
@@ -2431,4 +2432,95 @@ test('deferIdeTaskProvisioning sets exponential cooldown backoff and preserves M
   assert.ok(retryAt instanceof Date);
   const deltaMs = retryAt.getTime() - before;
   assert.ok(deltaMs >= 115_000 && deltaMs <= 125_000, `Expected ~120s backoff for attempt 2, got ${deltaMs}ms`);
+});
+
+test('commit and deploy checkpoints succeed when STAFF comments arrive after Gate 1 approval, while core scope edits still fail', async () => {
+  const approvedAt = new Date('2026-11-21T09:58:18.000Z');
+  const preApprovalComment = {
+    id: 873,
+    body: 'Initial CVL tip clarification.',
+    createdAt: new Date('2026-11-21T09:50:00.000Z'),
+  };
+  const basePreApproval = source({
+    status: 'APPROVED',
+    implementationApprovedAt: approvedAt,
+    comments: [preApprovalComment],
+  });
+  const approvedVersion = inboxImplementationSourceVersion(basePreApproval);
+  const readyWithPostComments = source({
+    status: 'APPROVED',
+    implementationApprovedAt: approvedAt,
+    implementationApprovalSourceVersion: approvedVersion,
+    implementationActiveJobId: 'ag-drift-job',
+    comments: [
+      { id: 877, body: 'Post-approval thread reply #2', createdAt: new Date('2026-11-21T10:48:52.000Z') },
+      { id: 874, body: 'Same-second reply after Gate 1 approval', createdAt: approvedAt },
+      preApprovalComment,
+    ],
+    inboxPlanJobs: [
+      {
+        id: 'plan-drift-1',
+        status: 'COMPLETED',
+        resultAction: 'POST_PLAN',
+        sourceVersion: approvedVersion,
+        planVersion: 'v1:plan-drift',
+      },
+    ],
+  });
+
+  // Raw Gate 1 execution check still sees comment drift, whereas checkpoint gate resolves cleanly.
+  assert.equal(isInboxImplementationExecutionEligible(readyWithPostComments).eligible, false);
+  const checkpointGate = resolveInboxImplementationCheckpointGate(readyWithPostComments);
+  assert.equal(checkpointGate.eligible, true);
+  assert.equal(checkpointGate.sourceVersion, approvedVersion);
+
+  const coreChanged = { ...readyWithPostComments, description: 'Changed ticket scope after approval.' };
+  assert.equal(resolveInboxImplementationCheckpointGate(coreChanged).eligible, false);
+
+  const agJob = {
+    id: 'ag-drift-job',
+    reportId: 16,
+    executionOwner: 'AG',
+    status: 'AWAITING_COMMIT_REVIEW',
+    sourceVersion: approvedVersion,
+    planVersion: 'v1:plan-drift',
+    commitSha: null as string | null,
+    changedFilesJson: JSON.stringify(['apps/api/src/modules/kpi/routes/cv-tip.routes.ts']),
+    testsJson: JSON.stringify([{ command: 'pnpm verify:quick', status: 'PASSED' }]),
+    updatedAt: new Date('2026-11-21T11:00:00.000Z'),
+  };
+  const updates: Array<Record<string, unknown>> = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => readyWithPostComments },
+        crmInboxImplementationJob: {
+          findFirst: async ({ where }: { where: { sourceVersion?: string; status?: string } }) =>
+            where.sourceVersion === agJob.sourceVersion && where.status === agJob.status ? agJob : null,
+          findUnique: async () => agJob,
+        },
+        crmBugReportComment: { findMany: async () => [] },
+        $transaction: async (callback: (tx: unknown) => Promise<boolean>) =>
+          callback({
+            $queryRaw: async () => [],
+            crmInboxImplementationJob: {
+              findUnique: async () => agJob,
+              updateMany: async (input: { data: Record<string, unknown> }) => {
+                updates.push(input.data);
+                return { count: 1 };
+              },
+            },
+            crmBugReportAudit: { findFirst: async () => null, create: async () => ({ id: 1 }) },
+            crmBugReport: { update: async () => ({}), updateMany: async () => ({ count: 1 }) },
+          }),
+      },
+    },
+  };
+
+  assert.equal(await InboxImplementationService.approveCommit(fastify as never, 16, 1), true);
+  agJob.status = 'AWAITING_DEPLOY_REVIEW';
+  agJob.commitSha = 'a'.repeat(40);
+  assert.equal(await InboxImplementationService.approveDeploy(fastify as never, 16, 1), true);
+  assert.equal(updates[0]?.executionPhase, 'IDE_COMMIT_HANDOFF');
+  assert.equal(updates[1]?.executionPhase, 'DEPLOY_APPROVED');
 });

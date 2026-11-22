@@ -360,8 +360,71 @@ export function canAuthorizeBuildLockRecoveryRetry(source: {
   );
 }
 
-function isCurrentExecution(source: GateSource, sourceVersion: string, planVersion: string): boolean {
+function parseOptionalTimestampMs(value: Date | string | null | undefined): number | null {
+  if (!value) return null;
+  const ms = value instanceof Date ? value.getTime() : Date.parse(String(value));
+  return Number.isFinite(ms) ? ms : null;
+}
+
+/**
+ * Validates commit/deploy/release checkpoints for an already-approved implementation job.
+ * Post-approval STAFF comments (e.g. live replies synced from mOS Chat while AG/Worker
+ * is coding or awaiting Gate 2/3) must not trap an active approved job in a 409 deadlock
+ * as long as base eligibility, approval binding, and pre-approval ticket scope still match.
+ */
+export function resolveInboxImplementationCheckpointGate(source: GateSource) {
   const gate = isInboxImplementationExecutionEligible(source);
+  if (gate.eligible && gate.plan) return gate;
+
+  if (
+    !isInboxImplementationBaseEligible(source) ||
+    !source.implementationApprovedAt ||
+    !source.implementationApprovalSourceVersion ||
+    !source.implementationActiveJobId
+  ) {
+    return gate;
+  }
+
+  const approvedMs = parseOptionalTimestampMs(source.implementationApprovedAt);
+  const approvedVersion = source.implementationApprovalSourceVersion;
+  const comments = (source.comments ?? []) as Array<{ id: number; body: string; createdAt?: Date | string | null }>;
+  const preApprovalComments = comments.filter((comment) => {
+    const commentMs = parseOptionalTimestampMs(comment.createdAt);
+    return commentMs === null || approvedMs === null || commentMs <= approvedMs;
+  });
+
+  const candidates: Array<typeof comments> = [preApprovalComments];
+  // CRM DATETIME(0) stores second precision; comments created later in the same second as
+  // Gate 1 approval sit at the head of newest-first comments, so trim matching-second entries.
+  if (approvedMs !== null) {
+    for (let i = 0; i < preApprovalComments.length; i += 1) {
+      if (parseOptionalTimestampMs(preApprovalComments[i]?.createdAt) !== approvedMs) break;
+      candidates.push(preApprovalComments.slice(i + 1));
+    }
+  }
+
+  for (const subset of candidates) {
+    const candidateVersion = inboxImplementationSourceVersion({
+      ...source,
+      comments: subset,
+    });
+    if (candidateVersion === approvedVersion) {
+      const plan = inboxImplementationCurrentPlan(source, approvedVersion);
+      if (plan) {
+        return {
+          ...gate,
+          eligible: true,
+          sourceVersion: approvedVersion,
+          plan,
+        };
+      }
+    }
+  }
+  return gate;
+}
+
+function isCurrentExecution(source: GateSource, sourceVersion: string, planVersion: string): boolean {
+  const gate = resolveInboxImplementationCheckpointGate(source);
   return gate.eligible && gate.sourceVersion === sourceVersion && gate.plan?.planVersion === planVersion;
 }
 
@@ -1709,7 +1772,7 @@ export class InboxImplementationService {
         );
       }
       if (
-        report.status !== 'IN_PROGRESS' ||
+        !['IN_PROGRESS', 'APPROVED'].includes(report.status) ||
         report.implementationActiveJobId !== job.id ||
         job.status !== 'AWAITING_COMMIT_REVIEW' ||
         job.executionPhase !== 'AWAITING_COMMIT_REVIEW' ||
@@ -1735,7 +1798,7 @@ export class InboxImplementationService {
       if (!changed.count)
         throw new InboxImplementationError('Quyết định commit đã thay đổi. Hãy tải lại.', 409, 'REVIEW_NOT_OPEN');
       const updated = await tx.crmBugReport.updateMany({
-        where: { id: reportId, status: 'IN_PROGRESS', implementationActiveJobId: job.id },
+        where: { id: reportId, status: { in: ['IN_PROGRESS', 'APPROVED'] }, implementationActiveJobId: job.id },
         data: {
           status: 'APPROVED',
           statusSort: 0,
@@ -2660,7 +2723,7 @@ export class InboxImplementationService {
       include: implementationReportInclude(),
     });
     if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
-    const gate = isInboxImplementationExecutionEligible(report);
+    const gate = resolveInboxImplementationCheckpointGate(report);
     if (!gate.eligible || !gate.plan || !report.implementationActiveJobId) {
       throw new InboxImplementationError(
         'Ticket không còn ở checkpoint duyệt commit hợp lệ.',
@@ -2777,7 +2840,7 @@ export class InboxImplementationService {
       include: implementationReportInclude(),
     });
     if (!report) throw new InboxImplementationError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
-    const gate = isInboxImplementationExecutionEligible(report);
+    const gate = resolveInboxImplementationCheckpointGate(report);
     if (!gate.eligible || !gate.plan || !report.implementationActiveJobId) {
       throw new InboxImplementationError(
         'Ticket không còn ở checkpoint duyệt deploy hợp lệ.',
