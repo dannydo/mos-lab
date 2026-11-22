@@ -6,7 +6,7 @@ import type { BookingItem } from '../../../state/mockData';
 import type { CheckoutComboSelectionController } from '../../../state/useCheckoutComboSelection';
 import type { IosCloudSyncStatus } from '../../ui-kit/IosCloudSyncBadge';
 import type { ReceiptPromotionOpenTarget } from './CheckoutReceiptSection';
-import { CheckoutVietQrModal } from './CheckoutVietQrModal';
+import { CheckoutVietQrModal, type VietQrSplitMode } from './CheckoutVietQrModal';
 import { CheckoutZaloConsentModal } from './CheckoutZaloConsentModal';
 import { CheckoutPromotionPickerModal } from './CheckoutPromotionPickerModal';
 import { ProductQrScannerModal } from '../../modals/ProductQrScannerModal';
@@ -29,6 +29,17 @@ export interface CheckoutBillingOverlaysProps {
   transferProofPhoto: string | null;
   proofCloudSyncStatus: IosCloudSyncStatus;
   onTriggerFilePicker: () => void;
+  serviceQrAmount?: number;
+  serviceQrUrl?: string;
+  serviceQrContent?: string;
+  tipQrAmount?: number;
+  tipQrUrl?: string;
+  tipQrContent?: string;
+  qrSplitMode?: VietQrSplitMode;
+  onChangeQrSplitMode?: (mode: VietQrSplitMode) => void;
+  tipTransferProofPhoto?: string | null;
+  tipProofCloudSyncStatus?: IosCloudSyncStatus;
+  onTriggerTipFilePicker?: () => void;
   onConfirmQrPaid: () => void;
   isZaloModalOpen: boolean;
   zaloPhone: string;
@@ -73,6 +84,17 @@ export function CheckoutBillingOverlays({
   transferProofPhoto,
   proofCloudSyncStatus,
   onTriggerFilePicker,
+  serviceQrAmount,
+  serviceQrUrl,
+  serviceQrContent,
+  tipQrAmount,
+  tipQrUrl,
+  tipQrContent,
+  qrSplitMode,
+  onChangeQrSplitMode,
+  tipTransferProofPhoto,
+  tipProofCloudSyncStatus,
+  onTriggerTipFilePicker,
   onConfirmQrPaid,
   isZaloModalOpen,
   zaloPhone,
@@ -114,6 +136,17 @@ export function CheckoutBillingOverlays({
         transferProofPhoto={transferProofPhoto}
         proofCloudSyncStatus={proofCloudSyncStatus}
         onTriggerFilePicker={onTriggerFilePicker}
+        serviceQrAmount={serviceQrAmount}
+        serviceQrUrl={serviceQrUrl}
+        serviceQrContent={serviceQrContent}
+        tipQrAmount={tipQrAmount}
+        tipQrUrl={tipQrUrl}
+        tipQrContent={tipQrContent}
+        qrSplitMode={qrSplitMode}
+        onChangeQrSplitMode={onChangeQrSplitMode}
+        tipTransferProofPhoto={tipTransferProofPhoto}
+        tipProofCloudSyncStatus={tipProofCloudSyncStatus}
+        onTriggerTipFilePicker={onTriggerTipFilePicker}
         onConfirmQrPaid={onConfirmQrPaid}
         onClose={onCloseQrModal}
       />

@@ -515,6 +515,19 @@ export interface IosBookingItem {
     diamondUsed?: number;
     diamondDiscountAmount?: number;
     transferProofPhoto?: string;
+    tipTransferProofPhoto?: string;
+    qrSplitTipSeparate?: boolean;
+    preCheckoutTipAmount?: number;
+    preCheckoutServicePaidAmount?: number;
+    preCheckoutPaymentMethod?: IosPaymentMethod;
+    preCheckoutPaymentBreakdown?: IosPaymentBreakdown;
+    preCheckoutQrSplitMode?: 'COMBINED' | 'SEPARATE';
+    preCheckoutTransferProofPhoto?: string;
+    preCheckoutTipTransferProofPhoto?: string;
+    preCheckoutRecordedAt?: string;
+    preCheckoutRecordedByStaffId?: number;
+    preCheckoutRecordedByStaffName?: string;
+    preCheckoutNote?: string;
     zaloConsent?: {
       agreed: boolean;
       phone: string;
@@ -585,6 +598,7 @@ export type IosBookingActionType =
   | 'SAVE_SURVEY'
   | 'SAVE_UPSELL'
   | 'SAVE_PROMOTION'
+  | 'SAVE_PRE_CHECKOUT_PAYMENT'
   | 'COMPLETE_CHECKOUT'
   | 'UPDATE_CUSTOMER_AVATAR'
   | 'RESET_DEMO'
@@ -1587,6 +1601,67 @@ export function formatIosPaymentMethodLabel(params: {
   if (normalized.paymentMethod === 'CASH') return 'Tiền mặt (Cash)';
   if (isPendingCounter) return 'Chờ Quầy thu Tiền mặt / POS';
   return 'Chuyển khoản QR (Bank)';
+}
+
+export interface IosPreCheckoutPaymentSummary {
+  preCheckoutServicePaidAmount: number;
+  preCheckoutTipAmount: number;
+  preCheckoutTotalPaid: number;
+  preCheckoutBreakdown: IosPaymentBreakdown;
+  remainingDue: number;
+  overpaidAmount: number;
+  hasPreCheckoutPayment: boolean;
+  isFullyPrepaid: boolean;
+}
+
+export function computePreCheckoutPaymentSummary(params: {
+  grandTotal: number;
+  billing?: Pick<
+    NonNullable<IosBookingItem['billing']>,
+    | 'preCheckoutServicePaidAmount'
+    | 'preCheckoutTipAmount'
+    | 'preCheckoutPaymentMethod'
+    | 'preCheckoutPaymentBreakdown'
+  > | null;
+}): IosPreCheckoutPaymentSummary {
+  const safeGrandTotal = Math.max(0, Math.round(Number(params.grandTotal || 0)));
+  const billing = params.billing;
+  const preCheckoutServicePaidAmount = Math.max(
+    0,
+    Math.round(Number(billing?.preCheckoutServicePaidAmount || 0))
+  );
+  const preCheckoutTipAmount = Math.max(0, Math.round(Number(billing?.preCheckoutTipAmount || 0)));
+  const preCheckoutTotalPaid = preCheckoutServicePaidAmount + preCheckoutTipAmount;
+  const preCheckoutBreakdown = resolveNormalizedPaymentBreakdown(
+    preCheckoutTotalPaid,
+    billing?.preCheckoutPaymentMethod || 'VIETQR',
+    billing?.preCheckoutPaymentBreakdown
+  ).breakdown;
+  const remainingDue = Math.max(0, safeGrandTotal - preCheckoutTotalPaid);
+  const overpaidAmount = Math.max(0, preCheckoutTotalPaid - safeGrandTotal);
+  return {
+    preCheckoutServicePaidAmount,
+    preCheckoutTipAmount,
+    preCheckoutTotalPaid,
+    preCheckoutBreakdown,
+    remainingDue,
+    overpaidAmount,
+    hasPreCheckoutPayment: preCheckoutTotalPaid > 0,
+    isFullyPrepaid: preCheckoutTotalPaid > 0 && remainingDue === 0 && overpaidAmount === 0,
+  };
+}
+
+export function combinePaymentBreakdowns(
+  grandTotal: number,
+  first?: Partial<IosPaymentBreakdown> | null,
+  second?: Partial<IosPaymentBreakdown> | null
+): NormalizedPaymentBreakdownResult {
+  const merged: IosPaymentBreakdown = {
+    vietqrAmount: Math.max(0, Math.round(Number(first?.vietqrAmount || 0))) + Math.max(0, Math.round(Number(second?.vietqrAmount || 0))),
+    posAmount: Math.max(0, Math.round(Number(first?.posAmount || 0))) + Math.max(0, Math.round(Number(second?.posAmount || 0))),
+    cashAmount: Math.max(0, Math.round(Number(first?.cashAmount || 0))) + Math.max(0, Math.round(Number(second?.cashAmount || 0))),
+  };
+  return resolveNormalizedPaymentBreakdown(grandTotal, undefined, merged);
 }
 
 export type IosCustomerHistoryTab = 'LASH_PHOTOS' | 'ALL' | 'PAYMENTS' | 'FIX' | 'REWARDS' | 'NOTES';

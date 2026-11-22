@@ -478,6 +478,41 @@ export function computeBookingFinancials(params: {
       tipCheckOutShare: isTrainingCvlOrder ? 0 : tipBreakdown.checkOutShareAmount,
       tipCcShare: tipBreakdown.fundShareAmount,
       transferProofPhoto: overrideBilling?.transferProofPhoto,
+      ...(overrideBilling?.tipTransferProofPhoto
+        ? { tipTransferProofPhoto: overrideBilling.tipTransferProofPhoto }
+        : {}),
+      ...(overrideBilling?.qrSplitTipSeparate !== undefined
+        ? { qrSplitTipSeparate: Boolean(overrideBilling.qrSplitTipSeparate) }
+        : {}),
+      ...(overrideBilling?.preCheckoutTipAmount !== undefined
+        ? { preCheckoutTipAmount: Number(overrideBilling.preCheckoutTipAmount) }
+        : {}),
+      ...(overrideBilling?.preCheckoutServicePaidAmount !== undefined
+        ? { preCheckoutServicePaidAmount: Number(overrideBilling.preCheckoutServicePaidAmount) }
+        : {}),
+      ...(overrideBilling?.preCheckoutPaymentMethod
+        ? { preCheckoutPaymentMethod: overrideBilling.preCheckoutPaymentMethod }
+        : {}),
+      ...(overrideBilling?.preCheckoutPaymentBreakdown
+        ? { preCheckoutPaymentBreakdown: overrideBilling.preCheckoutPaymentBreakdown }
+        : {}),
+      ...(overrideBilling?.preCheckoutQrSplitMode
+        ? { preCheckoutQrSplitMode: overrideBilling.preCheckoutQrSplitMode }
+        : {}),
+      ...(overrideBilling?.preCheckoutTransferProofPhoto
+        ? { preCheckoutTransferProofPhoto: overrideBilling.preCheckoutTransferProofPhoto }
+        : {}),
+      ...(overrideBilling?.preCheckoutTipTransferProofPhoto
+        ? { preCheckoutTipTransferProofPhoto: overrideBilling.preCheckoutTipTransferProofPhoto }
+        : {}),
+      ...(overrideBilling?.preCheckoutRecordedAt ? { preCheckoutRecordedAt: overrideBilling.preCheckoutRecordedAt } : {}),
+      ...(overrideBilling?.preCheckoutRecordedByStaffId !== undefined
+        ? { preCheckoutRecordedByStaffId: Number(overrideBilling.preCheckoutRecordedByStaffId) }
+        : {}),
+      ...(overrideBilling?.preCheckoutRecordedByStaffName
+        ? { preCheckoutRecordedByStaffName: String(overrideBilling.preCheckoutRecordedByStaffName) }
+        : {}),
+      ...(overrideBilling?.preCheckoutNote ? { preCheckoutNote: String(overrideBilling.preCheckoutNote) } : {}),
       zaloConsent: overrideBilling?.zaloConsent,
       completedAt: overrideBilling?.completedAt,
       grandTotal: Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount),

@@ -1,5 +1,6 @@
 import type { BookingItem } from '../../../state/mockData';
 import type { ActiveActorProfile } from '../../../state/useIosAppState';
+import type { SavePreCheckoutPaymentPayload } from '../../modals/PreCheckoutPaymentModal';
 
 export type ConsultationSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -83,6 +84,7 @@ export interface Screen03ConsultationMatrixProps {
     serviceType?: 'Normal' | 'Retain';
     upgradePrice?: number;
   }) => void;
+  onSavePreCheckoutPayment?: (payload: SavePreCheckoutPaymentPayload) => Promise<void> | void;
 }
 
 export interface PendingOverrideState {

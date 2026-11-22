@@ -40,6 +40,7 @@ import {
 import { resolveInitialSerumSelection } from '../upsell/upsellCheckoutHelpers';
 import { PostCheckoutComboFormSections } from './PostCheckoutComboFormSections';
 import { PostCheckoutPendingPanel, PostCheckoutReconciliationCard } from './PostCheckoutReconciliationCard';
+import { PostCheckoutQrModalCluster } from './PostCheckoutQrModalCluster';
 import { buildSeedStaffOptions, computePostCheckoutDraftAndTotals } from './postCheckoutWalletHelpers';
 
 export interface PostCheckoutComboSheetProps {
@@ -140,6 +141,12 @@ export function PostCheckoutComboSheet({
   const [reason, setReason] = useState<string>('');
   const [rejectionReason, setRejectionReason] = useState<string>('');
   const [showStaffRewards, setShowStaffRewards] = useState<boolean>(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
+  const [qrProofs, setQrProofs] = useState<{
+    transferProofPhoto?: string;
+    tipTransferProofPhoto?: string;
+    qrSplitTipSeparate?: boolean;
+  }>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -183,6 +190,8 @@ export function PostCheckoutComboSheet({
     setReason('');
     setRejectionReason('');
     setShowStaffRewards(false);
+    setIsQrModalOpen(false);
+    setQrProofs({});
     setErrorMsg(null);
 
     let active = true;
@@ -455,6 +464,9 @@ export function PostCheckoutComboSheet({
         paymentMode: delta.effectiveMode,
         deltaPaymentMethod: delta.deltaPaymentMethod,
         deltaPaymentBreakdown: delta.deltaPaymentBreakdown,
+        ...(qrProofs.transferProofPhoto ? { transferProofPhoto: qrProofs.transferProofPhoto } : {}),
+        ...(qrProofs.tipTransferProofPhoto ? { tipTransferProofPhoto: qrProofs.tipTransferProofPhoto } : {}),
+        ...(qrProofs.qrSplitTipSeparate !== undefined ? { qrSplitTipSeparate: qrProofs.qrSplitTipSeparate } : {}),
         reason: reason.trim() || undefined,
         isTrainingCvlOrder: Boolean(booking.isTrainingCvlOrder),
       });
@@ -641,12 +653,30 @@ export function PostCheckoutComboSheet({
                 onSetDeltaMethod={setDeltaMethod}
                 onSetDeltaSplit={setDeltaSplit}
                 onSetReason={setReason}
+                onOpenQr={() => setIsQrModalOpen(true)}
+                qrPortionAmount={delta.deltaPaymentBreakdown.vietqrAmount}
+                isPureTipDelta={
+                  tipAmount > Number(booking.billing?.tipAmount || 0) &&
+                  delta.amountToCollectNow > 0 &&
+                  delta.amountToCollectNow <= Math.max(0, tipAmount - Number(booking.billing?.tipAmount || 0))
+                }
+                hasQrProofAttached={Boolean(qrProofs.transferProofPhoto)}
                 onSubmit={() => void handleSubmitAdjustment()}
               />
             </>
           )}
         </div>
       </div>
+
+      <PostCheckoutQrModalCluster
+        open={isQrModalOpen}
+        isDark={isDark}
+        booking={booking}
+        vietqrAmount={delta.deltaPaymentBreakdown.vietqrAmount}
+        tipDeltaAmount={Math.max(0, tipAmount - Number(booking.billing?.tipAmount || 0))}
+        onClose={() => setIsQrModalOpen(false)}
+        onConfirmProofs={(proofs) => setQrProofs(proofs)}
+      />
     </div>
   );
 }

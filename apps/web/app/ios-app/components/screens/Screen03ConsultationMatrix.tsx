@@ -37,6 +37,7 @@ export function Screen03ConsultationMatrix({
   onSimJumpToStep,
   onSimFastForwardToUpsell,
   onSelectComboWallet,
+  onSavePreCheckoutPayment,
 }: Screen03ConsultationMatrixProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
@@ -331,6 +332,16 @@ export function Screen03ConsultationMatrix({
           onSimJumpToStep={onSimJumpToStep}
           simulationAttemptCount={booking?.simulationAttemptCount}
           onSimFastForwardToUpsell={onSimFastForwardToUpsell}
+          booking={booking}
+          quotedServiceTotalWithVat={(() => {
+            const serviceSub = design.isComboLive
+              ? pricing.totalUpgradeAmount
+              : pricing.comboPurchaseTotal > 0
+                ? pricing.comboPurchaseTotal
+                : pricing.livePricingAndCvPoints.skuPrice;
+            return serviceSub + Math.round(serviceSub * 0.08);
+          })()}
+          onSavePreCheckoutPayment={onSavePreCheckoutPayment}
         />
       </div>
 

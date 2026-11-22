@@ -9,7 +9,13 @@ import {
   type CvToCvPlusRequirements,
   type IosActiveActorProfile,
 } from '@mos-lab/shared';
-import type { IosPromotionOption, IosPromotionTargetScope, IosSettlementStatus } from '@mos-lab/shared';
+import type {
+  IosPaymentBreakdown,
+  IosPaymentMethod,
+  IosPromotionOption,
+  IosPromotionTargetScope,
+  IosSettlementStatus,
+} from '@mos-lab/shared';
 import type { BookingItem } from './mockData';
 
 export type CartProductItem = NonNullable<BookingItem['cartProducts']>[number];
@@ -345,24 +351,51 @@ export function applyCombosUpdateToBookingDraft(
   };
 }
 
+export function buildCustomVietQrUrl(amount: number, transferContent: string): string {
+  const safeAmount = Math.max(0, Math.round(Number(amount || 0)));
+  return `https://img.vietqr.io/image/VCB-1024731897-qr_only.png?amount=${safeAmount}&addInfo=${encodeURIComponent(
+    transferContent
+  )}&accountName=${encodeURIComponent("CONG TY TNHH WINGS' LIFE")}`;
+}
+
 export function buildCheckoutVietQrInfo(params: {
   booking?: BookingItem | null;
   tipAmount: number;
   vietQrTransferAmount: number;
+  tipTransferAmount?: number;
 }) {
   const branchCode = params.booking?.branchCode || 'DT';
   const orderNumericCode = params.booking?.orderNumber?.replace(/\D/g, '') || String(params.booking?.id || '609609');
+  const safeTransfer = Math.max(0, Math.round(Number(params.vietQrTransferAmount || 0)));
+  const rawTip = Math.max(
+    0,
+    Math.round(Number(params.tipTransferAmount !== undefined ? params.tipTransferAmount : params.tipAmount || 0))
+  );
+  const tipQrAmount = Math.min(rawTip, safeTransfer);
+  const serviceQrAmount = Math.max(0, safeTransfer - tipQrAmount);
   const tipCode =
-    params.tipAmount > 0
-      ? params.tipAmount >= 1000
-        ? `${Math.round(params.tipAmount / 1000)}K`
-        : String(params.tipAmount)
-      : '0';
-  const qrTransferContent = `${branchCode} ${orderNumericCode} DV TIP ${tipCode}`;
-  const vietQrUrl = `https://img.vietqr.io/image/VCB-1024731897-qr_only.png?amount=${params.vietQrTransferAmount}&addInfo=${encodeURIComponent(
-    qrTransferContent
-  )}&accountName=${encodeURIComponent("CONG TY TNHH WINGS' LIFE")}`;
-  return { branchCode, qrTransferContent, vietQrUrl };
+    tipQrAmount > 0 ? (tipQrAmount >= 1000 ? `${Math.round(tipQrAmount / 1000)}K` : String(tipQrAmount)) : '0';
+  const isTipOnlyQr = serviceQrAmount === 0 && tipQrAmount > 0;
+  const serviceQrContent = `${branchCode} ${orderNumericCode} DV`;
+  const tipQrContent = `${branchCode} ${orderNumericCode} TIP ${tipCode}`;
+  const qrTransferContent = isTipOnlyQr ? tipQrContent : `${branchCode} ${orderNumericCode} DV TIP ${tipCode}`;
+  const vietQrUrl = buildCustomVietQrUrl(safeTransfer, qrTransferContent);
+  const serviceQrUrl = buildCustomVietQrUrl(serviceQrAmount, serviceQrContent);
+  const tipQrUrl = buildCustomVietQrUrl(tipQrAmount, tipQrContent);
+  return {
+    branchCode,
+    orderNumericCode,
+    tipCode,
+    qrTransferContent,
+    vietQrUrl,
+    serviceQrAmount,
+    serviceQrContent,
+    serviceQrUrl,
+    tipQrAmount,
+    tipQrContent,
+    tipQrUrl,
+    isTipOnlyQr,
+  };
 }
 
 export function buildRecordedTipBillingSnapshot(
@@ -431,5 +464,132 @@ export function buildRecordedTipBillingSnapshot(
     tipCcShare: ccShare,
     grandTotal,
     completedAt,
+  };
+}
+
+export interface PreCheckoutPaymentDraftInput {
+  preCheckoutServicePaidAmount: number;
+  preCheckoutTipAmount: number;
+  preCheckoutPaymentMethod: IosPaymentMethod;
+  preCheckoutPaymentBreakdown: IosPaymentBreakdown;
+  preCheckoutQrSplitMode: 'COMBINED' | 'SEPARATE';
+  preCheckoutTransferProofPhoto?: string;
+  preCheckoutTipTransferProofPhoto?: string;
+  preCheckoutNote?: string;
+}
+
+export function buildPreCheckoutBillingSnapshot(
+  prev: BookingItem,
+  actor: Partial<IosActiveActorProfile> & { staffId: number; name: string },
+  payload: PreCheckoutPaymentDraftInput,
+  recordedAt: string = new Date().toISOString()
+): NonNullable<BookingItem['billing']> {
+  const tipAmount = Math.max(0, Math.round(payload.preCheckoutTipAmount || 0));
+  const servicePaid = Math.max(0, Math.round(payload.preCheckoutServicePaidAmount || 0));
+  const totalPrepaid = servicePaid + tipAmount;
+  const tipBreakdown = calculateActorTipBreakdown(prev, actor, tipAmount);
+  const baseBilling = buildRecomputedCheckoutBilling(prev);
+  return {
+    ...baseBilling,
+    tipAmount,
+    tipCvShare: tipBreakdown.techShareAmount,
+    tipCheckInShare: tipBreakdown.checkInShareAmount,
+    tipCheckOutShare: tipBreakdown.checkOutShareAmount,
+    tipCcShare: tipBreakdown.checkInShareAmount + tipBreakdown.checkOutShareAmount,
+    qrSplitTipSeparate: payload.preCheckoutQrSplitMode === 'SEPARATE',
+    preCheckoutServicePaidAmount: servicePaid,
+    preCheckoutTipAmount: tipAmount,
+    preCheckoutPaymentMethod: payload.preCheckoutPaymentMethod,
+    preCheckoutPaymentBreakdown: payload.preCheckoutPaymentBreakdown,
+    preCheckoutQrSplitMode: payload.preCheckoutQrSplitMode,
+    ...(payload.preCheckoutTransferProofPhoto
+      ? {
+          preCheckoutTransferProofPhoto: payload.preCheckoutTransferProofPhoto,
+          transferProofPhoto: payload.preCheckoutTransferProofPhoto,
+        }
+      : {}),
+    ...(payload.preCheckoutTipTransferProofPhoto
+      ? {
+          preCheckoutTipTransferProofPhoto: payload.preCheckoutTipTransferProofPhoto,
+          tipTransferProofPhoto: payload.preCheckoutTipTransferProofPhoto,
+        }
+      : {}),
+    preCheckoutRecordedAt: totalPrepaid > 0 ? recordedAt : undefined,
+    preCheckoutRecordedByStaffId: totalPrepaid > 0 ? actor.staffId : undefined,
+    preCheckoutRecordedByStaffName: totalPrepaid > 0 ? actor.name : undefined,
+    ...(payload.preCheckoutNote ? { preCheckoutNote: payload.preCheckoutNote } : {}),
+    grandTotal: Math.max(
+      0,
+      baseBilling.subtotal -
+        (baseBilling.promotionDiscountAmount ?? 0) +
+        (baseBilling.vatAmount ?? 0) +
+        tipAmount -
+        (baseBilling.diamondDiscountAmount ?? 0)
+    ),
+  };
+}
+
+export function mergePromotionSelectionIntoBookingDraft(
+  prev: BookingItem,
+  promotionSelection?: {
+    promotionId?: number | null;
+    appliedPromotion?: IosPromotionOption | null;
+    servicePromotionId?: number | null;
+    servicePromotion?: IosPromotionOption | null;
+    comboPromotionId?: number | null;
+    comboPromotion?: IosPromotionOption | null;
+    underComboPromotionId?: number | null;
+    underComboPromotion?: IosPromotionOption | null;
+    cartProducts?: CartProductItem[];
+  }
+): BookingItem {
+  return {
+    ...prev,
+    promotionId: promotionSelection?.promotionId !== undefined ? promotionSelection.promotionId : prev.promotionId,
+    appliedPromotion:
+      promotionSelection?.appliedPromotion !== undefined ? promotionSelection.appliedPromotion : prev.appliedPromotion,
+    servicePromotionId:
+      promotionSelection?.servicePromotionId !== undefined
+        ? promotionSelection.servicePromotionId
+        : prev.servicePromotionId,
+    servicePromotion:
+      promotionSelection?.servicePromotion !== undefined ? promotionSelection.servicePromotion : prev.servicePromotion,
+    comboPromotionId:
+      promotionSelection?.comboPromotionId !== undefined ? promotionSelection.comboPromotionId : prev.comboPromotionId,
+    comboPromotion:
+      promotionSelection?.comboPromotion !== undefined ? promotionSelection.comboPromotion : prev.comboPromotion,
+    underComboPromotionId:
+      promotionSelection?.underComboPromotionId !== undefined
+        ? promotionSelection.underComboPromotionId
+        : prev.underComboPromotionId,
+    underComboPromotion:
+      promotionSelection?.underComboPromotion !== undefined
+        ? promotionSelection.underComboPromotion
+        : prev.underComboPromotion,
+    cartProducts: promotionSelection?.cartProducts !== undefined ? promotionSelection.cartProducts : prev.cartProducts,
+  };
+}
+
+export function buildPromoActionSnapshot(
+  nextBookingDraft: BookingItem,
+  effectiveOrderPromoId: number | null,
+  isSessionWaivedIntoNewCombo: boolean
+): Record<string, any> {
+  return {
+    promotionId: effectiveOrderPromoId,
+    appliedPromotion: isSessionWaivedIntoNewCombo ? null : (nextBookingDraft.appliedPromotion ?? null),
+    servicePromotionId: isSessionWaivedIntoNewCombo
+      ? null
+      : (nextBookingDraft.servicePromotion?.promotionId ?? nextBookingDraft.servicePromotionId ?? null),
+    servicePromotion: isSessionWaivedIntoNewCombo ? null : (nextBookingDraft.servicePromotion ?? null),
+    comboPromotionId: nextBookingDraft.comboPromotion?.promotionId ?? nextBookingDraft.comboPromotionId ?? null,
+    comboPromotion: nextBookingDraft.comboPromotion ?? null,
+    underComboPromotionId:
+      nextBookingDraft.underComboPromotion?.promotionId ?? nextBookingDraft.underComboPromotionId ?? null,
+    underComboPromotion: nextBookingDraft.underComboPromotion ?? null,
+    cartProducts: nextBookingDraft.cartProducts,
+    selectedCombo: nextBookingDraft.selectedCombo ?? null,
+    selectedUnderCombo: nextBookingDraft.selectedUnderCombo ?? null,
+    comboRedemption: nextBookingDraft.comboRedemption ?? null,
   };
 }

@@ -25,6 +25,7 @@ export interface CheckoutPaymentMethodSectionProps {
   onCaptureProof: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onProceed: () => void;
   isSettled?: boolean;
+  preCheckoutTotalPaid?: number;
 }
 
 const PAYMENT_CHANNELS: ReadonlyArray<{
@@ -100,6 +101,7 @@ export function CheckoutPaymentMethodSection({
   onCaptureProof,
   onProceed,
   isSettled = false,
+  preCheckoutTotalPaid = 0,
 }: CheckoutPaymentMethodSectionProps) {
   const [focusedField, setFocusedField] = useState<PaymentChannelKey | null>(null);
   const [draftAmountStr, setDraftAmountStr] = useState<string>('');
@@ -174,11 +176,15 @@ export function CheckoutPaymentMethodSection({
                 isDark ? 'text-emerald-300' : 'text-emerald-800'
               } font-black text-[14px] flex items-center justify-center gap-1.5`}
             >
-              <span>✓</span> ĐÃ THANH TOÁN 100% BẰNG VÍ KIM CƯƠNG
+              <span>✓</span>{' '}
+              {preCheckoutTotalPaid > 0 && effectiveDiamondUsed === 0
+                ? 'ĐÃ THU ĐỦ TRƯỚC KHI VÀO PHÒNG MI'
+                : 'ĐÃ THANH TOÁN 100% BẰNG VÍ KIM CƯƠNG'}
             </div>
             <div className={`text-[11px] ${isDark ? 'text-emerald-400' : 'text-emerald-700'} font-medium`}>
-              Đã cấn trừ đủ {effectiveDiamondUsed.toLocaleString('vi-VN')} 💎 (-
-              {diamondDiscountAmount.toLocaleString('vi-VN')}đ). Không cần thu thêm tiền mặt hay chuyển khoản.
+              {preCheckoutTotalPaid > 0 && effectiveDiamondUsed === 0
+                ? `Đã thu đủ ${preCheckoutTotalPaid.toLocaleString('vi-VN')}đ trước khi làm mi. Khách xong có thể về ngay, bấm xác nhận để xuất hóa đơn.`
+                : `Đã cấn trừ đủ ${effectiveDiamondUsed.toLocaleString('vi-VN')} 💎 (-${diamondDiscountAmount.toLocaleString('vi-VN')}đ). Không cần thu thêm tiền mặt hay chuyển khoản.`}
             </div>
           </div>
         ) : (
@@ -520,7 +526,9 @@ export function CheckoutPaymentMethodSection({
             }`}
           >
             {finalGrandTotal === 0
-              ? `Xác Nhận Chốt Đơn (Trừ ${effectiveDiamondUsed.toLocaleString('vi-VN')} 💎 · 0đ)`
+              ? preCheckoutTotalPaid > 0 && effectiveDiamondUsed === 0
+                ? `Xác Nhận Hoàn Tất & Xuất Hóa Đơn (Đã Thu Đủ ${preCheckoutTotalPaid.toLocaleString('vi-VN')}đ)`
+                : `Xác Nhận Chốt Đơn (Trừ ${effectiveDiamondUsed.toLocaleString('vi-VN')} 💎 · 0đ)`
               : !isAllocationValid
                 ? `Vui Lòng Chia Đủ ${finalGrandTotal.toLocaleString('vi-VN')}đ`
                 : needsPosProof

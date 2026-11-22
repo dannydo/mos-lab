@@ -1,8 +1,11 @@
 import type { NextConfig } from 'next';
 import { networkInterfaces } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 // Touch next.config.ts to trigger dev server reload
 import withBundleAnalyzer from '@next/bundle-analyzer';
+
+const __configDir = path.dirname(fileURLToPath(import.meta.url));
 
 if (process.env.NODE_ENV !== 'production' && !process.env.WATCHPACK_POLLING) {
   process.env.WATCHPACK_POLLING = 'true';
@@ -58,6 +61,11 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', 'antd', '@ant-design/icons', 'dayjs'],
   },
   webpack: (config, { dev }) => {
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@mos-lab/shared$': path.resolve(__configDir, '../../packages/shared/dist/index.js'),
+    };
     if (dev) {
       config.watchOptions = {
         ignored: ['**/node_modules/**', '**/.git/**', '**/.next/**'],
