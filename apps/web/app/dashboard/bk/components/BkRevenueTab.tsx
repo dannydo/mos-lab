@@ -1,18 +1,11 @@
 'use client';
 
-import { TableIndexHeader } from '~/components/ui';
-
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Table, Tag, Typography, Row, Col, Statistic, theme, Space, Button, Input, Tooltip } from 'antd';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Card, Table, Tag, Typography, theme, Space, Button, Input, Tooltip } from 'antd';
 import {
-  DollarOutlined,
-  EyeOutlined,
-  ShoppingCartOutlined,
-  TrophyOutlined,
   SearchOutlined,
   ReloadOutlined,
   InfoCircleOutlined,
-  CheckCircleOutlined,
   CompressOutlined,
   ExpandOutlined,
 } from '@ant-design/icons';
@@ -28,23 +21,19 @@ import {
 } from '@mos-lab/shared';
 import { formatCompactVND } from '../../../../lib/format-utils';
 import { apiClient } from '../../../../lib/api-client';
-import { useTheme } from '../../../../context/ThemeContext';
-import BkAvatar from './BkAvatar';
 import BkLeaderboardCard from './BkLeaderboardCard';
 import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
-import PeriodComparison from '../../../../components/ui/PeriodComparison';
+import { BkRevenueSummaryCards } from './bk-revenue/BkRevenueSummaryCards';
+import {
+  buildBkRevenueDetailColumns,
+  buildBkRevenueLeaderboardColumns,
+  formatBkRevenueCurrency,
+  formatStoreCode,
+} from './bk-revenue/bkRevenueColumns';
+
+export { formatStoreCode };
 
 const { Text } = Typography;
-
-export const formatStoreCode = (store?: string | null): string => {
-  if (!store) return 'HQ';
-  const s = String(store).toUpperCase().trim();
-  if (s.includes('ESTELLA') || s.includes('EP')) return 'EP';
-  if (s.includes('THAM') || s.includes('DE') || s.includes('DT')) return 'DT';
-  if (s.includes('HQ') || s.includes('HEAD')) return 'HQ';
-  if (s.includes('PXL') || s.includes('PHAN')) return 'PXL';
-  return s;
-};
 
 interface BkRevenueTabProps {
   dateRange: [any, any];
@@ -53,9 +42,8 @@ interface BkRevenueTabProps {
   comparisonMode: ReportComparisonMode;
 }
 
-export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker, comparisonMode }: BkRevenueTabProps) {
+export default function BkRevenueTab({ dateRange, selectedStore, comparisonMode }: BkRevenueTabProps) {
   const { token } = theme.useToken();
-  const { themeMode } = useTheme();
   const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
 
   const [loading, setLoading] = useState(false);
@@ -78,10 +66,6 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker,
   const [searchText, setSearchText] = useState('');
   const [isCompact, setIsCompact] = useState(false);
   const [detailRecords, setDetailRecords] = useState<BkRevenueRecord[]>([]);
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
-  };
 
   const isDayMode = comparisonMode === 'day';
   const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
@@ -123,41 +107,6 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker,
     const projRate = getRevCommissionRate(projRev, DEFAULT_BK_REV_BONUS_TIERS);
     return Math.round((projRev * projRate) / 100);
   }, [leaderboard, summary.totalRevenue, ratio]);
-
-  const renderForecastSubtext = (projectedVal: number, unit = '') => {
-    if (isDayMode) return null;
-
-    if (isPastPeriod) {
-      return (
-        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
-          <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
-            <span>Thực tế chốt {periodNoun}:</span>
-            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
-              {unit === 'đ' ? formatCurrency(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
-            </span>
-          </div>
-        </Tooltip>
-      );
-    }
-
-    return (
-      <Tooltip
-        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00 + 2h buffer checkout)`}
-      >
-        <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
-          <span className="inline-flex items-center gap-1">
-            <span role="img" aria-label={`Dự kiến cuối ${periodNoun}`} className="shrink-0 text-sm leading-none">
-              🔮
-            </span>
-            <span className="text-[11px] text-slate-400">Cuối {periodNoun}:</span>
-          </span>
-          <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
-            ~{unit === 'đ' ? formatCurrency(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
-          </span>
-        </div>
-      </Tooltip>
-    );
-  };
 
   const fetchLeaderboard = async () => {
     setLoading(true);
@@ -229,16 +178,19 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker,
     };
   }, [dateRange, selectedStore, selectedBookerId]);
 
-  const handleSelectBooker = (bookerId: string, bookerName?: string) => {
-    if (selectedBookerId === bookerId) {
-      setSelectedBookerId(null);
-      setSelectedBookerName(null);
-    } else {
-      setSelectedBookerId(bookerId);
-      const found = leaderboard.find((item) => String(item.bookerId) === bookerId);
-      setSelectedBookerName(bookerName || found?.displayName || `BK #${bookerId}`);
-    }
-  };
+  const handleSelectBooker = useCallback(
+    (bookerId: string, bookerName?: string) => {
+      if (selectedBookerId === bookerId) {
+        setSelectedBookerId(null);
+        setSelectedBookerName(null);
+      } else {
+        setSelectedBookerId(bookerId);
+        const found = leaderboard.find((item) => String(item.bookerId) === bookerId);
+        setSelectedBookerName(bookerName || found?.displayName || `BK #${bookerId}`);
+      }
+    },
+    [selectedBookerId, leaderboard]
+  );
 
   const filteredDetailRecords = useMemo(() => {
     if (!searchText) return detailRecords;
@@ -251,343 +203,36 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker,
     );
   }, [detailRecords, searchText]);
 
-  const columns = [
-    {
-      title: 'Hạng',
-      dataIndex: 'rank',
-      key: 'rank',
-      width: 60,
-      align: 'center' as const,
-      render: (rank: number) => {
-        if (rank === 1) return <span style={{ fontSize: '18px' }}>🥇</span>;
-        if (rank === 2) return <span style={{ fontSize: '18px' }}>🥈</span>;
-        if (rank === 3) return <span style={{ fontSize: '18px' }}>🥉</span>;
-        return <span className="tabular-nums font-semibold text-slate-500 text-xs">#{rank}</span>;
-      },
-    },
-    {
-      title: 'Booker',
-      dataIndex: 'displayName',
-      key: 'displayName',
-      render: (name: string, record: BkRevenueLeaderboardEntry) => {
-        const isSelected = selectedBookerId === String(record.bookerId);
-        return (
-          <Space
-            className="cursor-pointer group whitespace-nowrap"
-            size={8}
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSelectBooker(String(record.bookerId), name);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.stopPropagation();
-                e.preventDefault();
-                handleSelectBooker(String(record.bookerId), name);
-              }
-            }}
-          >
-            <BkAvatar name={name} src={record.avatar} size={32} />
-            <div>
-              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                <span
-                  className={`font-semibold text-xs transition-colors whitespace-nowrap ${
-                    isSelected ? 'text-amber-400 underline underline-offset-2' : 'hover:text-amber-400'
-                  }`}
-                  style={{ color: isSelected ? undefined : token.colorText }}
-                >
-                  {name}
-                </span>
-                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
-                  · {formatStoreCode(record.store)}
-                </span>
-                {isSelected && (
-                  <Tag
-                    color="gold"
-                    icon={<CheckCircleOutlined />}
-                    className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap"
-                  >
-                    Đang lọc
-                  </Tag>
-                )}
-              </div>
-            </div>
-          </Space>
-        );
-      },
-    },
-    {
-      title: 'Done',
-      dataIndex: 'completedOrdersCount',
-      key: 'completedOrdersCount',
-      align: 'center' as const,
-      render: (val: number) => <span className="tabular-nums font-bold text-xs text-sky-400">{val}</span>,
-    },
-    {
-      title: 'Doanh Thu (Lẻ / Combo)',
-      key: 'revenueBreakdown',
-      align: 'center' as const,
-      render: (_: any, r: BkRevenueLeaderboardEntry) => {
-        const singleRev = r.singleRevenue || 0;
-        const comboRev = r.comboRevenue || 0;
-        return (
-          <div className="flex items-center justify-center gap-1.5 flex-wrap">
-            <Tooltip title={`Doanh thu dịch vụ lẻ: ${formatCurrency(singleRev)}`}>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 tabular-nums">
-                <span className="text-[10px] uppercase font-semibold opacity-75">Lẻ</span>
-                {formatCurrency(singleRev)}
-              </span>
-            </Tooltip>
-            {comboRev > 0 && (
-              <Tooltip title={`Doanh thu bán gói combo: ${formatCurrency(comboRev)}`}>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 tabular-nums">
-                  <span className="text-[10px] uppercase font-semibold opacity-75">Combo</span>
-                  {formatCurrency(comboRev)}
-                </span>
-              </Tooltip>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: '∑ Doanh Thu Net',
-      dataIndex: 'totalRevenue',
-      key: 'totalRevenue',
-      align: 'right' as const,
-      render: (val: number) => {
-        const projRev = Math.round((val || 0) / (ratio || 1));
-        return (
-          <div className="flex flex-col items-end">
-            <span className="tabular-nums font-bold text-xs text-indigo-400">{formatCurrency(val)}</span>
-            {!isDayMode && !isPastPeriod && projRev > 0 && (
-              <div className="flex items-center gap-1 text-[11px] text-indigo-400/80 font-medium tabular-nums">
-                <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
-                  🔮
-                </span>
-                <span>~{formatCompactVND(projRev)}</span>
-              </div>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: '% Bonus',
-      dataIndex: 'commissionRate',
-      key: 'commissionRate',
-      align: 'center' as const,
-      render: (val: number, r: BkRevenueLeaderboardEntry) => {
-        const projRev = Math.round((r.totalRevenue || 0) / (ratio || 1));
-        const projRate = getRevCommissionRate(projRev, DEFAULT_BK_REV_BONUS_TIERS);
-        return (
-          <div className="flex flex-col items-center">
-            <Tag color="purple" className="tabular-nums font-semibold px-2 py-0 text-xs rounded-full m-0">
-              {val}%
-            </Tag>
-            {!isDayMode && !isPastPeriod && (
-              <span className="text-[10px] text-purple-400/80 font-medium tabular-nums mt-0.5">🔮 {projRate}%</span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Bonus Doanh Thu',
-      dataIndex: 'totalCommissionBonus',
-      key: 'totalCommissionBonus',
-      align: 'right' as const,
-      render: (val: number, r: BkRevenueLeaderboardEntry) => {
-        const projRev = Math.round((r.totalRevenue || 0) / (ratio || 1));
-        const projRate = getRevCommissionRate(projRev, DEFAULT_BK_REV_BONUS_TIERS);
-        const projBonus = Math.round((projRev * projRate) / 100);
-        return (
-          <div className="flex flex-col items-end">
-            <span className="tabular-nums font-bold text-sm text-purple-400">{formatCurrency(val)}</span>
-            {!isDayMode && !isPastPeriod && (
-              <Tooltip
-                title={
-                  projBonus > 0
-                    ? `Dự đoán doanh thu ~${formatCurrency(projRev)} (${projRate}%) → Thưởng: ~${formatCurrency(projBonus)}`
-                    : `Dự đoán doanh thu ~${formatCurrency(projRev)} (chưa đạt mốc 50M → thưởng ~0 đ)`
-                }
-              >
-                <div className="flex items-center gap-1 text-[11px] text-purple-400/80 font-medium tabular-nums cursor-help">
-                  <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
-                    🔮
-                  </span>
-                  <span>~{formatCompactVND(projBonus)}</span>
-                </div>
-              </Tooltip>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Chi tiết',
-      key: 'action',
-      align: 'center' as const,
-      render: (_: any, record: BkRevenueLeaderboardEntry) => {
-        const isSelected = selectedBookerId === String(record.bookerId);
-        return (
-          <Button
-            type="default"
-            size="small"
-            icon={<EyeOutlined className="text-amber-400" />}
-            className="text-[11px] font-medium border-slate-700 hover:border-amber-400 hover:text-amber-400 px-2"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSelectBooker(String(record.bookerId), record.displayName);
-            }}
-          >
-            {isSelected ? 'Bỏ lọc' : 'Chi tiết'}
-          </Button>
-        );
-      },
-    },
-  ];
+  const columns = useMemo(
+    () =>
+      buildBkRevenueLeaderboardColumns({
+        selectedBookerId,
+        ratio,
+        isDayMode,
+        isPastPeriod,
+        periodNoun,
+        onSelectBooker: handleSelectBooker,
+      }),
+    [selectedBookerId, ratio, isDayMode, isPastPeriod, periodNoun, handleSelectBooker]
+  );
 
-  const detailColumns = [
-    {
-      title: <TableIndexHeader />,
-      key: 'stt',
-      width: 50,
-      align: 'center' as const,
-      render: (_: any, __: any, index: number) => (
-        <span className="tabular-nums text-xs text-slate-500 font-medium">{index + 1}</span>
-      ),
-    },
-    {
-      title: 'Khách Hàng',
-      dataIndex: 'clientName',
-      key: 'clientName',
-      render: (name: string, record: BkRevenueRecord) => (
-        <div className="flex items-center gap-2 whitespace-nowrap">
-          <BkAvatar name={name || 'Khách hàng'} src={record.clientAvatar} size={28} />
-          <span className="font-semibold text-xs text-slate-700 dark:text-slate-200">{name || 'Khách hàng'}</span>
-        </div>
-      ),
-    },
-    {
-      title: 'Thời Gian',
-      dataIndex: 'orderDate',
-      key: 'orderDate',
-      render: (dateStr: string) => (
-        <span className="tabular-nums text-xs text-slate-400 font-medium whitespace-nowrap">
-          {dateStr ? dateStr.replace('T', ' ').substring(0, 16) : '-'}
-        </span>
-      ),
-    },
-    {
-      title: 'Chi Nhánh',
-      dataIndex: 'store',
-      key: 'store',
-      align: 'center' as const,
-      render: (val: string) => (
-        <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(val)}</span>
-      ),
-    },
-    {
-      title: 'Loại Đơn',
-      dataIndex: 'orderCategory',
-      key: 'orderCategory',
-      align: 'center' as const,
-      render: (cat: string, r: BkRevenueRecord) => {
-        const isCombo = r.isCombo || cat === 'COMBO';
-        return isCombo ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 tabular-nums">
-            Combo
-          </span>
-        ) : (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 tabular-nums">
-            Lẻ
-          </span>
-        );
-      },
-    },
-    {
-      title: 'Doanh Thu Net',
-      dataIndex: 'totalOrderPrice',
-      key: 'totalOrderPrice',
-      align: 'right' as const,
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-xs text-slate-600 dark:text-slate-300">
-          {formatCurrency(val)}
-        </span>
-      ),
-    },
-  ];
+  const detailColumns = useMemo(() => buildBkRevenueDetailColumns(), []);
 
   return (
     <div className="space-y-6">
       {/* Summary Header */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} md={8}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Done</span>}
-              value={summary.completedOrdersCount}
-              valueStyle={{ color: '#2563eb', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<ShoppingCartOutlined className="mr-2" />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.completedOrdersCount}
-              previousValue={previousSummary?.completedOrdersCount || 0}
-              formatter={(value) => `${value.toLocaleString('vi-VN')} đơn`}
-            />
-            {renderForecastSubtext(projectedCompletedOrders, 'đơn')}
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Doanh Thu Net</span>}
-              value={summary.totalRevenue}
-              formatter={(val) => formatCurrency(Number(val))}
-              valueStyle={{ color: '#4f46e5', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<DollarOutlined className="mr-2" />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.totalRevenue}
-              previousValue={previousSummary?.totalRevenue || 0}
-              formatter={formatCurrency}
-            />
-            {renderForecastSubtext(projectedRevenue, 'đ')}
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Thưởng Doanh Thu</span>}
-              value={summary.totalCommissionBonus}
-              formatter={(val) => formatCurrency(Number(val))}
-              valueStyle={{ color: '#9333ea', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<TrophyOutlined className="mr-2" />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.totalCommissionBonus}
-              previousValue={previousSummary?.totalCommissionBonus || 0}
-              formatter={formatCurrency}
-            />
-            {renderForecastSubtext(projectedCommissionBonus, 'đ')}
-          </Card>
-        </Col>
-      </Row>
+      <BkRevenueSummaryCards
+        summary={summary}
+        previousSummary={previousSummary}
+        comparison={previousPeriod?.comparison}
+        isDayMode={isDayMode}
+        isPastPeriod={isPastPeriod}
+        elapsedRatioPercent={elapsedRatioPercent}
+        periodNoun={periodNoun}
+        projectedCompletedOrders={projectedCompletedOrders}
+        projectedRevenue={projectedRevenue}
+        projectedCommissionBonus={projectedCommissionBonus}
+      />
 
       {/* Revenue Leaderboard */}
       <BkLeaderboardCard
@@ -606,13 +251,13 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker,
             { label: 'Đơn done', value: record.completedOrdersCount ?? 0, tone: 'accent' },
             {
               label: 'Doanh thu net',
-              value: formatCurrency(record.totalRevenue ?? 0),
+              value: formatBkRevenueCurrency(record.totalRevenue ?? 0),
               subtext: !isDayMode && !isPastPeriod ? `🔮 ~${formatCompactVND(projRev)}` : undefined,
               tone: 'accent',
             },
             {
               label: 'Hoa hồng',
-              value: formatCurrency(record.totalCommissionBonus ?? 0),
+              value: formatBkRevenueCurrency(record.totalCommissionBonus ?? 0),
               subtext: !isDayMode && !isPastPeriod ? `🔮 ~${formatCompactVND(projBonus)} (${projRate}%)` : undefined,
               tone: 'success',
             },
@@ -698,7 +343,7 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker,
             defaultPageSize: 50,
             pageSizeOptions: ['20', '50', '100', '200'],
             showSizeChanger: true,
-            showTotal: (total) => `Tổng cộng ${total} đơn hàng phát sinh doanh thu`,
+            showTotal: (total) => `Tổng cộng ${total}\u00a0đơn hàng phát sinh doanh thu`,
           }}
           size="small"
           scroll={{ x: 'max-content' }}

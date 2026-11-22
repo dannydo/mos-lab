@@ -51927,8 +51927,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopZaloScriptModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30937,
-        "lineCount": 707,
+        "sizeBytes": 15731,
+        "lineCount": 418,
         "ext": ".tsx"
       }
     },
@@ -52137,6 +52137,45 @@
       "metadata": {
         "sizeBytes": 2496,
         "lineCount": 64,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/zalo-script/ZaloSendScriptView.tsx",
+      "type": "File",
+      "label": "ZaloSendScriptView.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/zalo-script/ZaloSendScriptView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9376,
+        "lineCount": 198,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/zalo-script/ZaloTemplateManagerView.tsx",
+      "type": "File",
+      "label": "ZaloTemplateManagerView.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/zalo-script/ZaloTemplateManagerView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6866,
+        "lineCount": 161,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/zalo-script/zalo-script-utils.ts",
+      "type": "File",
+      "label": "zalo-script-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/zalo-script/zalo-script-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 939,
+        "lineCount": 21,
         "ext": ".ts"
       }
     },
@@ -52655,8 +52694,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkRevenueTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28288,
-        "lineCount": 711,
+        "sizeBytes": 13426,
+        "lineCount": 356,
         "ext": ".tsx"
       }
     },
@@ -52748,6 +52787,32 @@
       "metadata": {
         "sizeBytes": 7908,
         "lineCount": 224,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-revenue/BkRevenueSummaryCards.tsx",
+      "type": "File",
+      "label": "BkRevenueSummaryCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-revenue/BkRevenueSummaryCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5479,
+        "lineCount": 132,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-revenue/bkRevenueColumns.tsx",
+      "type": "File",
+      "label": "bkRevenueColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-revenue/bkRevenueColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12227,
+        "lineCount": 317,
         "ext": ".tsx"
       }
     },
@@ -54897,6 +54962,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/CashFlowAccountsTab.tsx",
+      "type": "File",
+      "label": "CashFlowAccountsTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/CashFlowAccountsTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2524,
+        "lineCount": 59,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/CashFlowSummarySection.tsx",
+      "type": "File",
+      "label": "CashFlowSummarySection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/CashFlowSummarySection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6532,
+        "lineCount": 133,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/finance/cash-flow/components/DayInspectionModal.tsx",
       "type": "File",
       "label": "DayInspectionModal.tsx",
@@ -55001,6 +55092,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/cash-flow-meta.ts",
+      "type": "File",
+      "label": "cash-flow-meta.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/cash-flow-meta.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2772,
+        "lineCount": 74,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/finance/cash-flow/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -55008,8 +55112,8 @@
       "filePath": "apps/web/app/dashboard/finance/cash-flow/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28953,
-        "lineCount": 713,
+        "sizeBytes": 17750,
+        "lineCount": 471,
         "ext": ".tsx"
       }
     },
@@ -93625,6 +93729,20 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/zalo-script/ZaloSendScriptView.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/zalo-script/ZaloSendScriptView.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/zalo-script/ZaloTemplateManagerView.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/zalo-script/ZaloTemplateManagerView.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/academy-leads/courses/page.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/academy-leads/courses/page.tsx",
       "target": "ws:packages/shared",
@@ -93879,6 +93997,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/bk/components/__tests__/BkTeamBookingDoneBonus.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bk/components/__tests__/BkTeamBookingDoneBonus.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-revenue/bkRevenueColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-revenue/bkRevenueColumns.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -94703,6 +94828,20 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/CashFlowAccountsTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/CashFlowAccountsTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/CashFlowSummarySection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/CashFlowSummarySection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/DayInspectionModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/finance/cash-flow/components/DayInspectionModal.tsx",
       "target": "ws:packages/shared",
@@ -94747,6 +94886,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/__tests__/InflowTab.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/finance/cash-flow/components/__tests__/InflowTab.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/cash-flow-meta.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/cash-flow-meta.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -131020,8 +131166,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4916,
-    "totalEdges": 9643,
+    "totalNodes": 4924,
+    "totalEdges": 9649,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -131030,14 +131176,14 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 559,
-      "File": 1743
+      "File": 1751
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 625,
       "USES_TOKEN": 561,
-      "IMPORTS": 1035,
+      "IMPORTS": 1041,
       "QUERIES_MODEL": 541,
       "API_CALL": 4336
     },
