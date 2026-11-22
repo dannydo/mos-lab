@@ -1,0 +1,527 @@
+import type { MosBibleCommandment } from '../../types/mos-bible.js';
+
+export const MOS_BIBLE_SYSTEM_AND_CAREER_COMMANDMENTS: readonly MosBibleCommandment[] = [
+  {
+    id: 'UI-007',
+    book: 'SYSTEM',
+    title: 'Inbox implementation phải có cổng commit và deploy tách biệt',
+    summary:
+      'Code, test, commit và deploy chỉ diễn ra trong Antigravity IDE (Win AG mặc định 2 slot, Mac AG phụ 2 slot hoặc Auto-overflow) và Codex IDE hiển thị. Win AG là Primary cho AutoClarify, AutoPlan và MAI Chat Bridge (tự failover sang Mac AG nếu Win AG offline > 45 giây). Inbox giữ cổng duyệt, handoff và receipt đã kiểm chứng; commit và deploy vẫn là hai quyết định Danny tách biệt.',
+    commandments: [
+      'APPROVED triage không tự là quyền chạy code: Danny phải thực hiện hành động Duyệt code/test riêng, ticket phải READY, có priority và có native plan khớp source version.',
+      'Mặc định định tuyến implementation sang Win AG (AG_WIN, tối đa 2 slot song song), hỗ trợ chọn AUTO (tràn sang Mac AG khi Win AG đủ 2/2 slot hoặc offline > 45 giây) hoặc chỉ định trực tiếp Mac AG (AG_MAC, tối đa 2 slot song song). Win AG đảm nhận Primary cho AutoClarify, AutoPlan và AgChatBridge (MAI), tự failover sang Mac AG nếu Win AG offline > 45 giây.',
+      'Inbox tạo một implementation job có owner xác định, source/plan-version-bound cùng một provisioning request ID. Local companion (systemd trên Win AG / launchd trên Mac AG, config 0600 riêng bearer) tự poll, lease request rồi tạo đúng một task/worktree hiển thị; request ID và ledger 0600 khiến restart/reconnect hoàn tất task cũ thay vì tạo task thứ hai.',
+      'Nonce handoff chỉ được sinh sau khi companion báo task ID và server bind atomically đúng request đang lease. Inbox chiếu rõ trạng thái theo máy thực thi (Win AG / Mac AG / Codex IDE). Revoked, stale, thiếu quyền hoặc callback khác request bị từ chối không giao nonce, không audit/comment/notification; provisioning tạm không có task là retryable.',
+      'IDE/AG receipt chỉ được ghi sau khi worker đã code/test. Receipt của task đã bind đi qua bridge bearer riêng, đối chiếu task/job/nonce/source/plan/quality gate/trạng thái trong một transaction; browser không gửi nonce. Thiếu, cũ, sai, revoked, task khác hoặc không có quyền bị từ chối không ghi gì; replay không nhân audit.',
+      'Danny duyệt commit chỉ cấp nonce commit cho đúng candidate đã review. Task đã bind nhận nonce qua bridge bearer riêng, ghi commit SHA hợp lệ và push nhánh lên origin để đảm bảo khả năng failover liên máy; ticket mới sang chờ duyệt deploy. Replay cùng SHA trả kết quả idempotent, không tạo audit thứ hai.',
+      'Danny duyệt deploy chỉ là xác nhận quyền phát hành cho đúng commit/manifest. Inbox không tự deploy, push, merge, accept hay close ticket; release publisher mới có thể gửi receipt sau khi production đã chạy.',
+      'IDE release publisher chỉ được gửi metadata release bất biến sau khi production đã chạy, bằng bearer token riêng; server tự đối chiếu manifest review (job/source/plan/base commit/hash bản diff/files/tests), approval code/test hiện hành, approval commit và deploy gắn đúng manifest, nội dung commit thật trong Git và release API/web Production. Candidate có thể nối sau một hotfix control-plane chỉ khi base là ancestor, hotfix xen giữa không chạm bất kỳ file reviewed nào và hash diff từ parent trực tiếp của candidate vẫn khớp; các trường hợp khác bị từ chối. Job ở deploy-review được phép giữ projection `APPROVED` hoặc `IN_PROGRESS`; owner khác hoặc trạng thái khác đều bị từ chối. Một giao dịch ghi job/resolution/audit nguồn IDE/checkpoint/comment/thông báo rồi chuyển chờ người báo nghiệm thu; retry cùng receipt không nhân đôi, receipt cũ không áp lại sau reopen.',
+      'Sau release đã xác minh, người báo là người nghiệm thu mặc định. Ticket/audit/next action/Inbox notification được thay đổi cùng transaction; người báo yêu cầu sửa thêm phải quay lại Agent phân tích và cần approval mới.',
+    ],
+    rationale:
+      'Tự động hóa đa máy (Win AG + Mac AG) phải giảm thao tác lặp lại và tăng tốc song song nhưng không được vượt qua cổng quyết định của Danny hay làm mất bằng chứng review trước commit/deploy.',
+    examples: [
+      'Plan/source khớp và Danny bấm Duyệt code/test (mặc định Win AG): Win AG tạo worktree/task, chạy code/test và gửi receipt một lần, rồi Inbox chờ duyệt commit.',
+      'Khi Win AG đủ 2/2 slot và Danny chọn AUTO: Mac AG tự động tiếp nhận ticket tràn tải mà vẫn tuân thủ đủ 3 cổng duyệt.',
+    ],
+    tags: [
+      'mOS Inbox',
+      'Win AG',
+      'Mac AG',
+      'Codex IDE',
+      'implementation',
+      'handoff',
+      'Danny approval',
+      'receipt',
+      'commit review',
+    ],
+    routeScopes: ['/dashboard/bug-reports'],
+    status: 'ACTIVE',
+    version: '1.35.0',
+    effectiveFrom: '2026-11-18',
+    sources: [
+      {
+        label: 'IDE release evidence and atomic checkpoint',
+        reference: 'apps/api/src/modules/bug-reports/inbox-ide-release.service.ts',
+      },
+      {
+        label: 'IDE latest-review rejection and approval regression tests',
+        reference: 'apps/api/src/modules/bug-reports/inbox-ide-release.test.ts',
+      },
+      {
+        label: 'Implementation gate and durable job',
+        reference: 'apps/api/src/modules/bug-reports/inbox-implementation.service.ts',
+      },
+      {
+        label: 'Managed local Codex App Server provisioner, launchd runtime and replay ledger',
+        reference: 'scripts/ide-task-provisioner.ts',
+      },
+      {
+        label: 'Versioned native-plan event and outbox retry',
+        reference: 'apps/api/src/modules/bug-reports/inbox-plan.service.ts',
+      },
+      { label: 'IDE-only worker dispatch guard', reference: 'scripts/request-classifier-worker.ts' },
+      {
+        label: 'Verified IDE publisher receipt and retry tests',
+        reference: 'scripts/request-classifier-worker.test.ts',
+      },
+      {
+        label: 'Exact Game BK private visual-QA recovery guard',
+        reference: 'apps/api/src/modules/bug-reports/inbox-implementation.service.ts',
+      },
+    ],
+  },
+  {
+    id: 'UI-009',
+    book: 'SYSTEM',
+    title: 'Nhật ký Experience & Reliability phải tách khỏi luồng người báo',
+    summary:
+      'Sự cố trải nghiệm và hạ tầng được ghi append-only để vận hành cải thiện dần, nhưng người báo chỉ thấy trạng thái và hành động tiếp theo đơn giản.',
+    commandments: [
+      'Journal chỉ nhận metadata đã lọc: nhóm UX/INFRA, mức độ, component, mã, fingerprint, tham chiếu ticket/job/release và tóm tắt an toàn. Không ghi prompt, attachment, stdout/stderr thô, token, mật khẩu hoặc đường dẫn máy nội bộ.',
+      'Mỗi occurrence là bản ghi append-only có retention hữu hạn; fingerprint là bản tổng hợp riêng để gộp tần suất và triage. Triage không được sửa, xóa hoặc làm mất event gốc.',
+      'Chỉ Admin được đọc hoặc triage Journal. Reporter-facing Inbox không hiển thị retry, log hoặc nguyên nhân hạ tầng; nó chỉ nói trạng thái có nghĩa và hành động kế tiếp.',
+      'Nếu không thể lọc hoặc xác minh dữ liệu event, bỏ metadata nghi ngờ và giữ tóm tắt an toàn thay vì lưu log thô.',
+    ],
+    rationale:
+      'Độ mượt của hệ thống cần dữ liệu tích lũy để ưu tiên sửa lỗi, nhưng quan sát nội bộ không được làm lộ dữ liệu hoặc biến thành gánh nặng cho người báo.',
+    examples: [
+      'Một deploy timeout tạo occurrence INFRA đã lọc, gộp theo fingerprint để vận hành triage; người báo chỉ nhận được cập nhật mOS đang xử lý.',
+    ],
+    tags: ['mOS Inbox', 'reliability', 'observability', 'retention', 'privacy'],
+    routeScopes: ['/dashboard/bug-reports'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-04',
+    sources: [
+      {
+        label: 'Experience & Reliability Journal service',
+        reference: 'apps/api/src/modules/experience-journal/experience-journal.service.ts',
+      },
+      { label: 'Internal Journal routes', reference: 'apps/api/src/modules/experience-journal/routes.ts' },
+    ],
+  },
+  {
+    id: 'UI-008',
+    book: 'SYSTEM',
+    title: 'Thời gian Agent phải tách khỏi thời gian chờ của con người',
+    summary:
+      'Mỗi ticket Inbox phải cho thấy rõ Agent thực sự làm việc bao lâu; thời gian chờ người báo, Danny hoặc hàng đợi hệ thống không được gộp vào AI execution time.',
+    commandments: [
+      'AI execution time chỉ là tổng các đoạn Agent đang active: phân tích/plan, code và test, retry/sửa lỗi, deploy, và xác minh sau deploy tới khi sẵn sàng nghiệm thu.',
+      'WAITING_REPORTER, WAITING_DANNY, SYSTEM_QUEUE và BLOCKED được lưu, hiển thị và tính riêng; không được làm số giờ Agent bị phình lên.',
+      'Mỗi đoạn thời gian phải có giờ server bắt đầu/kết thúc, loại giai đoạn và outcome; job thiếu mốc kết thúc phải được đánh dấu đang chạy hoặc không đủ dữ liệu, không được suy diễn là Agent làm liên tục.',
+      'Timeline ticket và dashboard tuần/tháng phải dùng cùng dữ liệu server-authoritative; dashboard nêu rõ ticket nào tốn thời gian Agent nhiều nhất, cùng median và p95 theo loại/giai đoạn.',
+      'Telemetry thời gian chỉ chứa metadata vận hành; không lưu prompt, nội dung ticket, ảnh đính kèm, token hoặc bí mật môi trường.',
+    ],
+    rationale:
+      'Danny cần biết chính xác nút thắt nằm ở Agent, ở thời gian chờ quyết định hay ở hạ tầng để cải thiện workflow bằng bằng chứng thay vì cảm giác.',
+    examples: [
+      'Agent code/test 18 phút, chờ Danny duyệt commit 2 giờ và deploy/xác minh 7 phút: AI execution time là 25 phút; Danny wait là 2 giờ.',
+      'Job nằm trong hàng đợi 6 phút trước khi worker bắt đầu: 6 phút đó thuộc System wait, không phải Agent active time.',
+    ],
+    exceptions: [
+      'Dữ liệu lịch sử không có mốc đáng tin phải hiển thị là ước tính hoặc không có dữ liệu; không được tạo độ chính xác giả.',
+    ],
+    tags: ['mOS Inbox', 'AI execution time', 'thời gian Agent', 'queue', 'approval', 'deploy', 'observability'],
+    routeScopes: ['/dashboard/bug-reports'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-03',
+    sources: [
+      { label: 'Backlog được Danny chốt', reference: 'MOS-FEAT-23' },
+      {
+        label: 'Vòng đời implementation job hiện có',
+        reference: 'apps/api/src/modules/bug-reports/inbox-implementation.service.ts',
+      },
+      {
+        label: 'Health và thời gian job do server chốt',
+        reference: 'apps/api/src/modules/bug-reports/request-classifier-worker-health.service.ts',
+      },
+    ],
+  },
+  {
+    id: 'WS-001',
+    book: 'SERVICE',
+    title: 'Thực đơn Workshop: Danh mục món hiển thị động theo dữ liệu thực tế',
+    summary:
+      'Các phân loại thực đơn Workshop (Nước uống, Món chính, Tráng miệng...) tự động hiển thị hoặc ẩn hoàn toàn theo danh sách món hiện có. Khi không phục vụ một nhóm món, người quản lý chỉ cần xóa các món trong nhóm đó.',
+    commandments: [
+      'Các nhóm thực đơn (JUICE, MAIN_COURSE, DESSERT...) chỉ hiển thị trên giao diện quản trị và trang đăng ký khi có ít nhất một món thuộc nhóm đó.',
+      'Để bỏ một nhóm thực đơn (như Tráng miệng), người vận hành tự vào tab Thực đơn của Workshop và bấm Xóa các món thuộc nhóm đó thay vì báo lỗi hệ thống.',
+      'Hệ thống lưu giữ đầy đủ lựa chọn thực đơn lịch sử của học viên đã đăng ký trước đó để đối soát nhà hàng; việc xóa món khỏi thực đơn hiện tại không làm mất dữ liệu lịch sử.',
+      'Tuyệt đối không tạo ticket báo lỗi kỹ thuật khi yêu cầu thực tế chỉ là thao tác dữ liệu cấu hình thực đơn có sẵn.',
+    ],
+    rationale:
+      'Hệ thống Workshop được thiết kế dạng dữ liệu động (data-driven), trao toàn quyền chủ động cho Host cấu hình linh hoạt danh mục phục vụ mà không cần can thiệp mã nguồn.',
+    examples: [
+      'Workshop Bí Kíp Nối Mi Triệu Đồng không phục vụ tráng miệng: Quản lý chỉ cần xóa món "Trái cây theo mùa" trong tab Thực đơn, mục Tráng miệng sẽ tự động biến mất trên cả giao diện quản trị và biểu mẫu đăng ký học viên.',
+    ],
+    tags: ['workshop', 'academy', 'thực đơn', 'menu', 'tráng miệng', 'xóa món', 'món ăn'],
+    routeScopes: ['/dashboard/academy-leads/workshops'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-09-30',
+    sources: [
+      {
+        label: 'Academy Workshop Menu Manager',
+        reference: 'apps/web/app/dashboard/academy-leads/components/AcademyWorkshopMenuManager.tsx',
+      },
+      {
+        label: 'Academy Workshop Service',
+        reference: 'apps/api/src/modules/academy-workshops/academy-workshop.service.ts',
+      },
+    ],
+  },
+  {
+    id: 'CAREER-QA-001',
+    book: 'PEOPLE',
+    title: 'Kiểm Định QA/QC Tác Phong & Phòng Nối Mi Trong Lộ Trình Thăng Tiến CV',
+    summary:
+      'Để đủ điều kiện nâng cấp (CV lên CV🪶, 🪶CV🪶), Chuyên Viên (CV) bắt buộc phải chủ động mời QA/QC kiểm tra tác phong bản thân và phòng nối mi định kỳ ít nhất 1 lần/tuần. Nếu có bài kiểm tra FAILED, nhân viên bị khóa quyền nâng cấp.',
+    commandments: [
+      'Chủ động mời QA/QC kiểm tra định kỳ: Chuyên Viên (CV) phải chủ động sắp xếp và mời QA/QC kiểm tra tác phong bản thân và phòng nối mi ít nhất 1 lần mỗi tuần trong suốt chu kỳ xét thăng cấp.',
+      'Nội dung kiểm tra song song hai hạng mục: (1) Tác phong bản thân (đồng phục, đầu tóc, vệ sinh móng tay, khẩu trang, giao tiếp) và (2) Phòng nối mi cá nhân (giường, đèn chiếu sáng không dính keo/mi, khay dụng cụ khử trùng chuẩn, nhíp sạch, không đồ cá nhân).',
+      'Cổng kiểm soát chất lượng tuyệt đối (Hard Gatekeeper): Nếu có bất kỳ bài kiểm tra nào bị FAILED hoặc không đạt tần suất tối thiểu 1 lần/tuần, nhân viên lập tức bị KHÓA QUYỀN NÂNG CẤP, không được mở Ải Trùm Cuối và không được duyệt thăng hạng.',
+      'Duy trì liên tục: Khi đã thăng cấp lên CV🪶 (CVL) hoặc 🪶CV🪶 (CVLL), Chuyên Viên vẫn phải duy trì kiểm định QA/QC định kỳ hàng tuần; vi phạm kiểm định là căn cứ xem xét giáng cấp.',
+    ],
+    rationale:
+      'Tay nghề kỹ thuật và doanh số tự bán combo chỉ có giá trị bền vững khi đi kèm kỷ luật tác phong và chuẩn mực vệ sinh phòng nối mi. Quy định này đảm bảo khách hàng luôn được phục vụ trong không gian sạch sẽ, an toàn và chuyên nghiệp nhất.',
+    examples: [
+      'CV hoàn thành vượt chỉ tiêu số ca, tip và combo nhưng trong 12 tuần chỉ mời QA kiểm tra 8 lần (< 1 lần/tuần): Hệ thống báo Chưa đủ tần suất kiểm định QA/QC, khóa quyền thăng cấp cho đến khi đạt đủ tuần kiểm tra.',
+      'CV có bài kiểm tra bị FAILED do đèn mi dính keo hoặc không chuẩn tác phong: Toàn bộ tiến trình nâng cấp bị đóng băng, bắt buộc rèn luyện lại và kiểm định đạt chuẩn.',
+    ],
+    tags: [
+      'career',
+      'progression',
+      'thăng tiến',
+      'CV',
+      'CV🪶',
+      '🪶CV🪶',
+      'CVL',
+      'CVLL',
+      'QA',
+      'QC',
+      'tác phong',
+      'phòng nối mi',
+      'kiểm tra',
+    ],
+    routeScopes: ['/dashboard/career-path'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-10-01',
+    sources: [
+      {
+        label: 'Career Progression Service',
+        reference: 'apps/api/src/modules/career/career.service.ts',
+      },
+      {
+        label: 'Career Path Simulation',
+        reference: 'apps/web/app/dashboard/career-path/page.tsx',
+      },
+    ],
+  },
+  {
+    id: 'CAREER-CVL-001',
+    book: 'PEOPLE',
+    title: 'Cẩm Nang 4 Phiên Bản Đơn Giản Dành Cho Chuyên Viên: Lộ Trình & Điều Kiện Lên CV🪶 (CVL)',
+    summary:
+      'Bộ 4 phiên bản giải thích đơn giản hóa tối đa các điều kiện kỹ thuật (6 ải cốt lõi, 30 ngày thử thách tự tư vấn, tỷ lệ combo minSelfComboRate, bảo lưu 90% tip) chuyển dịch thành ngôn ngữ thân thiện, dễ hiểu, trực quan giúp Chuyên Viên (CV) tự tin chinh phục cấp bậc Chuyên Viên Tự Chủ (CV🪶).',
+    commandments: [
+      'Phiên bản 1 · 30 Giây Tóm Tắt Siêu Ngắn (Elevator Pitch): CV🪶 là Chuyên Viên Tự Chủ — vừa làm mi đẹp, vừa tự chăm sóc, tự tư vấn tại giường và tự bấm thanh toán cho khách trên app. Để lên cấp: vượt 6 ải tay nghề & kỷ luật (330 bộ mi/3 tháng, fix ≤ 1.5%, khách cho tip đều, phòng mi 0 lỗi QA, 20 chuối yêu thương) và hoàn thành 30 ngày thử thách tự tư vấn (đạt ~2 khách mua combo trên mỗi 10 khách tiềm năng, tỷ lệ ≥ 21%). Khi lên cấp: lương giờ tăng +2.000đ/h (lên 27.5k/h), nhận trọn 90% Tip, thưởng tiền tươi combo (+50k ~ +200k) và dưỡng mi (+10k ~ +100k), thu nhập tăng thêm +2.000.000đ ~ +3.500.000đ/tháng.',
+      'Phiên bản 2 · Bảng So Sánh Quyền Lợi & Tự Chủ (CV Tiêu Chuẩn vs CV🪶): CV thường chờ sảnh check-in/out, nhận lương 25.5k/h, 70% Tip, 0đ thưởng bán hàng. CV🪶 tự mở hồ sơ, tự check-in & checkout trên /ios-app, nhận lương 27.5k/h (+2k/h), nhận trọn 90% Tip (70% làm mi + 20% tự tư vấn), thưởng combo bậc thang tiền tươi (+50k ~ +200k/gói), thưởng dưỡng mi Yeppeum (+10k ~ +100k/cây); khi tháng bán ít combo vẫn luôn được bảo lưu 90% Tip, không bao giờ bị phạt tiền.',
+      'Phiên bản 3 · Chi Tiết 6 Ải Cốt Lõi, Ải Trùm Cuối & Quy Tắc Giữ Lông: (1) Ải 1 Bền bỉ tay nghề: 330 bộ mi / 3 tháng liền (~110 bộ/tháng); (2) Ải 2 Tinh hoa kỹ thuật: Tỷ lệ bảo hành Fix ≤ 1.5%; (3) Ải 3 Khách thương trao tip: Tỷ lệ tip cao hơn 5% - 10% trung bình salon; (4) Ải 4 Kỷ luật & Phòng mi sạch: Mời QA/QC kiểm định 1 lần/tuần (≥ 4 lần/tháng) và 0 bài FAILED; (5) Ải 5 Đồng đội tin yêu: Chỉ số HI ≥ 70%; (6) Ải 6 Tương thân tương ái: Tích lũy ≥ 20 Chuối Yêu Thương trong tháng. Vượt 6 ải sẽ mở khóa Ải Trùm Cuối (30 ngày tự tư vấn combo đạt ≥ 21%). Quy tắc giữ lông: Luôn bảo lưu 90% Tip công nhận nỗ lực tư vấn; chỉ khi 2 tháng liên tiếp không đạt chỉ tiêu mới trở về cấp CV.',
+      'Phiên bản 4 · Bộ FAQ 5 Câu Hỏi Trăn Trở Nhất Của Chuyên Viên: (1) Ngại ăn nói có lên được không? Hoàn toàn được, khách tin sự chân thành và tay nghề của Chuyên Viên tại giường, salon có sẵn workshop và câu thoại mẫu; (2) Lỡ tháng này không đủ 21% combo có bị trừ lương không? Tuyệt đối không, vẫn nhận đủ lương và 90% Tip, chỉ tạm khóa thưởng combo và lương tăng +2k/h của tháng đó; (3) Làm sao vượt qua ải QA tuần? Thực hiện nguyên tắc 3 Sạch (nhíp tiệt trùng, đèn & giường không dính keo, tác phong chỉn chu); (4) Combo mi dưới và gia hạn gói cũ có tính không? Có tính đầy đủ thưởng tiền tươi, combo mi dưới vẫn tính vào tử số tỷ lệ chốt; (5) Biểu tượng CV🪶 mang ý nghĩa gì? Chiếc lông vũ tượng trưng cho sự nhẹ nhàng, tỉ mỉ và đôi cánh tự do của Chuyên Viên Tự Chủ.',
+      'Chuẩn hóa Danh xưng & Tôn trọng Nghệ nhân (Naming Invariant): Cấp bậc 1 lông có ký hiệu hiển thị chuẩn mực duy nhất là CV🪶 (mã chuẩn CVL). Toàn bộ các cách gọi CV Lông, CV 1 lông, 🪶CV, CV🪶, CV L, CV 1L, CV 𝓁, CV 1𝓁, CV Lờ, CV 1 Lờ, CVL đều hoàn toàn đồng nhất. Cấm tuyệt đối từ "thợ" và ký hiệu cũ có dấu cộng.',
+    ],
+    rationale:
+      'Quy chế kỹ thuật và công thức số học (minSelfComboRate, Not Combo Live, QA gatekeeper) dễ tạo cảm giác xa lạ và rào cản tâm lý cho Chuyên Viên. Bộ 4 phiên bản giải thích đa chiều từ tóm tắt nhanh, bảng so sánh trực quan, bản đồ 6 ải đến bộ FAQ giải tỏa lo lắng giúp các bạn thấu hiểu giá trị tự chủ, vững tâm rèn luyện và tự tin gia tăng thu nhập cho chính mình.',
+    examples: [
+      'Chuyên Viên mới vào nghề xem Phiên bản 1 (30 giây) để hiểu nhanh mục tiêu phấn đấu trong năm đầu tiên tại Wings.',
+      'Chuyên Viên thắc mắc sự khác biệt thu nhập giữa mình và đồng nghiệp gắn huy hiệu lông vũ được quản lý giải thích qua Phiên bản 2 (Bảng so sánh trực quan).',
+      'Chuyên Viên chuẩn bị bước vào chu kỳ xét thăng cấp theo dõi Phiên bản 3 (Bản đồ 6 ải và 30 ngày thử thách) trên /dashboard/career-path để kiểm tra checklist từng tuần.',
+      'Chuyên Viên lo lắng sợ áp lực doanh số bán hàng được giải tỏa tâm lý nhờ Phiên bản 4 (FAQ 5 câu hỏi giải tỏa nỗi sợ).',
+    ],
+    tags: [
+      'career',
+      'progression',
+      'thăng tiến',
+      'cẩm nang',
+      'CV',
+      'CV🪶',
+      'CVL',
+      '6 ải',
+      '30 ngày',
+      'tự chủ',
+      '90% tip',
+      'bảo lưu tip',
+      'combo',
+      'dưỡng mi',
+      'FAQ',
+    ],
+    routeScopes: ['/dashboard/career-path', '/ios-app'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-03',
+    sources: [
+      {
+        label: 'Quy chế CV🪶 (CVL) trong Kinh Thánh mOS',
+        reference: 'Điều răn CV-002 · mos-bible.ts',
+      },
+      {
+        label: 'Career Progression Service',
+        reference: 'apps/api/src/modules/career/career.service.ts',
+      },
+      {
+        label: 'Career Path Simulation & Guide',
+        reference: 'apps/web/app/dashboard/career-path/page.tsx',
+      },
+    ],
+  },
+  {
+    id: 'UI-008',
+    book: 'SYSTEM',
+    title:
+      'mOS Google Chat: Trò chuyện 1-1, Spaces theo bộ phận, Trạng thái Đã xem (Read Receipts) và Message-to-Task Reminder xuyên suốt',
+    summary:
+      'Nút mOS Chat đặt sát Avatar trên Header (gom gọn Theme & Cuộc gọi hôm nay vào menu Avatar), hỗ trợ chế độ Kép (Right Panel + Mini Docked Pop-out), hiển thị trạng thái Đã gửi / Đã xem (✓/✓✓ kèm Mini Seen Avatars) cho cả luồng chính lẫn Sub-thread và biến mọi tin nhắn thành Task hẹn giờ nhắc 2 chiều.',
+    commandments: [
+      'Nút mOS Chat nằm ngay bên trái Avatar người dùng trên Header, hiển thị badge số tin chưa đọc và chấm nhắc hẹn; các nút Giao diện Sáng/Tối và Cuộc gọi hôm nay được gom gọn vào trong menu tài khoản để thanh Header tinh gọn.',
+      'Toàn bộ điều khiển trong mOS Chat trên Desktop FHD sử dụng Vector Icon sắc nét kèm Tooltip tức thì (có gợi ý phím tắt), hạn chế tối đa chữ thừa; chỉ dùng emoji cho lượt thả cảm xúc (Reaction) dưới tin nhắn.',
+      'Hỗ trợ đồng thời 1-1 Direct Messages, Group Spaces theo bộ phận (#tư-vấn-cc, #telesales-booker, #chuyên-viên-mi) căn lề trái chuẩn Google Chat kèm cột trả lời theo luồng (Side Thread Pane) và thu nhỏ xuống góc dưới màn hình (Mini Pop-out).',
+      'Trạng thái Đã đọc / Đã xem (Read Receipts) hoạt động cho cả Luồng chat chính và Sub-thread: Hiển thị kết hợp dấu ✓ Đã gửi / ✓✓ Đã xem cạnh thời gian của mỗi tin nhắn do mình gửi kèm dãy Mini Avatar (tối đa 4-5 avatar xếp chồng + badge +N) dừng tại tin nhắn/phản hồi mới nhất mà từng thành viên đã đọc; khi hover hoặc click sẽ mở Popover chi tiết danh sách người Đã xem (kèm giờ xem) và người Chưa xem. Đối với Sub-thread, chỉ khi người dùng mở đúng Sub-thread trên tab đang active mới tính là đã đọc luồng đó, đồng thời ngay ngoài nút "💬 X trả lời" hiển thị cả badge số phản hồi mới chưa đọc lẫn mini avatar / ✓✓ của người đã xem câu trả lời cuối.',
+      'Mọi tin nhắn đều có thể chuyển thành Công việc & Cài giờ nhắc hẹn (Message-to-Task -> Reminder) giao cho bản thân hoặc đồng nghiệp; khi đến giờ nhắc hệ thống phát chuông, bung thông báo nổi và đẩy tin nhắn nhắc tự động vào phòng chat.',
+      'Thông báo đẩy chuẩn Apple Web Push / Desktop Push khi khóa màn hình: Khi nhân sự cài mOS ra Màn hình chính iPhone (iOS PWA) hoặc bật thông báo trên máy tính, hệ thống tự động bắn Native Push Notification (VAPID + mã hóa RFC 8291 aes128gcm) cho 4 nhóm sự kiện: Tin nhắn riêng 1-1 (Direct Message ở cả luồng chính và phản hồi Thread), được nhắc tên (@Mention cá nhân / @all trong nhóm có quyền truy cập), Cuộc gọi thoại đến / Cuộc gọi nhỡ và BUZZ khẩn cấp — tự động chống gửi trùng thiết bị và tôn trọng tuyệt đối ranh giới bảo mật phòng kín.',
+      'Kiến trúc Lưu trữ Relational & Dynamic Workflow Engine (Operational OS): Toàn bộ dữ liệu mOS Chat và Quy trình Sống được lưu trữ chuẩn hóa trên 7 bảng Prisma chuyên biệt (crm_chat_conversations, crm_chat_participants, crm_chat_messages, crm_chat_tasks, crm_chat_user_prefs, crm_chat_workflow_templates, crm_chat_workflow_instances). Chỉ duy nhất Super Admin mới thấy và sử dụng bộ công cụ khởi tạo/đóng gói/nâng cấp Workflow (/tam-ung, /kiem-kho, /tao-quy-trinh, nút [⚡ Quy trình], nút [✨ Lưu Workflow]); đối với nhân sự khác, giao diện tự động ẩn gọn toàn bộ nút quản trị và chỉ hiển thị nút xác nhận/đính kèm UNC tại đúng bước mà nhân sự đó được phân công phụ trách. Khi hoàn tất bước cuối, hệ thống tự động đồng bộ sang Báo cáo Thu Chi (CrmCashFlowEntry) hoặc mOS Kho (CrmStockInventory).',
+      'Chuyển tiếp tin nhắn & trọn bộ Subthread đa đích (Forward): Người dùng có thể chuyển tiếp bất kỳ tin nhắn đơn, phản hồi riêng lẻ trong luồng hoặc toàn bộ luồng thảo luận (tin nhắn gốc + toàn bộ các phản hồi chưa bị xóa trong Subthread kèm ảnh/video/tệp/thẻ khách hàng và đúng tác giả gốc của từng phản hồi) từ DM hoặc Space sang tối đa 20 phòng đích cùng lúc (Space, DM 1-1, Ghi chú cá nhân hoặc bất kỳ đồng nghiệp nào trong danh bạ — tự động tạo phòng DM 1-1 mới nếu chưa từng nhắn). Bản chuyển tiếp được sao chép độc lập (không chỉnh sửa bản gốc), che tên riêng đối tác khi nguồn là DM 1-1 ("Tin nhắn riêng (DM)"), và tách biệt hoàn toàn khỏi Task/Mission/Workflow/Reaction/Pin/Buzz của phòng cũ.',
+    ],
+    rationale:
+      'Giúp các bộ phận Telesales, Tư Vấn (CC), Chuyên Viên (CV) và CSKH trao đổi tức thì, nhận thông báo tin nhắn riêng và @Mention ngay trên màn hình khóa iPhone, nắm bắt chính xác ai đã đọc thông tin ở cả luồng chính lẫn sub-thread, đính kèm hồ sơ khách hàng, giao việc có hẹn giờ nhắc và vận hành quy trình phê duyệt đa bước (Tạm ứng, Kiểm kho) ngay trên bất kỳ màn hình nào của mOS mà không bị trôi việc.',
+    tags: [
+      'chat',
+      'google chat',
+      'spaces',
+      'direct message',
+      'mention',
+      'web push',
+      'ios notification',
+      'task',
+      'reminder',
+      'thread',
+      'forward',
+      'chuyển tiếp',
+      'read receipts',
+      'đã xem',
+      'header',
+      'mini pop-out',
+      'workflow engine',
+      'tạm ứng',
+      'kiểm kho',
+    ],
+    routeScopes: ['/dashboard', '/chat'],
+    status: 'ACTIVE',
+    version: '2.2.0',
+    effectiveFrom: '2026-11-21',
+    sources: [
+      { label: 'mOS Chat Workspace Component', reference: 'apps/web/components/mos-chat/MosGoogleChatPortal.tsx' },
+      {
+        label: 'mOS Chat Forward Service',
+        reference: 'apps/api/src/modules/chat/chat-forward.service.ts',
+      },
+      {
+        label: 'mOS Chat Web Push Service (iOS PWA & Desktop)',
+        reference: 'apps/api/src/modules/chat/chat-web-push.service.ts',
+      },
+      {
+        label: 'mOS Chat Workflow Card & Modals',
+        reference: 'apps/web/components/mos-chat/workflows/MosChatWorkflowCard.tsx',
+      },
+      {
+        label: 'mOS Chat Relational Repository & Workflow Service',
+        reference: 'apps/api/src/modules/chat/chat-workflow.service.ts',
+      },
+      { label: 'mOS Chat API Routes', reference: 'apps/api/src/modules/chat/routes.ts' },
+    ],
+  },
+  {
+    id: 'UI-009',
+    book: 'SYSTEM',
+    title: 'Kết nối 2 chiều khép kín giữa mOS Chat và mOS Mission (Giao việc AG & Báo tiến độ ngôn ngữ con người)',
+    summary:
+      'Super Admin chọn lọc tin nhắn, luồng thảo luận (Thread) hoặc Task từ mOS Chat để đẩy 1 chạm sang mOS Mission cho AG lập trình; tiến độ được dịch sang ngôn ngữ đời thường ngay trong Thread mOS Chat kèm điều khiển duyệt nhanh và nghiệm thu tại chỗ.',
+    commandments: [
+      'Đổi tên hiển thị mOS Inbox thành mOS Mission để phân biệt rõ ràng: mOS Chat là kênh giao tiếp hàng ngày, còn mOS Mission là trung tâm nhiệm vụ kỹ thuật nơi AG thực thi code, kiểm thử và triển khai.',
+      'Chỉ duy nhất Super Admin Danny mới thấy và sử dụng được nút [Giao mOS Mission] trên Tin nhắn, Thread và Thẻ Task trong mOS Chat (backend khóa chặt quyền Super Admin Danny). Khi anh Danny bấm giao từ Chat, hệ thống tự động gom trọn Tin nhắn gốc + toàn bộ phản hồi trong Thread + tất cả hình ảnh đính kèm và tự động duyệt Cổng 1 (APPROVED) để AG bắt đầu làm ngay.',
+      'Tiến độ trong Thread mOS Chat hiển thị qua Thẻ Tiến Độ Sống (Live Mission Card) ghim đầu Thread và chỉ bắn tin nhắn tự động ở 4 cột mốc chính (Đã nhận việc -> Cần hỏi thêm / Đã làm xong bản thử nghiệm -> Đã lên web mời kiểm tra -> Hoàn tất) bằng ngôn ngữ con người dễ hiểu, tuyệt đối không lộ thuật ngữ kỹ thuật khô khan cho nhân sự.',
+      'Đồng bộ 2 chiều khép kín: Nhân sự nhắn thêm chữ hoặc ảnh vào Thread mOS Chat sẽ tự động đồng bộ sang bình luận của mOS Mission để AG đọc; khi tính năng đã lên web, nhân sự bấm [Đã đúng ý] ngay trong Thread sẽ tự động hoàn tất Mission và đánh dấu Done luôn cho Task trong mOS Chat.',
+      'Riêng tài khoản Super Admin Danny nhìn thấy nút [Duyệt Commit] và [Duyệt Deploy] trực tiếp trên Thẻ Mission ngay trong Thread mOS Chat để phê duyệt tức thì mà không phải chuyển tab qua lại.',
+    ],
+    rationale:
+      'Loại bỏ hoàn toàn sự rời rạc giữa kênh giao tiếp nội bộ (mOS Chat) và quy trình phát triển tự động của AG (mOS Mission), giúp Super Admin Danny điều phối công việc ngay tại luồng trò chuyện và giúp nhân sự theo dõi, nghiệm thu tính năng bằng ngôn ngữ tự nhiên.',
+    examples: [
+      'Bảo Hân nhắn tin "Bổ sung tệp khách hàng bảo lưu" kèm 2 ảnh chụp màn hình cô Giáng Hương, chị Mai và anh Danny chốt tên "Combo Elsa" trong Thread: Anh Danny bấm [Giao mOS Mission], hệ thống gom trọn 4 bình luận + 2 ảnh sang mOS Mission, cập nhật tiến độ trong Thread cho Bảo Hân và cho phép Bảo Hân bấm [Đã đúng ý] ngay khi lên sóng.',
+    ],
+    tags: ['mOS Mission', 'mOS Chat', 'mOS Inbox', 'thread', 'task', 'AG', 'ngôn ngữ con người', 'Combo Elsa'],
+    routeScopes: ['/dashboard', '/dashboard/bug-reports'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-10-17',
+    sources: [
+      { label: 'mOS Chat Portal', reference: 'apps/web/components/mos-chat/MosGoogleChatPortal.tsx' },
+      { label: 'mOS Chat & Mission Bridge Routes', reference: 'apps/api/src/modules/chat/routes.ts' },
+      { label: 'mOS Mission Page', reference: 'apps/web/app/dashboard/bug-reports/page.tsx' },
+    ],
+  },
+  {
+    id: 'UI-010',
+    book: 'SYSTEM',
+    title: 'Mặc Định Khóa Quyền Admin-Only Cho Mọi Tính Năng Mới & Bảo Mật Phạm Vi Khách Hàng Của CV🪶 Trên /ios-app',
+    summary:
+      'Mọi chức năng, màn hình hoặc API mới đưa vào mOS mặc định chỉ Admin / Super Admin được phép sử dụng (Zero-Trust Admin-Only Default). Riêng ứng dụng /ios-app chỉ mở cho CV🪶 (CVL), 🪶CV🪶 (CVLL), CC và Admin; trong đó CV🪶 tuyệt đối không được xem khách của người khác mà chỉ được xem khách hàng đầu tua tại sảnh (Đầu tua — tất cả khách cùng khung giờ kế tiếp; khách trễ giờ chưa đến vẫn hiện và tự mở thêm khung giờ kế tiếp) và khách book của chính mình.',
+    commandments: [
+      'Zero-Trust Admin-Only Default (4 Lớp Bảo Vệ): Khi bất kỳ tính năng, trang giao diện (/dashboard/*), mục menu hoặc API mới nào được thiết kế và đưa vào mOS, mặc định chỉ duy nhất Admin / Super Admin được quyền truy cập. Tất cả các vai trò khác đều bị chặn mặc định ở cả 4 lớp: (1) Sidebar ẩn mọi menu chưa khai báo trong MENU_ACCESS_DEFINITIONS hoặc chưa cấp quyền; (2) Route Guard chặn truy cập URL trực tiếp; (3) Backend API Guard trả về 403 Forbidden với mọi API chưa mở quyền (__ADMIN_ONLY_DEFAULT__); (4) Chỉ mở quyền khi Admin cấu hình tường minh.',
+      'Khóa Cổng Truy Cập /ios-app: Chỉ duy nhất 4 nhóm tài khoản được phép vào /ios-app gồm: CV🪶 (CVL), 🪶CV🪶 (CVLL), Tư Vấn Viên (CC) và Admin / Super Admin. Toàn bộ các vai trò khác (bao gồm Chuyên Viên Kỹ Thuật tiêu chuẩn CV, Manager, FM, CHO, BOSS, Telesales, CSKH, HR, QA/QC) đều bị từ chối truy cập ở cả giao diện và API.',
+      'Khóa Cứng Vai Trò & Chi Nhánh Theo Tài Khoản Đăng Nhập: Trên /ios-app, nhân sự đăng nhập vai trò nào bị khóa cứng ở đúng vai trò đó (kể cả khi tự sửa tham số ?role= trên URL) và CC / Chuyên Viên không phải Admin được neo về đúng chi nhánh đang làm việc (client_store_id). Chỉ duy nhất Admin / Super Admin mới có thanh chuyển đổi vai trò (Role Switcher) và chuyển chi nhánh để kiểm thử.',
+      'Phạm Vi Dữ Liệu Theo Vai Trò — CC Xem Toàn Bộ Chi Nhánh & Bảo Mật Khách Hàng Của CV🪶 (CVL): Tư Vấn Viên (CC) được xem tất cả khách chờ đón (Chờ đón), đang làm (Đang làm) và đã xong (Đã xong) thuộc chi nhánh mình đang làm việc (STORE_ALL). Ngược lại, tài khoản CV🪶 bị ẩn nút "Toàn Bộ Sảnh" (STORE_ALL) và tuyệt đối không được xem hay thao tác trên khách hàng đã được phân công cho Chuyên Viên khác; CV🪶 chỉ được hiển thị đúng: (a) khách hàng đầu tua chưa phân công tại sảnh để nhận ca — gồm TẤT CẢ khách ở khung giờ sớm nhất chưa trễ (2+ khách book cùng một khung giờ thì hiện hết), cộng mọi khách đã trễ giờ mà chưa đến (khi có khách trễ, hệ thống tự mở thêm khung giờ kế tiếp cho CV🪶 xem; không giới hạn mốc trễ, chỉ biến mất khi booking bị hủy hoặc đã phân công). Quy tắc v1.4.0 thay thế MOS-BUG-227 (chỉ 1 khách) vì làm CV🪶 mất khách đầu tua; và (b) danh sách khách hàng book đích danh / được phân công cho chính mình trong ngày.',
+      'Tách Bạch 100% Dữ Liệu Thật (Live Mode) & Chế Độ Demo (?demo=1) Kèm Lưu Trữ Nguyên Tử Từng Ca Làm: Ở chế độ vận hành thật mặc định, /ios-app và API /api/ios/bookings tuyệt đối không tự bịa lịch sử mi giả, không gán doanh thu mặc định giả, không tự nhảy ngầm về ngày cũ và không trộn khách mẫu INITIAL_BOOKINGS (chỉ kích hoạt khách mẫu khi truyền tường minh ?demo=1). Mọi trạng thái ca làm (check-in, tư vấn, ảnh tiến trình, checkout) được lưu nguyên tử theo từng bookingId độc lập (IOS_BK_OVR:<bookingId>), không bao giờ ghi đè mất dữ liệu khi nhiều Chuyên Viên thao tác đồng thời.',
+      'Hệ Sinh Thái Menu Đồng Nhất (MosAppLauncher & SidebarNav): Toàn hệ thống thống nhất 2 tầng điều hướng gồm 3 App lõi (mOS General, mOS Chat, iOS-App) và 4 Phân hệ hệ sinh thái (mOS Reports, mOS Mission, mOS Bible, mOS Lab). Việc hiển thị từng mục được lọc nghiêm ngặt theo Vai trò (Role), Đội nhóm CRM (teamCodes) và Ma trận MENU_ACCESS_DEFINITIONS: mOS General ẩn mặc định với CV nếu chưa mở phân hệ vận hành ngoài Báo cáo; mOS Lab & mOS Mission mặc định khóa cho Admin hoặc nhóm/cá nhân được cấp quyền; mOS Bible mở mặc định toàn hệ thống qua Drawer tại chỗ trên cả 3 App.',
+    ],
+    rationale:
+      'Đảm bảo an toàn phân quyền tuyệt đối khi phát triển tính năng mới, bảo vệ quyền riêng tư dữ liệu khách hàng tại sảnh salon, đảm bảo nguyên tắc xoay tua công bằng không cho phép chọn khách (chỉ 1 khách đầu tua duy nhất), giữ độ tinh khiết 100% cho dữ liệu vận hành thật và chống mất dữ liệu khi nhiều Chuyên Viên Tự Chủ (CV🪶) thao tác song song.',
+    examples: [
+      'Một trang mới /dashboard/experimental-report vừa được tạo nhưng chưa khai báo mở quyền: Chỉ Admin nhìn thấy và truy cập được; mọi nhân sự khác gõ trực tiếp URL hoặc gọi API đều bị chặn.',
+      'Tài khoản CV🪶 (Thảo Ly) mở http://localhost:4000/ios-app?role=CVL: Chỉ nhìn thấy khách đầu tua (tất cả khách cùng khung giờ kế tiếp + khách trễ giờ chưa đến, không thấy khung giờ xa hơn) và các khách book thật của Thảo Ly trong ngày hôm nay; chỉ khi Admin mở /ios-app?demo=1 mới hiển thị danh sách khách mẫu kiểm thử.',
+    ],
+    tags: [
+      'admin-only',
+      'zero-trust',
+      'phân quyền',
+      'ios-app',
+      'CV🪶',
+      'CVL',
+      '🪶CV🪶',
+      'CVLL',
+      'CC',
+      'khách hàng kế tiếp',
+      'khách book của mình',
+      'bảo mật khách hàng',
+      'live-data-purity',
+      'demo-mode',
+    ],
+    routeScopes: [
+      '/ios-app',
+      '/dashboard',
+      '/dashboard/settings',
+      '/chat',
+      '/dashboard/labs',
+      '/dashboard/bug-reports',
+    ],
+    status: 'ACTIVE',
+    version: '1.4.0',
+    effectiveFrom: '2026-11-20',
+    sources: [
+      { label: 'Shared Auth & Role Guards', reference: 'packages/shared/src/types/auth.ts' },
+      { label: 'Shared iOS Domain DTOs & Rules', reference: 'packages/shared/src/types/ios-app.ts' },
+      { label: 'Menu & API Access Guard Definitions', reference: 'packages/shared/src/types/menu-access.ts' },
+      { label: 'Unified Ecosystem Navigation Model', reference: 'apps/web/config/ecosystem-nav.ts' },
+      { label: 'Unified 9-Dot App Launcher', reference: 'apps/web/components/layout/MosAppLauncher.tsx' },
+      { label: 'iOS App State & Scope Lock', reference: 'apps/web/app/ios-app/state/useIosAppState.ts' },
+      { label: 'iOS Bookings API Route Guard', reference: 'apps/web/app/api/ios/bookings/route.ts' },
+    ],
+  },
+  {
+    id: 'UI-011',
+    book: 'SYSTEM',
+    title: 'Google Workspace (Sheets & Docs) Reader Plugin & Service Account Security Trong mOS Chat',
+    summary:
+      'Mọi đường dẫn Google Sheets và Google Docs gửi trong mOS Chat được biến thành Smart Chip + Thẻ Preview mini chuẩn Google Chat Workspace, mở Khung đọc song song Dual-Mode (mOS Fast Reader + Google Live View) ngay bên cạnh, gom tập trung tại mục Tài liệu (Files) phòng chat và tự động nạp ngữ cảnh cho @AI/@MAI cùng mOS Mission.',
+    commandments: [
+      'Hiển Thị Chuẩn Google Chat Workspace: URL Google Sheets / Docs được thu gọn thành Smart Chip nội dòng kèm thẻ Preview mini dưới tin nhắn (hiển thị tên file, dãy chip các tab như NVL / Mi, 3–5 dòng quanh ô/vùng range=D17 hoặc đoạn trích dẫn Docs). Trên thanh đầu phòng chat luôn có mục Tài liệu (Files) để tra cứu toàn bộ link Workspace và tệp đã gửi.',
+      'Khung Đọc Song Song Kép (Dual-Mode Split Canvas): Bấm vào Smart Chip hoặc Thẻ Preview sẽ mở Khung đọc song song bên phải (nút đóng [✕] đặt tại góc trên bên phải). Mặc định dùng mOS Fast Reader (tự chọn đúng gid, tự cuộn & tô sáng ô range, lọc tìm tức thì, chữ số tabular-nums, chuẩn Light/Dark Theme và iOS/Safari), kèm nút chuyển 1 chạm sang Google Live View (Iframe) để xem/sửa nguyên bản.',
+      'Xác Thực Đa Tầng Không Rào Cản: (1) File bật "Bất kỳ ai có liên kết" (PUBLIC_LINK) đọc trực tiếp không cần đăng nhập; (2) File nội bộ chia sẻ cho Service Account Wings (wings-sheets-sa@wings-lashes.iam.gserviceaccount.com) đọc qua Google Drive v3 / Sheets v4 (riêng Google Docs dùng Drive Export HTML thay cho Docs API); (3) File chưa chia sẻ trả trạng thái NEEDS_SHARE kèm nút copy email mOS Bot 1 chạm.',
+      'Bảo Vệ Lớp Service Account (Chống Lộ File Nhạy Cảm): File PUBLIC_LINK mở cho toàn bộ thành viên phòng chat. Riêng file khóa riêng tư chỉ đọc được qua Service Account (SERVICE_ACCOUNT) chỉ được bung dữ liệu khi người gửi tin nhắn chứa link HOẶC người đang xem giữ vai trò Quản trị / Quản lý (admin, super_admin, manager, fm, cho, boss). Nếu không thỏa điều kiện, API trả RESTRICTED_ROLE.',
+      'Tích Hợp AI 3 Điểm Chạm & Mission Snapshot: (1) Thanh AI nhanh ngay trong Khung đọc; (2) Tự động phát hiện và nạp cấu trúc các tab + dữ liệu quanh range vào ngữ cảnh khi gọi @AI / @MAI; (3) Khi bấm 🚀 tạo Ticket mOS Mission từ tin nhắn/thread chứa link Sheet/Docs, hệ thống tự đính kèm snapshot bảng các tab và dữ liệu mẫu vào mô tả Ticket.',
+    ],
+    rationale:
+      'Giúp nhân sự Kho, Điều hành, Chuyên Viên và AI đọc hiểu tức thì bảng tính nhiều tab và tài liệu quy trình ngay trong mOS Chat như Google Chat Workspace mà không vướng cảnh báo OAuth hay rò rỉ file nội bộ nhạy cảm.',
+    examples: [
+      'Bảo Hân (Admin) gửi link Google Sheet Kho Đề Thám (#gid=516151439&range=D17) vào nhóm Kho ĐT - EP: cả phòng xem được tab NVL, Mi và nhảy thẳng tới ô D17 trong mOS Fast Reader; @AI trả lời được ngay số liệu trên cả 2 tab.',
+    ],
+    tags: [
+      'google sheets',
+      'google docs',
+      'google workspace',
+      'mos-chat',
+      'smart chip',
+      'fast reader',
+      'service account',
+      'tài liệu phòng chat',
+      'AI context',
+      'mission snapshot',
+    ],
+    routeScopes: ['/dashboard/chat', '/chat', '/dashboard'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-15',
+    sources: [
+      { label: 'Shared Google Workspace URL Parser', reference: 'packages/shared/src/utils/google-workspace-link.ts' },
+      {
+        label: 'Backend Google Workspace Service',
+        reference: 'apps/api/src/modules/chat/chat-google-workspace.service.ts',
+      },
+      {
+        label: 'Split Canvas Reader UI',
+        reference: 'apps/web/components/mos-chat/components/MosChatGoogleWorkspaceDrawer.tsx',
+      },
+      { label: 'Chat Room Files Pane', reference: 'apps/web/components/mos-chat/components/MosChatFilesPane.tsx' },
+    ],
+  },
+  {
+    id: 'UI-012',
+    book: 'SYSTEM',
+    title: 'Liên Kết Cố Định (Perm Link) Cho Mọi Phiên Hội Thoại MAI Trong mOS Chat',
+    summary:
+      'Mỗi phiên hội thoại với MAI có một đường dẫn cố định /chat?convId=dm-wings-ai-copilot&sessionId=<mã phiên> để lưu, quay lại bất kỳ lúc nào, chia sẻ khi chủ phiên cho phép, và để Ticket mOS Mission lần ngược về đúng phiên. Phiên mặc định riêng tư; quản trị chỉ xem trong hai trường hợp có kiểm soát và có ghi nhật ký.',
+    commandments: [
+      'Mọi Phiên Đều Có Perm Link: Mỗi phiên MAI (mã phiên lưu trên máy chủ) có đường dẫn cố định dạng /chat?convId=dm-wings-ai-copilot&sessionId=<mã phiên>. Thanh địa chỉ tự cập nhật theo phiên đang mở; menu ⋮ của hội thoại MAI có mục "Sao chép liên kết cố định của phiên" và "Lịch sử phiên hội thoại MAI" (mở lại phiên cũ, sao chép liên kết từng phiên, dán liên kết hoặc mã phiên để mở).',
+      'Mặc Định Riêng Tư, Chủ Phiên Quyết Định Chia Sẻ: Phiên MAI mặc định chỉ chủ phiên mở được perm link; người khác (kể cả Admin) nhận 403. Chủ phiên bấm "Chia sẻ phiên này" ở menu ⋮ thì mọi nhân sự đã đăng nhập mOS có liên kết xem được ở chế độ chỉ xem, và có thể bấm "Dừng chia sẻ" để thu hồi ngay. Phiên không tồn tại nhận 404. Người xem chỉ xem, không nhắn tiếp và không ghi vào bộ nhớ riêng của họ; muốn nhắn tiếp bấm "Bắt đầu phiên của tôi". Trên điện thoại chỉ mở được phiên của chính mình.',
+      'Ngoại Lệ Có Kiểm Soát Cho Quản Trị: (1) Super Admin chỉ được tự xem phiên đã gắn với một mOS Mission (vì liên quan trực tiếp đến hệ thống); (2) Admin và Super Admin được mở phiên riêng tư của nhân sự khác để rà soát bảo mật (kiểm tra việc dùng MAI có xâm phạm hệ thống hay không) nhưng bắt buộc nhập lý do tối thiểu 10 ký tự. Cả hai trường hợp đều chỉ xem, được ghi vào nhật ký truy cập (ai, vai trò, lý do, thời điểm) và chủ phiên thấy được các lượt xem này trong Lịch sử phiên; metadata của phiên người khác không bao giờ được trả về.',
+      'Ticket Lần Ngược Về Phiên: Khi Danny giao mOS Mission từ tin nhắn MAI, hệ thống lưu mã phiên (chatSessionId) vào ngữ cảnh Ticket và ghi dòng "Phiên hội thoại MAI (perm link)" vào mô tả; mã phiên lấy từ bản ghi tin nhắn trên máy chủ, không tin giá trị do trình duyệt gửi lên.',
+    ],
+    rationale:
+      'Ticket được tạo từ MAI trước đây chỉ nhớ hội thoại chung của MAI nên không tìm lại được đúng phiên đã trao đổi. Perm link giúp lần ngược mọi yêu cầu về đúng ngữ cảnh gốc, đồng thời giữ riêng tư theo chủ phiên và vẫn cho quản trị đủ khả năng rà soát an toàn hệ thống để củng cố và nâng cấp MAI.',
+    examples: [
+      'Ticket MOS-FEAT-255 tạo từ một tin nhắn MAI: mở ngữ cảnh Ticket sẽ vào thẳng đúng phiên MAI đã trao đổi, thay vì phiên gần nhất.',
+      'Nhân sự gõ thử perm link của người khác khi chủ phiên chưa chia sẻ: nhận thông báo phiên riêng tư, không thấy nội dung. Admin nghi ngờ một nhân viên dùng MAI sai mục đích: mở perm link, nhập lý do rà soát, xem ở chế độ chỉ xem và chủ phiên thấy lượt xem đó.',
+    ],
+    tags: [
+      'mos-chat',
+      'MAI',
+      'perm link',
+      'phiên hội thoại',
+      'session',
+      'ticket',
+      'mission',
+      'quyền riêng tư',
+      'rà soát bảo mật',
+      'chia sẻ phiên',
+    ],
+    routeScopes: ['/dashboard/chat', '/chat', '/dashboard'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-21',
+    sources: [
+      { label: 'Permalink helpers', reference: 'apps/web/components/mos-chat/utils/mos-chat-permalink.ts' },
+      {
+        label: 'Session history modal',
+        reference: 'apps/web/components/mos-chat/components/MosChatAiSessionsModal.tsx',
+      },
+      { label: 'Session access rules', reference: 'apps/api/src/modules/ai/ai-session-access.ts' },
+      {
+        label: 'Session permalink routes (GET /ai/chat/sessions/:id, PATCH .../sharing)',
+        reference: 'apps/api/src/modules/ai/routes.ts',
+      },
+      { label: 'Mission → session link', reference: 'apps/api/src/modules/chat/chat-mission-bridge.service.ts' },
+    ],
+  },
+];
