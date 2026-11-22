@@ -7,8 +7,6 @@
     "apps/api/src/modules/academy-sales/academy-campaign.service.ts": 1238,
     "apps/api/src/modules/academy-sales/academy-sales.service.ts": 1185,
     "apps/api/src/modules/academy-sales/routes.ts": 804,
-    "apps/api/src/modules/academy-workshops/academy-workshop-live.service.ts": 1168,
-    "apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts": 957,
     "apps/api/src/modules/academy-workshops/academy-workshop.service.ts": 3073,
     "apps/api/src/modules/ai/ai.service.ts": 1225,
     "apps/api/src/modules/ai/routes.ts": 802,
