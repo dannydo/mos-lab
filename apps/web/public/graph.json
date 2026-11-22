@@ -58954,8 +58954,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 82235,
-        "lineCount": 1761,
+        "sizeBytes": 7951,
+        "lineCount": 212,
         "ext": ".tsx"
       }
     },
@@ -59008,6 +59008,123 @@
       "metadata": {
         "sizeBytes": 6725,
         "lineCount": 207,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerCardsRail.tsx",
+      "type": "File",
+      "label": "StaffCareerCardsRail.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerCardsRail.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7470,
+        "lineCount": 156,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerGridView.tsx",
+      "type": "File",
+      "label": "StaffCareerGridView.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerGridView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12730,
+        "lineCount": 266,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerRoleControls.tsx",
+      "type": "File",
+      "label": "StaffCareerRoleControls.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerRoleControls.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13693,
+        "lineCount": 363,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerSelectedFooter.tsx",
+      "type": "File",
+      "label": "StaffCareerSelectedFooter.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerSelectedFooter.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10384,
+        "lineCount": 246,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerUltraCompactRail.tsx",
+      "type": "File",
+      "label": "StaffCareerUltraCompactRail.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerUltraCompactRail.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7319,
+        "lineCount": 163,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/staffCareerColumns.tsx",
+      "type": "File",
+      "label": "staffCareerColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/staff-career-selector/staffCareerColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 16199,
+        "lineCount": 400,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/staffCareerMetrics.ts",
+      "type": "File",
+      "label": "staffCareerMetrics.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/staff-career-selector/staffCareerMetrics.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8364,
+        "lineCount": 208,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/staffCareerSelectorTypes.ts",
+      "type": "File",
+      "label": "staffCareerSelectorTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/staff-career-selector/staffCareerSelectorTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1506,
+        "lineCount": 51,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/useStaffCareerSelectorState.ts",
+      "type": "File",
+      "label": "useStaffCareerSelectorState.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/staff-career-selector/useStaffCareerSelectorState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3384,
+        "lineCount": 112,
         "ext": ".ts"
       }
     },
@@ -64141,8 +64258,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 96598,
-        "lineCount": 1922,
+        "sizeBytes": 4516,
+        "lineCount": 139,
         "ext": ".tsx"
       }
     },
@@ -64676,6 +64793,123 @@
       "metadata": {
         "sizeBytes": 5938,
         "lineCount": 172,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAfterPhotoAndCompletionSteps.tsx",
+      "type": "File",
+      "label": "PilotAfterPhotoAndCompletionSteps.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAfterPhotoAndCompletionSteps.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 17818,
+        "lineCount": 376,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAiAssessmentResultBox.tsx",
+      "type": "File",
+      "label": "PilotAiAssessmentResultBox.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAiAssessmentResultBox.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10191,
+        "lineCount": 208,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAssessmentStep.tsx",
+      "type": "File",
+      "label": "PilotAssessmentStep.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAssessmentStep.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 21229,
+        "lineCount": 442,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAssessmentSummaryView.tsx",
+      "type": "File",
+      "label": "PilotAssessmentSummaryView.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAssessmentSummaryView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7148,
+        "lineCount": 143,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotFlowHeaderAndCheckIn.tsx",
+      "type": "File",
+      "label": "PilotFlowHeaderAndCheckIn.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotFlowHeaderAndCheckIn.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9592,
+        "lineCount": 222,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotPhotoPicker.tsx",
+      "type": "File",
+      "label": "PilotPhotoPicker.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotPhotoPicker.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1260,
+        "lineCount": 44,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotServiceAndBeforePhotoSteps.tsx",
+      "type": "File",
+      "label": "PilotServiceAndBeforePhotoSteps.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotServiceAndBeforePhotoSteps.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11606,
+        "lineCount": 243,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/pilot-flow-config.ts",
+      "type": "File",
+      "label": "pilot-flow-config.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/pilot-flow-config.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3827,
+        "lineCount": 99,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/usePilotFlowDrawer.ts",
+      "type": "File",
+      "label": "usePilotFlowDrawer.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/usePilotFlowDrawer.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14482,
+        "lineCount": 399,
         "ext": ".ts"
       }
     },
@@ -66897,8 +67131,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 78831,
-        "lineCount": 1723,
+        "sizeBytes": 7750,
+        "lineCount": 210,
         "ext": ".tsx"
       }
     },
@@ -67237,6 +67471,110 @@
       "metadata": {
         "sizeBytes": 2907,
         "lineCount": 87,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/TvFullscreenGaugeCard.tsx",
+      "type": "File",
+      "label": "TvFullscreenGaugeCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/TvFullscreenGaugeCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8177,
+        "lineCount": 204,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/TvFullscreenSettingsPopover.tsx",
+      "type": "File",
+      "label": "TvFullscreenSettingsPopover.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/TvFullscreenSettingsPopover.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8082,
+        "lineCount": 206,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/TvFullscreenShiftTimeline.tsx",
+      "type": "File",
+      "label": "TvFullscreenShiftTimeline.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/TvFullscreenShiftTimeline.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4145,
+        "lineCount": 120,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/TvFullscreenTickerFooter.tsx",
+      "type": "File",
+      "label": "TvFullscreenTickerFooter.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/TvFullscreenTickerFooter.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4443,
+        "lineCount": 112,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/TvFullscreenTopBar.tsx",
+      "type": "File",
+      "label": "TvFullscreenTopBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/TvFullscreenTopBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 17996,
+        "lineCount": 457,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/tvFullscreenTypes.ts",
+      "type": "File",
+      "label": "tvFullscreenTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/tvFullscreenTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5283,
+        "lineCount": 134,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/tvFullscreenUtils.ts",
+      "type": "File",
+      "label": "tvFullscreenUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/tvFullscreenUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7233,
+        "lineCount": 159,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/useTelesaleTvMonitorFullscreen.ts",
+      "type": "File",
+      "label": "useTelesaleTvMonitorFullscreen.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/useTelesaleTvMonitorFullscreen.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8884,
+        "lineCount": 263,
         "ext": ".ts"
       }
     },
@@ -109553,6 +109891,69 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerCardsRail.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerCardsRail.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerGridView.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerGridView.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerRoleControls.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerRoleControls.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerSelectedFooter.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerSelectedFooter.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerUltraCompactRail.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/StaffCareerUltraCompactRail.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/staff-career-selector/staffCareerColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/staffCareerColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/staff-career-selector/staffCareerMetrics.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/staffCareerMetrics.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/staff-career-selector/staffCareerSelectorTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/staffCareerSelectorTypes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/staff-career-selector/useStaffCareerSelectorState.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/staff-career-selector/useStaffCareerSelectorState.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/catalog/components/CatalogBenchmarkTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/catalog/components/CatalogBenchmarkTab.tsx",
       "target": "ws:packages/shared",
@@ -111310,13 +111711,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFollowUpDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFollowUpDrawer.tsx",
       "target": "ws:packages/shared",
@@ -111396,6 +111790,62 @@
     {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/usePilotAssessmentCertSop.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/usePilotAssessmentCertSop.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAfterPhotoAndCompletionSteps.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAfterPhotoAndCompletionSteps.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAiAssessmentResultBox.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAiAssessmentResultBox.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAssessmentStep.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAssessmentStep.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAssessmentSummaryView.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotAssessmentSummaryView.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotFlowHeaderAndCheckIn.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotFlowHeaderAndCheckIn.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotServiceAndBeforePhotoSteps.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/PilotServiceAndBeforePhotoSteps.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/pilot-flow-config.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/pilot-flow-config.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/usePilotFlowDrawer.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-flow-drawer/usePilotFlowDrawer.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -112283,13 +112733,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.test.tsx",
       "target": "ws:packages/shared",
@@ -112376,6 +112819,34 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/useTelesaleTvJournal.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-journal-modal/useTelesaleTvJournal.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/TvFullscreenTickerFooter.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/TvFullscreenTickerFooter.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/tvFullscreenTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/tvFullscreenTypes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/tvFullscreenUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/tvFullscreenUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/useTelesaleTvMonitorFullscreen.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/telesale-tv-monitor-fullscreen/useTelesaleTvMonitorFullscreen.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -132563,8 +133034,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5777,
-    "totalEdges": 8308,
+    "totalNodes": 5803,
+    "totalEdges": 8327,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -132573,14 +133044,14 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 780,
-      "File": 2383
+      "File": 2409
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 846,
       "USES_TOKEN": 782,
-      "IMPORTS": 1453,
+      "IMPORTS": 1472,
       "QUERIES_MODEL": 602,
       "API_CALL": 2080
     },
