@@ -31,7 +31,6 @@
     "apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts": 869,
     "apps/api/src/modules/kpi/services/telesale-target-config.service.ts": 718,
     "apps/api/src/modules/kpi/services/telesale-tv-celebration.service.ts": 1313,
-    "apps/api/src/modules/menu-access/menu-access.service.ts": 1199,
     "apps/api/src/modules/notifications/routes.ts": 747,
     "apps/api/src/modules/omicall/routes.ts": 719,
     "apps/api/src/modules/pilot/pilot.service.ts": 2743,
@@ -173,7 +172,6 @@
     "packages/shared/src/types/academy-talent-assessment.ts": 795,
     "packages/shared/src/types/career-progression.ts": 733,
     "packages/shared/src/types/customer.ts": 858,
-    "packages/shared/src/types/menu-access.ts": 984,
     "packages/shared/src/types/pilot.ts": 1085,
     "packages/shared/src/utils/chat-checklist-summarizer.ts": 697
   }

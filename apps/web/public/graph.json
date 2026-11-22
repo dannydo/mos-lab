@@ -28285,7 +28285,7 @@
       "type": "SharedType",
       "label": "MenuAccessScopeType",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessScopeType",
@@ -28297,7 +28297,7 @@
       "type": "SharedType",
       "label": "MenuAccessRoleGroupOption",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessRoleGroupOption",
@@ -28309,7 +28309,7 @@
       "type": "SharedType",
       "label": "MenuAccessDefinition",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessDefinition",
@@ -28321,7 +28321,7 @@
       "type": "SharedType",
       "label": "MenuAccessCategoryDefinition",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessCategoryDefinition",
@@ -28333,7 +28333,7 @@
       "type": "SharedType",
       "label": "MenuAccessSubjectInput",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessSubjectInput",
@@ -28345,7 +28345,7 @@
       "type": "SharedType",
       "label": "MenuAccessSubject",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessSubject",
@@ -28357,7 +28357,7 @@
       "type": "SharedType",
       "label": "MenuAccessPolicy",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessPolicy",
@@ -28369,7 +28369,7 @@
       "type": "SharedType",
       "label": "MenuAccessDepartmentOption",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessDepartmentOption",
@@ -28381,7 +28381,7 @@
       "type": "SharedType",
       "label": "MenuAccessTeamOption",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessTeamOption",
@@ -28393,7 +28393,7 @@
       "type": "SharedType",
       "label": "MenuAccessStaffOption",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessStaffOption",
@@ -28405,7 +28405,7 @@
       "type": "SharedType",
       "label": "SecurityAccessBlockEntry",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SecurityAccessBlockEntry",
@@ -28417,7 +28417,7 @@
       "type": "SharedType",
       "label": "MenuAccessConfigurationResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessConfigurationResponse",
@@ -28429,7 +28429,7 @@
       "type": "SharedType",
       "label": "MenuAccessAuditEntry",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessAuditEntry",
@@ -28441,7 +28441,7 @@
       "type": "SharedType",
       "label": "UpdateMenuAccessPolicyRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UpdateMenuAccessPolicyRequest",
@@ -28453,7 +28453,7 @@
       "type": "SharedType",
       "label": "UpdateRoleGroupMatrixRequest",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UpdateRoleGroupMatrixRequest",
@@ -28465,7 +28465,7 @@
       "type": "SharedType",
       "label": "MenuAccessInspectorAllowedItem",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessInspectorAllowedItem",
@@ -28477,7 +28477,7 @@
       "type": "SharedType",
       "label": "MenuAccessTimelineEvent",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessTimelineEvent",
@@ -28489,7 +28489,7 @@
       "type": "SharedType",
       "label": "MenuAccessInspectorResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessInspectorResponse",
@@ -28501,7 +28501,7 @@
       "type": "SharedType",
       "label": "MenuAccessSidebarResponse",
       "category": "Shared DTO / Contract",
-      "filePath": "packages/shared/src/types/menu-access.ts",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MenuAccessSidebarResponse",
@@ -47246,8 +47246,8 @@
       "filePath": "apps/api/src/modules/menu-access/menu-access.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 48936,
-        "lineCount": 1199,
+        "sizeBytes": 3438,
+        "lineCount": 105,
         "ext": ".ts"
       }
     },
@@ -47261,6 +47261,58 @@
       "metadata": {
         "sizeBytes": 3757,
         "lineCount": 100,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts",
+      "type": "File",
+      "label": "menu-access-admin.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/menu-access/service/menu-access-admin.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11687,
+        "lineCount": 290,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/menu-access/service/menu-access-core.ts",
+      "type": "File",
+      "label": "menu-access-core.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/menu-access/service/menu-access-core.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14504,
+        "lineCount": 383,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/menu-access/service/menu-access-guard.service.ts",
+      "type": "File",
+      "label": "menu-access-guard.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/menu-access/service/menu-access-guard.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9990,
+        "lineCount": 268,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts",
+      "type": "File",
+      "label": "menu-access-inspector.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 12517,
+        "lineCount": 316,
         "ext": ".ts"
       }
     },
@@ -61279,6 +61331,45 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/menu-access/menu-access-definitions.ts",
+      "type": "File",
+      "label": "menu-access-definitions.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/menu-access/menu-access-definitions.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 13456,
+        "lineCount": 457,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/menu-access/menu-access-guards.ts",
+      "type": "File",
+      "label": "menu-access-guards.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/menu-access/menu-access-guards.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 13412,
+        "lineCount": 375,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/menu-access/menu-access.types.ts",
+      "type": "File",
+      "label": "menu-access.types.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/menu-access/menu-access.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 3921,
+        "lineCount": 159,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/menu-access.ts",
       "type": "File",
       "label": "menu-access.ts",
@@ -61286,8 +61377,8 @@
       "filePath": "packages/shared/src/types/menu-access.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 30585,
-        "lineCount": 984,
+        "sizeBytes": 163,
+        "lineCount": 4,
         "ext": ".ts"
       }
     },
@@ -90453,6 +90544,34 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-core.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-core.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-guard.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-guard.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/notifications/notifications.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/notifications/notifications.test.ts",
       "target": "ws:packages/shared",
@@ -97432,50 +97551,134 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/menu-access/menu-access.service.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/menu-access/menu-access.service.ts",
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts",
       "target": "prisma:crm:CrmStaff",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/menu-access/menu-access.service.ts:prisma:crm:CrmStaffAudit",
-      "source": "file:apps/api/src/modules/menu-access/menu-access.service.ts",
-      "target": "prisma:crm:CrmStaffAudit",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/menu-access/menu-access.service.ts:prisma:crm:CrmDepartment",
-      "source": "file:apps/api/src/modules/menu-access/menu-access.service.ts",
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts:prisma:crm:CrmDepartment",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts",
       "target": "prisma:crm:CrmDepartment",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/menu-access/menu-access.service.ts:prisma:crm:CrmTeam",
-      "source": "file:apps/api/src/modules/menu-access/menu-access.service.ts",
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts:prisma:crm:CrmTeam",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts",
       "target": "prisma:crm:CrmTeam",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/menu-access/menu-access.service.ts:prisma:crm:CrmTeamMember",
-      "source": "file:apps/api/src/modules/menu-access/menu-access.service.ts",
-      "target": "prisma:crm:CrmTeamMember",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/menu-access/menu-access.service.ts:prisma:crm:CrmMenuAccessPolicy",
-      "source": "file:apps/api/src/modules/menu-access/menu-access.service.ts",
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts:prisma:crm:CrmMenuAccessPolicy",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts",
       "target": "prisma:crm:CrmMenuAccessPolicy",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/menu-access/menu-access.service.ts:prisma:crm:CrmMenuAccessAudit",
-      "source": "file:apps/api/src/modules/menu-access/menu-access.service.ts",
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts:prisma:crm:CrmMenuAccessAudit",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-admin.service.ts",
+      "target": "prisma:crm:CrmMenuAccessAudit",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-core.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-core.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-core.ts:prisma:crm:CrmDepartment",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-core.ts",
+      "target": "prisma:crm:CrmDepartment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-core.ts:prisma:crm:CrmTeam",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-core.ts",
+      "target": "prisma:crm:CrmTeam",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-core.ts:prisma:crm:CrmTeamMember",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-core.ts",
+      "target": "prisma:crm:CrmTeamMember",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-core.ts:prisma:crm:CrmMenuAccessPolicy",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-core.ts",
+      "target": "prisma:crm:CrmMenuAccessPolicy",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-guard.service.ts:prisma:crm:CrmMenuAccessPolicy",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-guard.service.ts",
+      "target": "prisma:crm:CrmMenuAccessPolicy",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-guard.service.ts:prisma:crm:CrmMenuAccessAudit",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-guard.service.ts",
+      "target": "prisma:crm:CrmMenuAccessAudit",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts:prisma:crm:CrmStaffAudit",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts",
+      "target": "prisma:crm:CrmStaffAudit",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts:prisma:crm:CrmDepartment",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts",
+      "target": "prisma:crm:CrmDepartment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts:prisma:crm:CrmTeam",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts",
+      "target": "prisma:crm:CrmTeam",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts:prisma:crm:CrmTeamMember",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts",
+      "target": "prisma:crm:CrmTeamMember",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts:prisma:crm:CrmMenuAccessPolicy",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts",
+      "target": "prisma:crm:CrmMenuAccessPolicy",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts:prisma:crm:CrmMenuAccessAudit",
+      "source": "file:apps/api/src/modules/menu-access/service/menu-access-inspector.service.ts",
       "target": "prisma:crm:CrmMenuAccessAudit",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
@@ -128492,8 +128695,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4789,
-    "totalEdges": 9516,
+    "totalNodes": 4796,
+    "totalEdges": 9532,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -128502,15 +128705,15 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 547,
-      "File": 1628
+      "File": 1635
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 613,
       "USES_TOKEN": 549,
-      "IMPORTS": 966,
-      "QUERIES_MODEL": 507,
+      "IMPORTS": 970,
+      "QUERIES_MODEL": 519,
       "API_CALL": 4336
     },
     "fastifyRouteCount": 782,
