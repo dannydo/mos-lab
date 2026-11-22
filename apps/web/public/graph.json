@@ -46121,6 +46121,71 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/services/bk-salary/bk-attendance.service.ts",
+      "type": "File",
+      "label": "bk-attendance.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-salary/bk-attendance.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15062,
+        "lineCount": 475,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/bk-salary/bk-call-and-tip-metrics.service.ts",
+      "type": "File",
+      "label": "bk-call-and-tip-metrics.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-salary/bk-call-and-tip-metrics.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7245,
+        "lineCount": 192,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/bk-salary/bk-order-checkins.service.ts",
+      "type": "File",
+      "label": "bk-order-checkins.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-salary/bk-order-checkins.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14002,
+        "lineCount": 399,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/bk-salary/bk-paystub-and-worklogs.service.ts",
+      "type": "File",
+      "label": "bk-paystub-and-worklogs.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-salary/bk-paystub-and-worklogs.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 19033,
+        "lineCount": 553,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/bk-salary/bk-salary-config-and-rules.ts",
+      "type": "File",
+      "label": "bk-salary-config-and-rules.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-salary/bk-salary-config-and-rules.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8848,
+        "lineCount": 234,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/services/bk-salary.service.test.ts",
       "type": "File",
       "label": "bk-salary.service.test.ts",
@@ -46141,8 +46206,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 63470,
-        "lineCount": 1832,
+        "sizeBytes": 1167,
+        "lineCount": 43,
         "ext": ".ts"
       }
     },
@@ -55000,6 +55065,58 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/telesale-target/hooks/tv-celebration/tvCelebrationAudio.ts",
+      "type": "File",
+      "label": "tvCelebrationAudio.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/hooks/tv-celebration/tvCelebrationAudio.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10976,
+        "lineCount": 329,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/hooks/tv-celebration/tvCelebrationEventBuilder.ts",
+      "type": "File",
+      "label": "tvCelebrationEventBuilder.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/hooks/tv-celebration/tvCelebrationEventBuilder.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 17947,
+        "lineCount": 443,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/hooks/tv-celebration/tvCelebrationMilestones.ts",
+      "type": "File",
+      "label": "tvCelebrationMilestones.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/hooks/tv-celebration/tvCelebrationMilestones.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5036,
+        "lineCount": 131,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/hooks/tv-celebration/tvCelebrationTypes.ts",
+      "type": "File",
+      "label": "tvCelebrationTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/hooks/tv-celebration/tvCelebrationTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6281,
+        "lineCount": 139,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.test.ts",
       "type": "File",
       "label": "useTelesaleTvLiveCelebration.test.ts",
@@ -55020,8 +55137,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 66773,
-        "lineCount": 1644,
+        "sizeBytes": 15954,
+        "lineCount": 467,
         "ext": ".ts"
       }
     },
@@ -88916,8 +89033,36 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-attendance.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-attendance.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-call-and-tip-metrics.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-call-and-tip-metrics.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-order-checkins.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-order-checkins.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-paystub-and-worklogs.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-paystub-and-worklogs.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-salary-config-and-rules.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-salary-config-and-rules.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -91949,6 +92094,20 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/hooks/tv-celebration/tvCelebrationEventBuilder.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/hooks/tv-celebration/tvCelebrationEventBuilder.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/hooks/tv-celebration/tvCelebrationTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/hooks/tv-celebration/tvCelebrationTypes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -95636,74 +95795,74 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-attendance.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-attendance.service.ts",
       "target": "prisma:crm:CrmStaff",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmCallLog",
-      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
-      "target": "prisma:crm:CrmCallLog",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmConfig",
-      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
-      "target": "prisma:crm:CrmConfig",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmOmicallLog",
-      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
-      "target": "prisma:crm:CrmOmicallLog",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmTeamMember",
-      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-attendance.service.ts:prisma:crm:CrmTeamMember",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-attendance.service.ts",
       "target": "prisma:crm:CrmTeamMember",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmTelesalesAttendanceException",
-      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-attendance.service.ts:prisma:crm:CrmTelesalesAttendanceException",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-attendance.service.ts",
       "target": "prisma:crm:CrmTelesalesAttendanceException",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmTelesalesAttendanceExceptionLog",
-      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-attendance.service.ts:prisma:crm:CrmTelesalesAttendanceExceptionLog",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-attendance.service.ts",
       "target": "prisma:crm:CrmTelesalesAttendanceExceptionLog",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:legacy:order_service",
-      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-call-and-tip-metrics.service.ts:prisma:crm:CrmCallLog",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-call-and-tip-metrics.service.ts",
+      "target": "prisma:crm:CrmCallLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-call-and-tip-metrics.service.ts:prisma:crm:CrmOmicallLog",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-call-and-tip-metrics.service.ts",
+      "target": "prisma:crm:CrmOmicallLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-order-checkins.service.ts:prisma:legacy:order_service",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-order-checkins.service.ts",
       "target": "prisma:legacy:order_service",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:legacy:service_language",
-      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-order-checkins.service.ts:prisma:legacy:service_language",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-order-checkins.service.ts",
       "target": "prisma:legacy:service_language",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:legacy:user_service_balance",
-      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-order-checkins.service.ts:prisma:legacy:user_service_balance",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-order-checkins.service.ts",
       "target": "prisma:legacy:user_service_balance",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary/bk-salary-config-and-rules.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary/bk-salary-config-and-rules.ts",
+      "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts:prisma:crm:CrmConfig",
@@ -126878,8 +127037,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 4709,
-    "totalEdges": 9434,
+    "totalNodes": 4718,
+    "totalEdges": 9440,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -126888,14 +127047,14 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 547,
-      "File": 1548
+      "File": 1557
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 613,
       "USES_TOKEN": 549,
-      "IMPORTS": 910,
+      "IMPORTS": 916,
       "QUERIES_MODEL": 481,
       "API_CALL": 4336
     },
