@@ -1,703 +1,82 @@
 'use client';
 
-import { CopyPhoneButton, TableIndexHeader } from '~/components/ui';
-
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Table, Tag, Typography, Row, Col, Statistic, theme, Space, Button, Input, Tooltip } from 'antd';
+import { useMemo } from 'react';
+import { Typography } from 'antd';
 import dynamic from 'next/dynamic';
-import {
-  CalendarOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  PhoneOutlined,
-  EyeOutlined,
-  TrophyOutlined,
-  SearchOutlined,
-  ReloadOutlined,
-  FilterOutlined,
-  InfoCircleOutlined,
-  UserOutlined,
-  CompressOutlined,
-  ExpandOutlined,
-} from '@ant-design/icons';
-import dayjs from 'dayjs';
-import {
-  BkBookingLeaderboardEntry,
-  BkBookingRecord,
-  type BkBookingDetailsFilter,
-  removeVietnameseTones,
-  type ReportComparisonMode,
-  calculateFractionToday,
-  maskPhoneNumber,
-  shouldMaskCustomerPhone,
-} from '@mos-lab/shared';
-import { apiClient } from '../../../../lib/api-client';
-import { useTheme } from '../../../../context/ThemeContext';
-import BkAvatar from './BkAvatar';
+import { Info } from 'lucide-react';
 import BkLeaderboardCard from './BkLeaderboardCard';
-import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
-import PeriodComparison from '../../../../components/ui/PeriodComparison';
+import { BkBookingDetailsCard } from './bk-booking-tab/BkBookingDetailsCard';
+import { BkBookingSummaryCards } from './bk-booking-tab/BkBookingSummaryCards';
+import { buildBkBookingDetailColumns, buildBkBookingLeaderboardColumns } from './bk-booking-tab/bkBookingColumns';
+import { formatStoreCode, type BkBookingTabProps } from './bk-booking-tab/bkBookingUtils';
+import { useBkBookingData } from './bk-booking-tab/useBkBookingData';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../../components/CustomerDetailDrawer'), { ssr: false });
 
 const { Text } = Typography;
 
-export const formatStoreCode = (store?: string | null): string => {
-  if (!store) return 'HQ';
-  const s = String(store).toUpperCase().trim();
-  if (s.includes('ESTELLA') || s.includes('EP')) return 'EP';
-  if (s.includes('THAM') || s.includes('DE') || s.includes('DT')) return 'DT';
-  if (s.includes('HQ') || s.includes('HEAD')) return 'HQ';
-  if (s.includes('PXL') || s.includes('PHAN')) return 'PXL';
-  return s;
-};
+export { formatStoreCode };
+export type { BkBookingTabProps };
 
-interface BkBookingTabProps {
-  dateRange: [SafeAny, SafeAny];
-  selectedStore: string;
-  selectedBooker: string;
-  comparisonMode: ReportComparisonMode;
-}
-
-export default function BkBookingTab({ dateRange, selectedStore, selectedBooker, comparisonMode }: BkBookingTabProps) {
-  const { token } = theme.useToken();
-  const { themeMode } = useTheme();
-  const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
-
-  const [loading, setLoading] = useState(false);
-  const [detailsLoading, setDetailsLoading] = useState(false);
-
-  const isMaskedRole = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      const stored = localStorage.getItem('mos_user');
-      if (stored) {
-        const u = JSON.parse(stored);
-        return shouldMaskCustomerPhone(u?.role);
-      }
-    } catch {
-      return false;
-    }
-    return false;
-  }, []);
-
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
-  const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
-
-  const [leaderboard, setLeaderboard] = useState<BkBookingLeaderboardEntry[]>([]);
-  const [summary, setSummary] = useState({
-    totalBookings: 0,
-    doneBookings: 0,
-    missedBookings: 0,
-    conversionRate: 0,
-    totalCalls: 0,
-    totalPickups: 0,
+export default function BkBookingTab({ dateRange, selectedStore, comparisonMode }: BkBookingTabProps) {
+  const {
+    loading,
+    detailsLoading,
+    isMaskedRole,
+    previousPeriod,
+    leaderboard,
+    summary,
+    previousSummary,
+    forecast,
+    selectedBookerId,
+    selectedBookerName,
+    selectedDetailStatus,
+    searchText,
+    setSearchText,
+    isCompact,
+    toggleCompact,
+    filteredDetailRecords,
+    selectedCustomerId,
+    customerDrawerOpen,
+    openCustomerDrawer,
+    closeCustomerDrawer,
+    handleSelectBooker,
+    clearBookerFilter,
+    clearStatusFilter,
+    fetchDetails,
+  } = useBkBookingData({
+    dateRange,
+    selectedStore,
+    comparisonMode,
   });
-  const [previousSummary, setPreviousSummary] = useState<{
-    totalBookings: number;
-    doneBookings: number;
-    missedBookings: number;
-    conversionRate: number;
-    totalCalls: number;
-    totalPickups: number;
-  } | null>(null);
 
-  const [selectedBookerId, setSelectedBookerId] = useState<string | null>(null);
-  const [selectedBookerName, setSelectedBookerName] = useState<string | null>(null);
-  const [selectedDetailStatus, setSelectedDetailStatus] = useState<BkBookingDetailsFilter>('ALL');
-  const [searchText, setSearchText] = useState('');
-  const [isCompact, setIsCompact] = useState(false);
-  const [detailRecords, setDetailRecords] = useState<BkBookingRecord[]>([]);
+  const columns = useMemo(
+    () =>
+      buildBkBookingLeaderboardColumns({
+        selectedBookerId,
+        onSelectBooker: handleSelectBooker,
+      }),
+    [selectedBookerId, handleSelectBooker]
+  );
 
-  const isDayMode = comparisonMode === 'day';
-  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
-
-  const elapsedRatioPercent = useMemo(() => {
-    const now = dayjs();
-    const currentHour = now.hour();
-    const fractionToday = calculateFractionToday(currentHour);
-
-    const start = dateRange?.[0]
-      ? dayjs(dateRange[0])
-      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
-    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
-
-    if (now.isBefore(start, 'day')) return 0.1;
-    if (now.isAfter(end, 'day')) return 100;
-
-    const totalDays = end.diff(start, 'day') + 1;
-    const daysPassed = now.diff(start, 'day');
-    const elapsedDays = daysPassed + fractionToday;
-    const r = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
-    return Math.round(r * 1000) / 10;
-  }, [dateRange, comparisonMode]);
-
-  const isPastPeriod = elapsedRatioPercent >= 100;
-  const ratio = (elapsedRatioPercent || 100) / 100;
-
-  const projectedCalls = Math.round((summary.totalCalls || 0) / (ratio || 1));
-  const projectedMissed = Math.round((summary.missedBookings || 0) / (ratio || 1));
-  const projectedPickups = Math.round((summary.totalPickups || 0) / (ratio || 1));
-  const projectedBookings = Math.round((summary.totalBookings || 0) / (ratio || 1));
-  const projectedDoneBookings = Math.round((summary.doneBookings || 0) / (ratio || 1));
-
-  const renderForecastSubtext = (projectedVal: number, unit = '') => {
-    if (isDayMode || !projectedVal) return null;
-
-    if (isPastPeriod) {
-      return (
-        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
-          <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
-            <span>Thực tế chốt {periodNoun}:</span>
-            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
-              {`${projectedVal.toLocaleString('vi-VN')} ${unit}`}
-            </span>
-          </div>
-        </Tooltip>
-      );
-    }
-
-    return (
-      <Tooltip
-        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00 + 2h buffer checkout)`}
-      >
-        <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
-          <span role="img" aria-label={`Dự kiến cuối ${periodNoun}`} className="shrink-0 text-sm leading-none">
-            🔮
-          </span>
-          <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
-            ~{`${projectedVal.toLocaleString('vi-VN')} ${unit}`}
-          </span>
-        </div>
-      </Tooltip>
-    );
-  };
-
-  const fetchLeaderboard = async () => {
-    setLoading(true);
-    try {
-      const [res, previousRes] = await Promise.all([
-        apiClient.bk.getBookingLeaderboard({
-          dateFrom: dateRange[0].format('YYYY-MM-DD'),
-          dateTo: dateRange[1].format('YYYY-MM-DD'),
-          storeId: selectedStore,
-        }),
-        previousPeriod
-          ? apiClient.bk.getBookingLeaderboard({ ...previousPeriod.params, storeId: selectedStore })
-          : Promise.resolve(null),
-      ]);
-      setLeaderboard(res.leaderboard || []);
-      setSummary(
-        res.summary || {
-          totalBookings: 0,
-          doneBookings: 0,
-          missedBookings: 0,
-          conversionRate: 0,
-          totalCalls: 0,
-          totalPickups: 0,
-        }
-      );
-      setPreviousSummary(previousRes?.summary || null);
-    } catch (err) {
-      console.error('Error loading BK booking leaderboard', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchDetails = async () => {
-    setDetailsLoading(true);
-    try {
-      const res = await apiClient.bk.getBookingDetails({
-        bookerId: selectedBookerId || 'ALL',
-        dateFrom: dateRange[0].format('YYYY-MM-DD'),
-        dateTo: dateRange[1].format('YYYY-MM-DD'),
-        storeId: selectedStore,
-        status: selectedDetailStatus,
-      });
-      const data = (res.data || []).map((item: SafeAny, idx: number) => ({
-        ...item,
-        rowKeyId: `${item.orderId || 'bk'}_${idx}`,
-      }));
-      setDetailRecords(data);
-    } catch (err) {
-      console.error('Error fetching booking details', err);
-    } finally {
-      setDetailsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLeaderboard();
-  }, [dateRange, previousPeriod, selectedStore]);
-
-  useEffect(() => {
-    fetchDetails();
-  }, [dateRange, selectedStore, selectedBookerId, selectedDetailStatus]);
-
-  // Instantly refresh BK Leaderboard & Details when calls/bookings are saved
-  useEffect(() => {
-    const handleDataChanged = () => {
-      fetchLeaderboard();
-      fetchDetails();
-    };
-    window.addEventListener('mos-data-updated', handleDataChanged);
-    window.addEventListener('mos-call-log-saved', handleDataChanged);
-    window.addEventListener('mos-customer-updated', handleDataChanged);
-    window.addEventListener('mos-booking-updated', handleDataChanged);
-    return () => {
-      window.removeEventListener('mos-data-updated', handleDataChanged);
-      window.removeEventListener('mos-call-log-saved', handleDataChanged);
-      window.removeEventListener('mos-customer-updated', handleDataChanged);
-      window.removeEventListener('mos-booking-updated', handleDataChanged);
-    };
-  }, [dateRange, selectedStore, selectedBookerId, selectedDetailStatus]);
-
-  const handleSelectBooker = (bookerId: string, bookerName?: string, detailStatus: BkBookingDetailsFilter = 'ALL') => {
-    if (selectedBookerId === bookerId && selectedDetailStatus === detailStatus) {
-      setSelectedBookerId(null);
-      setSelectedBookerName(null);
-      setSelectedDetailStatus('ALL');
-    } else {
-      setSelectedBookerId(bookerId);
-      const found = leaderboard.find((item) => String(item.bookerId) === bookerId);
-      setSelectedBookerName(bookerName || found?.displayName || `BK #${bookerId}`);
-      setSelectedDetailStatus(detailStatus);
-    }
-  };
-
-  const filteredDetailRecords = useMemo(() => {
-    if (!searchText) return detailRecords;
-    const q = removeVietnameseTones(searchText);
-    return detailRecords.filter(
-      (r) =>
-        removeVietnameseTones(r.clientName).includes(q) ||
-        removeVietnameseTones(r.orderKey).includes(q) ||
-        (r.clientPhone && removeVietnameseTones(r.clientPhone).includes(q)) ||
-        (r.bookerName && removeVietnameseTones(r.bookerName).includes(q))
-    );
-  }, [detailRecords, searchText]);
-
-  const columns = [
-    {
-      title: 'Hạng',
-      dataIndex: 'rank',
-      key: 'rank',
-      width: 60,
-      align: 'center' as const,
-      render: (rank: number) => {
-        if (rank === 1) return <span style={{ fontSize: '18px' }}>🥇</span>;
-        if (rank === 2) return <span style={{ fontSize: '18px' }}>🥈</span>;
-        if (rank === 3) return <span style={{ fontSize: '18px' }}>🥉</span>;
-        return <span className="tabular-nums font-semibold text-slate-500 text-xs">#{rank}</span>;
-      },
-    },
-    {
-      title: 'Booker',
-      dataIndex: 'displayName',
-      key: 'displayName',
-      render: (name: string, record: BkBookingLeaderboardEntry) => {
-        const isSelected = selectedBookerId === String(record.bookerId);
-        return (
-          <Space
-            className="cursor-pointer group whitespace-nowrap"
-            size={8}
-            role="button"
-            tabIndex={0}
-            aria-label={`Chọn booker ${name}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSelectBooker(String(record.bookerId), name);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.stopPropagation();
-                e.preventDefault();
-                handleSelectBooker(String(record.bookerId), name);
-              }
-            }}
-          >
-            <BkAvatar name={name} src={record.avatar} size={32} />
-            <div>
-              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                <span
-                  className={`font-semibold text-xs transition-colors whitespace-nowrap ${
-                    isSelected ? 'text-amber-400 underline underline-offset-2' : 'hover:text-amber-400'
-                  }`}
-                  style={{ color: isSelected ? undefined : token.colorText }}
-                >
-                  {name}
-                </span>
-                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
-                  · {formatStoreCode(record.store)}
-                </span>
-                {isSelected && (
-                  <Tag
-                    color="gold"
-                    icon={<CheckCircleOutlined />}
-                    className="font-semibold text-[10px] m-0 py-0 px-1 whitespace-nowrap"
-                  >
-                    Đang lọc
-                  </Tag>
-                )}
-              </div>
-            </div>
-          </Space>
-        );
-      },
-    },
-    {
-      title: 'Số Booking Đã Tạo',
-      dataIndex: 'totalCreatedBookings',
-      key: 'totalCreatedBookings',
-      align: 'center' as const,
-      render: (val: number) => <span className="tabular-nums font-bold text-xs text-sky-400">{val}</span>,
-    },
-    {
-      title: '# Cuộc gọi',
-      dataIndex: 'callCount',
-      key: 'callCount',
-      align: 'center' as const,
-      render: (val: number) => <span className="tabular-nums font-bold text-xs text-violet-400">{val}</span>,
-    },
-    {
-      title: '# Pickup',
-      dataIndex: 'pickupCount',
-      key: 'pickupCount',
-      align: 'center' as const,
-      render: (val: number, record: BkBookingLeaderboardEntry) => (
-        <Tooltip title="Tỷ lệ pickup = số pickup / số cuộc gọi">
-          <span className="tabular-nums font-bold text-xs text-emerald-400 whitespace-nowrap">
-            {val} <span className="font-medium text-emerald-300/80">({record.pickupRate ?? 0}%)</span>
-          </span>
-        </Tooltip>
-      ),
-    },
-    {
-      title: (
-        <Tooltip title="Booking được tạo trong kỳ đã chuyển sang trạng thái Done; cohort tính theo ngày tạo booking.">
-          <span>Booking tạo trong kỳ đã Done</span>
-        </Tooltip>
-      ),
-      dataIndex: 'doneBookings',
-      key: 'doneBookings',
-      align: 'center' as const,
-      render: (val: number) => <span className="tabular-nums font-bold text-xs text-emerald-400">{val}</span>,
-    },
-    {
-      title: 'Booking Bị Hủy / Missed',
-      dataIndex: 'missedBookings',
-      key: 'missedBookings',
-      align: 'center' as const,
-      render: (val: number, record: BkBookingLeaderboardEntry) => (
-        <Button
-          type="text"
-          size="small"
-          className="tabular-nums h-6 px-1 font-semibold text-xs text-rose-500 hover:text-rose-400"
-          onClick={(event) => {
-            event.stopPropagation();
-            handleSelectBooker(String(record.bookerId), record.displayName, 'MISSED');
-          }}
-          aria-label={`Xem ${val} booking bị hủy hoặc Missed của ${record.displayName}`}
-        >
-          {val}
-        </Button>
-      ),
-    },
-    {
-      title: 'Tỷ Lệ Chuyển Đổi (Done/Book)',
-      dataIndex: 'conversionRate',
-      key: 'conversionRate',
-      align: 'center' as const,
-      render: (val: number) => (
-        <Tag
-          color={val >= 70 ? 'success' : val >= 50 ? 'warning' : 'default'}
-          className="tabular-nums font-semibold px-2 py-0 text-xs rounded-full m-0"
-        >
-          {val}%
-        </Tag>
-      ),
-    },
-    {
-      title: 'Hành động',
-      key: 'action',
-      align: 'center' as const,
-      render: (_: SafeAny, record: BkBookingLeaderboardEntry) => {
-        const isSelected = selectedBookerId === String(record.bookerId);
-        return (
-          <Button
-            type="default"
-            size="small"
-            icon={<EyeOutlined className="text-amber-400" />}
-            className="text-[11px] font-medium border-slate-700 hover:border-amber-400 hover:text-amber-400 px-2"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSelectBooker(String(record.bookerId), record.displayName);
-            }}
-          >
-            {isSelected ? 'Bỏ lọc' : 'Chi tiết'}
-          </Button>
-        );
-      },
-    },
-  ];
-
-  const detailColumns = [
-    {
-      title: <TableIndexHeader />,
-      key: 'stt',
-      width: 50,
-      align: 'center' as const,
-      render: (_: SafeAny, __: SafeAny, index: number) => (
-        <span className="tabular-nums text-xs text-slate-500 font-medium">{index + 1}</span>
-      ),
-    },
-    {
-      title: 'Khách Hàng',
-      dataIndex: 'clientName',
-      key: 'clientName',
-      render: (name: string, r: BkBookingRecord) => (
-        <div
-          className="cursor-pointer group whitespace-nowrap"
-          role="button"
-          tabIndex={0}
-          aria-label={`Xem chi tiết khách hàng ${name || 'Khách hàng'}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (r.customerId) {
-              setSelectedCustomerId(r.customerId);
-              setCustomerDrawerOpen(true);
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.stopPropagation();
-              e.preventDefault();
-              if (r.customerId) {
-                setSelectedCustomerId(r.customerId);
-                setCustomerDrawerOpen(true);
-              }
-            }
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <BkAvatar name={name || 'Khách hàng'} src={r.clientAvatar} size={28} />
-            <div className="min-w-0">
-              <div className="font-semibold text-xs text-sky-400 group-hover:text-amber-400 transition-colors flex items-center gap-1 whitespace-nowrap">
-                <span>{name || 'Khách hàng'}</span>
-                <UserOutlined className="text-[10px] opacity-0 group-hover:opacity-100 text-amber-400 transition-opacity" />
-              </div>
-              {r.clientPhone && (
-                <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap flex items-center gap-1">
-                  <span>{isMaskedRole ? maskPhoneNumber(r.clientPhone) : r.clientPhone}</span>
-                  {!isMaskedRole && <CopyPhoneButton phone={r.clientPhone} size="xs" />}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      ),
-    },
-
-    {
-      title: 'Booker Tạo',
-      dataIndex: 'bookerName',
-      key: 'bookerName',
-      render: (bName: string, r: BkBookingRecord) => (
-        <div className="flex items-center gap-2 whitespace-nowrap">
-          <BkAvatar name={bName || 'Booker'} src={r.bookerAvatar} size={28} />
-          <span className="font-medium text-xs text-slate-600 dark:text-slate-300">{bName || '-'}</span>
-        </div>
-      ),
-    },
-    {
-      title: 'Thời Gian Tạo',
-      dataIndex: 'createdDate',
-      key: 'createdDate',
-      render: (cDate: string) => {
-        return (
-          <span className="tabular-nums text-xs text-amber-400 font-semibold whitespace-nowrap">
-            {cDate ? cDate.replace('T', ' ').substring(0, 16) : '-'}
-          </span>
-        );
-      },
-    },
-    {
-      title: 'Lịch Hẹn Khách',
-      dataIndex: 'bookingDate',
-      key: 'bookingDate',
-      render: (dateStr: string) => (
-        <span className="tabular-nums text-xs text-slate-400 font-medium whitespace-nowrap">
-          {dateStr ? dateStr.replace('T', ' ').substring(0, 16) : '-'}
-        </span>
-      ),
-    },
-    {
-      title: 'Chi Nhánh',
-      dataIndex: 'store',
-      key: 'store',
-      align: 'center' as const,
-      render: (val: string) => (
-        <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(val)}</span>
-      ),
-    },
-    {
-      title: 'Trạng Thái',
-      dataIndex: 'status',
-      key: 'status',
-      align: 'center' as const,
-      render: (status: string) => {
-        if (status === 'Completed' || status === 'Done' || status === 'Check-in thành công') {
-          return (
-            <Tag color="success" className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap">
-              ✓ Done
-            </Tag>
-          );
-        }
-        if (status === 'Cancelled' || status === 'Missed') {
-          return (
-            <Tag color="error" className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap">
-              🔴 Đã hủy
-            </Tag>
-          );
-        }
-        return (
-          <Tag color="default" className="font-semibold text-xs py-0 px-2 rounded-full m-0 whitespace-nowrap">
-            ⚪ Incoming
-          </Tag>
-        );
-      },
-    },
-  ];
+  const detailColumns = useMemo(
+    () =>
+      buildBkBookingDetailColumns({
+        isMaskedRole,
+        onOpenCustomer: openCustomerDrawer,
+      }),
+    [isMaskedRole, openCustomerDrawer]
+  );
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} lg={6} xl={4}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Cuộc gọi</span>}
-              value={summary.totalCalls}
-              valueStyle={{ color: '#8b5cf6', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<PhoneOutlined className="mr-2" />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.totalCalls}
-              previousValue={previousSummary?.totalCalls || 0}
-              formatter={(value) => `${value.toLocaleString('vi-VN')} cuộc`}
-            />
-            {renderForecastSubtext(projectedCalls, 'cuộc')}
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6} xl={4}>
-          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl">
-            <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Bị hủy / Missed</span>}
-              value={summary.missedBookings}
-              valueStyle={{ color: token.colorError, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<CloseCircleOutlined className="mr-2" />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.missedBookings}
-              previousValue={previousSummary?.missedBookings || 0}
-              formatter={(value) => `${value.toLocaleString('vi-VN')} booking`}
-            />
-            {renderForecastSubtext(projectedMissed, 'booking')}
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6} xl={4}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Pickup</span>}
-              value={summary.totalPickups}
-              valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<CheckCircleOutlined className="mr-2" />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.totalPickups}
-              previousValue={previousSummary?.totalPickups || 0}
-              formatter={(value) => `${value.toLocaleString('vi-VN')} pickup`}
-            />
-            {renderForecastSubtext(projectedPickups, 'pickup')}
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6} xl={4}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">∑ Booking Đã Tạo</span>}
-              value={summary.totalBookings}
-              valueStyle={{ color: '#2563eb', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<CalendarOutlined className="mr-2" />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.totalBookings}
-              previousValue={previousSummary?.totalBookings || 0}
-              formatter={(value) => `${value.toLocaleString('vi-VN')} booking`}
-            />
-            {renderForecastSubtext(projectedBookings, 'booking')}
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6} xl={4}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={
-                <Tooltip title="Booking được tạo trong kỳ đã chuyển sang trạng thái Done; không phải tổng lượt check-in diễn ra trong kỳ.">
-                  <span className="text-xs font-semibold text-slate-500 uppercase">Booking tạo trong kỳ đã Done</span>
-                </Tooltip>
-              }
-              value={summary.doneBookings}
-              valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<CheckCircleOutlined className="mr-2" />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.doneBookings}
-              previousValue={previousSummary?.doneBookings || 0}
-              formatter={(value) => `${value.toLocaleString('vi-VN')} booking`}
-            />
-            {renderForecastSubtext(projectedDoneBookings, 'booking')}
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6} xl={4}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">% Book → Done</span>}
-              value={summary.conversionRate}
-              suffix="%"
-              valueStyle={{ color: '#f59e0b', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<TrophyOutlined className="mr-2" />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.conversionRate}
-              previousValue={previousSummary?.conversionRate || 0}
-              formatter={(value) => `${value.toFixed(1)}%`}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <BkBookingSummaryCards
+        summary={summary}
+        previousSummary={previousSummary}
+        comparison={previousPeriod?.comparison}
+        forecast={forecast}
+      />
 
-      {/* Booking Leaderboard Card */}
       <BkLeaderboardCard
         title="BK Leaderboard - Booking"
         description="Xếp hạng hiệu suất của nhân viên thuộc nhóm Telesales trong khoảng thời gian lọc"
@@ -716,109 +95,28 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
         ]}
         extraSummary={
           <Text type="secondary" className="text-xs flex items-center gap-1">
-            <InfoCircleOutlined className="text-amber-500" />
+            <Info className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span>Click vào dòng BK để lọc danh sách chi tiết bên dưới</span>
           </Text>
         }
       />
 
-      {/* Embedded Details Table Card (Matching CC Report Layout) */}
-      <Card
-        className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden mt-6"
-        style={{ background: token.colorBgContainer, marginTop: '24px' }}
-      >
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold m-0" style={{ color: token.colorText }}>
-                Chi Tiết Khách Hàng Đặt Lịch & Trạng Thái
-              </h3>
-              {selectedBookerName && (
-                <Tag
-                  color="gold"
-                  closable
-                  onClose={() => {
-                    setSelectedBookerId(null);
-                    setSelectedBookerName(null);
-                    setSelectedDetailStatus('ALL');
-                  }}
-                  className="font-semibold text-xs"
-                >
-                  Đang lọc: {selectedBookerName}
-                </Tag>
-              )}
-              {selectedDetailStatus === 'MISSED' && (
-                <Tag
-                  color="error"
-                  closable
-                  onClose={() => setSelectedDetailStatus('ALL')}
-                  className="font-semibold text-xs"
-                >
-                  Chỉ Missed / Đã hủy
-                </Tag>
-              )}
-            </div>
-            <Text type="secondary" className="text-xs">
-              {selectedBookerName
-                ? `Hiển thị ${selectedDetailStatus === 'MISSED' ? 'booking Missed / đã hủy của' : 'danh sách booking được tạo bởi'} Booker ${selectedBookerName}`
-                : 'Hiển thị tất cả danh sách booking của nhóm Telesales'}
-            </Text>
-          </div>
-
-          <Space>
-            <Input
-              prefix={<SearchOutlined className="text-slate-400" />}
-              placeholder="Tìm tên khách, SĐT, mã đơn..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              allowClear
-              className="w-56"
-              size="small"
-            />
-            <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
-              <Button
-                icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
-                size="small"
-                onClick={() => setIsCompact(!isCompact)}
-                className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
-              />
-            </Tooltip>
-            <Tooltip title="Làm mới dữ liệu">
-              <Button
-                icon={<ReloadOutlined />}
-                size="small"
-                onClick={fetchDetails}
-                loading={detailsLoading}
-                aria-label="Tải lại dữ liệu"
-                title="Tải lại dữ liệu"
-              />
-            </Tooltip>
-          </Space>
-        </div>
-
-        <Table
-          dataSource={filteredDetailRecords}
-          columns={detailColumns}
-          rowKey="rowKeyId"
-          loading={detailsLoading}
-          pagination={{
-            defaultPageSize: 50,
-            pageSizeOptions: ['20', '50', '100', '200'],
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng cộng ${total} đơn booking`,
-          }}
-          size="small"
-          scroll={{ x: 'max-content' }}
-          className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
-        />
-      </Card>
-
-      {/* Customer Profile Side Slide Drawer */}
-      <CustomerDetailDrawer
-        open={customerDrawerOpen}
-        customerId={selectedCustomerId}
-        onClose={() => setCustomerDrawerOpen(false)}
+      <BkBookingDetailsCard
+        records={filteredDetailRecords}
+        columns={detailColumns}
+        loading={detailsLoading}
+        selectedBookerName={selectedBookerName}
+        selectedDetailStatus={selectedDetailStatus}
+        searchText={searchText}
+        isCompact={isCompact}
+        onSearchChange={setSearchText}
+        onToggleCompact={toggleCompact}
+        onRefresh={fetchDetails}
+        onClearBookerFilter={clearBookerFilter}
+        onClearStatusFilter={clearStatusFilter}
       />
+
+      <CustomerDetailDrawer open={customerDrawerOpen} customerId={selectedCustomerId} onClose={closeCustomerDrawer} />
     </div>
   );
 }

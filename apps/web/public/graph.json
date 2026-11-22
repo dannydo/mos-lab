@@ -14376,15 +14376,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/page.tsx",
       "metadata": {
         "routePath": "/dashboard/academy-leads",
-        "apiCallsCount": 6,
-        "apiCalls": [
-          "academySales.updateFollowUp",
-          "academySales.updatePlaybook",
-          "academySales.createPlaybook",
-          "academySales.updateCourse",
-          "academySales.createCourse",
-          "academySales.syncPancake"
-        ]
+        "apiCallsCount": 2,
+        "apiCalls": ["academySales.syncPancake", "academySales.updateFollowUp"]
       }
     },
     {
@@ -35240,6 +35233,102 @@
       }
     },
     {
+      "id": "uicomp:CallActiveBanner",
+      "type": "UIComponent",
+      "label": "<CallActiveBanner />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/call-log-modal/CallActiveBanner.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CallActiveBanner",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:CallAiAnalysisPanel",
+      "type": "UIComponent",
+      "label": "<CallAiAnalysisPanel />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/call-log-modal/CallAiAnalysisPanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CallAiAnalysisPanel",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:CallLogForm",
+      "type": "UIComponent",
+      "label": "<CallLogForm />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/call-log-modal/CallLogForm.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CallLogForm",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:QuickActionsPanel",
+      "type": "UIComponent",
+      "label": "<QuickActionsPanel />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/call-log-modal/QuickActionsPanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "QuickActionsPanel",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:callLogModalConstants",
+      "type": "UIComponent",
+      "label": "<callLogModalConstants />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/call-log-modal/callLogModalConstants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "callLogModalConstants",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:callLogModalHelpers",
+      "type": "UIComponent",
+      "label": "<callLogModalHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/call-log-modal/callLogModalHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "callLogModalHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:callLogModalTypes",
+      "type": "UIComponent",
+      "label": "<callLogModalTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/call-log-modal/callLogModalTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "callLogModalTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useCallLogModal",
+      "type": "UIComponent",
+      "label": "<useCallLogModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/call-log-modal/useCallLogModal.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useCallLogModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:AddToCampaignModal",
       "type": "UIComponent",
       "label": "<AddToCampaignModal />",
@@ -38932,6 +39021,102 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useMobileTaskWorkflow",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TaskDetailActionFooter",
+      "type": "UIComponent",
+      "label": "<TaskDetailActionFooter />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-task-detail-sheet/TaskDetailActionFooter.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TaskDetailActionFooter",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TaskDetailMissionSection",
+      "type": "UIComponent",
+      "label": "<TaskDetailMissionSection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-task-detail-sheet/TaskDetailMissionSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TaskDetailMissionSection",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TaskDetailNegotiationBanner",
+      "type": "UIComponent",
+      "label": "<TaskDetailNegotiationBanner />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-task-detail-sheet/TaskDetailNegotiationBanner.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TaskDetailNegotiationBanner",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TaskDetailOverviewSection",
+      "type": "UIComponent",
+      "label": "<TaskDetailOverviewSection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-task-detail-sheet/TaskDetailOverviewSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TaskDetailOverviewSection",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TaskDetailSheetHeader",
+      "type": "UIComponent",
+      "label": "<TaskDetailSheetHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-task-detail-sheet/TaskDetailSheetHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TaskDetailSheetHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:taskDetailHelpers",
+      "type": "UIComponent",
+      "label": "<taskDetailHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-task-detail-sheet/taskDetailHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "taskDetailHelpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:taskDetailTypes",
+      "type": "UIComponent",
+      "label": "<taskDetailTypes />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-task-detail-sheet/taskDetailTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "taskDetailTypes",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useTaskDetailSheetActions",
+      "type": "UIComponent",
+      "label": "<useTaskDetailSheetActions />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mos-chat-mobile-task-detail-sheet/useTaskDetailSheetActions.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useTaskDetailSheetActions",
         "isPrimitive": false
       }
     },
@@ -53459,6 +53644,123 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyKnowledgeDrawer.tsx",
+      "type": "File",
+      "label": "AcademyKnowledgeDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyKnowledgeDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4601,
+        "lineCount": 121,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyKnowledgeSection.tsx",
+      "type": "File",
+      "label": "AcademyKnowledgeSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyKnowledgeSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3970,
+        "lineCount": 128,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsDataSection.tsx",
+      "type": "File",
+      "label": "AcademyLeadsDataSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsDataSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3692,
+        "lineCount": 121,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsFilters.tsx",
+      "type": "File",
+      "label": "AcademyLeadsFilters.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsFilters.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3045,
+        "lineCount": 93,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsHeaderActions.tsx",
+      "type": "File",
+      "label": "AcademyLeadsHeaderActions.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsHeaderActions.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1238,
+        "lineCount": 45,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsMetrics.tsx",
+      "type": "File",
+      "label": "AcademyLeadsMetrics.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsMetrics.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1203,
+        "lineCount": 48,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/academy-leads-utils.ts",
+      "type": "File",
+      "label": "academy-leads-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/academy-leads-page-modules/academy-leads-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2496,
+        "lineCount": 81,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/academyLeadsColumns.tsx",
+      "type": "File",
+      "label": "academyLeadsColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/academy-leads-page-modules/academyLeadsColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5369,
+        "lineCount": 174,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/useAcademyKnowledgeEditor.ts",
+      "type": "File",
+      "label": "useAcademyKnowledgeEditor.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/academy-leads-page-modules/useAcademyKnowledgeEditor.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3884,
+        "lineCount": 115,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/academy-campaign-detail.helpers.tsx",
       "type": "File",
       "label": "academy-campaign-detail.helpers.tsx",
@@ -54831,8 +55133,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29629,
-        "lineCount": 818,
+        "sizeBytes": 7631,
+        "lineCount": 207,
         "ext": ".tsx"
       }
     },
@@ -55312,8 +55614,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkBookingTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32104,
-        "lineCount": 825,
+        "sizeBytes": 4105,
+        "lineCount": 123,
         "ext": ".tsx"
       }
     },
@@ -55575,6 +55877,71 @@
         "sizeBytes": 7908,
         "lineCount": 224,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-booking-tab/BkBookingDetailsCard.tsx",
+      "type": "File",
+      "label": "BkBookingDetailsCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-booking-tab/BkBookingDetailsCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5423,
+        "lineCount": 133,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-booking-tab/BkBookingSummaryCards.tsx",
+      "type": "File",
+      "label": "BkBookingSummaryCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-booking-tab/BkBookingSummaryCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7739,
+        "lineCount": 160,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-booking-tab/bkBookingColumns.tsx",
+      "type": "File",
+      "label": "bkBookingColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-booking-tab/bkBookingColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11350,
+        "lineCount": 318,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-booking-tab/bkBookingUtils.ts",
+      "type": "File",
+      "label": "bkBookingUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-booking-tab/bkBookingUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4287,
+        "lineCount": 134,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/bk-booking-tab/useBkBookingData.ts",
+      "type": "File",
+      "label": "useBkBookingData.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/bk-booking-tab/useBkBookingData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6653,
+        "lineCount": 192,
+        "ext": ".ts"
       }
     },
     {
@@ -57483,8 +57850,8 @@
       "filePath": "apps/web/app/dashboard/cskh/components/TicketDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36230,
-        "lineCount": 825,
+        "sizeBytes": 3926,
+        "lineCount": 130,
         "ext": ".tsx"
       }
     },
@@ -57512,6 +57879,149 @@
         "sizeBytes": 22189,
         "lineCount": 469,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/ResolveSubtaskModal.tsx",
+      "type": "File",
+      "label": "ResolveSubtaskModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cskh/components/ticket-detail-drawer/ResolveSubtaskModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6022,
+        "lineCount": 142,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/ScheduleInspectionModal.tsx",
+      "type": "File",
+      "label": "ScheduleInspectionModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cskh/components/ticket-detail-drawer/ScheduleInspectionModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2617,
+        "lineCount": 74,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/TicketActionSection.tsx",
+      "type": "File",
+      "label": "TicketActionSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cskh/components/ticket-detail-drawer/TicketActionSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3148,
+        "lineCount": 88,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/TicketCommentsTimeline.tsx",
+      "type": "File",
+      "label": "TicketCommentsTimeline.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cskh/components/ticket-detail-drawer/TicketCommentsTimeline.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1808,
+        "lineCount": 49,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/TicketCustomerCard.tsx",
+      "type": "File",
+      "label": "TicketCustomerCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cskh/components/ticket-detail-drawer/TicketCustomerCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3931,
+        "lineCount": 98,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/TicketPriorityTag.tsx",
+      "type": "File",
+      "label": "TicketPriorityTag.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cskh/components/ticket-detail-drawer/TicketPriorityTag.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 390,
+        "lineCount": 15,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/TicketSubtasksSection.tsx",
+      "type": "File",
+      "label": "TicketSubtasksSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cskh/components/ticket-detail-drawer/TicketSubtasksSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8752,
+        "lineCount": 198,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/constants.ts",
+      "type": "File",
+      "label": "constants.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cskh/components/ticket-detail-drawer/constants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1941,
+        "lineCount": 57,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/helpers.ts",
+      "type": "File",
+      "label": "helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cskh/components/ticket-detail-drawer/helpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2295,
+        "lineCount": 78,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/types.ts",
+      "type": "File",
+      "label": "types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cskh/components/ticket-detail-drawer/types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2597,
+        "lineCount": 108,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/useTicketDetailDrawer.ts",
+      "type": "File",
+      "label": "useTicketDetailDrawer.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cskh/components/ticket-detail-drawer/useTicketDetailDrawer.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8641,
+        "lineCount": 255,
+        "ext": ".ts"
       }
     },
     {
@@ -87496,6 +88006,118 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:CallActiveBanner:ws:apps/web",
+      "source": "uicomp:CallActiveBanner",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CallActiveBanner:token:color:primary",
+      "source": "uicomp:CallActiveBanner",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CallAiAnalysisPanel:ws:apps/web",
+      "source": "uicomp:CallAiAnalysisPanel",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CallAiAnalysisPanel:token:color:primary",
+      "source": "uicomp:CallAiAnalysisPanel",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CallLogForm:ws:apps/web",
+      "source": "uicomp:CallLogForm",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CallLogForm:token:color:primary",
+      "source": "uicomp:CallLogForm",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:QuickActionsPanel:ws:apps/web",
+      "source": "uicomp:QuickActionsPanel",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:QuickActionsPanel:token:color:primary",
+      "source": "uicomp:QuickActionsPanel",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:callLogModalConstants:ws:apps/web",
+      "source": "uicomp:callLogModalConstants",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:callLogModalConstants:token:color:primary",
+      "source": "uicomp:callLogModalConstants",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:callLogModalHelpers:ws:apps/web",
+      "source": "uicomp:callLogModalHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:callLogModalHelpers:token:color:primary",
+      "source": "uicomp:callLogModalHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:callLogModalTypes:ws:apps/web",
+      "source": "uicomp:callLogModalTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:callLogModalTypes:token:color:primary",
+      "source": "uicomp:callLogModalTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useCallLogModal:ws:apps/web",
+      "source": "uicomp:useCallLogModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useCallLogModal:token:color:primary",
+      "source": "uicomp:useCallLogModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:AddToCampaignModal:ws:apps/web",
       "source": "uicomp:AddToCampaignModal",
       "target": "ws:apps/web",
@@ -91803,6 +92425,118 @@
     {
       "id": "edge:uicomp:useMobileTaskWorkflow:token:color:primary",
       "source": "uicomp:useMobileTaskWorkflow",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TaskDetailActionFooter:ws:apps/web",
+      "source": "uicomp:TaskDetailActionFooter",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TaskDetailActionFooter:token:color:primary",
+      "source": "uicomp:TaskDetailActionFooter",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TaskDetailMissionSection:ws:apps/web",
+      "source": "uicomp:TaskDetailMissionSection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TaskDetailMissionSection:token:color:primary",
+      "source": "uicomp:TaskDetailMissionSection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TaskDetailNegotiationBanner:ws:apps/web",
+      "source": "uicomp:TaskDetailNegotiationBanner",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TaskDetailNegotiationBanner:token:color:primary",
+      "source": "uicomp:TaskDetailNegotiationBanner",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TaskDetailOverviewSection:ws:apps/web",
+      "source": "uicomp:TaskDetailOverviewSection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TaskDetailOverviewSection:token:color:primary",
+      "source": "uicomp:TaskDetailOverviewSection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TaskDetailSheetHeader:ws:apps/web",
+      "source": "uicomp:TaskDetailSheetHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TaskDetailSheetHeader:token:color:primary",
+      "source": "uicomp:TaskDetailSheetHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:taskDetailHelpers:ws:apps/web",
+      "source": "uicomp:taskDetailHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:taskDetailHelpers:token:color:primary",
+      "source": "uicomp:taskDetailHelpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:taskDetailTypes:ws:apps/web",
+      "source": "uicomp:taskDetailTypes",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:taskDetailTypes:token:color:primary",
+      "source": "uicomp:taskDetailTypes",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useTaskDetailSheetActions:ws:apps/web",
+      "source": "uicomp:useTaskDetailSheetActions",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useTaskDetailSheetActions:token:color:primary",
+      "source": "uicomp:useTaskDetailSheetActions",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -99270,6 +100004,62 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyKnowledgeDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyKnowledgeDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyKnowledgeSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyKnowledgeSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsDataSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsDataSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsFilters.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsFilters.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsMetrics.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/AcademyLeadsMetrics.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/academy-leads-utils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/academy-leads-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/academyLeadsColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/academyLeadsColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/useAcademyKnowledgeEditor.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/academy-leads-page-modules/useAcademyKnowledgeEditor.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/academy-campaign-detail.helpers.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/academy-leads/campaigns/[slug]/academy-campaign-detail.helpers.tsx",
       "target": "ws:packages/shared",
@@ -100047,13 +100837,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/bk/components/BkBookingTab.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/bk/components/BkBookingTab.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/bk/components/BkConfigDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bk/components/BkConfigDrawer.tsx",
       "target": "ws:packages/shared",
@@ -100168,6 +100951,34 @@
     {
       "id": "edge:file:apps/web/app/dashboard/bk/components/__tests__/BkTeamBookingDoneBonus.test.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bk/components/__tests__/BkTeamBookingDoneBonus.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-booking-tab/BkBookingDetailsCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-booking-tab/BkBookingDetailsCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-booking-tab/bkBookingColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-booking-tab/bkBookingColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-booking-tab/bkBookingUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-booking-tab/bkBookingUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/bk-booking-tab/useBkBookingData.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/bk-booking-tab/useBkBookingData.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -100931,6 +101742,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cs/components/CsTipTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cs/components/CsTipTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/helpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cskh/components/ticket-detail-drawer/helpers.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -109880,48 +110698,6 @@
       "target": "route:GET:/api/post-hub/leaderboard/:staffId/daily",
       "type": "API_CALL",
       "label": "CALLS academySales.updateLead"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads:route:GET:/api/academy-sales/playbooks",
-      "source": "page:/dashboard/academy-leads",
-      "target": "route:GET:/api/academy-sales/playbooks",
-      "type": "API_CALL",
-      "label": "CALLS academySales.updatePlaybook"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads:route:POST:/api/academy-sales/playbooks",
-      "source": "page:/dashboard/academy-leads",
-      "target": "route:POST:/api/academy-sales/playbooks",
-      "type": "API_CALL",
-      "label": "CALLS academySales.updatePlaybook"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads:route:PUT:/api/academy-sales/playbooks/:id",
-      "source": "page:/dashboard/academy-leads",
-      "target": "route:PUT:/api/academy-sales/playbooks/:id",
-      "type": "API_CALL",
-      "label": "CALLS academySales.updatePlaybook"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads:route:GET:/api/academy-sales/courses",
-      "source": "page:/dashboard/academy-leads",
-      "target": "route:GET:/api/academy-sales/courses",
-      "type": "API_CALL",
-      "label": "CALLS academySales.updateCourse"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads:route:POST:/api/academy-sales/courses",
-      "source": "page:/dashboard/academy-leads",
-      "target": "route:POST:/api/academy-sales/courses",
-      "type": "API_CALL",
-      "label": "CALLS academySales.updateCourse"
-    },
-    {
-      "id": "edge:page:/dashboard/academy-leads:route:PUT:/api/academy-sales/courses/:id",
-      "source": "page:/dashboard/academy-leads",
-      "target": "route:PUT:/api/academy-sales/courses/:id",
-      "type": "API_CALL",
-      "label": "CALLS academySales.updateCourse"
     },
     {
       "id": "edge:page:/dashboard/academy-leads/workshops/[slug]:route:GET:/api/academy/workshops/registration/:registrationCode",
@@ -135664,8 +136440,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5261,
-    "totalEdges": 9678,
+    "totalNodes": 5302,
+    "totalEdges": 9716,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -135673,17 +136449,17 @@
       "Component": 66,
       "SharedType": 1573,
       "DesignToken": 12,
-      "UIComponent": 620,
-      "File": 2027
+      "UIComponent": 636,
+      "File": 2052
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
-      "RENDERS": 686,
-      "USES_TOKEN": 622,
-      "IMPORTS": 1251,
+      "RENDERS": 702,
+      "USES_TOKEN": 638,
+      "IMPORTS": 1263,
       "QUERIES_MODEL": 602,
-      "API_CALL": 3972
+      "API_CALL": 3966
     },
     "fastifyRouteCount": 777,
     "prismaModelCount": 183,
