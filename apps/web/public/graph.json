@@ -55189,9 +55189,217 @@
       "filePath": "apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 122303,
-        "lineCount": 2290,
+        "sizeBytes": 4642,
+        "lineCount": 110,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/DesignSelectionDrawer.tsx",
+      "type": "File",
+      "label": "DesignSelectionDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/DesignSelectionDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7420,
+        "lineCount": 139,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/EquipmentImageCarousel.tsx",
+      "type": "File",
+      "label": "EquipmentImageCarousel.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/EquipmentImageCarousel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4143,
+        "lineCount": 110,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/EquipmentSelectionDrawer.tsx",
+      "type": "File",
+      "label": "EquipmentSelectionDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/EquipmentSelectionDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8502,
+        "lineCount": 164,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/MenuSelectionDrawer.tsx",
+      "type": "File",
+      "label": "MenuSelectionDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/MenuSelectionDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9155,
+        "lineCount": 185,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/RegistrationAuthProviders.tsx",
+      "type": "File",
+      "label": "RegistrationAuthProviders.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/RegistrationAuthProviders.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3676,
+        "lineCount": 108,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/RegistrationSelectionSummaryCards.tsx",
+      "type": "File",
+      "label": "RegistrationSelectionSummaryCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/RegistrationSelectionSummaryCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5701,
+        "lineCount": 124,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/TimelineAgendaSelections.tsx",
+      "type": "File",
+      "label": "TimelineAgendaSelections.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/TimelineAgendaSelections.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 17209,
+        "lineCount": 340,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/WorkshopExperienceTimeline.tsx",
+      "type": "File",
+      "label": "WorkshopExperienceTimeline.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/WorkshopExperienceTimeline.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9759,
+        "lineCount": 217,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/WorkshopLaunchCountdown.tsx",
+      "type": "File",
+      "label": "WorkshopLaunchCountdown.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/WorkshopLaunchCountdown.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3032,
+        "lineCount": 84,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/WorkshopRegistrationSidebar.tsx",
+      "type": "File",
+      "label": "WorkshopRegistrationSidebar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/WorkshopRegistrationSidebar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11614,
+        "lineCount": 289,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/WorkshopSelectionDrawerShell.tsx",
+      "type": "File",
+      "label": "WorkshopSelectionDrawerShell.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/WorkshopSelectionDrawerShell.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2177,
+        "lineCount": 59,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/registrationTypes.ts",
+      "type": "File",
+      "label": "registrationTypes.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/registrationTypes.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1171,
+        "lineCount": 38,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/registrationUtils.ts",
+      "type": "File",
+      "label": "registrationUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/registrationUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7235,
+        "lineCount": 191,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/useBottomSheetDragToDismiss.ts",
+      "type": "File",
+      "label": "useBottomSheetDragToDismiss.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/useBottomSheetDragToDismiss.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1942,
+        "lineCount": 66,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/useWorkshopRegistrationState.ts",
+      "type": "File",
+      "label": "useWorkshopRegistrationState.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/useWorkshopRegistrationState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12700,
+        "lineCount": 346,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/useWorkshopSelectionChangeCountdown.ts",
+      "type": "File",
+      "label": "useWorkshopSelectionChangeCountdown.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/useWorkshopSelectionChangeCountdown.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1064,
+        "lineCount": 29,
+        "ext": ".ts"
       }
     },
     {
@@ -64510,8 +64718,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 111849,
-        "lineCount": 2149,
+        "sizeBytes": 3162,
+        "lineCount": 105,
         "ext": ".tsx"
       }
     },
@@ -65058,6 +65266,188 @@
       "metadata": {
         "sizeBytes": 5938,
         "lineCount": 172,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaChecklistCard.tsx",
+      "type": "File",
+      "label": "CriteriaChecklistCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaChecklistCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15675,
+        "lineCount": 306,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaChecklistSection.tsx",
+      "type": "File",
+      "label": "CriteriaChecklistSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaChecklistSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2713,
+        "lineCount": 81,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaDecisionMatrixSection.tsx",
+      "type": "File",
+      "label": "CriteriaDecisionMatrixSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaDecisionMatrixSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8412,
+        "lineCount": 143,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaEvidenceCard.tsx",
+      "type": "File",
+      "label": "CriteriaEvidenceCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaEvidenceCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8708,
+        "lineCount": 194,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaEvidenceSection.tsx",
+      "type": "File",
+      "label": "CriteriaEvidenceSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaEvidenceSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6105,
+        "lineCount": 136,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaExpertSignOffSection.tsx",
+      "type": "File",
+      "label": "CriteriaExpertSignOffSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaExpertSignOffSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2918,
+        "lineCount": 64,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaPhotoPreviewModal.tsx",
+      "type": "File",
+      "label": "CriteriaPhotoPreviewModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaPhotoPreviewModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2088,
+        "lineCount": 50,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaQuickDecisionFlow.tsx",
+      "type": "File",
+      "label": "CriteriaQuickDecisionFlow.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaQuickDecisionFlow.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4550,
+        "lineCount": 106,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaSopHeaderBanner.tsx",
+      "type": "File",
+      "label": "CriteriaSopHeaderBanner.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaSopHeaderBanner.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11219,
+        "lineCount": 211,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/default-pilot-sessions.ts",
+      "type": "File",
+      "label": "default-pilot-sessions.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/default-pilot-sessions.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15599,
+        "lineCount": 387,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/pilot-criteria-sop.helpers.ts",
+      "type": "File",
+      "label": "pilot-criteria-sop.helpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/pilot-criteria-sop.helpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3282,
+        "lineCount": 82,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/pilot-criteria-sop.types.ts",
+      "type": "File",
+      "label": "pilot-criteria-sop.types.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/pilot-criteria-sop.types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1561,
+        "lineCount": 77,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/sop-criteria-catalog.ts",
+      "type": "File",
+      "label": "sop-criteria-catalog.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/sop-criteria-catalog.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 20746,
+        "lineCount": 402,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/usePilotCriteriaSop.ts",
+      "type": "File",
+      "label": "usePilotCriteriaSop.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/usePilotCriteriaSop.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2376,
+        "lineCount": 67,
         "ext": ".ts"
       }
     },
@@ -108711,8 +109101,57 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx",
+      "id": "edge:file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/DesignSelectionDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/DesignSelectionDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/RegistrationSelectionSummaryCards.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/RegistrationSelectionSummaryCards.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/TimelineAgendaSelections.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/TimelineAgendaSelections.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/WorkshopExperienceTimeline.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/WorkshopExperienceTimeline.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/WorkshopRegistrationSidebar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/WorkshopRegistrationSidebar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/registrationTypes.ts:ws:packages/shared",
+      "source": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/registrationTypes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/registrationUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/registrationUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/useWorkshopRegistrationState.ts:ws:packages/shared",
+      "source": "file:apps/web/app/academy/workshops/register/[code]/academy-workshop-registration-page/useWorkshopRegistrationState.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -112211,13 +112650,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFollowUpDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotFollowUpDrawer.tsx",
       "target": "ws:packages/shared",
@@ -112290,6 +112722,48 @@
     {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/usePilotAssessmentCertSop.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-assessment-cert-sop-detail/usePilotAssessmentCertSop.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaEvidenceCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaEvidenceCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaEvidenceSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/CriteriaEvidenceSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/default-pilot-sessions.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/default-pilot-sessions.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/pilot-criteria-sop.helpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/pilot-criteria-sop.helpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/pilot-criteria-sop.types.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/pilot-criteria-sop.types.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/usePilotCriteriaSop.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-criteria-sop-detail/usePilotCriteriaSop.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -128116,8 +128590,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5835,
-    "totalEdges": 7568,
+    "totalNodes": 5865,
+    "totalEdges": 7580,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -128126,14 +128600,14 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 780,
-      "File": 2441
+      "File": 2471
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 846,
       "USES_TOKEN": 782,
-      "IMPORTS": 1490,
+      "IMPORTS": 1502,
       "QUERIES_MODEL": 602,
       "API_CALL": 1303
     },
