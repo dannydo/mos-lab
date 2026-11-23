@@ -36,6 +36,14 @@ export interface DailySalesBonusConsultantRecord {
   green_visits: number;
   total_visits: number;
 
+  /** Canonical salon revenue fields (matching /dashboard/today & /dashboard/financial-goals). */
+  actual_combo_gross?: number;
+  actual_combo_net?: number;
+  actual_product_gross?: number;
+  actual_product_net?: number;
+  actual_single_gross?: number;
+  actual_single_net?: number;
+
   // 1.5x Wheel Bonus Cap fields
   monthlyDailyBonus?: number;
   monthlyWheelBonus?: number;
@@ -58,6 +66,22 @@ export interface DailySalesBonusConsultantResponse {
     projectedSingleSales?: number;
     projectedTotalSales?: number;
     projectedCcBonus?: number;
+    actualComboGross?: number;
+    actualComboNet?: number;
+    actualProductGross?: number;
+    actualProductNet?: number;
+    actualSingleGross?: number;
+    actualSingleNet?: number;
+    actualTotalGross?: number;
+    actualTotalNet?: number;
+    projectedActualComboGross?: number;
+    projectedActualComboNet?: number;
+    projectedActualProductGross?: number;
+    projectedActualProductNet?: number;
+    projectedActualSingleGross?: number;
+    projectedActualSingleNet?: number;
+    projectedActualTotalGross?: number;
+    projectedActualTotalNet?: number;
     elapsedRatioPercent?: number;
     comparison?: DailySalesBonusPeriodComparison;
   };
@@ -75,6 +99,14 @@ export interface DailySalesBonusPeriodComparison {
   totalSingleSales: number;
   totalSales: number;
   totalCcBonus: number;
+  actualComboGross?: number;
+  actualComboNet?: number;
+  actualProductGross?: number;
+  actualProductNet?: number;
+  actualSingleGross?: number;
+  actualSingleNet?: number;
+  actualTotalGross?: number;
+  actualTotalNet?: number;
 }
 
 export interface DailySalesBonusLeaderboardEntry {
@@ -89,6 +121,10 @@ export interface DailySalesBonusLeaderboardEntry {
   debtCollected?: number;
   productSalesCount: number;
   singleSales: number;
+  actualComboSales?: number;
+  actualProductSales?: number;
+  actualSingleSales?: number;
+  bonusComboSales?: number;
   totalVisits: number;
   greenVisits: number;
   greenComboConversionRate: number;

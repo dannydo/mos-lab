@@ -62,12 +62,26 @@ export const CcThuongKpiCards: React.FC<CcThuongKpiCardsProps> = ({
     if (!comparison) return null;
 
     // The visible revenue figures respect the VAT switch, while Daily Bonus
-    // remains a net bonus amount. Keep the comparison on exactly the same basis.
-    const rawPreviousValue =
-      metric === 'totalSales'
-        ? comparison.totalComboSales + comparison.totalProductSales + comparison.totalSingleSales
-        : comparison[metric];
-    const previousValue = Math.round(rawPreviousValue * (includeVat && metric !== 'totalCcBonus' ? 1.08 : 1));
+    // remains a net bonus amount. Prefer canonical actualGross/actualNet from
+    // the backend when available so comparison matches /dashboard/today exactly.
+    let previousValue: number;
+    if (metric === 'totalCcBonus') {
+      previousValue = Math.round(comparison.totalCcBonus);
+    } else if (comparison.actualComboGross !== undefined) {
+      const actualMap: Record<Exclude<ComparisonMetric, 'totalCcBonus'>, number> = {
+        totalComboSales: includeVat ? comparison.actualComboGross || 0 : comparison.actualComboNet || 0,
+        totalProductSales: includeVat ? comparison.actualProductGross || 0 : comparison.actualProductNet || 0,
+        totalSingleSales: includeVat ? comparison.actualSingleGross || 0 : comparison.actualSingleNet || 0,
+        totalSales: includeVat ? comparison.actualTotalGross || 0 : comparison.actualTotalNet || 0,
+      };
+      previousValue = Math.round(actualMap[metric]);
+    } else {
+      const rawPreviousValue =
+        metric === 'totalSales'
+          ? comparison.totalComboSales + comparison.totalProductSales + comparison.totalSingleSales
+          : comparison[metric];
+      previousValue = Math.round(rawPreviousValue * (includeVat ? 1.08 : 1));
+    }
     const difference = Math.round(currentValue - previousValue);
     const trend = difference > 0 ? 'positive' : difference < 0 ? 'negative' : 'neutral';
     const percentage =
@@ -181,7 +195,7 @@ export const CcThuongKpiCards: React.FC<CcThuongKpiCardsProps> = ({
     {
       metric: 'totalSales',
       title: (
-        <Tooltip title="Tổng doanh thu toàn bộ dịch vụ (Combo + Sản phẩm + Single + Nợ thu)">
+        <Tooltip title="Tổng doanh thu toàn bộ dịch vụ (Combo + Sản phẩm + Single)">
           <span className="cursor-help">∑ Doanh Thu</span>
         </Tooltip>
       ),

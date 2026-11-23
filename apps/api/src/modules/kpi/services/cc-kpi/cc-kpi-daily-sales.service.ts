@@ -4,6 +4,7 @@ import { buildComboBalanceExistsSql } from '../../../customers/services/combo-re
 import { CcKpiDailyProjectionService } from '../../../projections/cc-kpi-daily-projection.service.js';
 import { buildExcludeTrainingCvlOrderSql, CvlTrainingMentorshipService } from '../cvl-training-mentorship.service.js';
 import { getPreviousReportPeriod } from '../report-period-comparison.js';
+import { loadCanonicalActualRevenueAllocations } from './cc-kpi-actual-revenue.helper.js';
 import {
   CcKpiFilters,
   buildDailyBonusSummary,
@@ -210,7 +211,7 @@ export async function getCcDailySalesBonusCanonical(
         DATE_FORMAT(eo.sale_at, '%Y-%m-%d') as sale_date,
         (SELECT os2.check_in_staff_id FROM \`order_service\` os2 WHERE os2.order_id = op.order_id AND os2.check_in_staff_id IS NOT NULL LIMIT 1) as cc_in_id,
         (SELECT os2.check_out_staff_id FROM \`order_service\` os2 WHERE os2.order_id = op.order_id AND os2.check_out_staff_id IS NOT NULL LIMIT 1) as cc_out_id,
-        op.total_price as product_sales,
+        GREATEST(0, op.total_price - COALESCE(op.tax_amount, 0)) as product_sales,
         op.quantity as product_count,
         UPPER(cs.client_store_key) as store_code
       FROM eligible_orders eo
@@ -224,12 +225,13 @@ export async function getCcDailySalesBonusCanonical(
         DATE_FORMAT(eo.sale_at, '%Y-%m-%d') as sale_date,
         os.check_in_staff_id as cc_in_id,
         os.check_out_staff_id as cc_out_id,
-        os.total_price as single_sales,
+        GREATEST(0, os.total_price - COALESCE(os.tax_amount, 0)) as single_sales,
         UPPER(cs.client_store_key) as store_code
       FROM eligible_orders eo
       JOIN \`order_service\` os ON os.order_id = eo.order_id
       LEFT JOIN \`client_store\` cs ON cs.id = eo.client_store_id
-      WHERE LOWER(COALESCE(os.service_group, '')) NOT LIKE '%combo%'
+      WHERE COALESCE(os.upgrade_price, 0) = 0
+        AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%combo%'
         AND LOWER(COALESCE(os.service_type, '')) NOT LIKE '%combo%'
         AND LOWER(COALESCE(os.service_group, '')) NOT LIKE '%product%'
     `;
@@ -293,14 +295,29 @@ export async function getCcDailySalesBonusCanonical(
         ${excludeTrainingDebtSql}
     `;
 
-  const [comboRows, upgradeRows, productRows, singleRows, visitRows, debtRows] = await Promise.all([
+  const isSingleConsultantFilter = Boolean(consultantId && consultantId !== 'ALL');
+
+  const [comboRows, upgradeRows, productRows, singleRows, visitRows, debtRows, actualRevenueData] = await Promise.all([
     fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSalesQuery),
     fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(upgradeSalesQuery),
     fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(productSalesQuery),
     fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(singleSalesQuery),
     fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(visitMetricsQuery),
     fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(debtPaymentSalesQuery),
+    loadCanonicalActualRevenueAllocations(fastify, {
+      startStr,
+      queryEndAt,
+      storeFilterClause,
+      targetStaffIds,
+      isSingleConsultantFilter,
+    }),
   ]);
+
+  actualRevenueData.extraStaffProfiles.forEach((profile, userId) => {
+    if (!staffProfileMap.has(userId)) {
+      staffProfileMap.set(userId, profile);
+    }
+  });
 
   // === 50/50 SPLIT LOGIC: Split doanh số TRƯỚC → Gom theo NGÀY → Tra Tier Rate ===
   // CC owner = COALESCE(check_out_staff_id, check_in_staff_id)
@@ -317,6 +334,12 @@ export async function getCcDailySalesBonusCanonical(
     debt_collected: number;
     total_visits: number;
     green_visits: number;
+    actual_combo_gross: number;
+    actual_combo_net: number;
+    actual_product_gross: number;
+    actual_product_net: number;
+    actual_single_gross: number;
+    actual_single_net: number;
     store_code: string;
   }
 
@@ -337,6 +360,12 @@ export async function getCcDailySalesBonusCanonical(
         debt_collected: 0,
         total_visits: 0,
         green_visits: 0,
+        actual_combo_gross: 0,
+        actual_combo_net: 0,
+        actual_product_gross: 0,
+        actual_product_net: 0,
+        actual_single_gross: 0,
+        actual_single_net: 0,
         store_code: storeCode,
       };
       salesMap.set(key, entry);
@@ -432,6 +461,17 @@ export async function getCcDailySalesBonusCanonical(
     });
   });
 
+  // Canonical salon revenue per order (Gross & Net, matching /dashboard/today & /dashboard/financial-goals)
+  actualRevenueData.allocations.forEach((alloc) => {
+    const entry = getOrCreate(alloc.saleDate, alloc.staffId, alloc.storeCode);
+    entry.actual_combo_gross += alloc.comboGross;
+    entry.actual_combo_net += alloc.comboNet;
+    entry.actual_product_gross += alloc.productGross;
+    entry.actual_product_net += alloc.productNet;
+    entry.actual_single_gross += alloc.singleGross;
+    entry.actual_single_net += alloc.singleNet;
+  });
+
   // === BUILD RESULT: Aggregate per-day, apply Tier Rate ===
   const result = Array.from(salesMap.entries()).map(([key, rec]) => {
     const [dateStr, staffIdStr] = key.split('_');
@@ -450,7 +490,7 @@ export async function getCcDailySalesBonusCanonical(
       id: `${key}_${rec.store_code}`,
       date: dateStr,
       user_id: sId,
-      consultant_name: prof?.displayName || `CC ${sId}`,
+      consultant_name: sId === 0 ? 'Chưa phân bổ CC' : prof?.displayName || `CC ${sId}`,
       avatar: prof?.avatar || null,
       store_code: rec.store_code,
       combo_sales: rec.combo_sales,
@@ -467,6 +507,12 @@ export async function getCcDailySalesBonusCanonical(
       daily_bonus,
       total_visits: rec.total_visits,
       green_visits: rec.green_visits,
+      actual_combo_gross: rec.actual_combo_gross,
+      actual_combo_net: rec.actual_combo_net,
+      actual_product_gross: rec.actual_product_gross,
+      actual_product_net: rec.actual_product_net,
+      actual_single_gross: rec.actual_single_gross,
+      actual_single_net: rec.actual_single_net,
     };
   });
 
@@ -512,6 +558,14 @@ export async function getCcDailySalesBonusCanonical(
           totalSingleSales: Math.round(comparisonResult.summary.totalSingleSales || 0),
           totalSales: Math.round(comparisonResult.summary.totalSales || 0),
           totalCcBonus: Math.round(comparisonResult.summary.totalCcBonus || 0),
+          actualComboGross: comparisonResult.summary.actualComboGross,
+          actualComboNet: comparisonResult.summary.actualComboNet,
+          actualProductGross: comparisonResult.summary.actualProductGross,
+          actualProductNet: comparisonResult.summary.actualProductNet,
+          actualSingleGross: comparisonResult.summary.actualSingleGross,
+          actualSingleNet: comparisonResult.summary.actualSingleNet,
+          actualTotalGross: comparisonResult.summary.actualTotalGross,
+          actualTotalNet: comparisonResult.summary.actualTotalNet,
         }
       : undefined;
 
