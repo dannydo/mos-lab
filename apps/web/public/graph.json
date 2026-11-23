@@ -55969,8 +55969,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyTalentWorkshopDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 134174,
-        "lineCount": 3045,
+        "sizeBytes": 21527,
+        "lineCount": 578,
         "ext": ".tsx"
       }
     },
@@ -56426,6 +56426,253 @@
       "metadata": {
         "sizeBytes": 610,
         "lineCount": 14,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/CoursePickerCard.tsx",
+      "type": "File",
+      "label": "CoursePickerCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/CoursePickerCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13976,
+        "lineCount": 336,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/CourseSelectionStep.tsx",
+      "type": "File",
+      "label": "CourseSelectionStep.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/CourseSelectionStep.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7024,
+        "lineCount": 185,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/InvoicePreviewModal.tsx",
+      "type": "File",
+      "label": "InvoicePreviewModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/InvoicePreviewModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3276,
+        "lineCount": 92,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/LadderConfigurationModal.tsx",
+      "type": "File",
+      "label": "LadderConfigurationModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/LadderConfigurationModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8983,
+        "lineCount": 230,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/PaymentFollowUpModals.tsx",
+      "type": "File",
+      "label": "PaymentFollowUpModals.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/PaymentFollowUpModals.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11635,
+        "lineCount": 272,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/ScholarshipCelebrationParts.tsx",
+      "type": "File",
+      "label": "ScholarshipCelebrationParts.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/ScholarshipCelebrationParts.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5066,
+        "lineCount": 138,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/ScoreAssessmentStep.tsx",
+      "type": "File",
+      "label": "ScoreAssessmentStep.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/ScoreAssessmentStep.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10299,
+        "lineCount": 306,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/WorkshopCourseFooter.tsx",
+      "type": "File",
+      "label": "WorkshopCourseFooter.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/WorkshopCourseFooter.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6997,
+        "lineCount": 182,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/WorkshopHeader.tsx",
+      "type": "File",
+      "label": "WorkshopHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/WorkshopHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6301,
+        "lineCount": 187,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/WorkshopOverlays.tsx",
+      "type": "File",
+      "label": "WorkshopOverlays.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/WorkshopOverlays.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4993,
+        "lineCount": 157,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/WorkshopTopControls.tsx",
+      "type": "File",
+      "label": "WorkshopTopControls.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/WorkshopTopControls.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3221,
+        "lineCount": 96,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopDerivedState.ts",
+      "type": "File",
+      "label": "useWorkshopDerivedState.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopDerivedState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7109,
+        "lineCount": 191,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopLadderEditor.ts",
+      "type": "File",
+      "label": "useWorkshopLadderEditor.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopLadderEditor.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7191,
+        "lineCount": 199,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopPaymentFollowUp.ts",
+      "type": "File",
+      "label": "useWorkshopPaymentFollowUp.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopPaymentFollowUp.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6315,
+        "lineCount": 174,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopPopupLayout.ts",
+      "type": "File",
+      "label": "useWorkshopPopupLayout.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopPopupLayout.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2963,
+        "lineCount": 74,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopQuotePreview.ts",
+      "type": "File",
+      "label": "useWorkshopQuotePreview.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopQuotePreview.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4328,
+        "lineCount": 131,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopScholarshipFlight.ts",
+      "type": "File",
+      "label": "useWorkshopScholarshipFlight.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopScholarshipFlight.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5515,
+        "lineCount": 150,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopSessionActions.ts",
+      "type": "File",
+      "label": "useWorkshopSessionActions.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopSessionActions.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14559,
+        "lineCount": 411,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/workshop-drawer-utils.ts",
+      "type": "File",
+      "label": "workshop-drawer-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/workshop-drawer-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11149,
+        "lineCount": 335,
         "ext": ".ts"
       }
     },
@@ -109946,6 +110193,90 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/CoursePickerCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/CoursePickerCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/CourseSelectionStep.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/CourseSelectionStep.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/LadderConfigurationModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/LadderConfigurationModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/PaymentFollowUpModals.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/PaymentFollowUpModals.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/ScoreAssessmentStep.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/ScoreAssessmentStep.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/WorkshopOverlays.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/WorkshopOverlays.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopDerivedState.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopDerivedState.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopLadderEditor.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopLadderEditor.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopPaymentFollowUp.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopPaymentFollowUp.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopQuotePreview.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopQuotePreview.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopSessionActions.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/useWorkshopSessionActions.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/workshop-drawer-utils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop-drawer/workshop-drawer-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop.adapter.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/academy-leads/components/academy-talent-workshop.adapter.ts",
       "target": "ws:packages/shared",
@@ -129141,8 +129472,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5895,
-    "totalEdges": 7603,
+    "totalNodes": 5914,
+    "totalEdges": 7615,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -129151,14 +129482,14 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 780,
-      "File": 2501
+      "File": 2520
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 846,
       "USES_TOKEN": 782,
-      "IMPORTS": 1525,
+      "IMPORTS": 1537,
       "QUERIES_MODEL": 602,
       "API_CALL": 1303
     },
