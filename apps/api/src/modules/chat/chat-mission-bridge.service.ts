@@ -7,10 +7,12 @@ import type {
   MosChatStaffMember,
   MosChatTaskItem,
   MosChatThreadReply,
+  ShareMosChatMissionRequest,
 } from '@mos-lab/shared';
 import type { JwtUserPayload } from '../../middlewares/auth.js';
 import { executeMissionActionFromChat, syncChatReplyToMission } from './mission-bridge/mission-bridge-actions.js';
 import { createMissionFromChat } from './mission-bridge/mission-bridge-create.js';
+import { getSharedMissionPreview, shareMissionToChat } from './mission-bridge/mission-bridge-share.js';
 import {
   buildMissionArtifactPreview,
   buildMissionSummaryFromReport,
@@ -60,5 +62,26 @@ export class ChatMissionBridgeService {
     tasks: MosChatTaskItem[]
   ) {
     return executeMissionActionFromChat(fastify, user, reportId, body, conversations, tasks);
+  }
+
+  static shareMissionToChat(
+    fastify: FastifyInstance,
+    user: JwtUserPayload,
+    body: ShareMosChatMissionRequest,
+    conversations: MosChatConversation[],
+    staffDirectory: MosChatStaffMember[]
+  ) {
+    return shareMissionToChat(fastify, user, body, conversations, staffDirectory);
+  }
+
+  static getSharedMissionPreview(
+    fastify: FastifyInstance,
+    user: JwtUserPayload,
+    reportId: number,
+    conversations: MosChatConversation[],
+    tasks: MosChatTaskItem[],
+    staffDirectory: MosChatStaffMember[]
+  ) {
+    return getSharedMissionPreview(fastify, user, reportId, conversations, tasks, staffDirectory);
   }
 }

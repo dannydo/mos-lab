@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button, Select, Space, Tooltip, theme } from 'antd';
 import type {
   BugPriority,
@@ -55,17 +56,45 @@ const BugReportExecutionDashboardDrawer = dynamic(
   { ssr: false }
 );
 
-export default function BugReportsPage() {
+function parseReportIdFromQuery(rawReportId: string | null, rawSelected: string | null): number | null {
+  if (rawReportId) {
+    const parsed = Number(rawReportId);
+    if (Number.isInteger(parsed) && parsed > 0) return parsed;
+  }
+  if (rawSelected) {
+    const match = rawSelected.trim().match(/(?:MOS-(?:BUG|FEAT)-)?(\d+)/i);
+    if (match) {
+      const parsed = Number(match[1]);
+      if (Number.isInteger(parsed) && parsed > 0) return parsed;
+    }
+  }
+  return null;
+}
+
+function BugReportsPageContent() {
   const { token } = theme.useToken();
+  const searchParams = useSearchParams();
   const inbox = useBugReports();
   const workerHealth = useRequestClassifierWorkerHealth();
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(() =>
+    parseReportIdFromQuery(searchParams?.get('reportId') ?? null, searchParams?.get('selected') ?? null)
+  );
   const [workflowOpen, setWorkflowOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
   const [telemetryOpen, setTelemetryOpen] = useState(false);
   const [timingDashboardOpen, setTimingDashboardOpen] = useState(false);
   const [canTriage, setCanTriage] = useState(false);
   const [canOpenJournal, setCanOpenJournal] = useState(false);
+
+  const deepLinkReportIdParam = searchParams?.get('reportId') ?? null;
+  const deepLinkSelectedParam = searchParams?.get('selected') ?? null;
+
+  useEffect(() => {
+    const nextId = parseReportIdFromQuery(deepLinkReportIdParam, deepLinkSelectedParam);
+    if (nextId) {
+      setSelectedId(nextId);
+    }
+  }, [deepLinkReportIdParam, deepLinkSelectedParam]);
 
   useEffect(() => {
     try {
@@ -374,5 +403,13 @@ export default function BugReportsPage() {
         canTriage={canTriage}
       />
     </>
+  );
+}
+
+export default function BugReportsPage() {
+  return (
+    <Suspense fallback={null}>
+      <BugReportsPageContent />
+    </Suspense>
   );
 }

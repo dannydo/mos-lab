@@ -123,6 +123,47 @@ export interface ActionMosChatMissionResponse {
   systemReply?: MosChatThreadReply | null;
 }
 
+export interface ShareMosChatMissionRequest {
+  reportId: number;
+  targetConversationIds?: string[];
+  targetStaffIds?: number[];
+  note?: string | null;
+}
+
+export interface ShareMosChatMissionResultItem {
+  conversationId: string;
+  conversationName: string;
+  conversationType: 'dm' | 'space';
+  message: MosChatMessage;
+  createdNewConversation?: boolean;
+}
+
+export interface ShareMosChatMissionResponse {
+  success: boolean;
+  mission: MosChatMissionSummary;
+  results: ShareMosChatMissionResultItem[];
+  updatedConversations: MosChatConversation[];
+  userPrefs?: MosChatUserSidebarPrefs;
+}
+
+export interface SharedMosChatMissionPreview {
+  reportId: number;
+  key: string;
+  missionCode: string;
+  requestType: 'BUG' | 'FEATURE';
+  title: string;
+  description: string;
+  status: string;
+  sourcePath: string;
+  reporterStaffId: number;
+  reporterName: string | null;
+  createdAt: string;
+  updatedAt: string;
+  resolutionSummary: string | null;
+  releaseUrl: string | null;
+  mission: MosChatMissionSummary;
+}
+
 export interface TogglePinConversationRequest {
   pinned?: boolean;
 }

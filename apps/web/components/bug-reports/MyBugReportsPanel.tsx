@@ -14,6 +14,7 @@ import { BugReportRejectionModal } from './BugReportRejectionModal';
 import { BugReportCancelModal } from './BugReportCancelModal';
 import { MyBugReportsListPane } from './MyBugReportsListPane';
 import { MyBugReportsDetailPane } from './MyBugReportsDetailPane';
+import { ShareBugReportToChatModal, type ShareBugReportTarget } from './ShareBugReportToChatModal';
 import { REPORTER_GROUPS, getReporterToneVisual, toneForState } from './my-bug-reports.helpers';
 
 export { resolveFeatureUrl } from './my-bug-reports.helpers';
@@ -58,6 +59,18 @@ export function MyBugReportsPanel({
   const [mobileView, setMobileView] = React.useState<'list' | 'detail'>(() => (selectedKey ? 'detail' : 'list'));
   const prevSelectedKeyRef = React.useRef<string | null>(selectedKey);
   const [rejectionModalOpen, setRejectionModalOpen] = React.useState(false);
+  const [shareTarget, setShareTarget] = React.useState<ShareBugReportTarget | null>(null);
+
+  const openShareModal = React.useCallback((report: MyBugReportItem) => {
+    setShareTarget({
+      id: report.id,
+      key: report.key,
+      title: report.title,
+      requestType: report.requestType,
+      statusLabel: report.reporterExperience.label,
+      summary: report.reporterExperience.summary,
+    });
+  }, []);
 
   React.useEffect(() => {
     if (selectedKey && selectedKey !== prevSelectedKeyRef.current) {
@@ -212,6 +225,7 @@ export function MyBugReportsPanel({
           selectedId={selected?.id ?? null}
           mobileView={mobileView}
           onSelectReport={handleMobileSelect}
+          onShareReport={openShareModal}
         />
 
         {selected ? (
@@ -229,6 +243,7 @@ export function MyBugReportsPanel({
             onOpenCancelModal={() => setCancelModalOpen(true)}
             onOpenRejectionModal={() => setRejectionModalOpen(true)}
             onApproveResult={() => void submitReview({ decision: 'APPROVE' })}
+            onShareReport={() => openShareModal(selected)}
             onComment={onComment}
           />
         ) : null}
@@ -262,6 +277,15 @@ export function MyBugReportsPanel({
           onSubmit={submitCancel}
         />
       ) : null}
+
+      {Boolean(shareTarget) && (
+        <ShareBugReportToChatModal
+          open={Boolean(shareTarget)}
+          ticket={shareTarget}
+          onClose={() => setShareTarget(null)}
+          onAfterNavigateToChat={onClose}
+        />
+      )}
     </div>
   );
 }

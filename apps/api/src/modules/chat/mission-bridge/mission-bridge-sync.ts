@@ -154,6 +154,10 @@ export async function syncLinkedMissionsIntoChatState(
         stateMutated = true;
       }
 
+      if (msg.isSharedMission) {
+        continue;
+      }
+
       msg.thread = msg.thread || [];
       msg.missionSyncedCommentIds = Array.isArray(msg.missionSyncedCommentIds) ? msg.missionSyncedCommentIds : [];
 

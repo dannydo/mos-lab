@@ -1,14 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Tooltip, type GlobalToken } from 'antd';
 import { Check, CheckCircle2, ExternalLink, Loader2, MessageSquareReply, RefreshCw, Rocket } from 'lucide-react';
-import type {
-  MosChatConversation,
-  MosChatMessage,
-  MosChatMissionActionType,
-  MosChatMissionSummary,
+import {
+  isAdminOrSuperAdminRole,
+  type MosChatConversation,
+  type MosChatMessage,
+  type MosChatMissionActionType,
+  type MosChatMissionSummary,
 } from '@mos-lab/shared';
+import { safeStorage } from '../../../lib/safe-storage';
+import { MosChatSharedMissionDetailModal } from './MosChatSharedMissionDetailModal';
 
 export interface MosChatLiveMissionCardProps {
   mission: MosChatMissionSummary;
@@ -105,6 +108,19 @@ export const MosChatLiveMissionCard: React.FC<MosChatLiveMissionCardProps> = ({
     },
   };
 
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const canOpenBugReportsInbox = useMemo(() => {
+    if (isStrictDannySuperAdmin) return true;
+    try {
+      const raw = safeStorage.getItem('mos_user');
+      if (!raw) return false;
+      const parsed = JSON.parse(raw) as { role?: string };
+      return isAdminOrSuperAdminRole(parsed.role);
+    } catch {
+      return false;
+    }
+  }, [isStrictDannySuperAdmin]);
+
   const palette = stageColors[mission.stage] || stageColors.RECEIVED;
   const steps = [
     { idx: 1, label: '1. Tiếp nhận' },
@@ -176,10 +192,16 @@ export const MosChatLiveMissionCard: React.FC<MosChatLiveMissionCardProps> = ({
               </button>
             </Tooltip>
           )}
-          <Tooltip title="Xem chi tiết kỹ thuật trên bảng điều khiển mOS Mission">
+          <Tooltip title="Mở xem chi tiết yêu cầu">
             <a
               href={`/dashboard/bug-reports?reportId=${mission.reportId}`}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!canOpenBugReportsInbox) {
+                  e.preventDefault();
+                  setPreviewOpen(true);
+                }
+              }}
               className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold no-underline hover:opacity-90"
               style={{
                 background: surfaceRaised,
@@ -187,7 +209,7 @@ export const MosChatLiveMissionCard: React.FC<MosChatLiveMissionCardProps> = ({
                 color: '#d4a84b',
               }}
             >
-              <span>{mission.missionCode}</span>
+              <span>Mở xem · {mission.missionCode}</span>
               <ExternalLink size={10} />
             </a>
           </Tooltip>
@@ -380,6 +402,15 @@ export const MosChatLiveMissionCard: React.FC<MosChatLiveMissionCardProps> = ({
             </div>
           )}
         </div>
+      )}
+      {previewOpen && (
+        <MosChatSharedMissionDetailModal
+          open={previewOpen}
+          reportId={mission.reportId}
+          fallbackMission={mission}
+          isDark={isDark}
+          onClose={() => setPreviewOpen(false)}
+        />
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import {
   type ActionMosChatMissionRequest,
   type CreateMosChatMissionRequest,
+  type ShareMosChatMissionRequest,
   isAiCopilotConversationId,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../../middlewares/auth.js';
@@ -9,8 +10,12 @@ import { ChatMissionBridgeService } from '../chat-mission-bridge.service.js';
 import { chatRealtimeHub } from '../chat-realtime.hub.js';
 import { mosChatMediaRoot } from '../chat-file.service.js';
 import { canUserAccessConversation } from '../chat-access.service.js';
+import { formatConversationForUser } from '../chat-format.service.js';
+import { withChatMutationLock } from '../chat-repository.service.js';
 import { loadStaffDirectoryCached } from '../chat-staff-directory.service.js';
-import { loadChatState, saveConversations, saveTasks } from '../chat-state-store.js';
+import { loadChatState, saveConversations, saveTasks, saveUserSidebarPrefs } from '../chat-state-store.js';
+import { advanceSenderReadPrefsForTargets } from '../chat-target-resolver.js';
+import { dispatchChatMessageWebPush } from '../chat-web-push.service.js';
 
 export async function registerChatMissionRoutes(fastify: FastifyInstance) {
   // POST /api/chat/missions (1-Click Dispatch from mOS Chat Message/Thread/Task to mOS Mission for AG)
@@ -180,6 +185,138 @@ export async function registerChatMissionRoutes(fastify: FastifyInstance) {
         return reply.status(statusCode).send({
           error: statusCode === 403 ? 'Forbidden' : 'Bad Request',
           message: err?.message || 'Không thể thực thi thao tác trên mOS Mission.',
+        });
+      }
+    }
+  );
+
+  // POST /api/chat/missions/share (Instagram-style Share Ticket/Request into mOS Chat)
+  fastify.post(
+    '/chat/missions/share',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = request.user as JwtUserPayload;
+        const body = (request.body || {}) as ShareMosChatMissionRequest;
+
+        return await withChatMutationLock(async () => {
+          const [{ conversations, userPrefsByUserKey, accessConfig }, staffDirectory] = await Promise.all([
+            loadChatState(fastify),
+            loadStaffDirectoryCached(fastify),
+          ]);
+
+          const shared = await ChatMissionBridgeService.shareMissionToChat(
+            fastify,
+            user,
+            body,
+            conversations,
+            staffDirectory
+          );
+
+          await saveConversations(fastify, conversations, {
+            touchedMessagesWithThreads: shared.deliveries.map((d) => ({
+              conversation: d.conv,
+              message: d.message,
+            })),
+          });
+
+          const { userPrefKey, updatedSenderPrefs } = advanceSenderReadPrefsForTargets({
+            user,
+            staffDirectory,
+            userPrefsByUserKey,
+            deliveries: shared.deliveries,
+            nowIso: shared.nowIso,
+          });
+          const savedPrefs = await saveUserSidebarPrefs(fastify, userPrefKey, updatedSenderPrefs);
+
+          for (const delivery of shared.deliveries) {
+            chatRealtimeHub.publish({
+              type: 'MESSAGE_CREATED',
+              conversationId: delivery.conv.id,
+              actorStaffId: user.id,
+              payload: {
+                conversationId: delivery.conv.id,
+                message: delivery.message,
+              },
+            });
+
+            const summaryText = shared.cleanNote
+              ? `${shared.cleanNote} · Đã chia sẻ ${shared.mission.key}: ${shared.mission.title}`
+              : `Đã chia sẻ ${shared.mission.key}: ${shared.mission.title}`;
+
+            void dispatchChatMessageWebPush(fastify, {
+              conv: delivery.conv,
+              senderUser: user,
+              senderName: delivery.message.senderName || shared.senderName,
+              messageId: delivery.message.id,
+              text: summaryText,
+              customerCardName: null,
+              attachmentCount: 0,
+              staffDirectory,
+              accessConfig,
+              userPrefsByUserKey,
+            });
+          }
+
+          return {
+            success: true,
+            mission: shared.mission,
+            results: shared.results,
+            updatedConversations: shared.deliveries.map((d) =>
+              formatConversationForUser(d.conv, user, staffDirectory, savedPrefs, userPrefsByUserKey)
+            ),
+            userPrefs: savedPrefs,
+          };
+        });
+      } catch (err: SafeAny) {
+        fastify.log.error('Share mission to mOS Chat error:', err);
+        const statusCode = Number(err?.statusCode) || 400;
+        return reply.status(statusCode).send({
+          error: statusCode === 403 ? 'Forbidden' : statusCode === 404 ? 'Not Found' : 'Bad Request',
+          message: err?.message || 'Không thể chia sẻ yêu cầu vào mOS Chat.',
+        });
+      }
+    }
+  );
+
+  // GET /api/chat/missions/:reportId/preview (Read-only shared ticket preview for mOS Chat participants)
+  fastify.get(
+    '/chat/missions/:reportId/preview',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = request.user as JwtUserPayload;
+        const { reportId: rawReportId } = request.params as { reportId: string };
+        const reportId = Number(rawReportId);
+        if (!Number.isInteger(reportId) || reportId <= 0) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'Mã yêu cầu không hợp lệ.' });
+        }
+
+        const [{ conversations, tasks }, staffDirectory] = await Promise.all([
+          loadChatState(fastify),
+          loadStaffDirectoryCached(fastify),
+        ]);
+
+        const preview = await ChatMissionBridgeService.getSharedMissionPreview(
+          fastify,
+          user,
+          reportId,
+          conversations,
+          tasks,
+          staffDirectory
+        );
+
+        return { success: true, data: preview };
+      } catch (err: SafeAny) {
+        fastify.log.error('Preview shared mOS Mission error:', err);
+        const statusCode = Number(err?.statusCode) || 400;
+        return reply.status(statusCode).send({
+          error: statusCode === 403 ? 'Forbidden' : statusCode === 404 ? 'Not Found' : 'Bad Request',
+          message: err?.message || 'Không thể tải chi tiết yêu cầu.',
         });
       }
     }

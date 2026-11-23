@@ -42,6 +42,7 @@ export type BugReportDetailHeaderActionsProps = {
   onOpenChangesModal: () => void;
   onApproveDeploy: () => void;
   onOpenExceptionClose: () => void;
+  onOpenShare?: () => void;
 };
 
 export function BugReportDetailHeaderActions({
@@ -71,6 +72,7 @@ export function BugReportDetailHeaderActions({
   onOpenChangesModal,
   onApproveDeploy,
   onOpenExceptionClose,
+  onOpenShare,
 }: BugReportDetailHeaderActionsProps) {
   const approvalItems = (['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({
     key: item,
@@ -80,6 +82,11 @@ export function BugReportDetailHeaderActions({
 
   return (
     <Space wrap>
+      {onOpenShare && (
+        <Button icon={<AppIcon icon={Send} size="sm" />} onClick={onOpenShare}>
+          Chia sẻ vào mOS Chat
+        </Button>
+      )}
       {canTriage && !isDeferred && ['NEW', 'APPROVED'].includes(detail.status) && (
         <Button loading={saving} icon={<AppIcon icon={Clock} size="sm" />} onClick={onOpenDefer}>
           Tạm hoãn

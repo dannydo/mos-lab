@@ -171,8 +171,17 @@ export function BugReportSurface() {
   React.useEffect(() => {
     if (!enabled) return;
     const onOpen = (event: Event) => {
-      const detail = (event as CustomEvent<{ errorBoundary?: BugReportClientError; preferHistoryIfPending?: boolean }>)
-        .detail;
+      const detail = (
+        event as CustomEvent<{
+          errorBoundary?: BugReportClientError;
+          preferHistoryIfPending?: boolean;
+          historyKey?: string;
+        }>
+      ).detail;
+      if (detail?.historyKey) {
+        showHistory(detail.historyKey.toUpperCase());
+        return;
+      }
       if (detail?.preferHistoryIfPending && (myBugs.actionRequiredCount || myBugs.unreadCount)) {
         showHistory(
           myBugs.data.find((item) => item.clarification.status === 'WAITING_REPORTER' || item.canReview)?.key ||

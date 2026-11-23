@@ -204,10 +204,14 @@ export function subscribeBugReportBadgeSummary(listener: () => void): () => void
   };
 }
 
-export function openBugReport(error?: unknown, options?: { preferHistoryIfPending?: boolean }): void {
+export function openBugReport(
+  error?: unknown,
+  options?: { preferHistoryIfPending?: boolean; historyKey?: string }
+): void {
   if (typeof window === 'undefined') return;
-  const detail: { errorBoundary?: BugReportClientError; preferHistoryIfPending?: boolean } = {};
+  const detail: { errorBoundary?: BugReportClientError; preferHistoryIfPending?: boolean; historyKey?: string } = {};
   if (error) detail.errorBoundary = recordClientError(error);
   if (options?.preferHistoryIfPending) detail.preferHistoryIfPending = true;
+  if (options?.historyKey) detail.historyKey = options.historyKey;
   window.dispatchEvent(new CustomEvent(OPEN_BUG_REPORT_EVENT, { detail }));
 }

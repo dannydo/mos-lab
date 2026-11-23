@@ -17,11 +17,14 @@ import { withChatMutationLock } from '../chat-repository.service.js';
 import { buildForwardedChatMessage } from '../chat-forward.service.js';
 import { sanitizeChatAttachments } from '../chat-file.service.js';
 import {
-  resolveUserStaffId,
-  resolveDmParticipantIds,
   canUserAccessConversation,
   resolveUserPrefKey,
 } from '../chat-access.service.js';
+import {
+  advanceSenderReadPrefsForTargets,
+  ChatTargetResolutionError,
+  resolveTargetChatConversations,
+} from '../chat-target-resolver.js';
 import {
   formatTimeLabel,
   getRoleDisplayLabel,
@@ -279,122 +282,27 @@ export async function registerChatMessageSendForwardRoutes(fastify: FastifyInsta
           }
         }
 
-        const myStaffId = resolveUserStaffId(user, staffDirectory);
         const now = new Date();
         const nowIso = now.toISOString();
 
-        const resolvedTargetsMap = new Map<string, { conv: MosChatConversation; createdNewConversation: boolean }>();
-
-        for (const targetConvId of rawTargetConversationIds) {
-          if (resolvedTargetsMap.has(targetConvId)) continue;
-          const targetConv = conversations.find((c) => c.id === targetConvId);
-          if (!targetConv) {
-            return reply.status(404).send({
-              error: 'Not Found',
-              message: `Không tìm thấy cuộc hội thoại đích (${targetConvId}).`,
-            });
-          }
-          if (!canUserAccessConversation(targetConv, user, staffDirectory)) {
-            return reply.status(403).send({
-              error: 'Forbidden',
-              message: `Bạn không có quyền gửi tin nhắn vào "${targetConv.name}".`,
-            });
-          }
-          resolvedTargetsMap.set(targetConv.id, { conv: targetConv, createdNewConversation: false });
-        }
-
-        for (const targetStaffId of rawTargetStaffIds) {
-          const staffTarget = staffDirectory.find((s) => Number(s.id) === targetStaffId);
-          if (!staffTarget) {
-            return reply.status(404).send({
-              error: 'Not Found',
-              message: `Không tìm thấy nhân sự đích (#${targetStaffId}).`,
-            });
-          }
-          if (myStaffId <= 0) {
-            return reply.status(400).send({
-              error: 'Bad Request',
-              message: 'Không xác định được tài khoản người gửi để tạo cuộc trò chuyện 1-1.',
-            });
-          }
-
-          if (targetStaffId === myStaffId) {
-            const selfId = `dm-self-${myStaffId}`;
-            let selfConv = conversations.find(
-              (c) => c.id === selfId || (c.type === 'dm' && c.isSelf && Number(c.participantStaffId) === myStaffId)
-            );
-            let createdNew = false;
-            if (!selfConv) {
-              const displayName = staffTarget.displayName || user.username || 'Tôi';
-              selfConv = {
-                id: selfId,
-                type: 'dm',
-                name: `${displayName} (Ghi chú cho tôi)`,
-                subtitle: 'Không gian lưu trữ ghi chú, hình ảnh & task cá nhân',
-                roleTag: 'Cá nhân',
-                color: '#6366f1',
-                avatar: 'ME',
-                isSelf: true,
-                participantStaffId: myStaffId,
-                memberIds: [myStaffId],
-                memberCount: 1,
-                unreadCount: 0,
-                updatedAt: nowIso,
-                messages: [],
-              };
-              conversations.unshift(selfConv);
-              createdNew = true;
-            }
-            if (!resolvedTargetsMap.has(selfConv.id)) {
-              resolvedTargetsMap.set(selfConv.id, { conv: selfConv, createdNewConversation: createdNew });
-            }
-            continue;
-          }
-
-          const pairIds = [Math.min(myStaffId, targetStaffId), Math.max(myStaffId, targetStaffId)];
-          let existingDm = conversations.find((c) => {
-            if (c.type !== 'dm' || c.isSelf) return false;
-            const cIds = resolveDmParticipantIds(c, staffDirectory);
-            return cIds.length === 2 && cIds.includes(myStaffId) && cIds.includes(targetStaffId);
+        let resolvedTargets: Array<{ conv: MosChatConversation; createdNewConversation: boolean }>;
+        try {
+          resolvedTargets = resolveTargetChatConversations({
+            conversations,
+            user,
+            staffDirectory,
+            targetConversationIds: rawTargetConversationIds,
+            targetStaffIds: rawTargetStaffIds,
+            nowIso,
           });
-          let createdNew = false;
-          if (!existingDm) {
-            const peerRole = getRoleDisplayLabel(staffTarget.role);
-            existingDm = {
-              id: `dm-pair-${pairIds[0]}-${pairIds[1]}`,
-              type: 'dm',
-              name: staffTarget.displayName || staffTarget.username || `Nhân sự #${targetStaffId}`,
-              subtitle: peerRole.label || 'Trò chuyện trực tiếp 1-1',
-              roleTag: peerRole.label || '1-1',
-              color: peerRole.color || '#10b981',
-              avatar: staffTarget.avatarUrl || getInitials(staffTarget.displayName, staffTarget.username),
-              memberCount: 2,
-              participantStaffId: targetStaffId,
-              memberIds: pairIds,
-              unreadCount: 0,
-              updatedAt: nowIso,
-              messages: [],
-            };
-            conversations.unshift(existingDm);
-            createdNew = true;
+        } catch (err) {
+          if (err instanceof ChatTargetResolutionError) {
+            return reply.status(err.statusCode).send({
+              error: err.statusCode === 403 ? 'Forbidden' : err.statusCode === 404 ? 'Not Found' : 'Bad Request',
+              message: err.message,
+            });
           }
-          if (!resolvedTargetsMap.has(existingDm.id)) {
-            resolvedTargetsMap.set(existingDm.id, { conv: existingDm, createdNewConversation: createdNew });
-          }
-        }
-
-        const resolvedTargets = Array.from(resolvedTargetsMap.values());
-        if (resolvedTargets.length === 0) {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: 'Không có phòng đích hợp lệ để chuyển tiếp.',
-          });
-        }
-        if (resolvedTargets.length > 20) {
-          return reply.status(400).send({
-            error: 'Bad Request',
-            message: 'Chỉ có thể chuyển tiếp tối đa 20 nơi nhận trong một lần.',
-          });
+          throw err;
         }
 
         const staffRecord = await fastify.prisma.crm.crmStaff.findUnique({
@@ -455,50 +363,13 @@ export async function registerChatMessageSendForwardRoutes(fastify: FastifyInsta
           touchedMessagesWithThreads,
         });
 
-        const userPrefKey = resolveUserPrefKey(user, staffDirectory);
-        let updatedSenderPrefs: MosChatUserSidebarPrefs = {
-          ...(userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs()),
-        };
-        const nextReadCountByConv = { ...(updatedSenderPrefs.readMessageCountByConv || {}) };
-        const nextReadAtByConv = { ...(updatedSenderPrefs.readAtByConv || {}) };
-        const nextLastReadMsgByConv = { ...(updatedSenderPrefs.lastReadMessageIdByConv || {}) };
-        const nextReadThreadCountByMsg = { ...(updatedSenderPrefs.readThreadReplyCountByMsg || {}) };
-        const nextReadThreadAtByMsg = { ...(updatedSenderPrefs.readThreadAtByMsg || {}) };
-        const nextLastReadThreadReplyByMsg = { ...(updatedSenderPrefs.lastReadThreadReplyIdByMsg || {}) };
-        const targetConvIdSet = new Set(resolvedTargets.map((t) => t.conv.id));
-
-        for (let i = 0; i < resolvedTargets.length; i++) {
-          const targetConv = resolvedTargets[i].conv;
-          const forwardedMsg = results[i].message;
-          nextReadCountByConv[targetConv.id] = targetConv.messages.length;
-          nextReadAtByConv[targetConv.id] = nowIso;
-          nextLastReadMsgByConv[targetConv.id] = forwardedMsg.id;
-
-          if (forwardedMsg.thread && forwardedMsg.thread.length > 0) {
-            const threadKey = `${targetConv.id}::${forwardedMsg.id}`;
-            const lastReply = forwardedMsg.thread[forwardedMsg.thread.length - 1];
-            nextReadThreadCountByMsg[threadKey] = forwardedMsg.thread.length;
-            nextReadThreadCountByMsg[forwardedMsg.id] = forwardedMsg.thread.length;
-            nextReadThreadAtByMsg[threadKey] = nowIso;
-            nextReadThreadAtByMsg[forwardedMsg.id] = nowIso;
-            if (lastReply?.id) {
-              nextLastReadThreadReplyByMsg[threadKey] = lastReply.id;
-              nextLastReadThreadReplyByMsg[forwardedMsg.id] = lastReply.id;
-            }
-          }
-        }
-
-        updatedSenderPrefs = {
-          ...updatedSenderPrefs,
-          manualUnreadIds: (updatedSenderPrefs.manualUnreadIds || []).filter((id) => !targetConvIdSet.has(id)),
-          readMessageCountByConv: nextReadCountByConv,
-          readAtByConv: nextReadAtByConv,
-          lastReadMessageIdByConv: nextLastReadMsgByConv,
-          readThreadReplyCountByMsg: nextReadThreadCountByMsg,
-          readThreadAtByMsg: nextReadThreadAtByMsg,
-          lastReadThreadReplyIdByMsg: nextLastReadThreadReplyByMsg,
-        };
-        userPrefsByUserKey[userPrefKey] = updatedSenderPrefs;
+        const { userPrefKey, updatedSenderPrefs } = advanceSenderReadPrefsForTargets({
+          user,
+          staffDirectory,
+          userPrefsByUserKey,
+          deliveries: resolvedTargets.map((t, i) => ({ conv: t.conv, message: results[i].message })),
+          nowIso,
+        });
         const savedPrefs = await saveUserSidebarPrefs(fastify, userPrefKey, updatedSenderPrefs);
 
         for (let i = 0; i < resolvedTargets.length; i++) {

@@ -41,6 +41,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
       getMessageReadBreakdown,
       stoppedReadersByMsgId,
       openSeenUsersSheetForMessage,
+      executeMissionAction,
     } = useMosChat();
 
     const isMe = isUserMessageOwner(message, currentUser);
@@ -151,6 +152,8 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
           onOpenCustomer={onOpenCustomer}
           onOpenGallery={onOpenGallery}
           openSeenUsersSheetForMessage={openSeenUsersSheetForMessage}
+          currentUser={currentUser}
+          executeMissionAction={executeMissionAction}
         />
 
         {/* Reactions Bar Below Bubble */}
