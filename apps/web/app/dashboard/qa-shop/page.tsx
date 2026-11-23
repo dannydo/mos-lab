@@ -82,6 +82,7 @@ export default function QaShopPage() {
           activeKey={state.activeTab}
           onChange={state.setActiveTab}
           type="line"
+          destroyOnHidden
           className={styles.mainTabs}
           items={[
             {
@@ -215,13 +216,15 @@ export default function QaShopPage() {
       </div>
 
       {/* Drawer: Audit Detail */}
-      <AuditDetailDrawer
-        open={state.isDrawerOpen}
-        onClose={() => state.setIsDrawerOpen(false)}
-        selectedAudit={state.selectedAudit}
-      />
+      {state.isDrawerOpen && (
+        <AuditDetailDrawer
+          open={state.isDrawerOpen}
+          onClose={() => state.setIsDrawerOpen(false)}
+          selectedAudit={state.selectedAudit}
+        />
+      )}
 
-      {/* Modal: Update Ticket */}
+      {/* Modal: Update Ticket (kept mounted to preserve AntD ticketForm instance binding) */}
       <ActionTicketModal
         open={state.isTicketModalOpen}
         form={state.ticketForm}
@@ -230,30 +233,34 @@ export default function QaShopPage() {
       />
 
       {/* Dedicated Audit Review Modal / Mobile Drawer */}
-      <AuditReviewModal
-        open={state.auditReviewModalOpen}
-        selectedAudit={state.selectedAudit}
-        isMobileScreen={state.isMobileScreen}
-        reviewFilterTab={state.reviewFilterTab}
-        setReviewFilterTab={state.setReviewFilterTab}
-        onPreviewPhoto={(url) => state.setPreviewImageUrl(url)}
-        onClose={() => state.setAuditReviewModalOpen(false)}
-      />
+      {state.auditReviewModalOpen && (
+        <AuditReviewModal
+          open={state.auditReviewModalOpen}
+          selectedAudit={state.selectedAudit}
+          isMobileScreen={state.isMobileScreen}
+          reviewFilterTab={state.reviewFilterTab}
+          setReviewFilterTab={state.setReviewFilterTab}
+          onPreviewPhoto={(url) => state.setPreviewImageUrl(url)}
+          onClose={() => state.setAuditReviewModalOpen(false)}
+        />
+      )}
 
       {/* Modal: Manage Checklist Items Table */}
-      <ManageItemsModal
-        open={state.isManageModalOpen}
-        selectedBranch={state.selectedBranch}
-        activeTemplate={state.activeTemplate}
-        manageSearchText={state.manageSearchText}
-        onSearchChange={state.setManageSearchText}
-        onAddNewItem={() => state.handleOpenItemModal()}
-        onEditItem={(record, secId) => state.handleOpenItemModal(record, secId)}
-        onDeleteItem={state.handleDeleteItem}
-        onClose={() => state.setIsManageModalOpen(false)}
-      />
+      {state.isManageModalOpen && (
+        <ManageItemsModal
+          open={state.isManageModalOpen}
+          selectedBranch={state.selectedBranch}
+          activeTemplate={state.activeTemplate}
+          manageSearchText={state.manageSearchText}
+          onSearchChange={state.setManageSearchText}
+          onAddNewItem={() => state.handleOpenItemModal()}
+          onEditItem={(record, secId) => state.handleOpenItemModal(record, secId)}
+          onDeleteItem={state.handleDeleteItem}
+          onClose={() => state.setIsManageModalOpen(false)}
+        />
+      )}
 
-      {/* Modal: Create & Edit Item Form */}
+      {/* Modal: Create & Edit Item Form (kept mounted to preserve AntD crudForm instance binding) */}
       <EditItemModal
         open={state.isItemModalOpen}
         form={state.crudForm}
@@ -264,39 +271,45 @@ export default function QaShopPage() {
       />
 
       {/* Modal: WebRTC Live Camera Capture */}
-      <CameraCaptureModal
-        open={state.isCameraModalOpen}
-        activeItemId={state.activeItemIdForCamera}
-        cameraStream={state.cameraStream}
-        cameraError={state.cameraError}
-        isCameraLoading={state.isCameraLoading}
-        videoRef={state.videoRef}
-        onClose={state.closeCameraModal}
-        onCapture={state.captureLivePhoto}
-      />
+      {state.isCameraModalOpen && (
+        <CameraCaptureModal
+          open={state.isCameraModalOpen}
+          activeItemId={state.activeItemIdForCamera}
+          cameraStream={state.cameraStream}
+          cameraError={state.cameraError}
+          isCameraLoading={state.isCameraLoading}
+          videoRef={state.videoRef}
+          onClose={state.closeCameraModal}
+          onCapture={state.captureLivePhoto}
+        />
+      )}
 
       {/* Modal: Image Full Preview */}
-      <ImagePreviewModal previewImageUrl={state.previewImageUrl} onClose={() => state.setPreviewImageUrl(null)} />
+      {Boolean(state.previewImageUrl) && (
+        <ImagePreviewModal previewImageUrl={state.previewImageUrl} onClose={() => state.setPreviewImageUrl(null)} />
+      )}
 
       {/* Mobile Dedicated Fullscreen Focus Overlay */}
-      <QaMobileFocusOverlay
-        isMobileFocusMode={state.isMobileFocusMode}
-        onCloseMobileFocusMode={() => state.setIsMobileFocusMode(false)}
-        selectedBranch={state.selectedBranch}
-        selectedShift={state.selectedShift}
-        auditorName={state.auditorName}
-        inspectionStats={state.inspectionStats}
-        hasRecordedInspectionResult={state.hasRecordedInspectionResult}
-        inspectionProgressLabel={state.inspectionProgressLabel}
-        activeTemplate={state.activeTemplate}
-        groupedAreas={state.groupedAreas}
-        itemStatuses={state.itemStatuses}
-        setItemStatuses={state.setItemStatuses}
-        itemNotesRef={state.itemNotesRef}
-        onSaveAudit={state.handleSaveChecklistAudit}
-        isSavingAudit={state.isSavingAudit}
-        onFileInputChange={state.handleFileInputChange}
-      />
+      {state.isMobileFocusMode && (
+        <QaMobileFocusOverlay
+          isMobileFocusMode={state.isMobileFocusMode}
+          onCloseMobileFocusMode={() => state.setIsMobileFocusMode(false)}
+          selectedBranch={state.selectedBranch}
+          selectedShift={state.selectedShift}
+          auditorName={state.auditorName}
+          inspectionStats={state.inspectionStats}
+          hasRecordedInspectionResult={state.hasRecordedInspectionResult}
+          inspectionProgressLabel={state.inspectionProgressLabel}
+          activeTemplate={state.activeTemplate}
+          groupedAreas={state.groupedAreas}
+          itemStatuses={state.itemStatuses}
+          setItemStatuses={state.setItemStatuses}
+          itemNotesRef={state.itemNotesRef}
+          onSaveAudit={state.handleSaveChecklistAudit}
+          isSavingAudit={state.isSavingAudit}
+          onFileInputChange={state.handleFileInputChange}
+        />
+      )}
     </div>
   );
 }

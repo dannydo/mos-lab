@@ -15,6 +15,7 @@ import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { DashboardSidebarShell } from '../../components/layout/DashboardSidebarShell';
 import { DashboardHeaderBar } from '../../components/layout/DashboardHeaderBar';
+import { DashboardOmiCallOverlays } from '../../components/layout/DashboardOmiCallOverlays';
 import { useDashboardAuthAndGuard } from '../../components/layout/useDashboardAuthAndGuard';
 import { useDashboardChatShell } from '../../components/layout/useDashboardChatShell';
 import { useDashboardHeaderPolling } from '../../components/layout/useDashboardHeaderPolling';
@@ -26,7 +27,6 @@ import {
 
 const TelesalesDashboardModal = dynamic(() => import('../../components/TelesalesDashboardModal'), { ssr: false });
 const DailyCallsDrawer = dynamic(() => import('../../components/DailyCallsDrawer'), { ssr: false });
-const CallLogModal = dynamic(() => import('../../components/CallLogModal'), { ssr: false });
 const QuickSearchModal = dynamic(() => import('../../components/layout/QuickSearchModal'), { ssr: false });
 const PendingAllocationModal = dynamic(
   () => import('../../components/allocation/PendingAllocationModal').then((m) => m.PendingAllocationModal),
@@ -37,11 +37,45 @@ const CvScheduleDrawer = dynamic(
   { ssr: false }
 );
 const BookingWizardDrawer = dynamic(() => import('../../components/BookingWizardDrawer'), { ssr: false });
-const OmiCallWidget = dynamic(() => import('../../components/OmiCallWidget'), { ssr: false });
 const AvatarPromptModal = dynamic(() => import('../../components/avatar/AvatarPromptModal'), { ssr: false });
 const MosGoogleChatPortal = dynamic(() => import('../../components/mos-chat/MosGoogleChatPortal'), { ssr: false });
 
 const { Content } = Layout;
+
+function useHasEverOpened(open: boolean): boolean {
+  const [hasOpened, setHasOpened] = useState(open);
+  useEffect(() => {
+    if (open) setHasOpened(true);
+  }, [open]);
+  return hasOpened || open;
+}
+
+function shouldMountAvatarPrompt(
+  user: { id?: number | string; avatarUrl?: string | null; avatar?: string | null } | null
+): boolean {
+  if (!user?.id || typeof window === 'undefined') return false;
+  const rawAvatar = user.avatarUrl || user.avatar;
+  const isDefaultOrMissing =
+    !rawAvatar ||
+    typeof rawAvatar !== 'string' ||
+    rawAvatar.trim() === '' ||
+    rawAvatar.includes('default-user') ||
+    rawAvatar.includes('placeholder') ||
+    rawAvatar.includes('default-avatar');
+  if (!isDefaultOrMissing) return false;
+  try {
+    if (window.sessionStorage.getItem(`mos_avatar_prompt_dismissed:${user.id}`) === '1') return false;
+  } catch {
+    // Ignore storage access errors in restricted browsing modes
+  }
+  try {
+    const snoozeUntilStr = window.localStorage.getItem('mos_avatar_snooze_until');
+    if (snoozeUntilStr && dayjs().isBefore(dayjs(snoozeUntilStr))) return false;
+  } catch {
+    // Ignore storage access errors
+  }
+  return true;
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -87,6 +121,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const chatShell = useDashboardChatShell(user?.role);
   const polling = useDashboardHeaderPolling(hasAuthenticatedUser, isCvAccount);
+
+  const hasOpenedTelesales = useHasEverOpened(isDashboardVisible);
+  const hasOpenedDailyCalls = useHasEverOpened(isDailyCallsOpen);
+  const hasOpenedPendingAllocation = useHasEverOpened(isPendingAllocationOpen);
+  const hasOpenedBookingWizard = useHasEverOpened(isBookingWizardOpen);
+  const hasOpenedQuickSearch = useHasEverOpened(isQuickSearchOpen);
+  const hasOpenedCvDrawer = useHasEverOpened(isCvDrawerOpen);
+  const hasMountedAvatarPrompt = useHasEverOpened(shouldMountAvatarPrompt(user));
 
   const bugBadgeSummary = React.useSyncExternalStore(
     subscribeBugReportBadgeSummary,
@@ -222,43 +264,54 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Content>
           </Layout>
 
-          <TelesalesDashboardModal
-            visible={isDashboardVisible}
-            onClose={() => setIsDashboardVisible(false)}
-            initialMemberId={selectedMemberId}
-          />
+          {hasOpenedTelesales && (
+            <TelesalesDashboardModal
+              visible={isDashboardVisible}
+              onClose={() => setIsDashboardVisible(false)}
+              initialMemberId={selectedMemberId}
+            />
+          )}
 
-          <DailyCallsDrawer
-            open={isDailyCallsOpen}
-            onClose={() => {
-              setIsDailyCallsOpen(false);
-              polling.fetchDailyCallsCount();
-            }}
-          />
+          {hasOpenedDailyCalls && (
+            <DailyCallsDrawer
+              open={isDailyCallsOpen}
+              onClose={() => {
+                setIsDailyCallsOpen(false);
+                polling.fetchDailyCallsCount();
+              }}
+            />
+          )}
 
-          <PendingAllocationModal
-            open={isPendingAllocationOpen}
-            onClose={() => setIsPendingAllocationOpen(false)}
-            onSuccessRefresh={polling.fetchPendingAllocationsCount}
-          />
+          {hasOpenedPendingAllocation && (
+            <PendingAllocationModal
+              open={isPendingAllocationOpen}
+              onClose={() => setIsPendingAllocationOpen(false)}
+              onSuccessRefresh={polling.fetchPendingAllocationsCount}
+            />
+          )}
 
-          <BookingWizardDrawer
-            open={isBookingWizardOpen}
-            onClose={() => setIsBookingWizardOpen(false)}
-            onSuccess={() => setIsBookingWizardOpen(false)}
-          />
+          {hasOpenedBookingWizard && (
+            <BookingWizardDrawer
+              open={isBookingWizardOpen}
+              onClose={() => setIsBookingWizardOpen(false)}
+              onSuccess={() => setIsBookingWizardOpen(false)}
+            />
+          )}
 
-          <QuickSearchModal open={isQuickSearchOpen} onClose={() => setIsQuickSearchOpen(false)} />
+          {hasOpenedQuickSearch && (
+            <QuickSearchModal open={isQuickSearchOpen} onClose={() => setIsQuickSearchOpen(false)} />
+          )}
         </Layout>
-        <OmiCallWidget />
-        <CallLogModal />
-        <CvScheduleDrawer
-          open={isCvDrawerOpen}
-          onClose={() => setIsCvDrawerOpen(false)}
-          currentDate={cvDrawerDate}
-          onDateChange={(d) => setCvDrawerDate(d)}
-        />
-        <AvatarPromptModal currentUser={user} onAvatarUpdated={handleAvatarUpdated} />
+        <DashboardOmiCallOverlays />
+        {hasOpenedCvDrawer && (
+          <CvScheduleDrawer
+            open={isCvDrawerOpen}
+            onClose={() => setIsCvDrawerOpen(false)}
+            currentDate={cvDrawerDate}
+            onDateChange={(d) => setCvDrawerDate(d)}
+          />
+        )}
+        {hasMountedAvatarPrompt && <AvatarPromptModal currentUser={user} onAvatarUpdated={handleAvatarUpdated} />}
         {chatShell.hasEverOpenedEmbeddedChat && (hasAuthenticatedUser || isAdminOrSuperAdminRole(user?.role)) && (
           <ErrorBoundary fallback={null}>
             <MosGoogleChatPortal

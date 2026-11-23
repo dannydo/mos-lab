@@ -5,11 +5,12 @@ import type { LucideIcon } from 'lucide-react';
 import { Bug, CheckCircle2, Lightbulb, MessageSquareMore, RefreshCw } from 'lucide-react';
 import { Alert, Button, Tabs, Typography } from 'antd';
 import { AdaptiveModal, AdaptiveOverlayFooter, AppIcon, StatusTag, type StatusType } from '../ui';
+import { BUG_REPORT_WORKFLOW_VISIBILITY_EVENT } from './bug-report-surface.helpers';
 import styles from './BugReportWorkflowGuide.module.css';
 
 const { Text } = Typography;
 
-export const BUG_REPORT_WORKFLOW_VISIBILITY_EVENT = 'mos:bug-report-workflow-visibility';
+export { BUG_REPORT_WORKFLOW_VISIBILITY_EVENT };
 
 interface WorkflowStep {
   title: string;

@@ -15,11 +15,14 @@ import { PageHeader } from '../../../components/ui';
 import { useRouter } from 'next/navigation';
 import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 
+const { Title, Paragraph } = Typography;
+
 export default function ArchitecturePage() {
   const { themeMode } = useTheme();
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isGraphLoaded, setIsGraphLoaded] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
   const iframeRef = React.useRef<HTMLIFrameElement>(null);
 
@@ -64,6 +67,7 @@ export default function ArchitecturePage() {
   }, []);
 
   const handleRefresh = () => {
+    setIsGraphLoaded(true);
     setIframeKey((previousKey) => previousKey + 1);
   };
 
@@ -137,27 +141,50 @@ export default function ArchitecturePage() {
 
       {/* Main Graph Container */}
       <Card
-        bordered={false}
-        className="shadow-md rounded-xl overflow-hidden"
+        variant="borderless"
+        className="shadow-md rounded-xl overflow-hidden [&>.ant-card-body]:!p-0"
         style={{
           background: themeMode === 'dark' ? '#141414' : '#ffffff',
           border: `1px solid ${themeMode === 'dark' ? '#303030' : '#f0f0f0'}`,
         }}
-        bodyStyle={{ padding: 0 }}
       >
-        <iframe
-          ref={iframeRef}
-          key={iframeKey}
-          src={`/graph.html?theme=${themeMode}`}
-          title="Graphify Monorepo Knowledge Graph"
-          style={{
-            width: '100%',
-            height: 'clamp(420px, calc(100dvh - 210px), 900px)',
-            minHeight: '420px',
-            border: 'none',
-            display: 'block',
-          }}
-        />
+        {isGraphLoaded ? (
+          <iframe
+            ref={iframeRef}
+            key={iframeKey}
+            src={`/graph.html?theme=${themeMode}`}
+            loading="lazy"
+            title="Graphify Monorepo Knowledge Graph"
+            style={{
+              width: '100%',
+              height: 'clamp(420px, calc(100dvh - 210px), 900px)',
+              minHeight: '420px',
+              border: 'none',
+              display: 'block',
+            }}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center px-6 py-16 min-h-[420px]">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 bg-blue-500/10 text-blue-500 border border-blue-500/20">
+              <ClusterOutlined className="text-2xl" />
+            </div>
+            <Title level={4} className="!mb-2">
+              Sơ Đồ Kiến Trúc Tương Tác (Knowledge Graph)
+            </Title>
+            <Paragraph className="max-w-lg text-sm text-slate-600 dark:text-slate-400 mb-6">
+              Đồ thị tương tác toàn hệ thống (~3.7 MB) được tải theo yêu cầu để giữ tốc độ chuyển trang tức thì và tránh
+              tiêu tốn bộ nhớ khi bạn chỉ kiểm tra nhanh.
+            </Paragraph>
+            <Space wrap>
+              <Button type="primary" size="large" icon={<ClusterOutlined />} onClick={() => setIsGraphLoaded(true)}>
+                Tải Sơ Đồ Tương Tác
+              </Button>
+              <Button size="large" icon={<FullscreenOutlined />} onClick={handleOpenStandalone}>
+                Mở Toàn Màn Hình
+              </Button>
+            </Space>
+          </div>
+        )}
       </Card>
     </div>
   );

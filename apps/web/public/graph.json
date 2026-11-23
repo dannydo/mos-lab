@@ -11640,7 +11640,7 @@
         "path": "/api/kpi/cv-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 269
+        "line": 270
       }
     },
     {
@@ -11654,7 +11654,7 @@
         "path": "/api/kpi/cv-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 363
+        "line": 364
       }
     },
     {
@@ -35080,6 +35080,18 @@
       }
     },
     {
+      "id": "uicomp:BugReportModalShell",
+      "type": "UIComponent",
+      "label": "<BugReportModalShell />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/bug-reports/BugReportModalShell.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "BugReportModalShell",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:BugReportProfileControl",
       "type": "UIComponent",
       "label": "<BugReportProfileControl />",
@@ -36780,6 +36792,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "DashboardHeaderBar",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:DashboardOmiCallOverlays",
+      "type": "UIComponent",
+      "label": "<DashboardOmiCallOverlays />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/DashboardOmiCallOverlays.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "DashboardOmiCallOverlays",
         "isPrimitive": false
       }
     },
@@ -46807,8 +46831,8 @@
       "filePath": "apps/api/src/modules/chat/chat-format.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20683,
-        "lineCount": 548,
+        "sizeBytes": 20687,
+        "lineCount": 549,
         "ext": ".ts"
       }
     },
@@ -51071,8 +51095,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18577,
-        "lineCount": 392,
+        "sizeBytes": 18583,
+        "lineCount": 393,
         "ext": ".ts"
       }
     },
@@ -51656,8 +51680,8 @@
       "filePath": "apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-xoay.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19053,
-        "lineCount": 446,
+        "sizeBytes": 19043,
+        "lineCount": 444,
         "ext": ".ts"
       }
     },
@@ -54282,8 +54306,8 @@
       "filePath": "apps/api/src/plugins/slow-query-logger.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6474,
-        "lineCount": 201,
+        "sizeBytes": 6464,
+        "lineCount": 199,
         "ext": ".ts"
       }
     },
@@ -58494,8 +58518,8 @@
       "filePath": "apps/web/app/dashboard/architecture/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5351,
-        "lineCount": 165,
+        "sizeBytes": 6800,
+        "lineCount": 192,
         "ext": ".tsx"
       }
     },
@@ -64825,8 +64849,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11680,
-        "lineCount": 283,
+        "sizeBytes": 13620,
+        "lineCount": 334,
         "ext": ".tsx"
       }
     },
@@ -67893,8 +67917,8 @@
       "filePath": "apps/web/app/dashboard/qa-shop/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12029,
-        "lineCount": 303,
+        "sizeBytes": 12556,
+        "lineCount": 316,
         "ext": ".tsx"
       }
     },
@@ -73535,8 +73559,8 @@
       "filePath": "apps/web/app/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5071,
-        "lineCount": 71,
+        "sizeBytes": 5036,
+        "lineCount": 70,
         "ext": ".tsx"
       }
     },
@@ -74289,8 +74313,8 @@
       "filePath": "apps/web/lib/api/customers.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20315,
-        "lineCount": 522,
+        "sizeBytes": 20332,
+        "lineCount": 525,
         "ext": ".ts"
       }
     },
@@ -96496,6 +96520,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:BugReportModalShell:ws:apps/web",
+      "source": "uicomp:BugReportModalShell",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:BugReportModalShell:token:color:primary",
+      "source": "uicomp:BugReportModalShell",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:BugReportProfileControl:ws:apps/web",
       "source": "uicomp:BugReportProfileControl",
       "target": "ws:apps/web",
@@ -98479,6 +98517,20 @@
     {
       "id": "edge:uicomp:DashboardHeaderBar:token:color:primary",
       "source": "uicomp:DashboardHeaderBar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:DashboardOmiCallOverlays:ws:apps/web",
+      "source": "uicomp:DashboardOmiCallOverlays",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:DashboardOmiCallOverlays:token:color:primary",
+      "source": "uicomp:DashboardOmiCallOverlays",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -130720,8 +130772,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5986,
-    "totalEdges": 7661,
+    "totalNodes": 5988,
+    "totalEdges": 7665,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -130729,14 +130781,14 @@
       "Component": 66,
       "SharedType": 1582,
       "DesignToken": 12,
-      "UIComponent": 783,
+      "UIComponent": 785,
       "File": 2578
     },
     "edgeTypeCounts": {
       "EXPORTS": 1777,
       "HANDLES_ROUTE": 779,
-      "RENDERS": 849,
-      "USES_TOKEN": 785,
+      "RENDERS": 851,
+      "USES_TOKEN": 787,
       "IMPORTS": 1566,
       "QUERIES_MODEL": 602,
       "API_CALL": 1303

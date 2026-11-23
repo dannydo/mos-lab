@@ -13,6 +13,7 @@ import {
 export const MAX_ATTACHMENTS = BUG_REPORT_MAX_ATTACHMENTS ?? 10;
 export const MAX_ATTACHMENT_BYTES = BUG_REPORT_MAX_ATTACHMENT_BYTES ?? 5 * 1024 * 1024;
 export const EXPERT_DETAILS_PREFERENCE_KEY = 'mos_bug_report_expert_details_v1';
+export const BUG_REPORT_WORKFLOW_VISIBILITY_EVENT = 'mos:bug-report-workflow-visibility';
 
 export const FEATURE_AUDIENCE_OPTIONS: Array<{ value: FeatureRequestAudience; label: string }> = [
   { value: 'SELF', label: 'Cá nhân tôi' },

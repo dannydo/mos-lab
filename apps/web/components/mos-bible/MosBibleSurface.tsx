@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
-import MosBibleDrawer from './MosBibleDrawer';
 import { OPEN_MOS_BIBLE_EVENT, type OpenMosBibleOptions } from '../../lib/mos-bible-launcher';
+
+const MosBibleDrawer = dynamic(() => import('./MosBibleDrawer'), { ssr: false });
 
 export function MosBibleSurface() {
   const pathname = usePathname();

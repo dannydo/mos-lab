@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Collapse, Button, Tooltip, Typography, InputNumber, Popconfirm, Modal, Empty } from 'antd';
 import {
   BuildOutlined,
@@ -19,6 +19,22 @@ import { ItemNoteInput } from './ItemNoteInput';
 import styles from '../qa-shop.module.css';
 
 const { Title, Text } = Typography;
+
+const DEFAULT_EXPANDED_SUBSECTIONS_PER_AREA = 2;
+
+function getSubSectionKey(sec: SafeAny, secIdx: number, areaId: string): string {
+  return String(sec?.id || `${areaId}-sec-${secIdx}`);
+}
+
+function getDefaultSubSectionKeys(area: GroupedArea): string[] {
+  return area.subSections
+    .slice(0, DEFAULT_EXPANDED_SUBSECTIONS_PER_AREA)
+    .map((sec: SafeAny, idx: number) => getSubSectionKey(sec, idx, area.id));
+}
+
+function toStringKeys(keys: string | string[]): string[] {
+  return Array.isArray(keys) ? keys.map(String) : [String(keys)];
+}
 
 interface QaChecklistTabProps {
   activeTemplate: SafeAny | null;
@@ -47,9 +63,65 @@ export const QaChecklistTab: React.FC<QaChecklistTabProps> = ({
   onDeleteItem,
   onFileInputChange,
 }) => {
+  const areaResetSignature = useMemo(
+    () => `${activeTemplate?.id || activeTemplate?.code || ''}:${groupedAreas.map((a) => a.id).join(',')}`,
+    [activeTemplate?.id, activeTemplate?.code, groupedAreas]
+  );
+
+  const [activeAreaKeys, setActiveAreaKeys] = useState<string[]>(() =>
+    groupedAreas[0] ? [groupedAreas[0].id] : ['area-lobby', 'area-cv-grooming']
+  );
+  const [subKeysByArea, setSubKeysByArea] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    if (!groupedAreas || groupedAreas.length === 0) {
+      setActiveAreaKeys([]);
+      setSubKeysByArea({});
+      return;
+    }
+    setActiveAreaKeys([groupedAreas[0].id]);
+    const initialSubKeys: Record<string, string[]> = {};
+    groupedAreas.forEach((area) => {
+      initialSubKeys[area.id] = getDefaultSubSectionKeys(area);
+    });
+    setSubKeysByArea(initialSubKeys);
+  }, [areaResetSignature]);
+
+  const isAllExpanded = useMemo(() => {
+    if (!groupedAreas || groupedAreas.length === 0) return false;
+    return groupedAreas.every((area) => {
+      if (!activeAreaKeys.includes(area.id)) return false;
+      const openSubKeys = subKeysByArea[area.id] ?? getDefaultSubSectionKeys(area);
+      return area.subSections.every((sec: SafeAny, idx: number) =>
+        openSubKeys.includes(getSubSectionKey(sec, idx, area.id))
+      );
+    });
+  }, [groupedAreas, activeAreaKeys, subKeysByArea]);
+
+  const handleToggleExpandAll = () => {
+    if (!groupedAreas || groupedAreas.length === 0) return;
+    if (isAllExpanded) {
+      setActiveAreaKeys([groupedAreas[0].id]);
+      const collapsedSubKeys: Record<string, string[]> = {};
+      groupedAreas.forEach((area) => {
+        collapsedSubKeys[area.id] = getDefaultSubSectionKeys(area);
+      });
+      setSubKeysByArea(collapsedSubKeys);
+      return;
+    }
+    setActiveAreaKeys(groupedAreas.map((a) => a.id));
+    const expandedSubKeys: Record<string, string[]> = {};
+    groupedAreas.forEach((area) => {
+      expandedSubKeys[area.id] = area.subSections.map((sec: SafeAny, idx: number) =>
+        getSubSectionKey(sec, idx, area.id)
+      );
+    });
+    setSubKeysByArea(expandedSubKeys);
+  };
+
   return (
     <div className="space-y-4 py-2">
-      <div className={`${styles.checklistHeading} flex items-center justify-between`}>
+      <div className={`${styles.checklistHeading} flex items-center justify-between gap-2`}>
         <div>
           <Title level={5} style={{ margin: 0, fontWeight: 600 }}>
             {(activeTemplate?.title || `Bộ Tiêu Chuẩn Kiểm Tra Chi Nhánh ${selectedBranch}`)
@@ -66,17 +138,26 @@ export const QaChecklistTab: React.FC<QaChecklistTabProps> = ({
             )}
           </Text>
         </div>
-        <span
-          className={`${styles.checklistCount} text-xs text-slate-600 dark:text-slate-400 font-medium tabular-nums`}
-        >
-          {activeTemplate?.sections?.length || 0} Nhóm Khu Vực
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span
+            className={`${styles.checklistCount} text-xs text-slate-600 dark:text-slate-400 font-medium tabular-nums`}
+          >
+            {activeTemplate?.sections?.length || 0} Nhóm Khu Vực
+          </span>
+          {groupedAreas && groupedAreas.length > 0 && (
+            <Button size="small" type="default" onClick={handleToggleExpandAll}>
+              {isAllExpanded ? 'Thu gọn' : 'Mở tất cả'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {groupedAreas && groupedAreas.length > 0 ? (
         <Collapse
-          defaultActiveKey={['area-lobby', 'area-lashroom']}
+          activeKey={activeAreaKeys}
+          onChange={(keys) => setActiveAreaKeys(toStringKeys(keys))}
           ghost
+          destroyOnHidden
           className="antd-minimal-collapse"
           items={groupedAreas.map((area: GroupedArea) => {
             let areaPassed = 0;
@@ -126,139 +207,157 @@ export const QaChecklistTab: React.FC<QaChecklistTabProps> = ({
                 </div>
               ),
               children: (
-                <div className="space-y-4 pt-2">
-                  {area.subSections.map((sec: SafeAny, secIdx: number) => {
-                    const secItems = sec.items || [];
-                    const secPassed = secItems.filter((i: SafeAny) => itemStatuses[i.id]?.result === 'PASS').length;
-                    const secFailed = secItems.filter((i: SafeAny) => itemStatuses[i.id]?.result === 'FAIL').length;
-                    const secNa = secItems.filter((i: SafeAny) => itemStatuses[i.id]?.result === 'NA').length;
-                    const secFailedPercent = secItems.length > 0 ? Math.round((secFailed / secItems.length) * 100) : 0;
+                <div className="pt-2">
+                  <Collapse
+                    activeKey={subKeysByArea[area.id] ?? getDefaultSubSectionKeys(area)}
+                    onChange={(keys) =>
+                      setSubKeysByArea((prev) => ({
+                        ...prev,
+                        [area.id]: toStringKeys(keys),
+                      }))
+                    }
+                    ghost
+                    destroyOnHidden
+                    className="antd-minimal-collapse"
+                    items={area.subSections.map((sec: SafeAny, secIdx: number) => {
+                      const secKey = getSubSectionKey(sec, secIdx, area.id);
+                      const secItems = sec.items || [];
+                      const secPassed = secItems.filter((i: SafeAny) => itemStatuses[i.id]?.result === 'PASS').length;
+                      const secFailed = secItems.filter((i: SafeAny) => itemStatuses[i.id]?.result === 'FAIL').length;
+                      const secNa = secItems.filter((i: SafeAny) => itemStatuses[i.id]?.result === 'NA').length;
+                      const secFailedPercent =
+                        secItems.length > 0 ? Math.round((secFailed / secItems.length) * 100) : 0;
 
-                    return (
-                      <div key={sec.id || `sec-${secIdx}`} className="space-y-2">
-                        {/* Sub-section Header */}
-                        <div
-                          className={`${styles.subsectionHeader} flex items-center justify-between px-2.5 py-1 bg-slate-100/70 dark:bg-slate-800/50 rounded-md border border-slate-200/60 dark:border-slate-800/60`}
-                        >
-                          <span className="font-semibold text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1.5 uppercase tracking-wide">
-                            <BuildOutlined className="text-purple-500 text-xs" />
-                            {sec.title}
-                            <span className="text-slate-600 dark:text-slate-400 font-normal text-[11px] lowercase">
-                              ({secItems.length} tiêu chí)
-                            </span>
-                          </span>
-                          <div className={`${styles.subsectionMeta} flex items-center gap-1.5 text-[11px]`}>
-                            <span className="text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">
-                              {secPassed} Đạt
-                            </span>
-                            {secFailed > 0 && (
-                              <span className="text-rose-600 dark:text-rose-400 font-bold tabular-nums">
-                                · {secFailed} Lỗi ({secFailedPercent}%)
+                      return {
+                        key: secKey,
+                        label: (
+                          <div
+                            className={`${styles.subsectionHeader} flex items-center justify-between w-full px-2.5 py-1 bg-slate-100/70 dark:bg-slate-800/50 rounded-md border border-slate-200/60 dark:border-slate-800/60`}
+                          >
+                            <span className="font-semibold text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1.5 uppercase tracking-wide">
+                              <BuildOutlined className="text-purple-500 text-xs" />
+                              {sec.title}
+                              <span className="text-slate-600 dark:text-slate-400 font-normal text-[11px] lowercase">
+                                ({secItems.length} tiêu chí)
                               </span>
-                            )}
-                            {secNa > 0 && <span className="text-slate-400 tabular-nums">· {secNa} N/A</span>}
-                            {isEditMode && (
-                              <Button
-                                size="small"
-                                type="text"
-                                icon={<PlusOutlined className="text-xs text-blue-600 dark:text-blue-400" />}
-                                onClick={() => onOpenItemModal(undefined, sec.id)}
-                                className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/50 px-1.5 py-0 h-6 font-medium ml-1.5 rounded"
-                              >
-                                Thêm
-                              </Button>
-                            )}
+                            </span>
+                            <div className={`${styles.subsectionMeta} flex items-center gap-1.5 text-[11px]`}>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">
+                                {secPassed} Đạt
+                              </span>
+                              {secFailed > 0 && (
+                                <span className="text-rose-600 dark:text-rose-400 font-bold tabular-nums">
+                                  · {secFailed} Lỗi ({secFailedPercent}%)
+                                </span>
+                              )}
+                              {secNa > 0 && <span className="text-slate-400 tabular-nums">· {secNa} N/A</span>}
+                              {isEditMode && (
+                                <Button
+                                  size="small"
+                                  type="text"
+                                  icon={<PlusOutlined className="text-xs text-blue-600 dark:text-blue-400" />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onOpenItemModal(undefined, sec.id);
+                                  }}
+                                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/50 px-1.5 py-0 h-6 font-medium ml-1.5 rounded"
+                                >
+                                  Thêm
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                        </div>
+                        ),
+                        children: (
+                          <div className="space-y-2 pl-1">
+                            {secItems.map((itm: SafeAny) => {
+                              const currentSt = itemStatuses[itm.id] || {
+                                result: undefined,
+                                note: '',
+                                photoUrl: '',
+                              };
+                              const isFail = currentSt.result === 'FAIL';
+                              const isPass = currentSt.result === 'PASS';
+                              const isNa = currentSt.result === 'NA';
 
-                        {/* Checklist Item Cards */}
-                        <div className="space-y-2 pl-1">
-                          {secItems.map((itm: SafeAny) => {
-                            const currentSt = itemStatuses[itm.id] || {
-                              result: undefined,
-                              note: '',
-                              photoUrl: '',
-                            };
-                            const isFail = currentSt.result === 'FAIL';
-                            const isPass = currentSt.result === 'PASS';
-                            const isNa = currentSt.result === 'NA';
+                              const rawTitle = (itm.title || '').replace(/\s*\[[A-Z0-9_\s]+\]\s*$/gi, '').trim();
+                              let subject = rawTitle;
+                              let detailRequirement = '';
 
-                            let rawTitle = (itm.title || '').replace(/\s*\[[A-Z0-9_\s]+\]\s*$/gi, '').trim();
-                            let subject = rawTitle;
-                            let detailRequirement = '';
+                              if (rawTitle.includes(' - ')) {
+                                const parts = rawTitle.split(' - ');
+                                subject = parts[0].trim();
+                                detailRequirement = parts.slice(1).join(' - ').trim();
+                              } else if (rawTitle.includes(' – ')) {
+                                const parts = rawTitle.split(' – ');
+                                subject = parts[0].trim();
+                                detailRequirement = parts.slice(1).join(' – ').trim();
+                              }
 
-                            if (rawTitle.includes(' - ')) {
-                              const parts = rawTitle.split(' - ');
-                              subject = parts[0].trim();
-                              detailRequirement = parts.slice(1).join(' - ').trim();
-                            } else if (rawTitle.includes(' – ')) {
-                              const parts = rawTitle.split(' – ');
-                              subject = parts[0].trim();
-                              detailRequirement = parts.slice(1).join(' – ').trim();
-                            }
-
-                            let totalQty = 1;
-                            let unitQty = '';
-                            if (itm.standardRequirement) {
-                              const match = itm.standardRequirement.match(/Đơn vị:\s*([0-9]+)/i);
-                              if (match && match[1]) {
-                                totalQty = parseInt(match[1], 10) || 1;
-                                if (match[1] !== '1') {
-                                  unitQty = `SL: ${match[1]}`;
+                              let totalQty = 1;
+                              let unitQty = '';
+                              if (itm.standardRequirement) {
+                                const match = itm.standardRequirement.match(/Đơn vị:\s*([0-9]+)/i);
+                                if (match && match[1]) {
+                                  totalQty = parseInt(match[1], 10) || 1;
+                                  if (match[1] !== '1') {
+                                    unitQty = `SL: ${match[1]}`;
+                                  }
                                 }
                               }
-                            }
 
-                            const area = itm.area ? itm.area.trim() : '';
+                              const itemArea = itm.area ? itm.area.trim() : '';
 
-                            return (
-                              <div
-                                key={itm.id}
-                                className={`${styles.checklistItem} py-2 px-3 rounded-lg border transition-all duration-150 ${
-                                  isFail
-                                    ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60 shadow-xs'
-                                    : 'bg-slate-50/40 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 hover:bg-slate-100/50 dark:hover:bg-slate-800/40'
-                                }`}
-                              >
-                                {/* Line 1: Header Row (Subject & Badges + Pure Icon-Only Buttons) */}
+                              return (
                                 <div
-                                  className={`${styles.checklistItemHeader} flex items-center justify-between gap-2`}
+                                  key={itm.id}
+                                  className={`${styles.checklistItem} py-2 px-3 rounded-lg border transition-all duration-150 ${
+                                    isFail
+                                      ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/60 shadow-xs'
+                                      : 'bg-slate-50/40 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 hover:bg-slate-100/50 dark:hover:bg-slate-800/40'
+                                  }`}
                                 >
-                                  <div className={`${styles.itemTitleGroup} flex items-center gap-2 flex-wrap min-w-0`}>
-                                    {renderSeverityDot(itm.severity)}
-                                    <Text className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate">
-                                      {subject}
-                                    </Text>
-                                    {unitQty && (
-                                      <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums shrink-0">
-                                        {unitQty}
-                                      </span>
-                                    )}
-                                    {area && (
-                                      <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium uppercase tracking-wide shrink-0">
-                                        [{area}]
-                                      </span>
-                                    )}
-                                    {itm.isCritical ? (
-                                      <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-bold shrink-0 border border-rose-500/20">
-                                        🔴 Nghiêm trọng (1 lỗi rớt)
-                                      </span>
-                                    ) : (
-                                      <span className="px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-500 dark:text-slate-400 text-[10px] font-medium shrink-0">
-                                        🟡 Lỗi nhỏ
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {/* Minimal Vector Pure Icon-Only Toggle Bar */}
+                                  {/* Line 1: Header Row (Subject & Badges + Pure Icon-Only Buttons) */}
                                   <div
-                                    role="group"
-                                    aria-label={`Đánh giá tiêu chuẩn: ${itm.title}`}
-                                    className={`${styles.statusToggle} flex items-center gap-1 shrink-0`}
+                                    className={`${styles.checklistItemHeader} flex items-center justify-between gap-2`}
                                   >
-                                    <Tooltip title="Đạt quy chuẩn (PASS)">
+                                    <div
+                                      className={`${styles.itemTitleGroup} flex items-center gap-2 flex-wrap min-w-0`}
+                                    >
+                                      {renderSeverityDot(itm.severity)}
+                                      <Text className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate">
+                                        {subject}
+                                      </Text>
+                                      {unitQty && (
+                                        <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums shrink-0">
+                                          {unitQty}
+                                        </span>
+                                      )}
+                                      {itemArea && (
+                                        <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium uppercase tracking-wide shrink-0">
+                                          [{itemArea}]
+                                        </span>
+                                      )}
+                                      {itm.isCritical ? (
+                                        <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-bold shrink-0 border border-rose-500/20">
+                                          🔴 Nghiêm trọng (1 lỗi rớt)
+                                        </span>
+                                      ) : (
+                                        <span className="px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-500 dark:text-slate-400 text-[10px] font-medium shrink-0">
+                                          🟡 Lỗi nhỏ
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Minimal Vector Pure Icon-Only Toggle Bar */}
+                                    <div
+                                      role="group"
+                                      aria-label={`Đánh giá tiêu chuẩn: ${itm.title}`}
+                                      className={`${styles.statusToggle} flex items-center gap-1 shrink-0`}
+                                    >
                                       <button
                                         type="button"
+                                        title="Đạt quy chuẩn (PASS)"
                                         onClick={() =>
                                           setItemStatuses((prev) => ({
                                             ...prev,
@@ -276,11 +375,10 @@ export const QaChecklistTab: React.FC<QaChecklistTabProps> = ({
                                         <CheckOutlined className="text-xs" />
                                         <span className="sr-only">Đạt</span>
                                       </button>
-                                    </Tooltip>
 
-                                    <Tooltip title="Không đạt (FAIL)">
                                       <button
                                         type="button"
+                                        title="Không đạt (FAIL)"
                                         onClick={() => {
                                           const curQty = currentSt.failedQty ?? totalQty;
                                           const curPct =
@@ -306,11 +404,10 @@ export const QaChecklistTab: React.FC<QaChecklistTabProps> = ({
                                         <CloseOutlined className="text-xs" />
                                         <span className="sr-only">Không đạt</span>
                                       </button>
-                                    </Tooltip>
 
-                                    <Tooltip title="Không áp dụng (N/A)">
                                       <button
                                         type="button"
+                                        title="Không áp dụng (N/A)"
                                         onClick={() =>
                                           setItemStatuses((prev) => ({
                                             ...prev,
@@ -328,192 +425,187 @@ export const QaChecklistTab: React.FC<QaChecklistTabProps> = ({
                                         <MinusOutlined className="text-xs" />
                                         <span className="sr-only">N/A</span>
                                       </button>
-                                    </Tooltip>
 
-                                    {isEditMode && (
-                                      <>
-                                        <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-800 mx-0.5" />
-                                        <Tooltip title="Chỉnh sửa tiêu chí này">
+                                      {isEditMode && (
+                                        <>
+                                          <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-800 mx-0.5" />
                                           <button
                                             type="button"
+                                            title="Chỉnh sửa tiêu chí này"
                                             onClick={() => onOpenItemModal(itm, sec.id)}
                                             aria-label={`Chỉnh sửa tiêu chí ${itm.title}`}
                                             className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-blue-500 hover:border-blue-300 dark:hover:border-blue-800 transition-all flex items-center justify-center text-xs"
                                           >
                                             <EditOutlined className="text-xs" />
                                           </button>
-                                        </Tooltip>
 
-                                        <Popconfirm
-                                          title="Xóa tiêu chí kiểm tra?"
-                                          description="Bạn có chắc chắn muốn xóa tiêu chí này khỏi bộ quy chuẩn?"
-                                          onConfirm={() => onDeleteItem(itm.id)}
-                                          okText="Xóa"
-                                          cancelText="Hủy"
-                                          okButtonProps={{ danger: true, size: 'small' }}
-                                          cancelButtonProps={{ size: 'small' }}
-                                        >
-                                          <Tooltip title="Xóa tiêu chí này">
+                                          <Popconfirm
+                                            title="Xóa tiêu chí kiểm tra?"
+                                            description="Bạn có chắc chắn muốn xóa tiêu chí này khỏi bộ quy chuẩn?"
+                                            onConfirm={() => onDeleteItem(itm.id)}
+                                            okText="Xóa"
+                                            cancelText="Hủy"
+                                            okButtonProps={{ danger: true, size: 'small' }}
+                                            cancelButtonProps={{ size: 'small' }}
+                                          >
                                             <button
                                               type="button"
+                                              title="Xóa tiêu chí này"
                                               aria-label={`Xóa tiêu chí ${itm.title}`}
                                               className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-rose-500 hover:border-rose-300 dark:hover:border-rose-800 transition-all flex items-center justify-center text-xs"
                                             >
                                               <DeleteOutlined className="text-xs" />
                                             </button>
-                                          </Tooltip>
-                                        </Popconfirm>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Line 2: Requirement Detail */}
-                                <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 pl-3.5 leading-snug">
-                                  {detailRequirement ||
-                                    itm.standardRequirement ||
-                                    'Kiểm tra vệ sinh và quy chuẩn hoạt động.'}
-                                </div>
-
-                                {/* Line 3: Inline Expandable Sub-panel for Failed or Mandatory Photo Items */}
-                                {(isFail || requireAllPhotos) && (
-                                  <div className="mt-2.5 pt-2.5 border-t border-rose-200/80 dark:border-rose-900/60 transition-all duration-200 space-y-2">
-                                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                                      {/* Failed Quantity & % Badge */}
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
-                                          SL vi phạm:
-                                        </span>
-                                        <InputNumber
-                                          min={1}
-                                          max={totalQty}
-                                          value={currentSt.failedQty ?? totalQty}
-                                          onChange={(val) => {
-                                            const qty = Math.min(Math.max(val || 1, 1), totalQty);
-                                            const pct = Math.round((qty / totalQty) * 100);
-                                            setItemStatuses((prev) => ({
-                                              ...prev,
-                                              [itm.id]: {
-                                                ...prev[itm.id],
-                                                result: 'FAIL',
-                                                failedQty: qty,
-                                                failedPercent: pct,
-                                              },
-                                            }));
-                                          }}
-                                          size="small"
-                                          className="w-20 tabular-nums font-bold border-rose-300 dark:border-rose-800"
-                                        />
-                                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium tabular-nums">
-                                          / tổng {totalQty}
-                                        </span>
-                                        <span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[11px] font-bold tabular-nums border border-rose-500/20">
-                                          {currentSt.failedPercent ??
-                                            Math.round(((currentSt.failedQty ?? totalQty) / totalQty) * 100)}
-                                          % vi phạm
-                                        </span>
-                                      </div>
-
-                                      {/* Photo Proof Action Bar (Camera & Upload & Preview) */}
-                                      <div className="flex flex-wrap items-center gap-2">
-                                        {/* Native Hidden Camera Input */}
-                                        <input
-                                          type="file"
-                                          accept="image/*"
-                                          capture="environment"
-                                          style={{ display: 'none' }}
-                                          id={`camera-input-${itm.id}`}
-                                          onChange={(e) => onFileInputChange(e, itm.id)}
-                                        />
-
-                                        {/* Native Hidden File Gallery Input */}
-                                        <input
-                                          type="file"
-                                          accept="image/*"
-                                          style={{ display: 'none' }}
-                                          id={`file-input-${itm.id}`}
-                                          onChange={(e) => onFileInputChange(e, itm.id)}
-                                        />
-
-                                        <label
-                                          htmlFor={`camera-input-${itm.id}`}
-                                          className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-900 text-xs font-semibold cursor-pointer active:scale-95 transition-transform"
-                                          title="Mở trực tiếp Máy ảnh thiết bị để chụp hình"
-                                        >
-                                          <CameraOutlined />
-                                          <span>Chụp Ảnh</span>
-                                        </label>
-
-                                        <label
-                                          htmlFor={`file-input-${itm.id}`}
-                                          className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 text-slate-200 border border-slate-700 hover:bg-slate-800 text-xs font-medium cursor-pointer active:scale-95 transition-transform"
-                                          title="Mở Thư viện ảnh chọn hình từ máy"
-                                        >
-                                          <CloudUploadOutlined />
-                                          <span>Tải Ảnh Từ Máy</span>
-                                        </label>
-                                      </div>
-
-                                      {/* Image Thumbnail Preview & Delete Button */}
-                                      {currentSt.photoUrl && (
-                                        <div className="flex items-center gap-1.5 p-1 bg-rose-500/10 rounded-md border border-rose-500/20">
-                                          <img
-                                            src={currentSt.photoUrl}
-                                            alt="Bằng chứng vi phạm"
-                                            className="w-7 h-7 rounded object-cover border border-rose-400 cursor-pointer hover:scale-105 transition-transform"
-                                            onClick={() => {
-                                              Modal.info({
-                                                title: `Bằng chứng vi phạm: ${subject}`,
-                                                width: 600,
-                                                content: (
-                                                  <div className="pt-2 text-center">
-                                                    <img
-                                                      src={currentSt.photoUrl}
-                                                      alt="Preview"
-                                                      className="max-h-[450px] mx-auto rounded border"
-                                                    />
-                                                  </div>
-                                                ),
-                                              });
-                                            }}
-                                          />
-                                          <Tooltip title="Xóa ảnh bằng chứng này">
-                                            <button
-                                              type="button"
-                                              onClick={() =>
-                                                setItemStatuses((prev) => ({
-                                                  ...prev,
-                                                  [itm.id]: { ...prev[itm.id], photoUrl: '' },
-                                                }))
-                                              }
-                                              className="text-rose-600 dark:text-rose-400 hover:text-rose-800 p-0.5"
-                                            >
-                                              <DeleteOutlined className="text-xs" />
-                                            </button>
-                                          </Tooltip>
-                                        </div>
+                                          </Popconfirm>
+                                        </>
                                       )}
                                     </div>
-
-                                    {/* Violation Note Input */}
-                                    <div>
-                                      <ItemNoteInput
-                                        itemId={itm.id}
-                                        initialValue={currentSt.note || ''}
-                                        notesRef={itemNotesRef}
-                                        placeholder="Ghi chú chi tiết lý do vi phạm (ví dụ: Cửa kính dính nhiều vết tay mờ ở lề dưới)..."
-                                        className="border-rose-200 dark:border-rose-900/60 dark:bg-slate-900/80 text-xs text-slate-800 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:outline-none"
-                                      />
-                                    </div>
                                   </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
+
+                                  {/* Line 2: Requirement Detail */}
+                                  <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 pl-3.5 leading-snug">
+                                    {detailRequirement ||
+                                      itm.standardRequirement ||
+                                      'Kiểm tra vệ sinh và quy chuẩn hoạt động.'}
+                                  </div>
+
+                                  {/* Line 3: Inline Expandable Sub-panel for Failed or Mandatory Photo Items */}
+                                  {(isFail || requireAllPhotos) && (
+                                    <div className="mt-2.5 pt-2.5 border-t border-rose-200/80 dark:border-rose-900/60 transition-all duration-200 space-y-2">
+                                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                        {/* Failed Quantity & % Badge */}
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+                                            SL vi phạm:
+                                          </span>
+                                          <InputNumber
+                                            min={1}
+                                            max={totalQty}
+                                            value={currentSt.failedQty ?? totalQty}
+                                            onChange={(val) => {
+                                              const qty = Math.min(Math.max(val || 1, 1), totalQty);
+                                              const pct = Math.round((qty / totalQty) * 100);
+                                              setItemStatuses((prev) => ({
+                                                ...prev,
+                                                [itm.id]: {
+                                                  ...prev[itm.id],
+                                                  result: 'FAIL',
+                                                  failedQty: qty,
+                                                  failedPercent: pct,
+                                                },
+                                              }));
+                                            }}
+                                            size="small"
+                                            className="w-20 tabular-nums font-bold border-rose-300 dark:border-rose-800"
+                                          />
+                                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium tabular-nums">
+                                            / tổng {totalQty}
+                                          </span>
+                                          <span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[11px] font-bold tabular-nums border border-rose-500/20">
+                                            {currentSt.failedPercent ??
+                                              Math.round(((currentSt.failedQty ?? totalQty) / totalQty) * 100)}
+                                            % vi phạm
+                                          </span>
+                                        </div>
+
+                                        {/* Photo Proof Action Bar (Camera & Upload & Preview) */}
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            capture="environment"
+                                            style={{ display: 'none' }}
+                                            id={`camera-input-${itm.id}`}
+                                            onChange={(e) => onFileInputChange(e, itm.id)}
+                                          />
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            style={{ display: 'none' }}
+                                            id={`file-input-${itm.id}`}
+                                            onChange={(e) => onFileInputChange(e, itm.id)}
+                                          />
+
+                                          <label
+                                            htmlFor={`camera-input-${itm.id}`}
+                                            className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-900 text-xs font-semibold cursor-pointer active:scale-95 transition-transform"
+                                            title="Mở trực tiếp Máy ảnh thiết bị để chụp hình"
+                                          >
+                                            <CameraOutlined />
+                                            <span>Chụp Ảnh</span>
+                                          </label>
+
+                                          <label
+                                            htmlFor={`file-input-${itm.id}`}
+                                            className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 text-slate-200 border border-slate-700 hover:bg-slate-800 text-xs font-medium cursor-pointer active:scale-95 transition-transform"
+                                            title="Mở Thư viện ảnh chọn hình từ máy"
+                                          >
+                                            <CloudUploadOutlined />
+                                            <span>Tải Ảnh Từ Máy</span>
+                                          </label>
+                                        </div>
+
+                                        {/* Image Thumbnail Preview & Delete Button */}
+                                        {currentSt.photoUrl && (
+                                          <div className="flex items-center gap-1.5 p-1 bg-rose-500/10 rounded-md border border-rose-500/20">
+                                            <img
+                                              src={currentSt.photoUrl}
+                                              alt="Bằng chứng vi phạm"
+                                              className="w-7 h-7 rounded object-cover border border-rose-400 cursor-pointer hover:scale-105 transition-transform"
+                                              onClick={() => {
+                                                Modal.info({
+                                                  title: `Bằng chứng vi phạm: ${subject}`,
+                                                  width: 600,
+                                                  content: (
+                                                    <div className="pt-2 text-center">
+                                                      <img
+                                                        src={currentSt.photoUrl}
+                                                        alt="Preview"
+                                                        className="max-h-[450px] mx-auto rounded border"
+                                                      />
+                                                    </div>
+                                                  ),
+                                                });
+                                              }}
+                                            />
+                                            <Tooltip title="Xóa ảnh bằng chứng này">
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setItemStatuses((prev) => ({
+                                                    ...prev,
+                                                    [itm.id]: { ...prev[itm.id], photoUrl: '' },
+                                                  }))
+                                                }
+                                                className="text-rose-600 dark:text-rose-400 hover:text-rose-800 p-0.5"
+                                              >
+                                                <DeleteOutlined className="text-xs" />
+                                              </button>
+                                            </Tooltip>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Violation Note Input */}
+                                      <div>
+                                        <ItemNoteInput
+                                          itemId={itm.id}
+                                          initialValue={itemNotesRef.current[itm.id] ?? currentSt.note ?? ''}
+                                          notesRef={itemNotesRef}
+                                          placeholder="Ghi chú chi tiết lý do vi phạm (ví dụ: Cửa kính dính nhiều vết tay mờ ở lề dưới)..."
+                                          className="border-rose-200 dark:border-rose-900/60 dark:bg-slate-900/80 text-xs text-slate-800 dark:text-slate-200 focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:outline-none"
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ),
+                      };
+                    })}
+                  />
                 </div>
               ),
             };

@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { Copy, Check, Eye, Code2 } from 'lucide-react';
 import { Tooltip, message as antdMessage } from 'antd';
 import katex from 'katex';
+import 'katex/dist/katex.min.css';
 
 export interface MosChatMathBlockProps {
   math: string;
