@@ -55,8 +55,17 @@ export function MyBugReportsPanel({
   const [search, setSearch] = React.useState('');
   const [technicalHistoryOpen, setTechnicalHistoryOpen] = React.useState(false);
   // Mobile navigation: 'list' shows the ticket list, 'detail' shows the selected ticket detail
-  const [mobileView, setMobileView] = React.useState<'list' | 'detail'>('list');
+  const [mobileView, setMobileView] = React.useState<'list' | 'detail'>(() => (selectedKey ? 'detail' : 'list'));
+  const prevSelectedKeyRef = React.useRef<string | null>(selectedKey);
   const [rejectionModalOpen, setRejectionModalOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (selectedKey && selectedKey !== prevSelectedKeyRef.current) {
+      setMobileView('detail');
+      setSearch('');
+    }
+    prevSelectedKeyRef.current = selectedKey;
+  }, [selectedKey]);
 
   const handleMobileSelect = React.useCallback(
     (key: string) => {

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Badge, Button, Tabs, message, notification } from 'antd';
+import { Badge, Button, Tabs, message as messageStatic, notification as notificationStatic } from 'antd';
 import { Inbox, Lightbulb, ListChecks, MessageSquareWarning, Send } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import {
@@ -47,6 +47,10 @@ import { useRequestClassification } from './useRequestClassification';
 
 export function BugReportSurface() {
   const pathname = usePathname();
+  const [messageApi, messageContextHolder] = messageStatic.useMessage();
+  const [notificationApi, notificationContextHolder] = notificationStatic.useNotification({
+    maxCount: 3,
+  });
   const [open, setOpen] = React.useState(false);
   const [workflowOpen, setWorkflowOpen] = React.useState(false);
   const [_externalWorkflowOpen, setExternalWorkflowOpen] = React.useState(false);
@@ -189,7 +193,7 @@ export function BugReportSurface() {
   });
 
   const showHistory = React.useCallback(
-    (key?: string | null) => {
+    (key?: string | null, notificationId?: number) => {
       previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setSelectedReportKey(
         key ||
@@ -199,11 +203,32 @@ export function BugReportSurface() {
       );
       setActiveView('history');
       setOpen(true);
-      void myBugs.refresh();
-      if (myBugs.unreadCount) void myBugs.markNotificationsRead();
+      if (notificationId !== undefined) {
+        notificationApi.destroy(`bug-report-${notificationId}`);
+      } else {
+        for (const item of myBugs.notifications) {
+          if (!item.readAt) notificationApi.destroy(`bug-report-${item.id}`);
+        }
+      }
+      void myBugs.refresh({ force: true });
+      if (notificationId !== undefined) {
+        void myBugs.markNotificationsRead([notificationId]).catch(() => {});
+      } else if (myBugs.unreadCount) {
+        void myBugs.markNotificationsRead().catch(() => {});
+      }
     },
-    [myBugs.data, myBugs.markNotificationsRead, myBugs.refresh, myBugs.unreadCount]
+    [
+      myBugs.data,
+      myBugs.markNotificationsRead,
+      myBugs.notifications,
+      myBugs.refresh,
+      myBugs.unreadCount,
+      notificationApi,
+    ]
   );
+
+  const showHistoryRef = React.useRef(showHistory);
+  showHistoryRef.current = showHistory;
 
   React.useEffect(() => {
     if (!enabled) return;
@@ -241,22 +266,40 @@ export function BugReportSurface() {
   }, [enabled, showHistory]);
 
   React.useEffect(() => {
-    const next = myBugs.notifications.find((item) => !item.readAt && !announcedNotificationsRef.current.has(item.id));
-    if (!next) return;
-    announcedNotificationsRef.current.add(next.id);
-    const isClarification = next.type.endsWith('CLARIFICATION_NEEDED');
-    notification[isClarification ? 'warning' : 'success']({
-      key: `bug-report-${next.id}`,
-      message: next.title,
-      description: next.message,
-      duration: 0,
-      btn: (
-        <Button type="primary" size="small" onClick={() => showHistory(next.reportKey)}>
-          {isClarification ? 'Trả lời Agent' : 'Xem & duyệt'}
-        </Button>
-      ),
-    });
-  }, [myBugs.notifications, showHistory]);
+    if (!enabled) return;
+    const pending = myBugs.notifications.filter(
+      (item) => !item.readAt && !announcedNotificationsRef.current.has(item.id)
+    );
+    if (!pending.length) return;
+    for (const next of pending.slice(0, 3)) {
+      announcedNotificationsRef.current.add(next.id);
+      const noticeKey = `bug-report-${next.id}`;
+      const isClarification = next.type.endsWith('CLARIFICATION_NEEDED');
+      const handleOpenFromNotification = () => {
+        notificationApi.destroy(noticeKey);
+        showHistoryRef.current(next.reportKey, next.id);
+      };
+      notificationApi[isClarification ? 'warning' : 'success']({
+        key: noticeKey,
+        message: next.title,
+        description: next.message,
+        duration: 0,
+        onClick: handleOpenFromNotification,
+        actions: (
+          <Button
+            type="primary"
+            size="small"
+            onClick={(event) => {
+              event.stopPropagation();
+              handleOpenFromNotification();
+            }}
+          >
+            {isClarification ? 'Trả lời Agent' : 'Xem & duyệt'}
+          </Button>
+        ),
+      });
+    }
+  }, [enabled, myBugs.notifications, notificationApi]);
 
   const closeReporter = React.useCallback(() => {
     if (submitting) return;
@@ -274,7 +317,7 @@ export function BugReportSurface() {
   const addFiles = async (selected: File[], draftView: RequestDraftView) => {
     const available = Math.max(0, MAX_ATTACHMENTS - drafts[draftView].files.length);
     if (!available) {
-      message.warning(`Mỗi yêu cầu nhận tối đa ${MAX_ATTACHMENTS} ảnh.`);
+      messageApi.warning(`Mỗi yêu cầu nhận tối đa ${MAX_ATTACHMENTS} ảnh.`);
       return;
     }
     setDrafts((current) => updateRequestDraft(current, draftView, { processingImages: true }));
@@ -284,7 +327,7 @@ export function BugReportSurface() {
         try {
           next.push(await compressImageForUpload(file, { maxBytes: MAX_ATTACHMENT_BYTES }));
         } catch (error) {
-          message.error(error instanceof Error ? error.message : 'Không thể xử lý ảnh.');
+          messageApi.error(error instanceof Error ? error.message : 'Không thể xử lý ảnh.');
         }
       }
       if (next.length) {
@@ -294,7 +337,7 @@ export function BugReportSurface() {
           }))
         );
       }
-      if (selected.length > available) message.warning(`Chỉ ${available} ảnh đầu tiên được giữ lại.`);
+      if (selected.length > available) messageApi.warning(`Chỉ ${available} ảnh đầu tiên được giữ lại.`);
     } finally {
       setDrafts((current) => updateRequestDraft(current, draftView, { processingImages: false }));
     }
@@ -308,7 +351,7 @@ export function BugReportSurface() {
     const requestType: BugReportRequestType = draftView === 'feature' ? 'FEATURE' : 'BUG';
     const normalizedFeatureReason = featureReason.trim();
     if (normalizedDescription.length < 3) {
-      message.warning('Hãy mô tả yêu cầu bằng ít nhất 3 ký tự.');
+      messageApi.warning('Hãy mô tả yêu cầu bằng ít nhất 3 ký tự.');
       return;
     }
     // Context normally arrives when the sheet opens. A slow release-marker
@@ -345,12 +388,12 @@ export function BugReportSurface() {
       });
       const result = response.data;
       if (!result) throw new Error('Server không trả mã ticket.');
-      message.success(
+      messageApi.success(
         requestType === 'FEATURE'
           ? `Đã gửi ${result.key}. AI Agent sẽ làm rõ trước khi Danny duyệt.`
           : `Đã ghi nhận ${result.key}. Cảm ơn bạn!`
       );
-      result.attachmentWarnings.forEach((warning) => message.warning(warning));
+      result.attachmentWarnings.forEach((warning) => messageApi.warning(warning));
       setDrafts((current) => updateRequestDraft(current, draftView, emptyRequestDraft()));
       if (draftView === 'feature') {
         setFeatureReason('');
@@ -381,7 +424,7 @@ export function BugReportSurface() {
         error && typeof error === 'object' && 'response' in error
           ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
-      message.error(responseMessage || (error instanceof Error ? error.message : 'Không thể gửi yêu cầu.'));
+      messageApi.error(responseMessage || (error instanceof Error ? error.message : 'Không thể gửi yêu cầu.'));
     } finally {
       setSubmitting(false);
       submittingRef.current = false;
@@ -392,6 +435,8 @@ export function BugReportSurface() {
 
   return (
     <>
+      {messageContextHolder}
+      {notificationContextHolder}
       <AdaptiveModal
         intent={activeView === 'history' ? 'data' : 'form'}
         width={activeView === 'history' ? 'min(1200px, calc(100vw - 48px))' : undefined}

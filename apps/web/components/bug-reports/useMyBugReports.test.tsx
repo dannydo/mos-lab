@@ -363,4 +363,25 @@ describe('useMyBugReports', () => {
       vi.useRealTimers();
     }
   });
+
+  it('marks explicit notification IDs read even when unreadCount in closure is 0', async () => {
+    apiMocks.badgeSummary.mockResolvedValue({
+      unreadCount: 0,
+      actionRequiredCount: 1,
+      readyForDannyCount: 0,
+      unreadNotifications: [],
+    });
+    apiMocks.markNotificationsRead.mockResolvedValue({
+      success: true,
+      data: { updatedCount: 1 },
+    });
+
+    const { result } = renderHook(() => useMyBugReports(true, false));
+
+    await act(async () => {
+      await result.current.markNotificationsRead([901]);
+    });
+
+    expect(apiMocks.markNotificationsRead).toHaveBeenCalledWith({ notificationIds: [901] });
+  });
 });

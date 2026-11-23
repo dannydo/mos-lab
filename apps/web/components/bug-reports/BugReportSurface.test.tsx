@@ -1,4 +1,5 @@
 import React from 'react';
+import { ConfigProvider } from 'antd';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BugReportSurface } from './BugReportSurface';
@@ -73,6 +74,8 @@ describe('BugReportSurface modal & event trigger (MOS-BUG-240)', () => {
     mockState.myBugs.notifications = [];
     mockState.myBugs.unreadCount = 0;
     mockState.myBugs.actionRequiredCount = 0;
+    mockState.myBugs.refresh.mockClear();
+    mockState.myBugs.markNotificationsRead.mockClear();
     window.localStorage.setItem('mos_token', 'test-token');
     window.localStorage.setItem('mos_user', JSON.stringify({ id: 10, role: 'cc', displayName: 'CC Tester' }));
   });
@@ -131,5 +134,71 @@ describe('BugReportSurface modal & event trigger (MOS-BUG-240)', () => {
       openBugReport();
     });
     expect(await screen.findByText('Phản hồi mOS')).toBeInTheDocument();
+  });
+
+  it('opens target ticket history and dismisses notification when clicking "Trả lời Agent" (MOS-BUG-250)', async () => {
+    mockState.myBugs.notifications = [
+      {
+        id: 901,
+        reportId: 250,
+        reportKey: 'MOS-BUG-250',
+        type: 'BUG_CLARIFICATION_NEEDED',
+        title: 'Cần bạn trả lời thêm — MOS-BUG-250',
+        message: 'Agent cần bạn xác nhận thêm thông tin.',
+        actionUrl: '/dashboard/today?bugReview=MOS-BUG-250',
+        readAt: null,
+        createdAt: '2026-11-19T14:00:00.000Z',
+      },
+    ];
+
+    render(
+      <ConfigProvider theme={{ token: { motion: false } }}>
+        <BugReportSurface />
+      </ConfigProvider>
+    );
+
+    const replyBtn = await screen.findByRole('button', { name: 'Trả lời Agent' });
+    fireEvent.click(replyBtn);
+
+    expect(await screen.findByTestId('mock-my-bug-reports-panel')).toHaveTextContent('history:MOS-BUG-250');
+    expect(mockState.myBugs.refresh).toHaveBeenCalledWith({ force: true });
+    expect(mockState.myBugs.markNotificationsRead).toHaveBeenCalledWith([901]);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Trả lời Agent' })).toBeNull();
+    });
+  });
+
+  it('opens target ticket history and dismisses notification when clicking "Xem & duyệt"', async () => {
+    mockState.myBugs.notifications = [
+      {
+        id: 902,
+        reportId: 251,
+        reportKey: 'MOS-BUG-251',
+        type: 'BUG_FIXED_REVIEW',
+        title: 'Đã xử lý xong — MOS-BUG-251',
+        message: 'Vui lòng kiểm tra kết quả.',
+        actionUrl: '/dashboard/today?bugReview=MOS-BUG-251',
+        readAt: null,
+        createdAt: '2026-11-19T14:00:00.000Z',
+      },
+    ];
+
+    render(
+      <ConfigProvider theme={{ token: { motion: false } }}>
+        <BugReportSurface />
+      </ConfigProvider>
+    );
+
+    const reviewBtn = await screen.findByRole('button', { name: 'Xem & duyệt' });
+    fireEvent.click(reviewBtn);
+
+    expect(await screen.findByTestId('mock-my-bug-reports-panel')).toHaveTextContent('history:MOS-BUG-251');
+    expect(mockState.myBugs.refresh).toHaveBeenCalledWith({ force: true });
+    expect(mockState.myBugs.markNotificationsRead).toHaveBeenCalledWith([902]);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Xem & duyệt' })).toBeNull();
+    });
   });
 });
