@@ -137,6 +137,22 @@ export const useCustomerFilterState = (
     setAssignedStaffId(criteria.assignedStaffId || fallbackAssignedStaffId);
     setAssignedDaysMin(criteria.assignedDaysMin);
     setAssignedDaysMax(criteria.assignedDaysMax);
+    setRetainedOnly(Boolean(criteria.retainedOnly && criteria.retainedOnly !== 'false'));
+    setDobMonth(criteria.dobMonth);
+    setBirthdayPreset(criteria.birthdayPreset);
+    setAgeMin(criteria.ageMin);
+    setAgeMax(criteria.ageMax);
+    setCallStatuses(
+      Array.isArray(criteria.callStatuses)
+        ? criteria.callStatuses
+        : typeof criteria.callStatuses === 'string' && criteria.callStatuses.trim() !== ''
+          ? criteria.callStatuses.split(',').map((s: string) => s.trim()).filter(Boolean)
+          : []
+    );
+    setLastCallDaysMin(criteria.lastCallDaysMin);
+    setLastCallDaysMax(criteria.lastCallDaysMax);
+    const foreignVal = criteria.isForeignFilter ?? criteria.isForeign;
+    setIsForeignFilter(foreignVal === 'foreign' || foreignVal === 'local' ? foreignVal : 'all');
     if (criteria.campaignId !== undefined) {
       setCampaignId(criteria.campaignId);
       setCampaignFilterMode(criteria.campaignFilterMode || 'IN');
@@ -170,6 +186,15 @@ export const useCustomerFilterState = (
         assignedStaffId,
         assignedDaysMin,
         assignedDaysMax,
+        retainedOnly,
+        dobMonth,
+        birthdayPreset,
+        ageMin,
+        ageMax,
+        callStatuses,
+        lastCallDaysMin,
+        lastCallDaysMax,
+        isForeignFilter,
         campaignId,
         campaignFilterMode,
       }),
@@ -195,6 +220,15 @@ export const useCustomerFilterState = (
       assignedStaffId,
       assignedDaysMin,
       assignedDaysMax,
+      retainedOnly,
+      dobMonth,
+      birthdayPreset,
+      ageMin,
+      ageMax,
+      callStatuses,
+      lastCallDaysMin,
+      lastCallDaysMax,
+      isForeignFilter,
       campaignId,
       campaignFilterMode,
     ]

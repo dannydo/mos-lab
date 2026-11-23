@@ -68,4 +68,27 @@ describe('ActiveFilterTags Campaign Filter', () => {
       expect(onClearFilter).toHaveBeenCalledWith('campaignId');
     }
   });
+
+  it('renders foreign filter tag and calls onClearFilter with "isForeign" when closed', () => {
+    const onClearFilter = vi.fn();
+    render(
+      <ActiveFilterTags
+        hasActiveFilters={true}
+        filterParams={{
+          isForeign: 'foreign',
+        }}
+        campaignList={dummyCampaigns}
+        onClearFilter={onClearFilter}
+      />
+    );
+
+    const tagText = screen.getByText(/🌐 Chỉ Khách nước ngoài/i);
+    expect(tagText).toBeDefined();
+    const closeBtn = tagText.closest('.ant-tag')?.querySelector('.ant-tag-close-icon');
+    expect(closeBtn).toBeDefined();
+    if (closeBtn) {
+      fireEvent.click(closeBtn);
+      expect(onClearFilter).toHaveBeenCalledWith('isForeign');
+    }
+  });
 });

@@ -314,6 +314,10 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     filterParams.birthdayPreset !== undefined ||
     filterParams.ageMin !== undefined ||
     filterParams.ageMax !== undefined ||
+    filterParams.isForeign !== undefined ||
+    (filterParams.callStatuses !== undefined && filterParams.callStatuses.trim() !== '') ||
+    filterParams.lastCallDaysMin !== undefined ||
+    filterParams.lastCallDaysMax !== undefined ||
     filterParams.campaignId !== undefined ||
     filtersHook.activeFilterId !== null;
 
@@ -365,6 +369,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     birthdayPreset: filtersHook.birthdayPreset,
     ageMin: filtersHook.ageMin,
     ageMax: filtersHook.ageMax,
+    isForeignFilter: filtersHook.isForeignFilter,
     callStatuses: filtersHook.callStatuses,
     lastCallDaysMin: filtersHook.lastCallDaysMin,
     lastCallDaysMax: filtersHook.lastCallDaysMax,
@@ -448,6 +453,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     setBirthdayPreset: filtersHook.setBirthdayPreset,
     setAgeMin: filtersHook.setAgeMin,
     setAgeMax: filtersHook.setAgeMax,
+    setIsForeignFilter: filtersHook.setIsForeignFilter,
     setSelectedRowKeys: assignmentHook.setSelectedRowKeys,
     setAssignModalVisible: assignmentHook.setAssignModalVisible,
     setTargetStaffId: assignmentHook.setTargetStaffId,

@@ -402,3 +402,134 @@ export function buildSearchCondition(search: string): SearchConditionResult {
     params: [searchLike, searchLike],
   };
 }
+
+export interface BirthdayAgeFilterInput {
+  dobMonth?: string;
+  birthdayPreset?: string;
+  ageMin?: string;
+  ageMax?: string;
+}
+
+/** Builds parameterized SQL predicates for birthday month, preset, and age-range customer filters. */
+export function buildBirthdayAgeWhereClauses(input: BirthdayAgeFilterInput): {
+  clauses: string[];
+  params: number[];
+} {
+  const clauses: string[] = [];
+  const params: number[] = [];
+  const { dobMonth, birthdayPreset, ageMin, ageMax } = input;
+
+  if (dobMonth !== undefined && dobMonth !== '' && dobMonth !== 'ALL') {
+    const month = parseInt(String(dobMonth), 10);
+    if (!isNaN(month)) {
+      clauses.push('u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = ?');
+      params.push(month);
+    }
+  }
+
+  if (birthdayPreset === 'today') {
+    clauses.push(
+      'u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(CURDATE()) AND DAY(u.date_of_birth) = DAY(CURDATE())'
+    );
+  } else if (birthdayPreset === 'this_month') {
+    clauses.push('u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(CURDATE())');
+  } else if (birthdayPreset === 'next_month') {
+    clauses.push(
+      'u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(ADDDATE(CURDATE(), INTERVAL 1 MONTH))'
+    );
+  }
+
+  if (ageMin !== undefined && ageMin !== '') {
+    const parsedMin = parseInt(String(ageMin), 10);
+    if (!isNaN(parsedMin)) {
+      clauses.push(
+        'u.date_of_birth IS NOT NULL AND YEAR(u.date_of_birth) <= YEAR(CURDATE()) - 10 AND TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) >= ?'
+      );
+      params.push(parsedMin);
+    }
+  }
+  if (ageMax !== undefined && ageMax !== '') {
+    const parsedMax = parseInt(String(ageMax), 10);
+    if (!isNaN(parsedMax)) {
+      clauses.push(
+        'u.date_of_birth IS NOT NULL AND YEAR(u.date_of_birth) <= YEAR(CURDATE()) - 10 AND TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) <= ?'
+      );
+      params.push(parsedMax);
+    }
+  }
+
+  return { clauses, params };
+}
+
+export interface CallLogFilterInput {
+  callStatuses?: string;
+  lastCallDaysMin?: string;
+  lastCallDaysMax?: string;
+}
+
+/** Builds parameterized SQL predicates for latest call status and days-since-last-call filters. */
+export function buildCallLogWhereClauses(input: CallLogFilterInput): {
+  clauses: string[];
+  params: (string | number)[];
+} {
+  const clauses: string[] = [];
+  const params: (string | number)[] = [];
+  const { callStatuses, lastCallDaysMin, lastCallDaysMax } = input;
+
+  if (callStatuses && callStatuses.trim() !== '') {
+    const statusList = callStatuses
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const hasNotCalled = statusList.includes('NOT_CALLED');
+    const realStatuses = statusList.filter((s) => s !== 'NOT_CALLED');
+
+    const callConds: string[] = [];
+    if (realStatuses.length > 0) {
+      const placeholders = realStatuses.map(() => '?').join(',');
+      callConds.push(`EXISTS (
+        SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
+        WHERE ccl_latest.legacy_user_id = u.id 
+          AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
+          AND ccl_latest.call_result IN (${placeholders})
+      )`);
+      params.push(...realStatuses);
+    }
+    if (hasNotCalled) {
+      callConds.push(`NOT EXISTS (
+        SELECT 1 FROM mos_lab.crm_call_logs ccl_all WHERE ccl_all.legacy_user_id = u.id
+      )`);
+    }
+    if (callConds.length > 0) {
+      clauses.push(`(${callConds.join(' OR ')})`);
+    }
+  }
+
+  if (lastCallDaysMin !== undefined && lastCallDaysMin !== '') {
+    const minDays = parseInt(String(lastCallDaysMin), 10);
+    if (!isNaN(minDays)) {
+      clauses.push(`EXISTS (
+        SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
+        WHERE ccl_latest.legacy_user_id = u.id
+          AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
+          AND DATEDIFF(NOW(), ccl_latest.created_at) >= ?
+      )`);
+      params.push(minDays);
+    }
+  }
+
+  if (lastCallDaysMax !== undefined && lastCallDaysMax !== '') {
+    const maxDays = parseInt(String(lastCallDaysMax), 10);
+    if (!isNaN(maxDays)) {
+      clauses.push(`EXISTS (
+        SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
+        WHERE ccl_latest.legacy_user_id = u.id
+          AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
+          AND DATEDIFF(NOW(), ccl_latest.created_at) <= ?
+      )`);
+      params.push(maxDays);
+    }
+  }
+
+  return { clauses, params };
+}

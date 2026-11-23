@@ -1,6 +1,38 @@
 import dayjs from 'dayjs';
+import type { SortOrder } from 'antd/es/table/interface';
 import type { Customer } from '@mos-lab/shared';
 import type { StatusType } from '~/components/ui';
+
+const CUSTOMER_TABLE_SORTABLE_FIELDS: Record<string, string> = {
+  name: 'name',
+  daysSinceLastVisit: 'daysSinceLastVisit',
+  totalSpent: 'totalSpent',
+};
+
+/** Maps Ant Design table sorter events to backend server-side `sortField` tokens. */
+export function resolveCustomerTableSortField(tableSorter: SafeAny): string | null {
+  const sorter = Array.isArray(tableSorter) ? tableSorter[0] : tableSorter;
+  if (!sorter) return null;
+
+  const rawField = sorter.field ?? sorter.columnKey;
+  if (!rawField) return null;
+
+  const sortableField = CUSTOMER_TABLE_SORTABLE_FIELDS[String(rawField)];
+  if (!sortableField) return null;
+
+  if (!sorter.order) {
+    return 'id_desc';
+  }
+  return `${sortableField}_${sorter.order === 'ascend' ? 'asc' : 'desc'}`;
+}
+
+/** Resolves Ant Design controlled `sortOrder` indicator from the active server `sortField`. */
+export function resolveCustomerColumnSortOrder(sortField: string | undefined, columnField: string): SortOrder | null {
+  if (!sortField) return null;
+  if (sortField === `${columnField}_asc`) return 'ascend';
+  if (sortField === `${columnField}_desc`) return 'descend';
+  return null;
+}
 
 export type OperationalTone = 'callback' | 'booked' | 'missed' | 'neutral';
 

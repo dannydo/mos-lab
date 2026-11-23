@@ -53,6 +53,7 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
     birthdayPreset,
     ageMin,
     ageMax,
+    isForeign,
     callStatuses,
     lastCallDaysMin,
     lastCallDaysMax,
@@ -66,6 +67,7 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
     birthdayPreset !== undefined ||
     ageMin !== undefined ||
     ageMax !== undefined ||
+    (isForeign !== undefined && isForeign !== 'all') ||
     (callStatuses && callStatuses.length > 0) ||
     lastCallDaysMin !== undefined ||
     lastCallDaysMax !== undefined ||
@@ -267,6 +269,12 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
         {ageMax !== undefined && (
           <Tag color="geekblue" closable onClose={() => onClearFilter('ageMax')}>
             Tuổi &lt;= {ageMax}
+          </Tag>
+        )}
+
+        {isForeign && isForeign !== 'all' && (
+          <Tag color="purple" closable onClose={() => onClearFilter('isForeign')}>
+            {isForeign === 'foreign' ? '🌐 Chỉ Khách nước ngoài' : '🇻🇳 Chỉ Khách Việt Nam'}
           </Tag>
         )}
 

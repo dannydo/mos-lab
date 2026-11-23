@@ -3,6 +3,8 @@ import { getForeignSqlFilter } from '../../services/foreign-customer.service.js'
 import {
   ACTIVE_ELSA_NOT_EXISTS_SQL,
   LIVE_COMBO_NOT_EXISTS_SQL,
+  buildBirthdayAgeWhereClauses,
+  buildCallLogWhereClauses,
   buildCompletedServiceUsageJoin,
   buildNotComboLiveWhereClauses,
   buildSearchCondition,
@@ -345,29 +347,9 @@ export async function buildCustomerListSql({
     innerParams.push(parseInt(referralCountMax, 10));
   }
 
-  if (dobMonth !== undefined && dobMonth !== '' && dobMonth !== 'ALL') {
-    innerWhereClauses.push('u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = ?');
-    innerParams.push(parseInt(String(dobMonth), 10));
-  }
-  if (birthdayPreset === 'today') {
-    innerWhereClauses.push(
-      'u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(CURDATE()) AND DAY(u.date_of_birth) = DAY(CURDATE())'
-    );
-  } else if (birthdayPreset === 'this_month') {
-    innerWhereClauses.push('u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(CURDATE())');
-  } else if (birthdayPreset === 'next_month') {
-    innerWhereClauses.push(
-      'u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(ADDDATE(CURDATE(), INTERVAL 1 MONTH))'
-    );
-  }
-  if (ageMin !== undefined && ageMin !== '') {
-    innerWhereClauses.push('u.date_of_birth IS NOT NULL AND TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) >= ?');
-    innerParams.push(parseInt(String(ageMin), 10));
-  }
-  if (ageMax !== undefined && ageMax !== '') {
-    innerWhereClauses.push('u.date_of_birth IS NOT NULL AND TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) <= ?');
-    innerParams.push(parseInt(String(ageMax), 10));
-  }
+  const birthdayAgeSql = buildBirthdayAgeWhereClauses({ dobMonth, birthdayPreset, ageMin, ageMax });
+  innerWhereClauses.push(...birthdayAgeSql.clauses);
+  innerParams.push(...birthdayAgeSql.params);
 
   if (hsd30 === 'true' && needServiceBalance) {
     innerWhereClauses.push('usb_agg.expiryDate IS NOT NULL AND DATEDIFF(usb_agg.expiryDate, NOW()) BETWEEN 0 AND 30');
@@ -425,53 +407,9 @@ export async function buildCustomerListSql({
     }
   }
 
-  if (callStatuses && callStatuses.trim() !== '') {
-    const statusList = callStatuses
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const hasNotCalled = statusList.includes('NOT_CALLED');
-    const realStatuses = statusList.filter((s) => s !== 'NOT_CALLED');
-
-    const callConds: string[] = [];
-    if (realStatuses.length > 0) {
-      const placeholders = realStatuses.map(() => '?').join(',');
-      callConds.push(`EXISTS (
-        SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
-        WHERE ccl_latest.legacy_user_id = u.id 
-          AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
-          AND ccl_latest.call_result IN (${placeholders})
-      )`);
-      innerParams.push(...realStatuses);
-    }
-    if (hasNotCalled) {
-      callConds.push(`NOT EXISTS (
-        SELECT 1 FROM mos_lab.crm_call_logs ccl_all WHERE ccl_all.legacy_user_id = u.id
-      )`);
-    }
-    if (callConds.length > 0) {
-      innerWhereClauses.push(`(${callConds.join(' OR ')})`);
-    }
-  }
-
-  if (lastCallDaysMin !== undefined && lastCallDaysMin !== '') {
-    innerWhereClauses.push(`EXISTS (
-      SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
-      WHERE ccl_latest.legacy_user_id = u.id
-        AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
-        AND DATEDIFF(NOW(), ccl_latest.created_at) >= ?
-    )`);
-    innerParams.push(parseInt(lastCallDaysMin, 10));
-  }
-  if (lastCallDaysMax !== undefined && lastCallDaysMax !== '') {
-    innerWhereClauses.push(`EXISTS (
-      SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
-      WHERE ccl_latest.legacy_user_id = u.id
-        AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
-        AND DATEDIFF(NOW(), ccl_latest.created_at) <= ?
-    )`);
-    innerParams.push(parseInt(lastCallDaysMax, 10));
-  }
+  const callLogSql = buildCallLogWhereClauses({ callStatuses, lastCallDaysMin, lastCallDaysMax });
+  innerWhereClauses.push(...callLogSql.clauses);
+  innerParams.push(...callLogSql.params);
 
   const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
 

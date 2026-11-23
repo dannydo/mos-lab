@@ -54,6 +54,7 @@ const CustomerFilters = React.memo(function CustomerFilters(props: CustomerFilte
     birthdayPreset,
     ageMin,
     ageMax,
+    isForeignFilter = 'all',
     campaignId,
     campaignFilterMode = 'ALL',
     campaignList = [],
@@ -101,6 +102,7 @@ const CustomerFilters = React.memo(function CustomerFilters(props: CustomerFilte
     birthdayPreset,
     ageMin,
     ageMax,
+    isForeignFilter,
     campaignId,
     campaignFilterMode,
   });
@@ -128,6 +130,9 @@ const CustomerFilters = React.memo(function CustomerFilters(props: CustomerFilte
         referralUsed,
         referralCountMin,
         referralCountMax,
+        callStatuses,
+        lastCallDaysMin,
+        lastCallDaysMax,
         assignedStaffId,
         userRole: currentUser?.role,
         assignedDaysMin,
@@ -137,6 +142,8 @@ const CustomerFilters = React.memo(function CustomerFilters(props: CustomerFilte
         birthdayPreset,
         ageMin,
         ageMax,
+        isForeignFilter,
+        campaignId,
       }),
     [
       daysSinceLastVisitMin,
@@ -155,6 +162,9 @@ const CustomerFilters = React.memo(function CustomerFilters(props: CustomerFilte
       referralUsed,
       referralCountMin,
       referralCountMax,
+      callStatuses,
+      lastCallDaysMin,
+      lastCallDaysMax,
       assignedStaffId,
       currentUser?.role,
       assignedDaysMin,
@@ -164,6 +174,8 @@ const CustomerFilters = React.memo(function CustomerFilters(props: CustomerFilte
       birthdayPreset,
       ageMin,
       ageMax,
+      isForeignFilter,
+      campaignId,
     ]
   );
 

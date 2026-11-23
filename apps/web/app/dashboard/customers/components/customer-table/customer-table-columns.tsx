@@ -8,11 +8,12 @@ import { CALL_RESULT_LABELS, type Customer } from '@mos-lab/shared';
 import { AppIcon, CopyPhoneButton, StatusTag, TableIndexHeader } from '~/components/ui';
 import { formatVND } from '../../../../../lib/format-utils';
 import { CustomerOperationalStatus } from './CustomerOperationalStatus';
-import { formatDuration, getCallResult } from './customer-table-utils';
+import { formatDuration, getCallResult, resolveCustomerColumnSortOrder } from './customer-table-utils';
 
 export function buildCustomerTableColumns(params: {
   currentPage: number;
   pageSize: number;
+  sortField?: string;
   canMakeCall: boolean;
   makeCall: (phone: string, name: string, id: number, avatar?: string) => void;
   openDetailModal: (customer: Customer) => void;
@@ -24,6 +25,7 @@ export function buildCustomerTableColumns(params: {
   const {
     currentPage,
     pageSize,
+    sortField,
     canMakeCall,
     makeCall,
     openDetailModal,
@@ -47,7 +49,8 @@ export function buildCustomerTableColumns(params: {
       title: 'Khách Hàng',
       dataIndex: 'name',
       key: 'name',
-      sorter: (a: Customer, b: Customer) => (a.name || '').localeCompare(b.name || ''),
+      sorter: true,
+      sortOrder: resolveCustomerColumnSortOrder(sortField, 'name'),
       render: (text: string, record: Customer) => (
         <Space className="flex items-center cursor-pointer" onClick={() => openDetailModal(record)}>
           <Avatar
@@ -127,7 +130,8 @@ export function buildCustomerTableColumns(params: {
       dataIndex: 'daysSinceLastVisit',
       key: 'daysSinceLastVisit',
       width: 180,
-      sorter: (a: Customer, b: Customer) => (a.daysSinceLastVisit ?? 0) - (b.daysSinceLastVisit ?? 0),
+      sorter: true,
+      sortOrder: resolveCustomerColumnSortOrder(sortField, 'daysSinceLastVisit'),
       render: (_days: number | null, record: Customer) => <CustomerOperationalStatus record={record} />,
     },
     {
@@ -135,7 +139,8 @@ export function buildCustomerTableColumns(params: {
       dataIndex: 'totalSpent',
       key: 'totalSpent',
       align: 'right' as const,
-      sorter: (a: Customer, b: Customer) => (a.totalSpent || 0) - (b.totalSpent || 0),
+      sorter: true,
+      sortOrder: resolveCustomerColumnSortOrder(sortField, 'totalSpent'),
       render: (val: number) => <span className="tabular-nums">{formatVND(val)}</span>,
     },
     {
