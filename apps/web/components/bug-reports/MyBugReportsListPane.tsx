@@ -1,7 +1,7 @@
 'use client';
 
-import { Input, Typography, theme } from 'antd';
-import { ChevronRight, ImageIcon, Search } from 'lucide-react';
+import { Input, Tooltip, Typography, theme } from 'antd';
+import { ChevronRight, ImageIcon, Search, Send } from 'lucide-react';
 import type { MyBugReportItem } from '@mos-lab/shared';
 import { AppIcon } from '../ui';
 import { elapsedSince, getReporterToneVisual, toneForState, type ReporterTone } from './my-bug-reports.helpers';
@@ -25,6 +25,7 @@ interface MyBugReportsListPaneProps {
   selectedId: number | null;
   mobileView: 'list' | 'detail';
   onSelectReport: (key: string) => void;
+  onShareReport?: (report: MyBugReportItem) => void;
 }
 
 export function MyBugReportsListPane({
@@ -36,6 +37,7 @@ export function MyBugReportsListPane({
   selectedId,
   mobileView,
   onSelectReport,
+  onShareReport,
 }: MyBugReportsListPaneProps) {
   const { token } = theme.useToken();
 
@@ -104,55 +106,75 @@ export function MyBugReportsListPane({
                     const active = selectedId === report.id;
                     const visual = getReporterToneVisual(token, toneForState(report.reporterExperience.state));
                     return (
-                      <button
+                      <div
                         key={report.id}
-                        type="button"
-                        aria-current={active ? 'true' : undefined}
-                        className="group w-full rounded-xl border px-3 py-2.5 text-left transition-all hover:-translate-y-px"
+                        className="group flex items-stretch gap-1 rounded-xl border transition-all hover:-translate-y-px"
                         style={{
                           borderColor: active ? visual.border : 'transparent',
                           background: active ? visual.background : token.colorFillQuaternary,
                           boxShadow: active ? `inset 3px 0 0 ${visual.accent}` : undefined,
                         }}
-                        onClick={() => onSelectReport(report.key)}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="inline-flex min-w-0 items-center gap-1.5">
-                            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: visual.accent }} />
-                            <Text strong className="truncate text-xs">
-                              {report.key}
-                            </Text>
-                          </span>
-                          <Text type="secondary" className="shrink-0 text-[11px]">
-                            {elapsedSince(report.updatedAt)}
-                          </Text>
-                        </div>
-                        <Text ellipsis={{ tooltip: report.title }} className="mt-1 block text-sm font-medium">
-                          {report.title}
-                        </Text>
-                        <div className="mt-1 flex items-center justify-between gap-2">
-                          <Text
-                            type="secondary"
-                            ellipsis={{ tooltip: report.reporterExperience.summary }}
-                            className="min-w-0 text-xs"
-                          >
-                            {report.reporterExperience.summary}
-                          </Text>
-                          <span className="flex shrink-0 items-center gap-1">
-                            {report.evidenceAttachments.length ? (
+                        <button
+                          type="button"
+                          aria-current={active ? 'true' : undefined}
+                          className="min-w-0 flex-1 bg-transparent border-0 px-3 py-2.5 text-left cursor-pointer"
+                          onClick={() => onSelectReport(report.key)}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="inline-flex min-w-0 items-center gap-1.5">
                               <span
-                                className="inline-flex items-center gap-0.5 text-[11px]"
-                                style={{ color: token.colorTextTertiary }}
-                                title={`${report.evidenceAttachments.length} ảnh bạn đã gửi`}
-                              >
-                                <AppIcon icon={ImageIcon} size={12} />
-                                {report.evidenceAttachments.length}
-                              </span>
-                            ) : null}
-                            <AppIcon icon={ChevronRight} size="sm" style={{ color: token.colorTextTertiary }} />
-                          </span>
-                        </div>
-                      </button>
+                                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                                style={{ background: visual.accent }}
+                              />
+                              <Text strong className="truncate text-xs">
+                                {report.key}
+                              </Text>
+                            </span>
+                            <Text type="secondary" className="shrink-0 text-[11px]">
+                              {elapsedSince(report.updatedAt)}
+                            </Text>
+                          </div>
+                          <Text ellipsis={{ tooltip: report.title }} className="mt-1 block text-sm font-medium">
+                            {report.title}
+                          </Text>
+                          <div className="mt-1 flex items-center justify-between gap-2">
+                            <Text
+                              type="secondary"
+                              ellipsis={{ tooltip: report.reporterExperience.summary }}
+                              className="min-w-0 text-xs"
+                            >
+                              {report.reporterExperience.summary}
+                            </Text>
+                            <span className="flex shrink-0 items-center gap-1">
+                              {report.evidenceAttachments.length ? (
+                                <span
+                                  className="inline-flex items-center gap-0.5 text-[11px]"
+                                  style={{ color: token.colorTextTertiary }}
+                                  title={`${report.evidenceAttachments.length} ảnh bạn đã gửi`}
+                                >
+                                  <AppIcon icon={ImageIcon} size={12} />
+                                  {report.evidenceAttachments.length}
+                                </span>
+                              ) : null}
+                              <AppIcon icon={ChevronRight} size="sm" style={{ color: token.colorTextTertiary }} />
+                            </span>
+                          </div>
+                        </button>
+                        {onShareReport ? (
+                          <Tooltip title="Chia sẻ vào mOS Chat">
+                            <button
+                              type="button"
+                              aria-label={`Chia sẻ ${report.key} vào mOS Chat`}
+                              onClick={() => onShareReport(report)}
+                              className="mr-1.5 my-1.5 min-w-7 min-h-7 px-1.5 rounded-lg inline-flex items-center justify-center shrink-0 border-0 bg-transparent cursor-pointer opacity-75 group-hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                              style={{ color: token.colorTextSecondary }}
+                            >
+                              <AppIcon icon={Send} size="sm" />
+                            </button>
+                          </Tooltip>
+                        ) : null}
+                      </div>
                     );
                   })}
                 </div>

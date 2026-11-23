@@ -22,6 +22,7 @@ import { BugReportReasonModal } from './BugReportReasonModal';
 import { BugReportDiagnosticsSection } from './BugReportDiagnosticsSection';
 import { BugReportDetailHeaderActions } from './BugReportDetailHeaderActions';
 import { BugReportTriageSection } from './BugReportTriageSection';
+import { ShareBugReportToChatModal } from '../../../../components/bug-reports/ShareBugReportToChatModal';
 import {
   AgentProgressTag,
   BugStatusTag,
@@ -60,6 +61,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
   const [reviewedPlan, setReviewedPlan] = useState<BugReportPlanReviewCandidate | null>(null);
   const [planReason, setPlanReason] = useState('');
   const [retryConfirmationOpen, setRetryConfirmationOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [executionOwnerOverride, setExecutionOwnerOverride] = useState<{
     reportId: number;
     owner: 'AG_WIN' | 'AUTO' | 'AG_MAC';
@@ -162,6 +164,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                 setExceptionCloseReason('');
                 setExceptionCloseOpen(true);
               }}
+              onOpenShare={() => setShareOpen(true)}
             />
           ) : undefined
         }
@@ -469,6 +472,20 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
           Mac, không commit, push, merge, deploy hay migration.
         </p>
       </AdaptiveModal>
+      {shareOpen && detail && (
+        <ShareBugReportToChatModal
+          open={shareOpen}
+          ticket={{
+            id: detail.id,
+            key: detail.key,
+            title: detail.title,
+            requestType: detail.requestType,
+            statusLabel: detail.status,
+            summary: detail.description,
+          }}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
     </>
   );
 }

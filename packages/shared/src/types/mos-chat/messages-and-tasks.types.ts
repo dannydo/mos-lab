@@ -102,6 +102,7 @@ export interface MosChatMessage {
   missionId?: number | null;
   missionKey?: string | null;
   mission?: MosChatMissionSummary | null;
+  isSharedMission?: boolean;
   missionSyncedStage?: MosChatMissionStage | null;
   missionSyncedCommentIds?: number[];
   thread?: MosChatThreadReply[];

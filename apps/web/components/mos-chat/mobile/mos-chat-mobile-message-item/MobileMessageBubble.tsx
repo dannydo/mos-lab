@@ -5,9 +5,12 @@ import { Check, CheckCheck, Pin, Trash2 } from 'lucide-react';
 import type {
   MosChatConversation,
   MosChatMessage,
+  MosChatMissionActionType,
+  MosChatMissionSummary,
   MosChatQuotedMessage,
   MosChatReadReceiptEntry,
   MosChatStaffMember,
+  SafeAny,
 } from '@mos-lab/shared';
 import { MosChatAvatar } from '../../MosChatAvatar';
 import { MosChatRichText } from '../../MosChatRichText';
@@ -15,6 +18,7 @@ import { MosChatCustomerCardAttachment } from '../../components/MosChatCustomerC
 import { MosChatForwardedHeader } from '../../components/MosChatForwardedHeader';
 import { MosChatGoogleWorkspaceCardList } from '../../components/MosChatGoogleWorkspaceCard';
 import { jumpToForwardedSource, scrollToMessageElement } from './mobileMessageItemHelpers';
+import { MobileInlineMissionCard } from './MobileInlineMissionCard';
 import { MobileMessageAttachments } from './MobileMessageAttachments';
 import { MobileMessageAiActionsAndVoice, MobileMessageAiReasoning } from './MobileMessageAiExtras';
 
@@ -35,6 +39,12 @@ export interface MobileMessageBubbleProps {
   onOpenCustomer?: (customerId: number) => void;
   onOpenGallery?: (message: MosChatMessage, attachmentIndex: number) => void;
   openSeenUsersSheetForMessage?: (msg: MosChatMessage) => void;
+  currentUser?: SafeAny;
+  executeMissionAction?: (
+    mission: MosChatMissionSummary,
+    action: MosChatMissionActionType,
+    feedback?: string
+  ) => Promise<SafeAny>;
 }
 
 export const MobileMessageBubble: React.FC<MobileMessageBubbleProps> = ({
@@ -54,6 +64,8 @@ export const MobileMessageBubble: React.FC<MobileMessageBubbleProps> = ({
   onOpenCustomer,
   onOpenGallery,
   openSeenUsersSheetForMessage,
+  currentUser,
+  executeMissionAction,
 }) => {
   if (message.isDeleted) {
     return (
@@ -177,6 +189,16 @@ export const MobileMessageBubble: React.FC<MobileMessageBubbleProps> = ({
 
       {/* Attachments */}
       <MobileMessageAttachments message={message} isMe={isMe} isDark={isDark} onOpenGallery={onOpenGallery} />
+
+      {/* Live / Shared mOS Mission Card */}
+      {message.mission && !message.taskId && (
+        <MobileInlineMissionCard
+          mission={message.mission}
+          isDark={isDark}
+          currentUser={currentUser}
+          executeMissionAction={executeMissionAction}
+        />
+      )}
 
       {/* AI Action Buttons & Quick Voice TTS / Copy */}
       <MobileMessageAiActionsAndVoice message={message} isAiBot={isAiBot} isDark={isDark} />

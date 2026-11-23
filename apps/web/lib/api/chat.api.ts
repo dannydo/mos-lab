@@ -42,6 +42,9 @@ import type {
   SaveThreadAsWorkflowTemplateResponse,
   SearchMosChatMessagesQuery,
   SearchMosChatMessagesResponse,
+  SharedMosChatMissionPreview,
+  ShareMosChatMissionRequest,
+  ShareMosChatMissionResponse,
   MosChatSearchResultItem,
   MosChatGoogleWorkspacePreviewQuery,
   MosChatGoogleWorkspacePreviewResponse,
@@ -74,12 +77,15 @@ import { api, dedupeApiGet, invalidateApiGetCache, ApiRequestOptions } from './b
 export const chatApi = {
   chat: {
     bootstrap: async (
-      params?: { sinceVersion?: number },
+      params?: { sinceVersion?: number; messageLimit?: number },
       options?: ApiRequestOptions
     ): Promise<MosChatBootstrapResponse> => {
+      const query: Record<string, string> = {};
+      if (params?.sinceVersion) query.sinceVersion = String(params.sinceVersion);
+      if (params?.messageLimit !== undefined) query.messageLimit = String(params.messageLimit);
       const res = await dedupeApiGet<MosChatBootstrapResponse>(
         '/chat/bootstrap',
-        params?.sinceVersion ? { sinceVersion: String(params.sinceVersion) } : undefined,
+        Object.keys(query).length > 0 ? query : undefined,
         2500,
         options
       );
@@ -350,6 +356,22 @@ export const chatApi = {
       const res = await api.post(`/chat/missions/${encodeURIComponent(String(reportId))}/action`, payload);
       invalidateApiGetCache(['/chat/bootstrap', '/bug-reports/inbox']);
       return res.data;
+    },
+    shareMission: async (payload: ShareMosChatMissionRequest): Promise<ShareMosChatMissionResponse> => {
+      const res = await api.post('/chat/missions/share', payload);
+      invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    getSharedMissionPreview: async (
+      reportId: number,
+      options?: ApiRequestOptions
+    ): Promise<{ success: boolean; data: SharedMosChatMissionPreview }> => {
+      return dedupeApiGet(
+        `/chat/missions/${encodeURIComponent(String(reportId))}/preview`,
+        undefined,
+        5000,
+        options
+      );
     },
     listWorkflows: async (
       options?: ApiRequestOptions

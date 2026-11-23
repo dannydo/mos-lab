@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Check, CheckCircle2, ExternalLink, Loader2, Rocket, RotateCcw } from 'lucide-react';
-import type { MosChatMissionActionType, MosChatMissionSummary } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, type MosChatMissionActionType, type MosChatMissionSummary } from '@mos-lab/shared';
+import { safeStorage } from '../../../lib/safe-storage';
+import { MosChatSharedMissionDetailModal } from '../components/MosChatSharedMissionDetailModal';
 
 export interface MosChatMobileMissionCardProps {
   mission: MosChatMissionSummary;
@@ -37,6 +39,19 @@ export const MosChatMobileMissionCard: React.FC<MosChatMobileMissionCardProps> =
   setReopenFeedback,
   handleExecuteMissionAction,
 }) => {
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const canOpenBugReportsInbox = useMemo(() => {
+    if (isStrictDannySuperAdmin) return true;
+    try {
+      const raw = safeStorage.getItem('mos_user');
+      if (!raw) return false;
+      const parsed = JSON.parse(raw) as { role?: string };
+      return isAdminOrSuperAdminRole(parsed.role);
+    } catch {
+      return false;
+    }
+  }, [isStrictDannySuperAdmin]);
+
   return (
     <div
       className={`my-2 p-3 rounded-2xl border space-y-2.5 shadow-sm ${
@@ -44,10 +59,10 @@ export const MosChatMobileMissionCard: React.FC<MosChatMobileMissionCardProps> =
       }`}
     >
       {/* Mission header, badge, external link */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
           <Rocket className={`w-4 h-4 shrink-0 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
-          <span className={`text-xs font-black truncate ${isDark ? 'text-purple-200' : 'text-purple-900'}`}>
+          <span className={`text-xs font-black whitespace-nowrap ${isDark ? 'text-purple-200' : 'text-purple-900'}`}>
             mOS Mission #{mission.missionKey || `MSN-${mission.reportId}`}
           </span>
           <span
@@ -58,9 +73,9 @@ export const MosChatMobileMissionCard: React.FC<MosChatMobileMissionCardProps> =
             {mission.requestType || 'FEATURE'}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 ml-auto max-w-full">
           <span
-            className={`px-2 py-0.5 rounded-md text-[10px] font-bold border border-purple-400/30 ${
+            className={`px-2 py-0.5 rounded-md text-[10px] font-bold border border-purple-400/30 truncate ${
               isDark ? 'bg-purple-500/30 text-purple-200' : 'bg-purple-500/20 text-purple-800'
             }`}
           >
@@ -68,8 +83,15 @@ export const MosChatMobileMissionCard: React.FC<MosChatMobileMissionCardProps> =
           </span>
           <a
             href={`/dashboard/bug-reports?reportId=${mission.reportId}`}
-            target="_blank"
-            rel="noreferrer"
+            target={canOpenBugReportsInbox ? '_blank' : undefined}
+            rel={canOpenBugReportsInbox ? 'noreferrer' : undefined}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!canOpenBugReportsInbox) {
+                e.preventDefault();
+                setPreviewOpen(true);
+              }
+            }}
             className={`p-1 rounded border border-purple-500/30 active:scale-95 transition-transform cursor-pointer ${
               isDark
                 ? 'text-purple-300 hover:text-white bg-purple-900/40'
@@ -244,6 +266,15 @@ export const MosChatMobileMissionCard: React.FC<MosChatMobileMissionCardProps> =
             </div>
           )}
         </div>
+      )}
+      {previewOpen && (
+        <MosChatSharedMissionDetailModal
+          open={previewOpen}
+          reportId={mission.reportId}
+          fallbackMission={mission}
+          isDark={isDark}
+          onClose={() => setPreviewOpen(false)}
+        />
       )}
     </div>
   );

@@ -19,6 +19,7 @@ import {
   ListTree,
   MessageSquare,
   RotateCcw,
+  Send,
   Sparkles,
   type LucideIcon,
 } from 'lucide-react';
@@ -51,6 +52,7 @@ interface MyBugReportsDetailPaneProps {
   onOpenCancelModal: () => void;
   onOpenRejectionModal: () => void;
   onApproveResult: () => void;
+  onShareReport?: () => void;
   onComment: (id: number, request: CreateBugReportCommentRequest) => Promise<BugReportCommentCreateResult>;
 }
 
@@ -68,6 +70,7 @@ export function MyBugReportsDetailPane({
   onOpenCancelModal,
   onOpenRejectionModal,
   onApproveResult,
+  onShareReport,
   onComment,
 }: MyBugReportsDetailPaneProps) {
   const { token } = theme.useToken();
@@ -113,12 +116,22 @@ export function MyBugReportsDetailPane({
                   {requestTypeLabel(selected)}
                 </Text>
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <StatusTag
                   status={REPORTER_STATE_TONES[selected.reporterExperience.state]}
                   icon={<AppIcon icon={REPORTER_STATE_ICONS[selected.reporterExperience.state]} size="sm" />}
                   label={selected.reporterExperience.label}
                 />
+                {onShareReport ? (
+                  <Button
+                    size="small"
+                    icon={<AppIcon icon={Send} size="sm" />}
+                    aria-label={`Chia sẻ ${selected.key} vào mOS Chat`}
+                    onClick={onShareReport}
+                  >
+                    Chia sẻ
+                  </Button>
+                ) : null}
                 {canCancelSelected ? (
                   <Button
                     size="small"
