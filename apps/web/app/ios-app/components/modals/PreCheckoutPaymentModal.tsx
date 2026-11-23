@@ -7,6 +7,7 @@ import type { BookingItem } from '../../state/mockData';
 import { buildCheckoutVietQrInfo } from '../../state/iosBillingMath';
 import { compressLashImage } from '../../utils/imageCompressor';
 import type { VietQrSplitMode } from '../screens/checkout/CheckoutVietQrModal';
+import { PreCheckoutQrSection } from './PreCheckoutQrSection';
 
 export interface SavePreCheckoutPaymentPayload {
   preCheckoutServicePaidAmount: number;
@@ -74,19 +75,34 @@ export function PreCheckoutPaymentModal({
   const [note, setNote] = useState<string>(booking?.billing?.preCheckoutNote || '');
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const serviceFileRef = useRef<HTMLInputElement>(null);
   const tipFileRef = useRef<HTMLInputElement>(null);
+  const wasOpenRef = useRef<boolean>(false);
+  const initializedBookingIdRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    if (!open) return;
-    const savedService = booking?.billing?.preCheckoutServicePaidAmount;
-    const initService = savedService !== undefined ? savedService : safeQuoted;
+    if (!open) {
+      wasOpenRef.current = false;
+      return;
+    }
+    const isOpeningNow = !wasOpenRef.current;
+    const isBookingSwitched = initializedBookingIdRef.current !== booking?.id;
+    if (!isOpeningNow && !isBookingSwitched) return;
+
+    wasOpenRef.current = true;
+    initializedBookingIdRef.current = booking?.id;
+
+    const savedService = booking?.billing?.preCheckoutServicePaidAmount ?? 0;
+    const savedTip = booking?.billing?.preCheckoutTipAmount ?? 0;
+    const hasSavedPreCheckout = savedService + savedTip > 0;
+    const initService = hasSavedPreCheckout ? savedService : safeQuoted;
     setServicePaidAmount(initService);
     setCustomServiceStr(initService > 0 ? initService.toLocaleString('vi-VN') : '');
     setIsCustomServiceOpen(initService > 0 && initService !== safeQuoted);
 
-    const initTip = booking?.billing?.preCheckoutTipAmount ?? booking?.billing?.tipAmount ?? 0;
+    const initTip = hasSavedPreCheckout ? savedTip : (booking?.billing?.tipAmount ?? 0);
     setTipAmount(initTip);
     setCustomTipStr(initTip > 0 ? initTip.toLocaleString('vi-VN') : '');
     setIsCustomTipOpen(initTip > 0 && ![0, 50000, 100000, 200000, 500000].includes(initTip));
@@ -101,6 +117,7 @@ export function PreCheckoutPaymentModal({
     setServiceProof(booking?.billing?.preCheckoutTransferProofPhoto || booking?.billing?.transferProofPhoto || null);
     setTipProof(booking?.billing?.preCheckoutTipTransferProofPhoto || booking?.billing?.tipTransferProofPhoto || null);
     setNote(booking?.billing?.preCheckoutNote || '');
+    setSaveError(null);
   }, [open, booking, safeQuoted]);
 
   const totalToCollect = Math.max(0, servicePaidAmount + tipAmount);
@@ -142,6 +159,7 @@ export function PreCheckoutPaymentModal({
   };
 
   const handleConfirmSave = async () => {
+    setSaveError(null);
     setIsSaving(true);
     try {
       const normalized = resolveNormalizedPaymentBreakdown(totalToCollect, method);
@@ -151,11 +169,15 @@ export function PreCheckoutPaymentModal({
         preCheckoutPaymentMethod: normalized.paymentMethod,
         preCheckoutPaymentBreakdown: normalized.breakdown,
         preCheckoutQrSplitMode: effectiveQrMode,
-        preCheckoutTransferProofPhoto: serviceProof || undefined,
-        preCheckoutTipTransferProofPhoto: tipProof || undefined,
-        preCheckoutNote: note.trim() || undefined,
+        preCheckoutTransferProofPhoto: serviceProof ?? '',
+        preCheckoutTipTransferProofPhoto: tipProof ?? '',
+        preCheckoutNote: note.trim(),
       });
       onClose();
+    } catch (err) {
+      setSaveError(
+        err instanceof Error && err.message ? err.message : 'Không thể lưu mục thanh toán trước. Vui lòng thử lại.'
+      );
     } finally {
       setIsSaving(false);
     }
@@ -215,7 +237,7 @@ export function PreCheckoutPaymentModal({
               <span className="text-[12px] font-black tabular-nums">{servicePaidAmount.toLocaleString('vi-VN')}đ</span>
             </div>
 
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className={`grid ${safeQuoted > 0 ? 'grid-cols-3' : 'grid-cols-2'} gap-1.5`}>
               {safeQuoted > 0 && (
                 <button
                   type="button"
@@ -224,7 +246,7 @@ export function PreCheckoutPaymentModal({
                     setServicePaidAmount(safeQuoted);
                     setIsCustomServiceOpen(false);
                   }}
-                  className={`py-2 px-2 rounded-xl border text-[11px] font-extrabold tabular-nums cursor-pointer ${
+                  className={`py-2 px-1.5 rounded-xl border text-[10.5px] font-extrabold tabular-nums cursor-pointer truncate ${
                     servicePaidAmount === safeQuoted && !isCustomServiceOpen
                       ? 'bg-[#FFB400] border-[#FFB400] text-black'
                       : isDark
@@ -232,7 +254,7 @@ export function PreCheckoutPaymentModal({
                         : 'bg-white border-gray-200 text-gray-800'
                   }`}
                 >
-                  Đủ {Math.round(safeQuoted / 1000).toLocaleString('vi-VN')}K
+                  Đủ {safeQuoted.toLocaleString('vi-VN')}đ
                 </button>
               )}
               <button
@@ -413,126 +435,22 @@ export function PreCheckoutPaymentModal({
               </div>
 
               {method === 'VIETQR' && (
-                <div className="space-y-2 pt-1">
-                  {canSplitTwoQr && (
-                    <div
-                      className={`grid grid-cols-2 gap-1 p-1 rounded-xl border ${
-                        isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-gray-200'
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        data-testid="precheckout-qr-combined-btn"
-                        onClick={() => setQrSplitMode('COMBINED')}
-                        className={`py-1.5 rounded-lg text-[10.5px] font-extrabold cursor-pointer ${
-                          effectiveQrMode === 'COMBINED' ? 'bg-[#FFB400] text-black' : 'text-[var(--mos-text-muted)]'
-                        }`}
-                      >
-                        1 QR Gộp (DV + Tip)
-                      </button>
-                      <button
-                        type="button"
-                        data-testid="precheckout-qr-separate-btn"
-                        onClick={() => setQrSplitMode('SEPARATE')}
-                        className={`py-1.5 rounded-lg text-[10.5px] font-extrabold cursor-pointer ${
-                          effectiveQrMode === 'SEPARATE' ? 'bg-emerald-500 text-black' : 'text-[var(--mos-text-muted)]'
-                        }`}
-                      >
-                        Tách 2 QR (DV · Tip riêng)
-                      </button>
-                    </div>
-                  )}
-
-                  {effectiveQrMode === 'SEPARATE' && canSplitTwoQr ? (
-                    <div className="grid grid-cols-2 gap-2" data-testid="precheckout-split-qr-grid">
-                      <div
-                        className={`rounded-xl border p-2 space-y-1.5 ${
-                          isDark ? 'bg-neutral-950 border-amber-700/40' : 'bg-white border-amber-200'
-                        }`}
-                      >
-                        <div className="text-[10px] font-black text-[#FF9500] uppercase">QR Dịch Vụ</div>
-                        <div className="bg-white p-1 rounded-lg border border-gray-200 aspect-square flex items-center justify-center">
-                          <img src={qrInfo.serviceQrUrl} alt="QR Dịch Vụ" className="w-full h-full object-contain" />
-                        </div>
-                        <div className="text-[11px] font-black text-[#E11D48] tabular-nums">
-                          {qrInfo.serviceQrAmount.toLocaleString('vi-VN')}đ
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(qrInfo.serviceQrContent, 'svc')}
-                          className="w-full text-[10px] font-bold py-1 px-1.5 rounded bg-gray-500/10 truncate cursor-pointer"
-                        >
-                          {copySuccess === 'svc' ? '✓ Đã chép' : qrInfo.serviceQrContent}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => serviceFileRef.current?.click()}
-                          className="w-full text-[10px] font-bold py-1 rounded-lg border border-dashed border-sky-500/60 text-sky-400 cursor-pointer"
-                        >
-                          {serviceProof ? '✓ Đã có bill DV' : '📷 Bill DV'}
-                        </button>
-                      </div>
-
-                      <div
-                        className={`rounded-xl border p-2 space-y-1.5 ${
-                          isDark ? 'bg-neutral-950 border-rose-700/40' : 'bg-white border-rose-200'
-                        }`}
-                      >
-                        <div className="text-[10px] font-black text-rose-500 uppercase">♥ QR Tiền Tip</div>
-                        <div className="bg-white p-1 rounded-lg border border-gray-200 aspect-square flex items-center justify-center">
-                          <img src={qrInfo.tipQrUrl} alt="QR Tiền Tip" className="w-full h-full object-contain" />
-                        </div>
-                        <div className="text-[11px] font-black text-rose-500 tabular-nums">
-                          {qrInfo.tipQrAmount.toLocaleString('vi-VN')}đ
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(qrInfo.tipQrContent, 'tip')}
-                          className="w-full text-[10px] font-bold py-1 px-1.5 rounded bg-gray-500/10 truncate cursor-pointer"
-                        >
-                          {copySuccess === 'tip' ? '✓ Đã chép' : qrInfo.tipQrContent}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => tipFileRef.current?.click()}
-                          className="w-full text-[10px] font-bold py-1 rounded-lg border border-dashed border-rose-500/60 text-rose-400 cursor-pointer"
-                        >
-                          {tipProof ? '✓ Đã có bill Tip' : '📷 Bill Tip'}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      className={`rounded-xl border p-2.5 flex items-center gap-3 ${
-                        isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-gray-200'
-                      }`}
-                    >
-                      <div className="bg-white p-1 rounded-xl border border-gray-200 w-28 h-28 shrink-0 flex items-center justify-center">
-                        <img src={qrInfo.vietQrUrl} alt="VietQR Thu Trước" className="w-full h-full object-contain" />
-                      </div>
-                      <div className="flex-1 min-w-0 space-y-1 text-[11px]">
-                        <div className="font-black text-[#E11D48] text-[13.5px] tabular-nums">
-                          {totalToCollect.toLocaleString('vi-VN')} VNĐ
-                        </div>
-                        <div className="font-bold text-[var(--mos-text-muted)]">VCB · 1024731897</div>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(qrInfo.qrTransferContent, 'single')}
-                          className="text-left font-black text-[#E11D48] bg-rose-500/10 px-2 py-0.5 rounded-md truncate max-w-full cursor-pointer"
-                        >
-                          {copySuccess === 'single' ? '✓ Đã sao chép nội dung' : `ND: ${qrInfo.qrTransferContent}`}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => serviceFileRef.current?.click()}
-                          className="block w-full text-center text-[10.5px] font-bold py-1 px-2 rounded-lg border border-dashed border-sky-500/60 text-sky-400 cursor-pointer"
-                        >
-                          {serviceProof ? '✓ Đã đính kèm ảnh bill CK' : '📷 Chụp ảnh bill CK (tùy chọn)'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <PreCheckoutQrSection
+                  isDark={isDark}
+                  canSplitTwoQr={canSplitTwoQr}
+                  effectiveQrMode={effectiveQrMode}
+                  totalToCollect={totalToCollect}
+                  qrInfo={qrInfo}
+                  copySuccess={copySuccess}
+                  serviceProof={serviceProof}
+                  tipProof={tipProof}
+                  onChangeQrSplitMode={setQrSplitMode}
+                  onCopy={handleCopy}
+                  onPickServiceProof={() => serviceFileRef.current?.click()}
+                  onPickTipProof={() => tipFileRef.current?.click()}
+                  onClearServiceProof={() => setServiceProof(null)}
+                  onClearTipProof={() => setTipProof(null)}
+                />
               )}
 
               <input
@@ -572,6 +490,17 @@ export function PreCheckoutPaymentModal({
             isDark ? 'border-neutral-800 bg-neutral-950' : 'border-gray-200 bg-gray-50'
           }`}
         >
+          {saveError && (
+            <div
+              data-testid="precheckout-save-error"
+              role="alert"
+              className={`px-3 py-2 rounded-xl border text-[11.5px] font-bold ${
+                isDark ? 'bg-rose-950/60 border-rose-700/70 text-rose-200' : 'bg-rose-50 border-rose-300 text-rose-800'
+              }`}
+            >
+              {saveError}
+            </div>
+          )}
           <button
             type="button"
             data-testid="save-pre-checkout-payment-btn"

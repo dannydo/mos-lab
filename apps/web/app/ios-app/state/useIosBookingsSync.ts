@@ -215,10 +215,26 @@ export function useIosBookingsSync({
                         : {}),
                       ...(data?.override?.billing
                         ? {
-                            billing: {
-                              ...(b.billing || ({} as any)),
-                              ...data.override.billing,
-                            },
+                            billing:
+                              action === 'SAVE_PRE_CHECKOUT_PAYMENT'
+                                ? {
+                                    ...(b.billing || ({} as any)),
+                                    ...data.override.billing,
+                                    preCheckoutNote: data.override.billing.preCheckoutNote,
+                                    preCheckoutTransferProofPhoto: data.override.billing.preCheckoutTransferProofPhoto,
+                                    preCheckoutTipTransferProofPhoto:
+                                      data.override.billing.preCheckoutTipTransferProofPhoto,
+                                    transferProofPhoto: data.override.billing.transferProofPhoto,
+                                    tipTransferProofPhoto: data.override.billing.tipTransferProofPhoto,
+                                    preCheckoutRecordedAt: data.override.billing.preCheckoutRecordedAt,
+                                    preCheckoutRecordedByStaffId: data.override.billing.preCheckoutRecordedByStaffId,
+                                    preCheckoutRecordedByStaffName:
+                                      data.override.billing.preCheckoutRecordedByStaffName,
+                                  }
+                                : {
+                                    ...(b.billing || ({} as any)),
+                                    ...data.override.billing,
+                                  },
                           }
                         : {}),
                       ...(data?.progress

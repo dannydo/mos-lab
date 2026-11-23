@@ -180,7 +180,10 @@ export function CheckoutVietQrModal({
   const singleDisplayAmount = isTipOnlyMode ? effectiveTipAmt : finalGrandTotal;
 
   const requiresTipProof = activeMode === 'SEPARATE' && canSplitTwoQr && Boolean(onTriggerTipFilePicker);
-  const hasAllRequiredProofs = Boolean(transferProofPhoto) && (!requiresTipProof || Boolean(tipTransferProofPhoto));
+  const useTipOnlyProofUploader = isTipOnlyMode && Boolean(onTriggerTipFilePicker);
+  const hasAllRequiredProofs = useTipOnlyProofUploader
+    ? Boolean(tipTransferProofPhoto)
+    : Boolean(transferProofPhoto) && (!requiresTipProof || Boolean(tipTransferProofPhoto));
 
   const headerTitle =
     modalTitle ||
@@ -505,12 +508,17 @@ export function CheckoutVietQrModal({
 
               <BillProofUploaderBox
                 isDark={isDark}
-                label="Ảnh bill chuyển khoản đối soát (Bắt buộc)"
-                emptyButtonText="Xin chụp lại màn hình chuyển khoản của khách"
-                savedText="✓ Đã lưu ảnh bill chuyển khoản"
-                photo={transferProofPhoto}
-                syncStatus={proofCloudSyncStatus}
-                onTrigger={onTriggerFilePicker}
+                label={useTipOnlyProofUploader ? 'Ảnh bill Tiền Tip (Bắt buộc)' : 'Ảnh bill chuyển khoản đối soát (Bắt buộc)'}
+                emptyButtonText={
+                  useTipOnlyProofUploader
+                    ? 'Chụp ảnh bill chuyển khoản Tip'
+                    : 'Xin chụp lại màn hình chuyển khoản của khách'
+                }
+                savedText={useTipOnlyProofUploader ? '✓ Đã lưu ảnh bill Tiền Tip' : '✓ Đã lưu ảnh bill chuyển khoản'}
+                photo={useTipOnlyProofUploader ? (tipTransferProofPhoto ?? null) : transferProofPhoto}
+                syncStatus={useTipOnlyProofUploader ? tipProofCloudSyncStatus : proofCloudSyncStatus}
+                onTrigger={useTipOnlyProofUploader && onTriggerTipFilePicker ? onTriggerTipFilePicker : onTriggerFilePicker}
+                testId={useTipOnlyProofUploader ? 'vietqr-tip-proof-btn' : undefined}
               />
             </>
           )}

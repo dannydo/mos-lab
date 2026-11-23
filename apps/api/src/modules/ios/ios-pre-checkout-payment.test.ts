@@ -164,3 +164,56 @@ test('SAVE_PRE_CHECKOUT_PAYMENT is blocked with 409 when booking is already sett
   assert.equal(res.statusCode, 409);
   assert.equal(res.payload.success, false);
 });
+
+test('SAVE_PRE_CHECKOUT_PAYMENT clears stale proofs, notes, and metadata when reset to 0đ', async () => {
+  const store = createMemoryStore();
+  const repo = createOverrideRepository(store);
+
+  await repo.saveBookingOverride(900103, {
+    status: 'CHECKED_IN',
+    orderState: 'Consultation',
+    assignedStaffId: 13783,
+    billing: {
+      preCheckoutServicePaidAmount: 950400,
+      preCheckoutTipAmount: 100000,
+      tipAmount: 100000,
+      preCheckoutPaymentMethod: 'VIETQR',
+      preCheckoutQrSplitMode: 'SEPARATE',
+      qrSplitTipSeparate: true,
+      preCheckoutTransferProofPhoto: 'https://cdn.example/svc.jpg',
+      transferProofPhoto: 'https://cdn.example/svc.jpg',
+      preCheckoutTipTransferProofPhoto: 'https://cdn.example/tip.jpg',
+      tipTransferProofPhoto: 'https://cdn.example/tip.jpg',
+      preCheckoutNote: 'Ghi chú cũ',
+      preCheckoutRecordedAt: '2026-11-23T08:00:00.000Z',
+    },
+  } satisfies BookingOverrideRecord);
+
+  const res = await executeIosBookingAction(
+    cvlAuth,
+    {
+      bookingId: 900103,
+      action: 'SAVE_PRE_CHECKOUT_PAYMENT',
+      preCheckoutServicePaidAmount: 0,
+      preCheckoutTipAmount: 0,
+      preCheckoutPaymentMethod: 'VIETQR',
+      preCheckoutTransferProofPhoto: '',
+      preCheckoutTipTransferProofPhoto: '',
+      preCheckoutNote: '',
+    },
+    repo
+  );
+
+  assert.equal(res.statusCode, 200);
+  const saved = await repo.loadBookingOverride(900103);
+  assert.equal(saved?.billing?.preCheckoutServicePaidAmount, 0);
+  assert.equal(saved?.billing?.preCheckoutTipAmount, 0);
+  assert.equal(saved?.billing?.tipAmount, 0);
+  assert.equal(saved?.billing?.preCheckoutNote, undefined);
+  assert.equal(saved?.billing?.preCheckoutTransferProofPhoto, undefined);
+  assert.equal(saved?.billing?.transferProofPhoto, undefined);
+  assert.equal(saved?.billing?.preCheckoutTipTransferProofPhoto, undefined);
+  assert.equal(saved?.billing?.tipTransferProofPhoto, undefined);
+  assert.equal(saved?.billing?.preCheckoutRecordedAt, undefined);
+  assert.equal(saved?.billing?.qrSplitTipSeparate, false);
+});

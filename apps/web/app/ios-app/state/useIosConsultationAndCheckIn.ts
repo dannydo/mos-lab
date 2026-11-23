@@ -279,10 +279,13 @@ export function useIosConsultationAndCheckIn({
           });
           const productTotal = (b.cartProducts || []).reduce((s, p) => s + p.price * p.quantity, 0);
           const subtotal = effectiveServiceTotal + comboPrice + productTotal;
+          const promotionDiscountAmount = b.billing?.promotionDiscountAmount ?? 0;
+          const subtotalAfterDiscount = Math.max(0, subtotal - promotionDiscountAmount);
           const vatRate = 0.08;
-          const vatAmount = Math.round(subtotal * vatRate);
+          const vatAmount = Math.round(subtotalAfterDiscount * vatRate);
           const tipAmount = b.billing?.tipAmount ?? 0;
-          const grandTotal = subtotal + vatAmount + tipAmount;
+          const diamondDiscountAmount = b.billing?.diamondDiscountAmount ?? 0;
+          const grandTotal = Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount);
 
           const nextAssignedStaffId = isSelfAssignedCv
             ? b.assignedStaffId || actor.staffId
@@ -337,6 +340,7 @@ export function useIosConsultationAndCheckIn({
             isTrainingCvlOrder: nextIsTrainingCvlOrder,
             status: isSelfAssignedCv ? 'SERVICING' : 'CHECKED_IN',
             billing: {
+              ...(b.billing || {}),
               subtotal,
               vatRate,
               vatAmount,

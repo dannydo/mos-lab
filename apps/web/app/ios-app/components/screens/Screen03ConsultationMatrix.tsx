@@ -7,6 +7,7 @@ import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
 import { ComboWalletDetailModal } from '../ui-kit/ComboWalletDetailModal';
 import { CustomerHistoryAndSpendingSheet } from '../ui-kit/CustomerHistoryAndSpendingSheet';
 import type { Screen03ConsultationMatrixProps } from './consultation/ConsultationTypes';
+import { computeFreshBillingLineTotals } from '../../state/iosBillingMath';
 import { useLashDesignSelection } from './consultation/useLashDesignSelection';
 import { useNaturalLashDiagnostic } from './consultation/useNaturalLashDiagnostic';
 import { useConsultationPricingAndSave } from './consultation/useConsultationPricingAndSave';
@@ -334,12 +335,34 @@ export function Screen03ConsultationMatrix({
           onSimFastForwardToUpsell={onSimFastForwardToUpsell}
           booking={booking}
           quotedServiceTotalWithVat={(() => {
-            const serviceSub = design.isComboLive
-              ? pricing.totalUpgradeAmount
-              : pricing.comboPurchaseTotal > 0
-                ? pricing.comboPurchaseTotal
-                : pricing.livePricingAndCvPoints.skuPrice;
-            return serviceSub + Math.round(serviceSub * 0.08);
+            const totals = computeFreshBillingLineTotals({
+              servicePrice: pricing.livePricingAndCvPoints.skuPrice,
+              upgradePrice: pricing.totalUpgradeAmount,
+              serviceName: pricing.livePricingAndCvPoints.skuName,
+              attributes: {
+                ...(booking?.attributes || { style: design.selectedStyle, curl: design.selectedCurl, length: design.selectedLength, thickness: design.selectedThickness }),
+                hasUnderMink: design.hasUnderMink,
+                underMinkServiceType: design.underMinkServiceType,
+              },
+              comboLiveStatus: design.resolvedWallets.effectiveComboLiveStatus,
+              underMinkComboStatus: design.resolvedWallets.effectiveUnderMinkComboStatus,
+              comboWallets: booking?.comboWallets,
+              selectedUpperComboBalanceId: design.resolvedWallets.selectedUpperComboBalanceId,
+              selectedUnderComboBalanceId: design.resolvedWallets.selectedUnderComboBalanceId,
+              skipUpperCombo: design.resolvedWallets.skipUpperCombo,
+              skipUnderCombo: design.resolvedWallets.skipUnderCombo,
+              cartProducts: booking?.cartProducts,
+              selectedCombo: pricing.selectedComboObject,
+              selectedUnderCombo: pricing.selectedUnderComboObject,
+              comboRedemption: design.resolvedWallets.skipUpperCombo ? null : booking?.comboRedemption,
+              promotionId: booking?.promotionId,
+              appliedPromotion: booking?.appliedPromotion,
+              servicePromotion: booking?.servicePromotion,
+              comboPromotion: booking?.comboPromotion,
+              underComboPromotion: booking?.underComboPromotion,
+              billing: booking?.billing,
+            });
+            return totals.subtotalAfterDiscount + totals.vatAmount;
           })()}
           onSavePreCheckoutPayment={onSavePreCheckoutPayment}
         />

@@ -7,6 +7,7 @@ import { Screen12CheckoutBilling } from '../Screen12CheckoutBilling';
 import { Screen14ThermalReceiptDone } from '../Screen14ThermalReceiptDone';
 import { PreCheckoutStatusCard } from '../consultation/PreCheckoutStatusCard';
 import type { BookingItem } from '../../../state/mockData';
+import { buildPreCheckoutBillingSnapshot } from '../../../state/iosBillingMath';
 
 function makeBooking(overrides: Partial<BookingItem> = {}): BookingItem {
   const today = getVietnamDateYmd();
@@ -269,5 +270,120 @@ describe('MOS-BUG-255: Separate Service/Tip VietQR, Pre-Checkout Payment & Post-
         deltaPaymentMethod: 'VIETQR',
       })
     );
+  });
+
+  it('preserves in-progress pre-checkout modal inputs across 5s polling booking updates and shows save errors', async () => {
+    const onSaveError = vi.fn().mockRejectedValue(new Error('Mất kết nối máy chủ khi lưu thu trước'));
+    const initialBooking = makeBooking({ status: 'CHECKED_IN' });
+    const { rerender } = render(
+      <PreCheckoutStatusCard
+        isDark={false}
+        booking={initialBooking}
+        quotedServiceTotalWithVat={950400}
+        onSavePreCheckoutPayment={onSaveError}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('open-pre-checkout-payment-btn'));
+    fireEvent.click(screen.getByTestId('precheckout-tip-100000'));
+    fireEvent.click(screen.getByTestId('precheckout-qr-separate-btn'));
+    const noteInput = screen.getByPlaceholderText(/Ghi chú thu trước/i);
+    fireEvent.change(noteInput, { target: { value: 'Khách CK trước để làm xong về' } });
+
+    // Simulate 5-second background polling producing a new booking object reference
+    rerender(
+      <PreCheckoutStatusCard
+        isDark={false}
+        booking={makeBooking({ status: 'CHECKED_IN' })}
+        quotedServiceTotalWithVat={950400}
+        onSavePreCheckoutPayment={onSaveError}
+      />
+    );
+
+    expect(screen.getByTestId('precheckout-split-qr-grid')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Ghi chú thu trước/i)).toHaveValue('Khách CK trước để làm xong về');
+
+    fireEvent.click(screen.getByTestId('save-pre-checkout-payment-btn'));
+    const errBox = await screen.findByTestId('precheckout-save-error');
+    expect(errBox).toHaveTextContent('Mất kết nối máy chủ khi lưu thu trước');
+    // Modal stays open so staff can retry
+    expect(screen.getByTestId('save-pre-checkout-payment-btn')).toBeInTheDocument();
+  });
+
+  it('requires dedicated Tip proof photo (not old pre-checkout service proof) when adding Tip via VietQR at Checkout', () => {
+    render(
+      <Screen12CheckoutBilling
+        booking={makeBooking({
+          billing: {
+            subtotal: 880000,
+            serviceTotal: 880000,
+            productTotal: 0,
+            paymentMethod: 'VIETQR',
+            tipAmount: 0,
+            tipCvShare: 0,
+            tipCcShare: 0,
+            preCheckoutServicePaidAmount: 950400,
+            preCheckoutTipAmount: 0,
+            preCheckoutPaymentMethod: 'VIETQR',
+            preCheckoutPaymentBreakdown: { vietqrAmount: 950400, posAmount: 0, cashAmount: 0 },
+            preCheckoutTransferProofPhoto: 'data:image/jpeg;base64,old-service-proof',
+            transferProofPhoto: 'data:image/jpeg;base64,old-service-proof',
+            grandTotal: 950400,
+          },
+        })}
+        onBack={() => {}}
+        onChoosePayment={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '100K' }));
+    fireEvent.click(screen.getByRole('button', { name: /Mở Mã QR Thanh Toán/i }));
+
+    expect(screen.getByText('♥ QR TIỀN TIP CHUYÊN VIÊN')).toBeInTheDocument();
+    expect(screen.getByTestId('vietqr-tip-proof-btn')).toHaveTextContent('Chụp ảnh bill chuyển khoản Tip');
+    expect(screen.getByRole('button', { name: /BẮT BUỘC CHỤP ẢNH BILL CHUYỂN KHOẢN/i })).toBeDisabled();
+  });
+
+  it('clears stale pre-checkout notes and proofs in buildPreCheckoutBillingSnapshot when reset to 0đ', () => {
+    const prevBooking = makeBooking({
+      billing: {
+        subtotal: 880000,
+        serviceTotal: 880000,
+        productTotal: 0,
+        paymentMethod: 'VIETQR',
+        tipAmount: 100000,
+        tipCvShare: 70000,
+        tipCcShare: 20000,
+        preCheckoutServicePaidAmount: 950400,
+        preCheckoutTipAmount: 100000,
+        preCheckoutTransferProofPhoto: 'https://cdn.example/svc.jpg',
+        transferProofPhoto: 'https://cdn.example/svc.jpg',
+        preCheckoutTipTransferProofPhoto: 'https://cdn.example/tip.jpg',
+        tipTransferProofPhoto: 'https://cdn.example/tip.jpg',
+        preCheckoutNote: 'Đã thu trước',
+        grandTotal: 1050400,
+      },
+    });
+    const cleared = buildPreCheckoutBillingSnapshot(
+      prevBooking,
+      { staffId: 13783, name: 'Thục Nghi', tier: 'CVL' },
+      {
+        preCheckoutServicePaidAmount: 0,
+        preCheckoutTipAmount: 0,
+        preCheckoutPaymentMethod: 'VIETQR',
+        preCheckoutPaymentBreakdown: { vietqrAmount: 0, posAmount: 0, cashAmount: 0 },
+        preCheckoutQrSplitMode: 'COMBINED',
+        preCheckoutTransferProofPhoto: '',
+        preCheckoutTipTransferProofPhoto: '',
+        preCheckoutNote: '',
+      }
+    );
+    expect(cleared.preCheckoutServicePaidAmount).toBe(0);
+    expect(cleared.preCheckoutTipAmount).toBe(0);
+    expect(cleared.preCheckoutNote).toBeUndefined();
+    expect(cleared.preCheckoutTransferProofPhoto).toBeUndefined();
+    expect(cleared.transferProofPhoto).toBeUndefined();
+    expect(cleared.preCheckoutTipTransferProofPhoto).toBeUndefined();
+    expect(cleared.tipTransferProofPhoto).toBeUndefined();
   });
 });

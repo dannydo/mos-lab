@@ -284,17 +284,37 @@ export function useIosBillingCheckout({
   // Pre-Checkout: Lưu tiền dịch vụ và/hoặc tiền tip thu trước khi vào phòng mi (giữ nguyên tiến trình ca làm)
   const handleSavePreCheckoutPayment = useCallback(
     async (payload: PreCheckoutPaymentDraftInput) => {
+      const targetBookingId = activeBooking?.id || activeBookingId;
+      const prevBilling = activeBooking?.billing;
       const recordedAt = new Date().toISOString();
       updateActiveBooking((prev) => ({
         ...prev,
+        _localComboUpdatedAt: Date.now(),
         billing: buildPreCheckoutBillingSnapshot(prev, actor, payload, recordedAt),
       }));
-      await postAction('SAVE_PRE_CHECKOUT_PAYMENT', {
+      const res = await postAction('SAVE_PRE_CHECKOUT_PAYMENT', {
+        bookingId: targetBookingId,
         ...payload,
         tipAmount: payload.preCheckoutTipAmount,
       });
+      if (res && res.success === false && !res.offlineQueued) {
+        updateActiveBooking((prev) => ({
+          ...prev,
+          _localComboUpdatedAt: undefined,
+          billing: prevBilling,
+        }));
+        const axiosData = (res?.error as { response?: { data?: { error?: string; message?: string } } } | undefined)
+          ?.response?.data;
+        const errMsg =
+          res?.data?.error ||
+          axiosData?.error ||
+          axiosData?.message ||
+          (res?.error instanceof Error ? res.error.message : typeof res?.error === 'string' ? res.error : '') ||
+          'Không thể lưu mục thanh toán trước. Vui lòng thử lại.';
+        throw new Error(errMsg);
+      }
     },
-    [actor, postAction, updateActiveBooking]
+    [activeBooking, activeBookingId, actor, postAction, updateActiveBooking]
   );
 
   // Step 14: Record Tip (Kinh Thánh mOS Điều răn TIP-001 & CV-002: 70% Làm mi + 10% Check-in + 10% Check-out)

@@ -14,11 +14,11 @@ export async function buildPreCheckoutPaymentOverride(params: {
 
   const preCheckoutServicePaidAmount = Math.max(
     0,
-    Math.round(Number(body?.preCheckoutServicePaidAmount ?? current.billing?.preCheckoutServicePaidAmount ?? 0))
+    Math.round(Number(body?.preCheckoutServicePaidAmount ?? current.billing?.preCheckoutServicePaidAmount ?? 0) || 0)
   );
   const preCheckoutTipAmount = Math.max(
     0,
-    Math.round(Number(body?.preCheckoutTipAmount ?? body?.tipAmount ?? current.billing?.preCheckoutTipAmount ?? 0))
+    Math.round(Number(body?.preCheckoutTipAmount ?? body?.tipAmount ?? current.billing?.preCheckoutTipAmount ?? 0) || 0)
   );
   const totalPrepaid = preCheckoutServicePaidAmount + preCheckoutTipAmount;
 
@@ -33,22 +33,34 @@ export async function buildPreCheckoutPaymentOverride(params: {
   ).toUpperCase();
   const preCheckoutQrSplitMode: 'COMBINED' | 'SEPARATE' = rawQrMode === 'SEPARATE' ? 'SEPARATE' : 'COMBINED';
 
+  const hasExplicitServiceProof =
+    body?.preCheckoutTransferProofPhoto !== undefined || body?.transferProofPhoto !== undefined;
   let serviceProof =
-    typeof body?.preCheckoutTransferProofPhoto === 'string'
-      ? body.preCheckoutTransferProofPhoto.trim()
-      : typeof body?.transferProofPhoto === 'string'
-        ? body.transferProofPhoto.trim()
-        : current.billing?.preCheckoutTransferProofPhoto || current.billing?.transferProofPhoto;
+    body?.preCheckoutTransferProofPhoto === null
+      ? ''
+      : typeof body?.preCheckoutTransferProofPhoto === 'string'
+        ? body.preCheckoutTransferProofPhoto.trim()
+        : body?.transferProofPhoto === null
+          ? ''
+          : typeof body?.transferProofPhoto === 'string'
+            ? body.transferProofPhoto.trim()
+            : current.billing?.preCheckoutTransferProofPhoto || current.billing?.transferProofPhoto;
   if (!isSimulationMode && serviceProof && serviceProof.startsWith('data:image/')) {
     serviceProof = await persistProgressPhotoToCloud(bookingId, 'pre_checkout_proof', serviceProof);
   }
 
+  const hasExplicitTipProof =
+    body?.preCheckoutTipTransferProofPhoto !== undefined || body?.tipTransferProofPhoto !== undefined;
   let tipProof =
-    typeof body?.preCheckoutTipTransferProofPhoto === 'string'
-      ? body.preCheckoutTipTransferProofPhoto.trim()
-      : typeof body?.tipTransferProofPhoto === 'string'
-        ? body.tipTransferProofPhoto.trim()
-        : current.billing?.preCheckoutTipTransferProofPhoto || current.billing?.tipTransferProofPhoto;
+    body?.preCheckoutTipTransferProofPhoto === null
+      ? ''
+      : typeof body?.preCheckoutTipTransferProofPhoto === 'string'
+        ? body.preCheckoutTipTransferProofPhoto.trim()
+        : body?.tipTransferProofPhoto === null
+          ? ''
+          : typeof body?.tipTransferProofPhoto === 'string'
+            ? body.tipTransferProofPhoto.trim()
+            : current.billing?.preCheckoutTipTransferProofPhoto || current.billing?.tipTransferProofPhoto;
   if (!isSimulationMode && tipProof && tipProof.startsWith('data:image/')) {
     tipProof = await persistProgressPhotoToCloud(bookingId, 'pre_checkout_tip_proof', tipProof);
   }
@@ -59,39 +71,65 @@ export async function buildPreCheckoutPaymentOverride(params: {
   const tipCcShare = tipCheckInShare + tipCheckOutShare;
   const nowIso = new Date().toISOString();
 
+  const nextBilling: NonNullable<BookingOverrideRecord['billing']> = {
+    ...(current.billing || {}),
+    tipAmount: preCheckoutTipAmount,
+    tipCvShare,
+    tipCheckInShare,
+    tipCheckOutShare,
+    tipCcShare,
+    qrSplitTipSeparate: totalPrepaid > 0 ? preCheckoutQrSplitMode === 'SEPARATE' : false,
+    preCheckoutServicePaidAmount,
+    preCheckoutTipAmount,
+    preCheckoutPaymentMethod: normalized.paymentMethod,
+    preCheckoutPaymentBreakdown: normalized.breakdown,
+    preCheckoutQrSplitMode: totalPrepaid > 0 ? preCheckoutQrSplitMode : 'COMBINED',
+  };
+
+  if (totalPrepaid > 0) {
+    nextBilling.preCheckoutRecordedAt = nowIso;
+    nextBilling.preCheckoutRecordedByStaffId = actorStaffId;
+    nextBilling.preCheckoutRecordedByStaffName = actorStaffName;
+  } else {
+    delete nextBilling.preCheckoutRecordedAt;
+    delete nextBilling.preCheckoutRecordedByStaffId;
+    delete nextBilling.preCheckoutRecordedByStaffName;
+    delete nextBilling.preCheckoutNote;
+  }
+
+  const prevServiceProof = current.billing?.preCheckoutTransferProofPhoto;
+  if (totalPrepaid === 0 || (hasExplicitServiceProof && !serviceProof)) {
+    delete nextBilling.preCheckoutTransferProofPhoto;
+    if (!nextBilling.transferProofPhoto || nextBilling.transferProofPhoto === prevServiceProof) {
+      delete nextBilling.transferProofPhoto;
+    }
+  } else if (serviceProof) {
+    nextBilling.preCheckoutTransferProofPhoto = serviceProof;
+    nextBilling.transferProofPhoto = serviceProof;
+  }
+
+  const prevTipProof = current.billing?.preCheckoutTipTransferProofPhoto;
+  if (totalPrepaid === 0 || (hasExplicitTipProof && !tipProof)) {
+    delete nextBilling.preCheckoutTipTransferProofPhoto;
+    if (!nextBilling.tipTransferProofPhoto || nextBilling.tipTransferProofPhoto === prevTipProof) {
+      delete nextBilling.tipTransferProofPhoto;
+    }
+  } else if (tipProof) {
+    nextBilling.preCheckoutTipTransferProofPhoto = tipProof;
+    nextBilling.tipTransferProofPhoto = tipProof;
+  }
+
+  if (totalPrepaid > 0 && typeof body?.preCheckoutNote === 'string') {
+    const trimmedNote = body.preCheckoutNote.trim().slice(0, 300);
+    if (trimmedNote) {
+      nextBilling.preCheckoutNote = trimmedNote;
+    } else {
+      delete nextBilling.preCheckoutNote;
+    }
+  }
+
   return {
     ...current,
-    billing: {
-      ...(current.billing || {}),
-      tipAmount: preCheckoutTipAmount,
-      tipCvShare,
-      tipCheckInShare,
-      tipCheckOutShare,
-      tipCcShare,
-      qrSplitTipSeparate: preCheckoutQrSplitMode === 'SEPARATE',
-      preCheckoutServicePaidAmount,
-      preCheckoutTipAmount,
-      preCheckoutPaymentMethod: normalized.paymentMethod,
-      preCheckoutPaymentBreakdown: normalized.breakdown,
-      preCheckoutQrSplitMode,
-      ...(serviceProof
-        ? {
-            preCheckoutTransferProofPhoto: serviceProof,
-            transferProofPhoto: serviceProof,
-          }
-        : {}),
-      ...(tipProof
-        ? {
-            preCheckoutTipTransferProofPhoto: tipProof,
-            tipTransferProofPhoto: tipProof,
-          }
-        : {}),
-      preCheckoutRecordedAt: totalPrepaid > 0 ? nowIso : undefined,
-      preCheckoutRecordedByStaffId: totalPrepaid > 0 ? actorStaffId : undefined,
-      preCheckoutRecordedByStaffName: totalPrepaid > 0 ? actorStaffName : undefined,
-      ...(typeof body?.preCheckoutNote === 'string' && body.preCheckoutNote.trim()
-        ? { preCheckoutNote: body.preCheckoutNote.trim().slice(0, 300) }
-        : {}),
-    },
+    billing: nextBilling,
   };
 }

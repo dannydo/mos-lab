@@ -517,6 +517,8 @@ export function useConsultationPricingAndSave({
     handleOpenComboModal,
     handleSelectComboPackage,
     comboPurchaseTotal,
+    selectedComboObject,
+    selectedUnderComboObject,
     existingUpperExpirySnapshot,
     existingUnderExpirySnapshot,
     upperTodayUsageMode,

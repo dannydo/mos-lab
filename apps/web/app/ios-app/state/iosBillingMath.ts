@@ -489,35 +489,19 @@ export function buildPreCheckoutBillingSnapshot(
   const totalPrepaid = servicePaid + tipAmount;
   const tipBreakdown = calculateActorTipBreakdown(prev, actor, tipAmount);
   const baseBilling = buildRecomputedCheckoutBilling(prev);
-  return {
+  const nextBilling: NonNullable<BookingItem['billing']> = {
     ...baseBilling,
     tipAmount,
     tipCvShare: tipBreakdown.techShareAmount,
     tipCheckInShare: tipBreakdown.checkInShareAmount,
     tipCheckOutShare: tipBreakdown.checkOutShareAmount,
     tipCcShare: tipBreakdown.checkInShareAmount + tipBreakdown.checkOutShareAmount,
-    qrSplitTipSeparate: payload.preCheckoutQrSplitMode === 'SEPARATE',
+    qrSplitTipSeparate: totalPrepaid > 0 ? payload.preCheckoutQrSplitMode === 'SEPARATE' : false,
     preCheckoutServicePaidAmount: servicePaid,
     preCheckoutTipAmount: tipAmount,
     preCheckoutPaymentMethod: payload.preCheckoutPaymentMethod,
     preCheckoutPaymentBreakdown: payload.preCheckoutPaymentBreakdown,
-    preCheckoutQrSplitMode: payload.preCheckoutQrSplitMode,
-    ...(payload.preCheckoutTransferProofPhoto
-      ? {
-          preCheckoutTransferProofPhoto: payload.preCheckoutTransferProofPhoto,
-          transferProofPhoto: payload.preCheckoutTransferProofPhoto,
-        }
-      : {}),
-    ...(payload.preCheckoutTipTransferProofPhoto
-      ? {
-          preCheckoutTipTransferProofPhoto: payload.preCheckoutTipTransferProofPhoto,
-          tipTransferProofPhoto: payload.preCheckoutTipTransferProofPhoto,
-        }
-      : {}),
-    preCheckoutRecordedAt: totalPrepaid > 0 ? recordedAt : undefined,
-    preCheckoutRecordedByStaffId: totalPrepaid > 0 ? actor.staffId : undefined,
-    preCheckoutRecordedByStaffName: totalPrepaid > 0 ? actor.name : undefined,
-    ...(payload.preCheckoutNote ? { preCheckoutNote: payload.preCheckoutNote } : {}),
+    preCheckoutQrSplitMode: totalPrepaid > 0 ? payload.preCheckoutQrSplitMode : 'COMBINED',
     grandTotal: Math.max(
       0,
       baseBilling.subtotal -
@@ -527,6 +511,50 @@ export function buildPreCheckoutBillingSnapshot(
         (baseBilling.diamondDiscountAmount ?? 0)
     ),
   };
+
+  if (totalPrepaid > 0) {
+    nextBilling.preCheckoutRecordedAt = recordedAt;
+    nextBilling.preCheckoutRecordedByStaffId = actor.staffId;
+    nextBilling.preCheckoutRecordedByStaffName = actor.name;
+  } else {
+    delete nextBilling.preCheckoutRecordedAt;
+    delete nextBilling.preCheckoutRecordedByStaffId;
+    delete nextBilling.preCheckoutRecordedByStaffName;
+    delete nextBilling.preCheckoutNote;
+  }
+
+  const prevSvcProof = prev.billing?.preCheckoutTransferProofPhoto;
+  if (totalPrepaid === 0 || payload.preCheckoutTransferProofPhoto === '') {
+    delete nextBilling.preCheckoutTransferProofPhoto;
+    if (!nextBilling.transferProofPhoto || nextBilling.transferProofPhoto === prevSvcProof) {
+      delete nextBilling.transferProofPhoto;
+    }
+  } else if (payload.preCheckoutTransferProofPhoto) {
+    nextBilling.preCheckoutTransferProofPhoto = payload.preCheckoutTransferProofPhoto;
+    nextBilling.transferProofPhoto = payload.preCheckoutTransferProofPhoto;
+  }
+
+  const prevTipProof = prev.billing?.preCheckoutTipTransferProofPhoto;
+  if (totalPrepaid === 0 || payload.preCheckoutTipTransferProofPhoto === '') {
+    delete nextBilling.preCheckoutTipTransferProofPhoto;
+    if (!nextBilling.tipTransferProofPhoto || nextBilling.tipTransferProofPhoto === prevTipProof) {
+      delete nextBilling.tipTransferProofPhoto;
+    }
+  } else if (payload.preCheckoutTipTransferProofPhoto) {
+    nextBilling.preCheckoutTipTransferProofPhoto = payload.preCheckoutTipTransferProofPhoto;
+    nextBilling.tipTransferProofPhoto = payload.preCheckoutTipTransferProofPhoto;
+  }
+
+  if (totalPrepaid > 0 && payload.preCheckoutNote !== undefined) {
+    const trimmed = payload.preCheckoutNote.trim();
+    if (trimmed) {
+      nextBilling.preCheckoutNote = trimmed;
+    } else {
+      delete nextBilling.preCheckoutNote;
+    }
+  }
+
+  return nextBilling;
 }
 
 export function mergePromotionSelectionIntoBookingDraft(
