@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Form, Input, Radio, Switch, Space, message } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Form, Input, Radio, Space, Switch, message } from 'antd';
 import { FormOutlined } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
+import { clearSessionDraft, readSessionDraft, writeSessionDraft } from '../../../lib/note-draft-storage';
 import { AdaptiveModal } from '../../ui';
 
 interface CreateNoteModalProps {
@@ -14,10 +15,60 @@ interface CreateNoteModalProps {
   onSuccess: () => void;
 }
 
+interface NoteDraftPayload {
+  note?: string;
+  noteFieldKey?: 'note' | 'order_note';
+  isSticky?: boolean;
+}
+
 export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ open, customerId, onCancel, onSuccess }) => {
   const { themeMode } = useTheme();
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<NoteDraftPayload>();
   const [loading, setLoading] = useState(false);
+  const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
+  const [hasDraftText, setHasDraftText] = useState(false);
+
+  const draftKey = useMemo(() => (customerId ? `mos_customer_note_draft:${customerId}` : null), [customerId]);
+
+  useEffect(() => {
+    if (!open || !draftKey) return;
+    const saved = readSessionDraft<NoteDraftPayload>(draftKey);
+    if (saved && saved.note && saved.note.trim().length > 0) {
+      form.setFieldsValue({
+        note: saved.note,
+        noteFieldKey: saved.noteFieldKey === 'order_note' ? 'order_note' : 'note',
+        isSticky: Boolean(saved.isSticky),
+      });
+      setHasRestoredDraft(true);
+      setHasDraftText(true);
+    } else {
+      form.setFieldsValue({ note: '', noteFieldKey: 'note', isSticky: false });
+      setHasRestoredDraft(false);
+      setHasDraftText(false);
+    }
+  }, [draftKey, form, open]);
+
+  const handleValuesChange = (_changed: Partial<NoteDraftPayload>, allValues: NoteDraftPayload) => {
+    const hasNote = Boolean(allValues.note && allValues.note.trim().length > 0);
+    setHasDraftText(hasNote);
+    if (hasNote) {
+      writeSessionDraft<NoteDraftPayload>(draftKey, {
+        note: allValues.note || '',
+        noteFieldKey: allValues.noteFieldKey === 'order_note' ? 'order_note' : 'note',
+        isSticky: Boolean(allValues.isSticky),
+      });
+    } else {
+      clearSessionDraft(draftKey);
+      setHasRestoredDraft(false);
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    clearSessionDraft(draftKey);
+    form.resetFields();
+    setHasRestoredDraft(false);
+    setHasDraftText(false);
+  };
 
   const handleSubmit = async () => {
     if (!customerId) return;
@@ -26,12 +77,15 @@ export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ open, customer
       setLoading(true);
 
       await apiClient.customers.createNote(customerId, {
-        note: values.note,
-        noteFieldKey: values.noteFieldKey,
+        note: values.note || '',
+        noteFieldKey: values.noteFieldKey || 'note',
         isSticky: values.isSticky,
       });
 
       message.success('Thêm ghi chú thành công!');
+      clearSessionDraft(draftKey);
+      setHasRestoredDraft(false);
+      setHasDraftText(false);
       form.resetFields();
       onSuccess();
     } catch (err) {
@@ -43,7 +97,13 @@ export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ open, customer
   };
 
   const handleCancelClick = () => {
-    form.resetFields();
+    const currentNote = form.getFieldValue('note');
+    if (!currentNote || !String(currentNote).trim()) {
+      clearSessionDraft(draftKey);
+      form.resetFields();
+      setHasRestoredDraft(false);
+      setHasDraftText(false);
+    }
     onCancel();
   };
 
@@ -51,6 +111,7 @@ export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ open, customer
     <AdaptiveModal
       intent="form"
       className="customer-create-note-overlay"
+      maskClosable={false}
       title={
         <span style={{ color: themeMode === 'dark' ? '#fff' : '#1f2937', fontWeight: 'bold', fontSize: '16px' }}>
           <FormOutlined style={{ marginRight: '8px', color: '#D4A84B' }} />
@@ -62,7 +123,7 @@ export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ open, customer
       onOk={handleSubmit}
       confirmLoading={loading}
       okText="Thêm ghi chú"
-      cancelText="Hủy"
+      cancelText="Đóng"
       styles={{
         body: {
           paddingTop: '16px',
@@ -79,18 +140,40 @@ export const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ open, customer
         },
       }}
     >
+      {hasRestoredDraft && (
+        <Alert
+          type="info"
+          showIcon
+          className="mb-3"
+          message="Đã khôi phục ghi chú nháp chưa lưu"
+          action={
+            <Button size="small" type="link" danger onClick={handleDiscardDraft}>
+              Xóa nháp
+            </Button>
+          }
+        />
+      )}
+
       <Form
         form={form}
         layout="vertical"
         initialValues={{ noteFieldKey: 'note', isSticky: false }}
+        onValuesChange={handleValuesChange}
         style={{ marginTop: '8px' }}
       >
         <Form.Item
           name="note"
           label={
-            <span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563', fontWeight: '500' }}>
-              Nội dung ghi chú
-            </span>
+            <div className="flex w-full items-center justify-between gap-2">
+              <span style={{ color: themeMode === 'dark' ? '#fff' : '#4b5563', fontWeight: '500' }}>
+                Nội dung ghi chú
+              </span>
+              {hasDraftText && !hasRestoredDraft && (
+                <Button size="small" type="link" danger className="h-auto p-0 text-xs" onClick={handleDiscardDraft}>
+                  Xóa nháp
+                </Button>
+              )}
+            </div>
           }
           rules={[{ required: true, message: 'Vui lòng nhập nội dung ghi chú' }]}
         >

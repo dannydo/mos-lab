@@ -69,6 +69,7 @@ const mockServices = [
 describe('RescheduleBookingModal (MOS-BUG-114 1-Step Consolidation)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
     apiMocks.checkRescheduleEligibility.mockResolvedValue({ allowed: true });
     apiMocks.getStaffOffDays.mockResolvedValue({ offDays: [] });
     apiMocks.getStaffShifts.mockResolvedValue({ shifts: [] });
@@ -218,6 +219,35 @@ describe('RescheduleBookingModal (MOS-BUG-114 1-Step Consolidation)', () => {
         promotionId: 766,
         campaignPromotionId: null,
       })
+    );
+  });
+
+  it('preserves user-typed bookingNote when parent re-renders with a new booking object reference', async () => {
+    const { rerender } = render(
+      <RescheduleBookingModal
+        open={true}
+        booking={{ ...mockBooking }}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    const textarea = screen.getByPlaceholderText(/Nhập ghi chú hoặc yêu cầu đặc biệt/i) as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: 'Ghi chú mới chưa kịp lưu' } });
+    expect(textarea.value).toBe('Ghi chú mới chưa kịp lưu');
+
+    // Simulate parent dashboard auto-refresh passing a fresh booking object reference
+    rerender(
+      <RescheduleBookingModal
+        open={true}
+        booking={{ ...mockBooking }}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    expect((screen.getByPlaceholderText(/Nhập ghi chú hoặc yêu cầu đặc biệt/i) as HTMLTextAreaElement).value).toBe(
+      'Ghi chú mới chưa kịp lưu'
     );
   });
 });

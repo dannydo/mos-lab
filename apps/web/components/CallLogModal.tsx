@@ -42,6 +42,7 @@ export default function CallLogModal(props: CallLogModalProps) {
     <AdaptiveModal
       intent="form"
       className="call-log-modal"
+      maskClosable={false}
       title={
         <div className={`flex items-center gap-2 text-lg font-bold ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
           <AppIcon icon={Phone} size={18} />

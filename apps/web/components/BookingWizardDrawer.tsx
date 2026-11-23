@@ -354,6 +354,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     <AdaptiveDrawer
       intent="form"
       className="booking-wizard-overlay"
+      maskClosable={false}
       title={
         <div
           style={{

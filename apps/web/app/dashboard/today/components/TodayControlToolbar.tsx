@@ -22,19 +22,42 @@ const RealtimeClock = React.memo(() => {
 });
 RealtimeClock.displayName = 'RealtimeClock';
 
+const VISIBILITY_REFRESH_COOLDOWN_MS = 15_000;
+
+function hasActiveOverlayOrDraftInput(): boolean {
+  if (typeof document === 'undefined') return false;
+  const activeTag = document.activeElement?.tagName;
+  if (activeTag === 'TEXTAREA' || activeTag === 'INPUT') {
+    return true;
+  }
+  const openDrawer = document.querySelector('.ant-drawer-open');
+  if (openDrawer) return true;
+  const openModals = document.querySelectorAll('.ant-modal-wrap');
+  for (const modal of openModals) {
+    if ((modal as HTMLElement).style.display !== 'none') {
+      return true;
+    }
+  }
+  return false;
+}
+
 const AutoRefreshCountdown = React.memo(
   ({
     autoRefresh,
     refreshInterval,
     resetSignal,
+    pauseAutoRefresh = false,
     onExpire,
   }: {
     autoRefresh: boolean;
     refreshInterval: number;
     resetSignal: number;
+    pauseAutoRefresh?: boolean;
     onExpire: () => void;
   }) => {
     const [secondsLeft, setSecondsLeft] = useState(refreshInterval);
+    const secondsLeftRef = useRef(refreshInterval);
+    const lastRefreshAtRef = useRef(Date.now());
     const onExpireRef = useRef(onExpire);
 
     useEffect(() => {
@@ -42,31 +65,47 @@ const AutoRefreshCountdown = React.memo(
     }, [onExpire]);
 
     useEffect(() => {
+      secondsLeftRef.current = refreshInterval;
       setSecondsLeft(refreshInterval);
+      lastRefreshAtRef.current = Date.now();
     }, [refreshInterval, resetSignal]);
 
     useEffect(() => {
       if (!autoRefresh) return;
 
+      const isPaused = () => pauseAutoRefresh || hasActiveOverlayOrDraftInput();
+
+      const triggerRefresh = () => {
+        lastRefreshAtRef.current = Date.now();
+        secondsLeftRef.current = refreshInterval;
+        setSecondsLeft(refreshInterval);
+        onExpireRef.current();
+      };
+
       const tick = () => {
         if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
           return;
         }
-        setSecondsLeft((prev) => {
-          if (prev <= 1) {
-            onExpireRef.current();
-            return refreshInterval;
-          }
-          return prev - 1;
-        });
+        if (isPaused()) {
+          return;
+        }
+        const next = secondsLeftRef.current - 1;
+        if (next <= 0) {
+          triggerRefresh();
+        } else {
+          secondsLeftRef.current = next;
+          setSecondsLeft(next);
+        }
       };
 
       const timer = setInterval(tick, 1000);
 
       const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
-          onExpireRef.current();
-          setSecondsLeft(refreshInterval);
+        if (document.visibilityState !== 'visible' || isPaused()) {
+          return;
+        }
+        if (Date.now() - lastRefreshAtRef.current >= VISIBILITY_REFRESH_COOLDOWN_MS) {
+          triggerRefresh();
         }
       };
 
@@ -75,7 +114,7 @@ const AutoRefreshCountdown = React.memo(
         clearInterval(timer);
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
-    }, [autoRefresh, refreshInterval]);
+    }, [autoRefresh, pauseAutoRefresh, refreshInterval]);
 
     if (!autoRefresh) return null;
     return <span className="tabular-nums">({secondsLeft}s)</span>;
@@ -92,6 +131,7 @@ export interface TodayControlToolbarProps {
   autoRefresh: boolean;
   refreshInterval: number;
   refreshResetSignal: number;
+  pauseAutoRefresh?: boolean;
   mainViewMode: 'operations' | 'calendar';
   sandboxMode: TodaySandboxMode;
   isSandbox: boolean;
@@ -118,6 +158,7 @@ export function TodayControlToolbar({
   autoRefresh,
   refreshInterval,
   refreshResetSignal,
+  pauseAutoRefresh = false,
   mainViewMode,
   sandboxMode,
   isSandbox,
@@ -178,6 +219,7 @@ export function TodayControlToolbar({
                         autoRefresh={autoRefresh}
                         refreshInterval={refreshInterval}
                         resetSignal={refreshResetSignal}
+                        pauseAutoRefresh={pauseAutoRefresh}
                         onExpire={onTriggerSilentRefresh}
                       />
                     </span>

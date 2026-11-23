@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import { BookingPromotionOptionsResponse, SafeAny, UpdateBookingRequest } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { notifyBookingMutation, toBookingCustomerId } from '../../../lib/booking-events';
+import { clearSessionDraft, readSessionDraft, writeSessionDraft } from '../../../lib/note-draft-storage';
 import { STORES, isStaffOffOnDate } from '../constants';
 import { checkAndAppendLowerLashNote } from '../comboUtils';
 import { useBookingStaff } from '../useBookingStaff';
@@ -31,7 +32,23 @@ export function useRescheduleBookingForm({ open, booking, onClose, onSuccess }: 
 
   const [selectedCN, setSelectedCN] = useState<SafeAny>(null);
   const [selectedCV, setSelectedCV] = useState<SafeAny>(null);
-  const [bookingNote, setBookingNote] = useState('');
+  const [bookingNote, setBookingNoteState] = useState('');
+  const initializedBookingKeyRef = useRef<string | null>(null);
+  const rescheduleDraftKey = booking?.id ? `mos_reschedule_note_draft:${booking.id}` : null;
+
+  const setBookingNote = useCallback(
+    (nextNote: string) => {
+      setBookingNoteState(nextNote);
+      if (rescheduleDraftKey) {
+        if (nextNote.trim().length > 0) {
+          writeSessionDraft<string>(rescheduleDraftKey, nextNote);
+        } else {
+          clearSessionDraft(rescheduleDraftKey);
+        }
+      }
+    },
+    [rescheduleDraftKey]
+  );
 
   const [services, setServices] = useState<SafeAny[]>([]);
   const [selectedService, setSelectedService] = useState<SafeAny>(null);
@@ -176,9 +193,18 @@ export function useRescheduleBookingForm({ open, booking, onClose, onSuccess }: 
     };
   });
 
-  // Initialize fields on open
+  // Initialize fields on open (only once per open session / booking id so parent re-renders never overwrite edits)
   useEffect(() => {
-    if (!open || !booking) return;
+    if (!open || !booking) {
+      initializedBookingKeyRef.current = null;
+      return;
+    }
+
+    const sessionBookingKey = `${booking.id ?? 'unknown'}`;
+    if (initializedBookingKeyRef.current === sessionBookingKey) {
+      return;
+    }
+    initializedBookingKeyRef.current = sessionBookingKey;
 
     const actions = lifecycleActionsRef.current;
     setIsLateSlotModalOpen(false);
@@ -227,7 +253,8 @@ export function useRescheduleBookingForm({ open, booking, onClose, onSuccess }: 
     void actions.fetchServices(srvId, srvName);
     setSelectedCN(resolveInitialStore(booking));
     actions.setBookingDate(bDate);
-    setBookingNote(booking.bookingNote || booking.note || '');
+    const savedNoteDraft = readSessionDraft<string>(booking?.id ? `mos_reschedule_note_draft:${booking.id}` : null);
+    setBookingNoteState(savedNoteDraft !== null ? savedNoteDraft : booking.bookingNote || booking.note || '');
     actions.setSelectedSlot(extractInitialSlotTime(booking, rawDate, bDate));
 
     const dateStr = bDate.format('YYYY-MM-DD');
@@ -379,6 +406,7 @@ export function useRescheduleBookingForm({ open, booking, onClose, onSuccess }: 
       };
 
       await apiClient.customers.updateBooking(booking.id, payload);
+      clearSessionDraft(rescheduleDraftKey);
       message.success('Đổi lịch và cập nhật lịch hẹn thành công!');
       notifyBookingMutation(
         {
@@ -408,6 +436,7 @@ export function useRescheduleBookingForm({ open, booking, onClose, onSuccess }: 
     bookingNote,
     comboBalances,
     booking,
+    rescheduleDraftKey,
     onSuccess,
     onClose,
   ]);
