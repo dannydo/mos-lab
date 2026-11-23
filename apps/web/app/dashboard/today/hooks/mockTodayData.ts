@@ -509,6 +509,8 @@ export function getSalesMockBookings(
         bookingDateTime: '14:15',
         requestedCv: 'CV Lan Anh',
         bookingNote: 'Chốt Combo 10 tặng 6 Mi Thiết Kế VIP (2.500.000 đ)',
+        ccNote: '💎250\nCb 3r\n-MD: chị không làm, đổi qua sauna\n-CB: 1n 1/10/24',
+        ccNoteStaffName: 'CC Khánh Linh',
         status: 'completed',
       },
       ...customCombos,

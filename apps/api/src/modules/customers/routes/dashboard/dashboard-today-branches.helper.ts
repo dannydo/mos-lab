@@ -21,6 +21,7 @@ interface BuildDashboardBranchesDataParams {
   promoMap: Map<number, SafeAny>;
   staffMap: Map<number, string>;
   telesalesNames: Set<string>;
+  ccNoteByOrderId: Map<number, { note: string; staffName: string | null }>;
   checkHasLiveCombo: (userId: number, bookingDateStart: Date | null, orderCreatedDate: Date) => boolean;
 }
 
@@ -41,6 +42,7 @@ export async function buildDashboardBranchesData({
   promoMap,
   staffMap,
   telesalesNames,
+  ccNoteByOrderId,
   checkHasLiveCombo,
 }: BuildDashboardBranchesDataParams) {
   const [serviceLangs, comingProducts, comingCombos, ccProfiles, allSchedules, weekOffRows, dayOffs, workingShifts] =
@@ -252,6 +254,8 @@ export async function buildDashboardBranchesData({
     const comboRev = orderCombos.reduce((sum, c) => sum + Number(c.total_price || 0), 0);
     const category = group === 'combo_live' || comboRev > 0 ? 'combo' : isOc ? 'oc' : 'other';
 
+    const ccNoteEntry = status === 'completed' ? ccNoteByOrderId.get(Number(o.id)) : undefined;
+
     const comingItem = {
       key: String(o.id),
       customerId: o.user_id,
@@ -267,6 +271,9 @@ export async function buildDashboardBranchesData({
       cc: ccName,
       cv: cvName,
       service: serviceName,
+      bookingNote: o.booking_note || '',
+      ccNote: ccNoteEntry?.note || '',
+      ccNoteStaffName: ccNoteEntry?.staffName || null,
       status,
       avatarColor: ['#1890ff', '#722ed1', '#f5222d', '#fa8c16', '#52c41a', '#13c2c2', '#eb2f96'][index % 7],
       code: String(o.id),

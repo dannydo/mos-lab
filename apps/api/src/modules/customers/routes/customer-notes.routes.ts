@@ -274,6 +274,7 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
       const notesSql = `
         SELECT 
           un.id,
+          un.order_id as orderId,
           un.note,
           un.note_field_key as noteFieldKey,
           un.is_sticky as isSticky,
@@ -304,6 +305,7 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
         }
         return {
           id: Number(n.id),
+          orderId: n.orderId ? Number(n.orderId) : null,
           note: n.note || '',
           noteFieldKey: n.noteFieldKey || 'note',
           isSticky: Boolean(n.isSticky),

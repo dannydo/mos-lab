@@ -164,6 +164,7 @@ export function buildCustomerHistoryPayload(params: {
   comboRows: mysql.RowDataPacket[];
   productRows: mysql.RowDataPacket[];
   diamondTxnRows: mysql.RowDataPacket[];
+  orderCcNoteRows?: mysql.RowDataPacket[];
   lashHydrationByOrder?: Map<number, OrderHistoryLashHydration>;
   notes?: IosCustomerNoteItem[];
   now: Date;
@@ -180,6 +181,7 @@ export function buildCustomerHistoryPayload(params: {
     comboRows,
     productRows,
     diamondTxnRows,
+    orderCcNoteRows,
     lashHydrationByOrder,
     notes,
     now,
@@ -325,6 +327,30 @@ export function buildCustomerHistoryPayload(params: {
     });
   }
 
+  const ccNoteByOrder = new Map<number, { note: string; staffName: string | null; dateDisplay: string | null }>();
+  for (const row of orderCcNoteRows || []) {
+    const oid = Number(row.order_id || 0);
+    const noteText = String(row.note || '').trim();
+    if (!oid || !noteText || ccNoteByOrder.has(oid)) continue;
+    const parts = toVnDateParts(row.date_created);
+    ccNoteByOrder.set(oid, {
+      note: noteText,
+      staffName: row.staff_name ? String(row.staff_name).trim() : null,
+      dateDisplay: parts.dateDisplay !== '--/--/----' ? parts.dateDisplay : null,
+    });
+  }
+  for (const n of notes || []) {
+    if (n.noteFieldKey !== 'order_note' || !n.orderId) continue;
+    const oid = Number(n.orderId);
+    const noteText = String(n.note || '').trim();
+    if (!oid || !noteText || ccNoteByOrder.has(oid)) continue;
+    ccNoteByOrder.set(oid, {
+      note: noteText,
+      staffName: n.staffName ? String(n.staffName).trim() : null,
+      dateDisplay: n.dateDisplay || null,
+    });
+  }
+
   const visits: IosCustomerHistoryVisitItem[] = orderRows.map((o) => {
     const oid = Number(o.order_id);
     const parts = toVnDateParts(o.booking_date_start || o.date_created);
@@ -350,6 +376,7 @@ export function buildCustomerHistoryPayload(params: {
     const hydration = lashHydrationByOrder?.get(oid);
     const serviceName =
       svcs.length > 0 ? svcs.map((s) => s.name).join(' + ') : String(o.booking_note || '').trim() || `Lịch hẹn #${oid}`;
+    const ccNoteEntry = stateDisplay.statusTone === 'completed' ? ccNoteByOrder.get(oid) : undefined;
 
     return {
       orderId: oid,
@@ -365,6 +392,9 @@ export function buildCustomerHistoryPayload(params: {
       services: svcs,
       isFixOrder,
       bookingNote: o.booking_note ? String(o.booking_note).trim() || null : null,
+      ccNote: ccNoteEntry?.note || null,
+      ...(ccNoteEntry?.staffName ? { ccNoteStaffName: ccNoteEntry.staffName } : {}),
+      ...(ccNoteEntry?.dateDisplay ? { ccNoteDate: ccNoteEntry.dateDisplay } : {}),
       branchId: o.client_store_id ? Number(o.client_store_id) : null,
       branchName: String(o.branch_name || '').trim() || 'Wings Store',
       staffNames: staffRefs.map((s) => s.name),

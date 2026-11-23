@@ -164,11 +164,39 @@ export function CustomerHistoryVisitCard({
 
       {item.bookingNote && (
         <div
-          className={`mt-1.5 rounded-lg px-2.5 py-1.5 text-[11px] leading-snug ${
+          data-testid={`history-booking-note-${item.orderId}`}
+          className={`mt-1.5 rounded-lg px-2.5 py-1.5 text-[11px] leading-snug whitespace-pre-line break-words ${
             isDark ? 'bg-slate-800/70 text-slate-300' : 'bg-slate-50 text-slate-600'
           }`}
         >
           {item.bookingNote}
+        </div>
+      )}
+
+      {item.statusTone === 'completed' && item.ccNote && item.ccNote.trim() !== '' && (
+        <div
+          data-testid={`history-cc-note-${item.orderId}`}
+          className={`mt-1.5 rounded-lg border px-2.5 py-2 text-[11px] leading-relaxed ${
+            isDark
+              ? 'border-indigo-500/30 bg-indigo-950/35 text-slate-200'
+              : 'border-indigo-200/80 bg-indigo-50/75 text-slate-700'
+          }`}
+        >
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-1.5">
+            <span
+              className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold leading-none ${
+                isDark ? 'bg-indigo-500/25 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
+              }`}
+            >
+              Ghi chú CC / Tư vấn viên
+            </span>
+            {item.ccNoteStaffName && (
+              <span className={`text-[10px] font-medium ${isDark ? 'text-indigo-300/80' : 'text-indigo-700/80'}`}>
+                {item.ccNoteStaffName}
+              </span>
+            )}
+          </div>
+          <div className="whitespace-pre-line break-words touch-pan-y select-text">{item.ccNote}</div>
         </div>
       )}
 

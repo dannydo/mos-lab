@@ -20,6 +20,7 @@ function createMockPool(responses: {
   combos?: Record<string, unknown>[];
   products?: Record<string, unknown>[];
   diamondTxns?: Record<string, unknown>[];
+  orderCcNotes?: Record<string, unknown>[];
   throwOnComboQuery?: boolean;
 }): mysql.Pool {
   return {
@@ -38,6 +39,9 @@ function createMockPool(responses: {
         return [responses.combos || [], []];
       }
       if (sql.includes('FROM order_product op')) return [responses.products || [], []];
+      if (sql.includes('FROM user_note un') && sql.includes("note_field_key = 'order_note'")) {
+        return [responses.orderCcNotes || [], []];
+      }
       return [[], []];
     },
   } as unknown as mysql.Pool;
@@ -385,4 +389,48 @@ test('Merges archived report_order & report_order_service lifetime history and t
   assert.equal(archivedVisit.paidAmount, 612800);
   assert.equal(archivedVisit.paymentMethodLabel, 'Tiền mặt');
   assert.deepEqual(archivedVisit.staffNames, ['Diễm Hương', 'Mi Na']);
+});
+
+test('MOS-FEAT-249: attaches order_note CC consultant note only to completed visits', async () => {
+  const ccActor: IosAuthContext = {
+    id: 38,
+    legacyStaffId: 38,
+    role: 'consultant',
+    careerTier: 'CC',
+  };
+
+  const pool = createMockPool({
+    ...SAMPLE_MOCK_DB,
+    orderCcNotes: [
+      {
+        order_id: 8002,
+        note: '💎150\nCb 3r\n-MD: chị không làm, đổi qua sauna\n-CB: 1n 1/10/24',
+        date_created: '2026-10-07T08:15:00.000Z',
+        staff_name: 'Nguyễn Quang Khải',
+      },
+      {
+        order_id: 9001,
+        note: 'Note nháp chưa done không được hiển thị',
+        date_created: '2026-11-16T05:30:00.000Z',
+        staff_name: 'Nguyễn Quang Khải',
+      },
+    ],
+  });
+
+  const result = await getIosCustomerHistory(
+    ccActor,
+    33732,
+    { bookingId: 9001, now: new Date('2026-11-16T07:00:00.000Z') },
+    { getPool: () => pool }
+  );
+
+  assert.equal(result.statusCode, 200);
+  const completedVisit = result.payload.visits.find((v) => v.orderId === 8002);
+  const upcomingVisit = result.payload.visits.find((v) => v.orderId === 9001);
+  assert.equal(
+    completedVisit?.ccNote,
+    '💎150\nCb 3r\n-MD: chị không làm, đổi qua sauna\n-CB: 1n 1/10/24'
+  );
+  assert.equal(completedVisit?.ccNoteStaffName, 'Nguyễn Quang Khải');
+  assert.equal(upcomingVisit?.ccNote, null);
 });

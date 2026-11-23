@@ -65,6 +65,7 @@ async function computeDashboardToday(
       promoMap: base.promoMap,
       staffMap: base.staffMap,
       telesalesNames: base.telesalesNames,
+      ccNoteByOrderId: base.ccNoteByOrderId,
       checkHasLiveCombo: base.checkHasLiveCombo,
     });
 

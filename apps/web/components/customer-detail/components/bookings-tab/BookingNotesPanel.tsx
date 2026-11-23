@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { safeParseDate } from './bookingsTabHelpers';
+import { isBookingCompleted, safeParseDate } from './bookingsTabHelpers';
 
 export interface BookingNotesPanelProps {
   booking: SafeAny;
@@ -17,15 +17,23 @@ export const BookingNotesPanel: React.FC<BookingNotesPanelProps> = ({
   themeMode,
 }) => {
   const hasBookingNote = Boolean(cleanNoteText && cleanNoteText.trim() !== '');
-  const hasAttachedNotes = attachedNotes.length > 0;
-
-  if (!hasBookingNote && !hasAttachedNotes) return null;
-
-  const isDark = themeMode === 'dark';
+  const isCompleted = isBookingCompleted(booking?.orderState);
+  const directCcNote = isCompleted ? String(booking?.ccNote || '').trim() : '';
 
   const filteredAttachedNotes = attachedNotes.filter(
     (n: SafeAny) => !hasBookingNote || (n.note || '').trim() !== (booking.bookingNote || '').trim()
   );
+  const hasAttachedCcNoteMatchingDirect =
+    Boolean(directCcNote) &&
+    filteredAttachedNotes.some(
+      (n: SafeAny) => n.noteFieldKey === 'order_note' && String(n.note || '').trim() === directCcNote
+    );
+  const hasDirectCcNote = Boolean(directCcNote) && !hasAttachedCcNoteMatchingDirect;
+  const hasAttachedNotes = filteredAttachedNotes.length > 0;
+
+  if (!hasBookingNote && !hasAttachedNotes && !hasDirectCcNote) return null;
+
+  const isDark = themeMode === 'dark';
 
   return (
     <div
@@ -59,12 +67,46 @@ export const BookingNotesPanel: React.FC<BookingNotesPanelProps> = ({
         </div>
       )}
 
+      {hasDirectCcNote && (
+        <div
+          data-testid={`drawer-cc-note-${booking.id}`}
+          className={`flex items-start gap-1.5 rounded border px-2 py-1.5 text-[13px] ${
+            isDark
+              ? 'border-indigo-500/30 bg-indigo-950/30 text-slate-200'
+              : 'border-indigo-200 bg-indigo-50/70 text-slate-700'
+          }`}
+        >
+          <span
+            className={`mt-0.5 shrink-0 rounded-[3px] px-1.5 py-px text-[10px] font-bold ${
+              isDark ? 'bg-indigo-500/25 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
+            }`}
+          >
+            CC
+          </span>
+          <div className="min-w-0 flex-1">
+            <strong className={isDark ? 'text-slate-100' : 'text-slate-800'}>
+              Ghi chú CC / Tư vấn viên
+              {booking.ccNoteStaffName ? ` (${booking.ccNoteStaffName})` : ''}:
+            </strong>
+            <div
+              className={`mt-0.5 whitespace-pre-line break-words touch-pan-y leading-normal ${
+                isDark ? 'text-slate-200' : 'text-slate-700'
+              }`}
+            >
+              {directCcNote}
+            </div>
+          </div>
+        </div>
+      )}
+
       {filteredAttachedNotes.map((n: SafeAny) => {
         const isCcNote = n.noteFieldKey === 'order_note';
         const isCvlNote = n.noteFieldKey === 'cvl_note';
         const isPinned = Boolean(n.isSticky);
         const badgeLabel = isCcNote ? 'CC' : isCvlNote ? 'CVL' : isPinned ? 'Note' : 'CS';
-        const staffAuthor = n.staffName || (isCcNote ? 'CC' : 'Nhân viên');
+        const staffAuthor = isCcNote
+          ? `Ghi chú CC / Tư vấn viên${n.staffName && n.staffName !== 'System' ? ` (${n.staffName})` : ''}`
+          : n.staffName || 'Nhân viên';
         const parsedNDate = safeParseDate(n.dateCreated);
 
         const badgeClasses = isPinned
@@ -82,12 +124,21 @@ export const BookingNotesPanel: React.FC<BookingNotesPanelProps> = ({
         return (
           <div
             key={n.id}
-            className={`flex items-start gap-1.5 text-[13px] ${isDark ? 'text-slate-300' : 'text-gray-600'}`}
+            data-testid={isCcNote ? `drawer-cc-note-attached-${booking.id}-${n.id}` : undefined}
+            className={`flex items-start gap-1.5 text-[13px] ${
+              isCcNote
+                ? isDark
+                  ? 'rounded border border-indigo-500/30 bg-indigo-950/30 px-2 py-1.5 text-slate-200'
+                  : 'rounded border border-indigo-200 bg-indigo-50/70 px-2 py-1.5 text-slate-700'
+                : isDark
+                  ? 'text-slate-300'
+                  : 'text-gray-600'
+            }`}
           >
             <span className={`mt-0.5 shrink-0 rounded-[3px] px-1.5 py-px text-[10px] font-bold ${badgeClasses}`}>
               {badgeLabel}
             </span>
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <strong className={isDark ? 'text-slate-100' : 'text-slate-800'}>
                 {staffAuthor}
                 {parsedNDate && (
@@ -98,9 +149,9 @@ export const BookingNotesPanel: React.FC<BookingNotesPanelProps> = ({
                 :
               </strong>
               <div
-                className={`mt-0.5 whitespace-pre-wrap break-words italic leading-normal ${
-                  isDark ? 'text-slate-200' : 'text-slate-700'
-                }`}
+                className={`mt-0.5 whitespace-pre-line break-words touch-pan-y leading-normal ${
+                  isCcNote ? '' : 'italic '
+                }${isDark ? 'text-slate-200' : 'text-slate-700'}`}
               >
                 {n.note}
               </div>

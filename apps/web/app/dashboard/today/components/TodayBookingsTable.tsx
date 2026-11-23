@@ -13,6 +13,7 @@ import { BookingData } from '../hooks/useTodayData';
 import { DataTable, SectionCard } from '../../../../components/ui';
 import { vietnameseSearchFilter, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { getContrastingTextColor } from '../../../../lib/color-utils';
+import { TodayBookingNotesCell } from './TodayBookingNotesCell';
 
 const { Text } = Typography;
 
@@ -280,26 +281,15 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
       title: 'Booking Notes',
       dataIndex: 'bookingNote',
       key: 'bookingNote',
-      render: (note: string) =>
-        note ? (
-          <Tooltip
-            title={<div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{note}</div>}
-            styles={{ root: { maxWidth: '400px' } }}
-          >
-            <div
-              style={{
-                maxWidth: '200px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {note}
-            </div>
-          </Tooltip>
-        ) : (
-          <Text type="secondary">-</Text>
-        ),
+      width: 240,
+      render: (note: string, record: BookingData) => (
+        <TodayBookingNotesCell
+          bookingNote={note}
+          ccNote={record.ccNote}
+          ccNoteStaffName={record.ccNoteStaffName}
+          status={record.status}
+        />
+      ),
     },
     {
       title: 'Trạng Thái',
@@ -501,6 +491,13 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
               <span>Tạo: {record.createdTime || '-'}</span>
               <span>Booker: {record.booker || '-'}</span>
             </div>
+            <TodayBookingNotesCell
+              bookingNote={record.bookingNote}
+              ccNote={record.ccNote}
+              ccNoteStaffName={record.ccNoteStaffName}
+              status={record.status}
+              isMobile
+            />
             <div className="flex justify-end gap-2 pt-1">
               <Button
                 size="small"

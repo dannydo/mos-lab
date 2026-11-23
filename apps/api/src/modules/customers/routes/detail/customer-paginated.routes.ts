@@ -78,9 +78,10 @@ export async function registerCustomerPaginatedRoutes(fastify: FastifyInstance) 
       const serviceTypesByOrderId = new Map<number, string[]>();
       let orderServicesDetails: SafeAny[] = [];
       let auditLogCounts: SafeAny[] = [];
+      const ccNoteByOrderId = new Map<number, { note: string; staffName: string | null; dateCreated: string | null }>();
 
       if (bookingIds.length > 0) {
-        const [servicesRaw, osDetails, logsRes] = await Promise.all([
+        const [servicesRaw, osDetails, logsRes, orderNotesRaw] = await Promise.all([
           fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
             SELECT
               os.order_id as orderId,
@@ -106,7 +107,31 @@ export async function registerCustomerPaginatedRoutes(fastify: FastifyInstance) 
             _count: { id: true },
             where: { orderId: { in: bookingIds } },
           }),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT
+              un.order_id as orderId,
+              un.note,
+              un.date_created as dateCreated,
+              COALESCE(up.full_name, 'Tư vấn viên') as staffName
+            FROM user_note un
+            LEFT JOIN user_profile up ON un.created_staff_id = up.user_id
+            WHERE un.order_id IN (${bookingIds.join(',')})
+              AND un.note_field_key = 'order_note'
+            ORDER BY un.date_created DESC, un.id DESC
+          `),
         ]);
+
+        for (const n of orderNotesRaw) {
+          const oid = Number(n.orderId || 0);
+          const noteText = String(n.note || '').trim();
+          if (!oid || !noteText || ccNoteByOrderId.has(oid)) continue;
+          const dt = n.dateCreated ? new Date(n.dateCreated) : null;
+          ccNoteByOrderId.set(oid, {
+            note: noteText,
+            staffName: n.staffName ? String(n.staffName).trim() : null,
+            dateCreated: dt && !isNaN(dt.getTime()) ? dt.toISOString() : null,
+          });
+        }
 
         orderServicesDetails = osDetails;
         auditLogCounts = logsRes;
@@ -209,12 +234,17 @@ export async function registerCustomerPaginatedRoutes(fastify: FastifyInstance) 
         const bServiceTypes = serviceTypesByOrderId.get(Number(b.id)) || [];
         const isWarranty =
           bServiceTypes.length > 0 && bServiceTypes.every((st) => ['Fix', 'Log', 'Adjust'].includes(st));
+        const isDone = b.orderState === 'Completed' || b.orderState === 'ServiceCompleted';
+        const ccNoteEntry = isDone ? ccNoteByOrderId.get(Number(b.id)) : undefined;
 
         return {
           id: Number(b.id),
           orderKey: b.orderKey,
           bookingDate: b.bookingDate ? new Date(b.bookingDate).toISOString().replace('Z', '+07:00') : null,
           bookingNote: b.bookingNote || null,
+          ccNote: ccNoteEntry?.note || null,
+          ccNoteStaffName: ccNoteEntry?.staffName || null,
+          ccNoteDate: ccNoteEntry?.dateCreated || null,
           orderState: b.orderState,
           totalPrice: Number(b.totalPrice || 0),
           technicianId: firstCvStaffId ? Number(firstCvStaffId) : null,
