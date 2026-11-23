@@ -134,7 +134,7 @@ export async function reviewBugReport(
   if (decision === 'REOPEN' && attachments.length) {
     await saveAttachments(fastify, id, attachments, completed.commentId);
   }
-  fastify.cache?.invalidatePattern('^bug-reports:mine:');
+  fastify.cache?.invalidatePattern('^bug-reports:(mine|badge):');
   return getDetail(fastify, completed.row.id);
 }
 
@@ -220,7 +220,7 @@ export async function cancelBugReport(
     return row;
   });
 
-  fastify.cache?.invalidatePattern('^bug-reports:mine:');
+  fastify.cache?.invalidatePattern('^bug-reports:(mine|badge):');
   fastify.cache?.invalidatePattern('^bug-reports:');
 
   return getDetail(fastify, completed.id);
@@ -333,6 +333,7 @@ export async function triageBugReport(
     });
     return row;
   });
+  fastify.cache?.invalidatePattern('^bug-reports:(mine|badge):');
   return getDetail(fastify, updated.id);
 }
 
@@ -383,5 +384,6 @@ export async function confirmCloseBugReport(
     });
     return current;
   });
+  fastify.cache?.invalidatePattern('^bug-reports:(mine|badge):');
   return getDetail(fastify, completed.id);
 }

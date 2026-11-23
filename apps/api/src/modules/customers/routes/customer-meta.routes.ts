@@ -199,34 +199,35 @@ export async function registerCustomerMetaRoutes(fastify: FastifyInstance) {
   // Get list of active staff members
   fastify.get('/customers/staff', { preHandler: [requireAuth] }, async (request, reply) => {
     const { role } = request.query as { date?: string; role?: string };
+    const cacheKey = `customers:staff:${role || 'all'}`;
+    const cached = fastify.cache?.get<SafeAny[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     try {
-      // 1. Fetch CRM Staff
-      const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
-        where: { isActive: true },
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          role: true,
-          legacyStaffId: true,
-        },
-        orderBy: { displayName: 'asc' },
-      });
+      // 1 & 2. Fetch CRM Staff, StaffOffDayService, and active KTVs in parallel
+      const [crmStaffList, staffOffDayBatchMap, activeKTVs] = await Promise.all([
+        fastify.prisma.crm.crmStaff.findMany({
+          where: { isActive: true },
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            role: true,
+            legacyStaffId: true,
+          },
+          orderBy: { displayName: 'asc' },
+        }),
+        StaffOffDayService.getBatchStaffOffDays(fastify),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT DISTINCT user_id, full_name, client_store_id, avatar 
+           FROM user_profile 
+           WHERE provider = 'Staff' AND user_group_id = 4 AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0`
+        ),
+      ]);
 
-      // 2. Fetch KTVs from legacy core tables
-      let mappedKTVs: SafeAny[] = [];
-
-      // Query staff off days from unified StaffOffDayService (Single Source of Truth)
-      const staffOffDayBatchMap = await StaffOffDayService.getBatchStaffOffDays(fastify);
-
-      // Always fetch all active KTVs so technician metadata (offDays, approvedOffDates) is complete for all dates
-      const activeKTVs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT DISTINCT user_id, full_name, client_store_id, avatar 
-         FROM user_profile 
-         WHERE provider = 'Staff' AND user_group_id = 4 AND is_disabled = 0 AND is_leaved = 0 AND is_deleted = 0`
-      );
-
-      mappedKTVs = activeKTVs.map((ktv) => {
+      const mappedKTVs: SafeAny[] = activeKTVs.map((ktv) => {
         const storeId = Number(ktv.client_store_id);
         let storeNotes = 'Estella Place';
         if (storeId === 6) storeNotes = 'De Tham';
@@ -262,21 +263,15 @@ export async function registerCustomerMetaRoutes(fastify: FastifyInstance) {
       const result = mergeStaffDirectory(crmStaffList as DirectoryStaff[], mappedKTVs as DirectoryStaff[]);
 
       if (role === 'cs' || role === 'coca' || role === 'loca') {
-        const csConfigIds = await TeamService.getActiveStaffIdsWithFallback(
-          fastify,
-          'BK_CS',
-          'ACTIVE_BK_CS_STAFF_CONFIG'
-        );
-        const locaConfigIds = await TeamService.getActiveStaffIdsWithFallback(
-          fastify,
-          'LOCA',
-          'ACTIVE_LOCA_STAFF_CONFIG'
-        );
+        const [csConfigIds, locaConfigIds] = await Promise.all([
+          TeamService.getActiveStaffIdsWithFallback(fastify, 'BK_CS', 'ACTIVE_BK_CS_STAFF_CONFIG'),
+          TeamService.getActiveStaffIdsWithFallback(fastify, 'LOCA', 'ACTIVE_LOCA_STAFF_CONFIG'),
+        ]);
         const allCsConfigIds = Array.from(new Set([...(csConfigIds || []), ...(locaConfigIds || [])]));
 
         const strictCsRoles = ['cs', 'coca', 'loca', 'cskh', 'customer-support', 'customer-service'];
 
-        return result.filter((s) => {
+        const filteredCs = result.filter((s) => {
           const r = (s.role || '').toLowerCase();
           const legId = Number(s.legacyStaffId);
           const sysId = Number(s.id);
@@ -290,15 +285,15 @@ export async function registerCustomerMetaRoutes(fastify: FastifyInstance) {
 
           return strictCsRoles.includes(r);
         });
+        fastify.cache?.set(cacheKey, filteredCs, 60_000);
+        return filteredCs;
       }
 
       if (role === 'booker' || role === 'telesales') {
-        const bkIds = await TeamService.getActiveStaffIdsWithFallback(fastify, 'BK', 'ACTIVE_BK_STAFF_CONFIG');
-        const teleIds = await TeamService.getActiveStaffIdsWithFallback(
-          fastify,
-          'BK_TELESALES',
-          'ACTIVE_BK_TELESALES_STAFF_CONFIG'
-        );
+        const [bkIds, teleIds] = await Promise.all([
+          TeamService.getActiveStaffIdsWithFallback(fastify, 'BK', 'ACTIVE_BK_STAFF_CONFIG'),
+          TeamService.getActiveStaffIdsWithFallback(fastify, 'BK_TELESALES', 'ACTIVE_BK_TELESALES_STAFF_CONFIG'),
+        ]);
         const allBkIds = Array.from(new Set([...(bkIds || []), ...(teleIds || [])]));
 
         if (allBkIds.length > 0) {
@@ -307,10 +302,16 @@ export async function registerCustomerMetaRoutes(fastify: FastifyInstance) {
             const sysId = Number(s.id);
             return allBkIds.includes(legId) || allBkIds.includes(sysId);
           });
-          if (filtered.length > 0) return filtered;
+          if (filtered.length > 0) {
+            fastify.cache?.set(cacheKey, filtered, 60_000);
+            return filtered;
+          }
         }
-        return result.filter((s) => ['telesales', 'booker'].includes(s.role?.toLowerCase() || ''));
+        const fallbackBookers = result.filter((s) => ['telesales', 'booker'].includes(s.role?.toLowerCase() || ''));
+        fastify.cache?.set(cacheKey, fallbackBookers, 60_000);
+        return fallbackBookers;
       }
+      fastify.cache?.set(cacheKey, result, 60_000);
       return result;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get staff list error:');

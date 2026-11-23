@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { isHrOrAdminRole, SafeAny, TELESALES_EXECUTIVE_STANDARDS } from '@mos-lab/shared';
+import { isHrOrAdminRole, OnlineStaffPresenceItem, SafeAny, TELESALES_EXECUTIVE_STANDARDS } from '@mos-lab/shared';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { getManagedStaffIdsForManager, maskStaffSensitiveData } from './staff-access.helpers.js';
 
@@ -85,6 +85,50 @@ export function registerStaffReadRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Không thể lấy danh sách nhân viên',
+      });
+    }
+  });
+
+  // GET /api/staff/online-presence - Lightweight active staff presence (registered before /staff/:id)
+  fastify.get('/staff/online-presence', { preHandler: [requireAuth] }, async (request, reply) => {
+    const currentUser = request.user as { id: number };
+    const cacheKey = 'staff:online-presence';
+    try {
+      const cached = fastify.cache?.get<OnlineStaffPresenceItem[]>(cacheKey);
+      if (cached) {
+        return cached.filter((member) => member.id !== currentUser.id);
+      }
+
+      const cutoff = new Date(Date.now() - 5 * 60 * 1000);
+      const rows = await fastify.prisma.crm.crmStaff.findMany({
+        where: {
+          isActive: true,
+          lastActiveAt: { gte: cutoff },
+        },
+        orderBy: { lastActiveAt: 'desc' },
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+          lastActiveAt: true,
+        },
+      });
+
+      const items: OnlineStaffPresenceItem[] = rows.map((row) => ({
+        id: row.id,
+        username: row.username,
+        displayName: row.displayName,
+        avatarUrl: row.avatarUrl,
+        lastActiveAt: row.lastActiveAt ? row.lastActiveAt.toISOString() : null,
+      }));
+      fastify.cache?.set(cacheKey, items, 15_000);
+      return items.filter((member) => member.id !== currentUser.id);
+    } catch (error: SafeAny) {
+      fastify.log.error(error as Error, 'Fetch staff online presence error:');
+      return reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Không thể lấy trạng thái trực tuyến nhân viên',
       });
     }
   });

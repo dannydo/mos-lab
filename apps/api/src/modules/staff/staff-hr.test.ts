@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import Fastify from 'fastify';
 import { calculateStaffSeniority, TELESALES_EXECUTIVE_STANDARDS } from '@mos-lab/shared';
-import { maskStaffSensitiveData } from './routes.js';
+import { maskStaffSensitiveData, staffRoutes } from './routes.js';
 
 test('calculateStaffSeniority calculates elapsed months and applies seniorityOffset', () => {
   // Join 14 months ago + 3 months offset = 17 months (1 year 5 months)
@@ -151,4 +152,44 @@ test('TELESALES_EXECUTIVE_STANDARDS conforms to canonical role specification', (
   assert.equal(TELESALES_EXECUTIVE_STANDARDS.monthlyKpi.minDone, 100);
   assert.equal(TELESALES_EXECUTIVE_STANDARDS.monthlyKpi.excellentDone, 300);
   assert.equal(TELESALES_EXECUTIVE_STANDARDS.compensation.baseSalary, 5500000);
+});
+
+test('GET /staff/online-presence returns active online peers excluding self without hitting /staff/:id', async () => {
+  const app = Fastify();
+  const now = new Date();
+  let findManyCalls = 0;
+  app.decorate('prisma', {
+    crm: {
+      crmStaff: {
+        update: async () => ({}),
+        findMany: async () => {
+          findManyCalls += 1;
+          return [
+            { id: 1, username: 'danny', displayName: 'Danny', avatarUrl: null, lastActiveAt: now },
+            { id: 2, username: 'tina', displayName: 'Tina', avatarUrl: 'https://cdn.example/a.png', lastActiveAt: now },
+          ];
+        },
+      },
+    },
+  } as unknown as typeof app.prisma);
+  app.decorateRequest('jwtVerify', async function () {
+    this.user = { id: 1, username: 'danny', displayName: 'Danny', role: 'super_admin' as never };
+  });
+  await app.register(staffRoutes);
+  try {
+    const res = await app.inject({ method: 'GET', url: '/staff/online-presence' });
+    assert.equal(res.statusCode, 200);
+    assert.equal(findManyCalls, 1);
+    assert.deepEqual(res.json(), [
+      {
+        id: 2,
+        username: 'tina',
+        displayName: 'Tina',
+        avatarUrl: 'https://cdn.example/a.png',
+        lastActiveAt: now.toISOString(),
+      },
+    ]);
+  } finally {
+    await app.close();
+  }
 });

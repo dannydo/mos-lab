@@ -23,6 +23,12 @@ import {
   recordIssueInMemory,
 } from './telemetry-store.js';
 
+const METRICS_AUTO_SYNC_COOLDOWN_MS = 60_000;
+const metricsSyncStateByFastify = new WeakMap<
+  FastifyInstance,
+  { lastSyncAt: number; inFlight?: Promise<FrontendIssueSyncResponse> }
+>();
+
 export async function recordIssue(
   payload: FrontendIssuePayload,
   fastify?: FastifyInstance
@@ -284,26 +290,55 @@ export async function syncResolvedClusters(
   }
 
   if (issueIdsToResolve.length > 0) {
-    const CHUNK_SIZE = 100;
-    for (let i = 0; i < issueIdsToResolve.length; i += CHUNK_SIZE) {
-      const chunk = issueIdsToResolve.slice(i, i + CHUNK_SIZE);
-      await fastify.prisma.crm.crmFrontendIssue.updateMany({
-        where: { id: { in: chunk } },
-        data: {
-          status: 'RESOLVED',
-          resolvedAt: now,
-        },
-      });
+    const noteById = new Map<number, string>();
+    for (const item of issueMapNotes) {
+      noteById.set(item.id, item.note);
     }
 
-    for (const item of issueMapNotes) {
-      await fastify.prisma.crm.crmFrontendIssue
-        .update({
-          where: { id: item.id },
-          data: { resolutionNotes: item.note },
-        })
-        .catch(() => {});
+    const groupsByNote = new Map<string, number[]>();
+    const idsWithoutNote: number[] = [];
+    for (const id of issueIdsToResolve) {
+      const note = noteById.get(id);
+      if (note !== undefined) {
+        const list = groupsByNote.get(note) ?? [];
+        list.push(id);
+        groupsByNote.set(note, list);
+      } else {
+        idsWithoutNote.push(id);
+      }
     }
+
+    const CHUNK_SIZE = 100;
+    const updateBatches: Array<Promise<unknown>> = [];
+    for (const [note, ids] of groupsByNote.entries()) {
+      for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+        const chunk = ids.slice(i, i + CHUNK_SIZE);
+        updateBatches.push(
+          fastify.prisma.crm.crmFrontendIssue.updateMany({
+            where: { id: { in: chunk } },
+            data: {
+              status: 'RESOLVED',
+              resolvedAt: now,
+              resolutionNotes: note,
+            },
+          })
+        );
+      }
+    }
+    for (let i = 0; i < idsWithoutNote.length; i += CHUNK_SIZE) {
+      const chunk = idsWithoutNote.slice(i, i + CHUNK_SIZE);
+      updateBatches.push(
+        fastify.prisma.crm.crmFrontendIssue.updateMany({
+          where: { id: { in: chunk } },
+          data: {
+            status: 'RESOLVED',
+            resolvedAt: now,
+          },
+        })
+      );
+    }
+
+    await Promise.all(updateBatches);
   }
 
   const metrics = skipMetricsFetch ? ({} as FrontendIssueMetrics) : await getMetrics(fastify, true);
@@ -323,12 +358,27 @@ export async function getMetrics(fastify: FastifyInstance, skipAutoSync = false)
     return buildMemoryFallbackMetrics();
   }
 
-  // Auto-sync resolved clusters on metrics retrieval to ensure 100% data freshness
+  // Throttle auto-sync on the read path to avoid full unresolved scans/writes per request.
   if (!skipAutoSync) {
-    try {
-      await syncResolvedClusters(fastify, true);
-    } catch (err) {
-      fastify.log.warn({ err }, 'Auto-syncing resolved clusters in getMetrics failed non-fatally');
+    const syncState = metricsSyncStateByFastify.get(fastify) ?? { lastSyncAt: 0 };
+    const nowMs = Date.now();
+    if (syncState.inFlight) {
+      await syncState.inFlight.catch(() => undefined);
+    } else if (nowMs - syncState.lastSyncAt >= METRICS_AUTO_SYNC_COOLDOWN_MS) {
+      const syncPromise = syncResolvedClusters(fastify, true).finally(() => {
+        const current = metricsSyncStateByFastify.get(fastify);
+        if (current?.inFlight === syncPromise) {
+          current.inFlight = undefined;
+        }
+      });
+      syncState.lastSyncAt = nowMs;
+      syncState.inFlight = syncPromise;
+      metricsSyncStateByFastify.set(fastify, syncState);
+      try {
+        await syncPromise;
+      } catch (err) {
+        fastify.log.warn({ err }, 'Auto-syncing resolved clusters in getMetrics failed non-fatally');
+      }
     }
   }
 

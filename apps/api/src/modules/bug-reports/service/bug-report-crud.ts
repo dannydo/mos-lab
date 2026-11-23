@@ -6,6 +6,7 @@ import {
   BUG_REPORT_STATUSES,
   formatBugReportKey,
   removeVietnameseTones,
+  type BugReportBadgeSummaryResponse,
   type BugReportDetail,
   type BugReportListQuery,
   type BugReportListResponse,
@@ -149,7 +150,7 @@ export async function createBugReport(
   });
 
   const attachmentWarnings = await saveAttachments(fastify, report.id, attachments);
-  fastify.cache?.invalidatePattern('^bug-reports:mine:');
+  fastify.cache?.invalidatePattern('^bug-reports:(mine|badge):');
 
   return { id: report.id, key: formatBugReportKey(report.id, requestType), attachmentWarnings };
 }
@@ -326,6 +327,41 @@ export async function listMyBugReports(
   };
 }
 
+export async function getBugReportBadgeSummary(
+  fastify: FastifyInstance,
+  reporterStaffId: number,
+  includeInboxSummary: boolean
+): Promise<BugReportBadgeSummaryResponse> {
+  const [unreadRows, unreadCount, actionRequiredCount, readyForDannyCount] = await Promise.all([
+    fastify.prisma.crm.crmBugReportNotification.findMany({
+      where: { recipientStaffId: reporterStaffId, readAt: null },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    }),
+    fastify.prisma.crm.crmBugReportNotification.count({
+      where: { recipientStaffId: reporterStaffId, readAt: null },
+    }),
+    fastify.prisma.crm.crmBugReport.count({
+      where: {
+        reporterStaffId,
+        OR: [{ clarificationStatus: 'WAITING_REPORTER' }, { status: 'FIXED' }],
+      },
+    }),
+    includeInboxSummary
+      ? fastify.prisma.crm.crmBugReport.count({
+          where: { status: 'NEW', clarificationStatus: 'READY' },
+        })
+      : Promise.resolve(0),
+  ]);
+
+  return {
+    unreadCount,
+    actionRequiredCount,
+    readyForDannyCount,
+    unreadNotifications: unreadRows.map(notificationDto),
+  };
+}
+
 async function reportForUser(
   fastify: FastifyInstance,
   actorStaffId: number,
@@ -398,7 +434,7 @@ export async function addBugReportComment(
   });
 
   const attachmentWarnings = await saveAttachments(fastify, id, attachments, comment.id);
-  fastify.cache?.invalidatePattern('^bug-reports:mine:');
+  fastify.cache?.invalidatePattern('^bug-reports:(mine|badge):');
   return { report: await getDetail(fastify, id), attachmentWarnings };
 }
 
@@ -451,7 +487,7 @@ export async function markBugReportNotificationsRead(
     },
     data: { readAt: new Date() },
   });
-  fastify.cache?.invalidatePattern(`^bug-reports:mine:${reporterStaffId}$`);
+  fastify.cache?.invalidatePattern(`^bug-reports:(mine|badge):${reporterStaffId}(:|$)`);
   return result.count;
 }
 

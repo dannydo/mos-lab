@@ -80,32 +80,60 @@ export async function registerCvStatusRoutes(fastify: FastifyInstance) {
       const todayStr = nowICT.toISOString().split('T')[0];
       const todayStart = `${todayStr} 00:00:00`;
       const todayEnd = `${todayStr} 23:59:59`;
+      const { countOnly } = (request.query || {}) as { countOnly?: string | boolean };
+      const isCountOnly = countOnly === 'true' || countOnly === true;
+      const countCacheKey = `customers:cv-realtime-status:countOnly:${todayStr}`;
+
+      if (isCountOnly) {
+        const cachedCountOnly = fastify.cache?.get<SafeAny>(countCacheKey);
+        if (cachedCountOnly) {
+          return cachedCountOnly;
+        }
+      }
 
       // 1. Get active CV staff IDs
       const cvStaffIds = await TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG');
       if (cvStaffIds.length === 0) {
-        return { staffStatuses: [], queueByStore: {}, timestamp: nowICT.toISOString() };
+        return {
+          workingCvCount: 0,
+          offCvCount: 0,
+          staffStatuses: [],
+          queueByStore: {},
+          timestamp: nowICT.toISOString(),
+        };
       }
 
-      // 2. Query Day-Offs and Weekly-Offs today to exclude OFF staff
-      const dayOffs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT from_user_id FROM staff_day_off 
-         WHERE from_date >= DATE_SUB(?, INTERVAL 30 DAY)
-           AND from_date <= ?
-           AND request_state = 'Approved'
-           AND ? <= COALESCE(to_date, from_date)
-           AND from_user_id IN (${cvStaffIds.join(',')})`,
-        todayStr,
-        todayStr,
-        todayStr
-      );
-      const offStaffUserIds = new Set(dayOffs.map((d) => Number(d.from_user_id)));
-
+      // 2 & 3. Query Day-Offs, Weekly-Offs, and today's shift check-in status in parallel
       const weekdayNumber = new Date(todayStr).getDay();
       const legacyWeekday = weekdayNumber === 0 ? 7 : weekdayNumber;
-      const schedules = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT user_id, type, type_value FROM staff_working_shift_schedule WHERE is_disabled = 0 AND user_id IN (${cvStaffIds.join(',')})`
-      );
+      const [dayOffs, schedules, checkedInShiftRows] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT from_user_id FROM staff_day_off 
+           WHERE from_date >= DATE_SUB(?, INTERVAL 30 DAY)
+             AND from_date <= ?
+             AND request_state = 'Approved'
+             AND ? <= COALESCE(to_date, from_date)
+             AND from_user_id IN (${cvStaffIds.join(',')})`,
+          todayStr,
+          todayStr,
+          todayStr
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT user_id, type, type_value FROM staff_working_shift_schedule WHERE is_disabled = 0 AND user_id IN (${cvStaffIds.join(',')})`
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `
+          SELECT DISTINCT user_id as staffId
+          FROM staff_working_shift
+          WHERE date = ?
+            AND check_in_staff_task_id IS NOT NULL
+            AND check_out_staff_task_id IS NULL
+        `,
+          todayStr
+        ),
+      ]);
+
+      const offStaffUserIds = new Set(dayOffs.map((d) => Number(d.from_user_id)));
       cvStaffIds.forEach((id) => {
         const staffScheds = schedules.filter((s) => Number(s.user_id) === id);
         if (staffScheds.length > 0) {
@@ -115,32 +143,20 @@ export async function registerCvStatusRoutes(fastify: FastifyInstance) {
       });
 
       const activeDutyStaffIds = cvStaffIds.filter((id) => !offStaffUserIds.has(id));
-
-      // 3. Query today's staff shift check-in status from staff_working_shift
-      // (Only include CVs who HAVE checked in AND HAVE NOT checked out today)
-      const checkedInShiftRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `
-        SELECT DISTINCT user_id as staffId
-        FROM staff_working_shift
-        WHERE date = ?
-          AND check_in_staff_task_id IS NOT NULL
-          AND check_out_staff_task_id IS NULL
-      `,
-        todayStr
-      );
       const checkedInStaffIds = new Set(checkedInShiftRows.map((r: SafeAny) => Number(r.staffId)));
       const checkedInCvStaffIds = activeDutyStaffIds.filter((id: number) => checkedInStaffIds.has(id));
       const effectiveCvStaffIds = checkedInCvStaffIds.length > 0 ? checkedInCvStaffIds : activeDutyStaffIds;
 
-      const { countOnly } = (request.query || {}) as { countOnly?: string | boolean };
-      if (countOnly === 'true' || countOnly === true) {
-        return {
+      if (isCountOnly) {
+        const payload = {
           workingCvCount: effectiveCvStaffIds.length,
           offCvCount: offStaffUserIds.size,
           staffStatuses: [],
           queueByStore: {},
           timestamp: nowICT.toISOString(),
         };
+        fastify.cache?.set(countCacheKey, payload, 15_000);
+        return payload;
       }
 
       // 3. Query today's queue from order_staff_queue for working CV staff IDs

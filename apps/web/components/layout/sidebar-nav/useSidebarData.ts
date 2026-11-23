@@ -85,8 +85,8 @@ export function useSidebarData({ userRole, userIdentity, isCvAccount }: UseSideb
       return;
     }
     apiClient.bugReports
-      .list({ page: 1, limit: 10, requestType: 'ALL', status: 'ALL', priority: 'ALL', clarification: 'ALL' })
-      .then((response) => setBugInboxApprovalCount(response.summary?.readyForDannyCount ?? 0))
+      .badgeSummary({ isPolling: true })
+      .then((response) => setBugInboxApprovalCount(response?.readyForDannyCount ?? 0))
       .catch(() => setBugInboxApprovalCount(0));
   }, [canTriageBugInbox]);
 

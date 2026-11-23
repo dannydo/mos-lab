@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type {
+  BugReportBadgeSummaryResponse,
   CancelBugReportRequest,
   CreateBugReportCommentRequest,
   CreateBugReportRequest,
@@ -106,7 +107,7 @@ export function registerBugReportReporterRoutes(fastify: FastifyInstance) {
       try {
         const input = request.body as CreateBugReportRequest;
         const data = await BugReportService.create(fastify, request.user.id, input);
-        fastify.cache?.invalidatePattern('^bug-reports:mine:');
+        fastify.cache?.invalidatePattern('^bug-reports:(mine|badge):');
         if (await InboxFollowUpService.enqueue(fastify, data.id, 'CREATED', String(data.id)))
           RequestClassifierWorkerHub.notify('inbox_follow_up_available');
         if (await InboxPlanService.enqueue(fastify, data.id, 'CREATED'))
@@ -121,6 +122,26 @@ export function registerBugReportReporterRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+  fastify.get('/bug-reports/badge-summary', { preHandler: [requireAuth] }, async (request, reply) => {
+    reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    reply.header('Pragma', 'no-cache');
+    reply.header('Expires', '0');
+
+    const includeInboxSummary = canReadBugInbox(request.user);
+    const cacheKey = `bug-reports:badge:${request.user.id}:${includeInboxSummary ? 1 : 0}`;
+    const cached = fastify.cache?.get<BugReportBadgeSummaryResponse>(cacheKey);
+    if (cached) {
+      return reply.send(cached);
+    }
+    try {
+      const data = await BugReportService.badgeSummary(fastify, request.user.id, includeInboxSummary);
+      fastify.cache?.set(cacheKey, data, 30_000);
+      return reply.send(data);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Read bug report badge summary failed');
+    }
+  });
 
   fastify.get('/bug-reports/mine', { preHandler: [requireAuth] }, async (request, reply) => {
     reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
@@ -138,9 +159,9 @@ export function registerBugReportReporterRoutes(fastify: FastifyInstance) {
     try {
       const data = await BugReportService.mine(fastify, request.user.id);
       if (!bypassCache) {
-        fastify.cache?.set(cacheKey, data, 15_000);
+        fastify.cache?.set(cacheKey, data, 30_000);
       } else {
-        fastify.cache?.invalidatePattern(`^bug-reports:mine:${request.user.id}$`);
+        fastify.cache?.invalidatePattern(`^bug-reports:(mine|badge):${request.user.id}(:|$)`);
       }
       return reply.send(data);
     } catch (error) {
@@ -155,7 +176,7 @@ export function registerBugReportReporterRoutes(fastify: FastifyInstance) {
         request.user.id,
         request.body as MarkBugReportNotificationsReadRequest
       );
-      fastify.cache?.invalidatePattern(`^bug-reports:mine:${request.user.id}$`);
+      fastify.cache?.invalidatePattern(`^bug-reports:(mine|badge):${request.user.id}(:|$)`);
       return reply.send({ success: true, data: { updatedCount }, message: 'Đã đọc thông báo.' });
     } catch (error) {
       return sendError(fastify, reply, error, 'Mark bug notifications read failed');
@@ -174,7 +195,7 @@ export function registerBugReportReporterRoutes(fastify: FastifyInstance) {
           id,
           request.body as ReviewBugReportRequest
         );
-        fastify.cache?.invalidatePattern('^bug-reports:mine:');
+        fastify.cache?.invalidatePattern('^bug-reports:(mine|badge):');
         if (
           (request.body as ReviewBugReportRequest)?.decision === 'REOPEN' &&
           (await InboxFollowUpService.enqueue(fastify, id, 'REPORTER_REOPENED', data.updatedAt))
@@ -232,7 +253,7 @@ export function registerBugReportReporterRoutes(fastify: FastifyInstance) {
           canManageBugInbox(request.user),
           request.body as CreateBugReportCommentRequest
         );
-        fastify.cache?.invalidatePattern('^bug-reports:mine:');
+        fastify.cache?.invalidatePattern('^bug-reports:(mine|badge):');
         if (data.report.clarification?.status === 'PENDING_AGENT') {
           if (await InboxFollowUpService.enqueue(fastify, id, 'REPORTER_COMMENT', data.report.updatedAt))
             RequestClassifierWorkerHub.notify('inbox_follow_up_available');

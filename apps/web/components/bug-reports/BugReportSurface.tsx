@@ -110,7 +110,7 @@ export function BugReportSurface() {
   const isAppRoute =
     isDashboardRoute || normalizedPathname.startsWith('/chat') || normalizedPathname.startsWith('/ios-app');
   const enabled = authenticated && !isCvAccount && isAppRoute;
-  const myBugs = useMyBugReports(enabled);
+  const myBugs = useMyBugReports(enabled, open);
 
   React.useEffect(() => {
     setAuthenticated(Boolean(safeStorage.getItem('mos_token')));
@@ -135,12 +135,12 @@ export function BugReportSurface() {
   }, []);
 
   React.useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !open || release) return;
     apiClient.release
       .get()
       .then(setRelease)
       .catch(() => setRelease(null));
-  }, [enabled]);
+  }, [enabled, open, release]);
 
   React.useEffect(() => {
     if (!enabled) return;

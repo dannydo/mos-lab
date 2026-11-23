@@ -5,6 +5,7 @@ import type {
   AgentMarkBugFixedRequest,
   AgentReviewBugReportRequest,
   AgentUpdateBugProgressRequest,
+  BugReportBadgeSummaryResponse,
   BugReportDetail,
   BugReportListQuery,
   BugReportListResponse,
@@ -49,6 +50,7 @@ import {
   createBugReport,
   getBugReportAttachment,
   getBugReportAttachmentForUser,
+  getBugReportBadgeSummary,
   getBugReportDetail,
   listBugReports,
   listMyBugReports,
@@ -108,6 +110,14 @@ export class BugReportService {
 
   static mine(fastify: FastifyInstance, reporterStaffId: number): Promise<MyBugReportsResponse> {
     return listMyBugReports(fastify, reporterStaffId);
+  }
+
+  static badgeSummary(
+    fastify: FastifyInstance,
+    reporterStaffId: number,
+    includeInboxSummary: boolean
+  ): Promise<BugReportBadgeSummaryResponse> {
+    return getBugReportBadgeSummary(fastify, reporterStaffId, includeInboxSummary);
   }
 
   static addComment(

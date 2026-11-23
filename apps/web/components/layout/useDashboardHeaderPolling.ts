@@ -127,24 +127,10 @@ export function useDashboardHeaderPolling(hasAuthenticatedUser: boolean, isCvAcc
 
   const fetchOnlineStaff = useCallback(async () => {
     await pollWithAbort('layout:onlineStaff', async (signal) => {
-      const list = await apiClient.staff.list(undefined, { signal, isPolling: true });
+      const list = await apiClient.staff.onlinePresence({ signal, isPolling: true });
       if (!Array.isArray(list)) return [];
-      const now = dayjs();
-      const storedUserStr = typeof window !== 'undefined' ? localStorage.getItem('mos_user') : null;
-      let currentUserId = '';
-      if (storedUserStr) {
-        try {
-          currentUserId = JSON.parse(storedUserStr).id;
-        } catch {}
-      }
 
-      const filtered = list.filter((m: SafeAny) => {
-        const isUserActive = m.isActive === true || m.isActive === 1 || m.isActive === '1';
-        const isOnline = !!(m.lastActiveAt && now.diff(dayjs(m.lastActiveAt), 'minute') < 5);
-        return isUserActive && isOnline && m.id !== currentUserId;
-      });
-
-      const mapped: DashboardOnlineMember[] = filtered.map((m: SafeAny) => {
+      const mapped: DashboardOnlineMember[] = list.map((m) => {
         const initials = m.displayName
           ? m.displayName
               .split(' ')
@@ -154,7 +140,7 @@ export function useDashboardHeaderPolling(hasAuthenticatedUser: boolean, isCvAcc
               .toUpperCase()
           : m.username?.slice(0, 2).toUpperCase() || '??';
 
-        const rawAvatar = m.avatarUrl || m.avatar || null;
+        const rawAvatar = m.avatarUrl || null;
         const formattedAvatar = rawAvatar
           ? rawAvatar.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com')
           : null;

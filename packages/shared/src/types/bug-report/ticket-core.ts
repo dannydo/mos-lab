@@ -371,6 +371,13 @@ export interface MyBugReportsResponse {
   actionRequiredCount: number;
 }
 
+export interface BugReportBadgeSummaryResponse {
+  unreadCount: number;
+  actionRequiredCount: number;
+  readyForDannyCount: number;
+  unreadNotifications: BugReportNotification[];
+}
+
 export interface BugReportListQuery extends PageQuery {
   requestType?: BugReportRequestType | 'ALL';
   status?: BugReportStatus | 'ALL';

@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 function getApiBaseUrl(): string {
-  const envUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.API_URL ||
-    (process.env.NODE_ENV === 'production' ? 'https://api.lab.masteros.app/api' : 'http://localhost:4001/api');
-  return envUrl.replace(/\/$/, '');
+  const candidates = [
+    process.env.API_URL,
+    process.env.PERFORMANCE_QA_API_ORIGIN
+      ? `${process.env.PERFORMANCE_QA_API_ORIGIN.replace(/\/$/, '')}/api`
+      : undefined,
+    process.env.NEXT_PUBLIC_API_URL,
+  ];
+  for (const candidate of candidates) {
+    if (candidate && /^https?:\/\//i.test(candidate.trim())) {
+      return candidate.trim().replace(/\/$/, '');
+    }
+  }
+  return process.env.NODE_ENV === 'production' && process.env.PERFORMANCE_QA_PROXY !== '1'
+    ? 'https://api.lab.masteros.app/api'
+    : 'http://127.0.0.1:4001/api';
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ filename: string }> }) {

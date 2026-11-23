@@ -33,12 +33,26 @@ import type {
   BulkSendOnboardingEmailRequest,
   SendOnboardingEmailResponse,
   BulkSendOnboardingEmailResponse,
+  OnlineStaffPresenceItem,
 } from '@mos-lab/shared';
 
 import { api, dedupeApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
 
 export const staffApi = {
   staff: {
+    onlinePresence: async (options?: ApiRequestOptions): Promise<OnlineStaffPresenceItem[]> => {
+      try {
+        const data = await dedupeApiGet<OnlineStaffPresenceItem[]>(
+          '/staff/online-presence',
+          undefined,
+          20_000,
+          options
+        );
+        return Array.isArray(data) ? data : [];
+      } catch (_err) {
+        return [];
+      }
+    },
     list: async (params?: Record<string, unknown>, options?: ApiRequestOptions): Promise<Staff[]> => {
       try {
         const data = await dedupeApiGet<Staff[]>('/staff', params, 30000, options);

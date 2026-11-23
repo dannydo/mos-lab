@@ -21,6 +21,17 @@ export interface UseCustomerDataOptions {
   onWarning?: (msg: string) => void;
 }
 
+function readStoredStaffUser(): Staff | null {
+  if (typeof window === 'undefined') return null;
+  const stored = localStorage.getItem('mos_user') || localStorage.getItem('user');
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored) as Staff;
+  } catch {
+    return null;
+  }
+}
+
 export function useCustomerData(options?: UseCustomerDataOptions) {
   const optionsRef = useRef(options);
   useEffect(() => {
@@ -30,20 +41,13 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
   const searchParams = useSearchParams();
   const scopeParam = searchParams?.get('assignedStaffId');
 
-  const [currentUser, setCurrentUser] = useState<Staff | null>(null);
+  const [currentUser, setCurrentUser] = useState<Staff | null>(() => readStoredStaffUser());
 
-  // Load user from localStorage
+  // Keep user synchronized with localStorage if scope changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('mos_user') || localStorage.getItem('user');
-      if (stored) {
-        try {
-          setCurrentUser(JSON.parse(stored));
-        } catch {
-          // ignore
-        }
-      }
-    }
+    const parsed = readStoredStaffUser();
+    if (!parsed) return;
+    setCurrentUser((prev) => (prev?.id === parsed.id && prev?.role === parsed.role ? prev : parsed));
   }, [scopeParam]);
 
   // Modal detail state
@@ -115,6 +119,12 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
 
   // A saved category is a UI key. Resolve it to the exact active catalog IDs
   // before every list/stats/random request so the backend never guesses from a name.
+  // Keep object reference stable when serialized params have not changed so async
+  // service-filter-options loading never aborts and re-fires initial list/stats requests.
+  const prevFilterParamsRef = useRef<{
+    key: string;
+    value: Omit<typeof rawFilterParams, 'serviceCategories'>;
+  } | null>(null);
   const filterParams = useMemo(() => {
     const directServiceIds = String(rawFilterParams.serviceIds || '')
       .split(',')
@@ -124,16 +134,25 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
       .split(',')
       .map((key) => key.trim())
       .filter(Boolean);
-    const categoryServiceIds = serviceFilterCategories
-      .filter((category) => selectedCategoryKeys.includes(category.key))
-      .flatMap((category) => category.serviceIds);
+    const categoryServiceIds =
+      selectedCategoryKeys.length > 0
+        ? serviceFilterCategories
+            .filter((category) => selectedCategoryKeys.includes(category.key))
+            .flatMap((category) => category.serviceIds)
+        : [];
     const serviceIds = Array.from(new Set([...directServiceIds, ...categoryServiceIds]));
     const { serviceCategories: _serviceCategories, ...requestParams } = rawFilterParams;
 
-    return {
+    const nextParams = {
       ...requestParams,
       serviceIds: serviceIds.length > 0 ? serviceIds.join(',') : undefined,
     };
+    const nextKey = JSON.stringify(nextParams);
+    if (prevFilterParamsRef.current?.key === nextKey) {
+      return prevFilterParamsRef.current.value;
+    }
+    prevFilterParamsRef.current = { key: nextKey, value: nextParams };
+    return nextParams;
   }, [rawFilterParams, serviceFilterCategories]);
 
   // Customer List hook

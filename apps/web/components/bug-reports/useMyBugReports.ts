@@ -18,7 +18,7 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Không thể tải trạng thái báo lỗi.';
 }
 
-export function useMyBugReports(enabled: boolean) {
+export function useMyBugReports(enabled: boolean, isSurfaceOpen = true) {
   const [data, setData] = React.useState<MyBugReportItem[]>([]);
   const [notifications, setNotifications] = React.useState<BugReportNotification[]>([]);
   const [unreadCount, setUnreadCount] = React.useState(0);
@@ -31,6 +31,21 @@ export function useMyBugReports(enabled: boolean) {
   const addOptimisticReport = React.useCallback((item: MyBugReportItem) => {
     setData((current) => [item, ...current.filter((r) => r.id !== item.id && r.key !== item.key)]);
   }, []);
+
+  const refreshBadge = React.useCallback(async (): Promise<void> => {
+    if (!enabled) return;
+    try {
+      const badge = await apiClient.bugReports.badgeSummary({ isPolling: true });
+      setNotifications((current) => {
+        if (badge.unreadNotifications.length > 0) return badge.unreadNotifications;
+        return current.filter((item) => !item.readAt);
+      });
+      setUnreadCount(badge.unreadCount ?? 0);
+      setActionRequiredCount(badge.actionRequiredCount ?? 0);
+    } catch {
+      // Keep existing badge state on transient background poll error
+    }
+  }, [enabled]);
 
   const refresh = React.useCallback(
     async (options?: { force?: boolean }): Promise<void> => {
@@ -57,26 +72,37 @@ export function useMyBugReports(enabled: boolean) {
 
   React.useEffect(() => {
     if (!enabled) return;
-    void refresh();
+    let initialTimer: number | undefined;
+    if (isSurfaceOpen) {
+      void refresh();
+    } else {
+      initialTimer = window.setTimeout(() => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+        void refreshBadge();
+      }, 1_400);
+    }
     const interval = window.setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
         return;
       }
-      void refresh();
+      if (isSurfaceOpen) void refresh();
+      else void refreshBadge();
     }, 60_000);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        void refresh();
+        if (isSurfaceOpen) void refresh();
+        else void refreshBadge();
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
+      if (initialTimer !== undefined) window.clearTimeout(initialTimer);
       window.clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [enabled, refresh]);
+  }, [enabled, isSurfaceOpen, refresh, refreshBadge]);
 
   const review = React.useCallback(
     async (id: number, request: ReviewBugReportRequest) => {
@@ -196,10 +222,7 @@ export function useMyBugReports(enabled: boolean) {
                 label: 'Yêu cầu đã huỷ',
                 detail: 'Bạn có thể gửi một yêu cầu mới khi cần.',
               },
-              updates: [
-                ...item.reporterExperience.updates,
-                { label: 'Đã huỷ yêu cầu', occurredAt: nowIso },
-              ],
+              updates: [...item.reporterExperience.updates, { label: 'Đã huỷ yêu cầu', occurredAt: nowIso }],
             },
           };
         })

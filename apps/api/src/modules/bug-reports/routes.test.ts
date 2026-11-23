@@ -349,3 +349,54 @@ test('classifier worker bridge has a bounded request rate and recovers in the ne
   assert.equal(consumeClassifierWorkerRateLimit(key, 1_000), false);
   assert.equal(consumeClassifierWorkerRateLimit(key, 61_000), true);
 });
+
+test('GET /bug-reports/badge-summary returns lightweight summary and checks inbox permission', async (t) => {
+  const app = Fastify();
+  app.decorate('prisma', { crm: { crmStaff: { update: async () => ({}) } } } as unknown as typeof app.prisma);
+  app.decorateRequest('jwtVerify', async function () {
+    if (!this.headers['x-test-role']) throw new Error('No test session');
+    this.user = {
+      id: 7,
+      username: 'tester',
+      displayName: 'Tester',
+      role: this.headers['x-test-role'] as never,
+    };
+  });
+  const badgeMock = t.mock.method(
+    BugReportService,
+    'badgeSummary',
+    async (_f: unknown, _staffId: number, includeInbox: boolean) => ({
+      unreadCount: 2,
+      actionRequiredCount: 1,
+      readyForDannyCount: includeInbox ? 5 : 0,
+      unreadNotifications: [],
+    })
+  );
+  await app.register(bugReportRoutes);
+  try {
+    assert.equal((await app.inject({ method: 'GET', url: '/bug-reports/badge-summary' })).statusCode, 401);
+    const adminRes = await app.inject({
+      method: 'GET',
+      url: '/bug-reports/badge-summary',
+      headers: { 'x-test-role': 'super_admin' },
+    });
+    assert.equal(adminRes.statusCode, 200);
+    assert.deepEqual(adminRes.json(), {
+      unreadCount: 2,
+      actionRequiredCount: 1,
+      readyForDannyCount: 5,
+      unreadNotifications: [],
+    });
+
+    const teleRes = await app.inject({
+      method: 'GET',
+      url: '/bug-reports/badge-summary',
+      headers: { 'x-test-role': 'telesales' },
+    });
+    assert.equal(teleRes.statusCode, 200);
+    assert.equal(teleRes.json().readyForDannyCount, 0);
+    assert.equal(badgeMock.mock.callCount(), 2);
+  } finally {
+    await app.close();
+  }
+});

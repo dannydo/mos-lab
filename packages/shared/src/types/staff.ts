@@ -83,3 +83,11 @@ export interface AvatarNudgeResponse {
   angelAction?: string;
   angelIcon?: string;
 }
+
+export interface OnlineStaffPresenceItem {
+  id: number;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  lastActiveAt: string | null;
+}

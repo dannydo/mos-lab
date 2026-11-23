@@ -229,4 +229,63 @@ describe('FrontendTelemetryService', () => {
     assert.equal(metrics.resolvedClusters, 0);
     assert.equal(metrics.trafficExtinguishmentRate, 0);
   });
+
+  test('syncResolvedClusters batches note updates via updateMany and getMetrics throttles auto-sync', async () => {
+    const updateManyCalls: Array<unknown> = [];
+    let singleUpdateCalls = 0;
+    let unresolvedFindManyCalls = 0;
+
+    const mockFastify = {
+      log: { warn: () => undefined },
+      prisma: {
+        crm: {
+          crmBugReport: {
+            findMany: async () => [{ id: 91, sourcePath: 'cluster:POLLING_SLOW_API', status: 'CLOSED' }],
+          },
+          crmFrontendIssue: {
+            findMany: async () => {
+              unresolvedFindManyCalls += 1;
+              return [
+                {
+                  id: 1,
+                  issueType: 'SLOW_INTERACTION',
+                  path: '/dashboard/nyc',
+                  target: 'GET /bug-reports/mine',
+                  message: 'API request took 4500ms',
+                  resolutionNotes: null,
+                },
+                {
+                  id: 2,
+                  issueType: 'SLOW_INTERACTION',
+                  path: '/dashboard/customers',
+                  target: 'GET /bug-reports/mine',
+                  message: 'API request took 5200ms',
+                  resolutionNotes: null,
+                },
+              ];
+            },
+            updateMany: async (args: unknown) => {
+              updateManyCalls.push(args);
+              return { count: 2 };
+            },
+            update: async () => {
+              singleUpdateCalls += 1;
+              return {};
+            },
+            groupBy: async () => [],
+            aggregate: async () => ({ _sum: { occurrenceCount: 0 } }),
+          },
+        },
+      },
+    } as unknown as FastifyInstance;
+
+    const syncRes = await FrontendTelemetryService.syncResolvedClusters(mockFastify, true);
+    assert.equal(syncRes.syncedIssuesCount, 2);
+    assert.equal(singleUpdateCalls, 0);
+    assert.equal(updateManyCalls.length, 1);
+
+    await FrontendTelemetryService.getMetrics(mockFastify);
+    await FrontendTelemetryService.getMetrics(mockFastify);
+    assert.equal(unresolvedFindManyCalls, 2);
+  });
 });

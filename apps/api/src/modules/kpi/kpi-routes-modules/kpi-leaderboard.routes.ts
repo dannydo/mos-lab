@@ -71,7 +71,7 @@ export function registerKpiLeaderboardRoutes(fastify: FastifyInstance) {
           leaderboard.sort((a, b) => b.totalCheckin - a.totalCheckin);
         }
         const isPast = end < new Date();
-        fastify.cache.set(cacheKey, leaderboard, isPast ? 300 : 30);
+        fastify.cache.set(cacheKey, leaderboard, isPast ? 300_000 : 30_000);
         return leaderboard;
       }
 
@@ -283,7 +283,7 @@ export function registerKpiLeaderboardRoutes(fastify: FastifyInstance) {
 
       leaderboard.sort(compareBookerProductivity);
       const isPast = end < new Date();
-      fastify.cache.set(cacheKey, leaderboard, isPast ? 300 : 30);
+      fastify.cache.set(cacheKey, leaderboard, isPast ? 300_000 : 30_000);
       return leaderboard;
     } catch (err: SafeAny) {
       fastify.log.error(err as SafeAny, 'Leaderboard KPI error');

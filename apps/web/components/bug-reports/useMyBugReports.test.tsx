@@ -1,8 +1,14 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import type { MarkBugReportNotificationsReadResponse, MyBugReportItem, MyBugReportsResponse, ReviewBugReportResponse } from '@mos-lab/shared';
+import type {
+  MarkBugReportNotificationsReadResponse,
+  MyBugReportItem,
+  MyBugReportsResponse,
+  ReviewBugReportResponse,
+} from '@mos-lab/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const apiMocks = vi.hoisted(() => ({
+  badgeSummary: vi.fn(),
   mine: vi.fn(),
   markNotificationsRead: vi.fn(),
   review: vi.fn(),
@@ -13,6 +19,7 @@ const apiMocks = vi.hoisted(() => ({
 vi.mock('../../lib/api-client', () => ({
   apiClient: {
     bugReports: {
+      badgeSummary: apiMocks.badgeSummary,
       mine: apiMocks.mine,
       markNotificationsRead: apiMocks.markNotificationsRead,
       review: apiMocks.review,
@@ -42,10 +49,22 @@ function makeMockBugItem(overrides?: Record<string, unknown>): MyBugReportItem {
     reopen: null,
     agentProgress: { stage: 'FIXING', note: null, updatedAt: '2026-11-05T00:00:00Z' },
     implementation: null,
-    nextAction: { actor: 'REPORTER', label: 'Xác nhận', detail: '', type: 'VERIFY_FIX', waitingSince: '2026-11-05T00:00:00Z' },
+    nextAction: {
+      actor: 'REPORTER',
+      label: 'Xác nhận',
+      detail: '',
+      type: 'VERIFY_FIX',
+      waitingSince: '2026-11-05T00:00:00Z',
+    },
     reporter: { id: 1, displayName: 'Tester', role: 'cv' },
     approvedAt: null,
-    timeline: { submittedAt: '2026-11-05T00:00:00Z', clarifiedAt: null, approvedAt: null, fixedAt: null, closedAt: null },
+    timeline: {
+      submittedAt: '2026-11-05T00:00:00Z',
+      clarifiedAt: null,
+      approvedAt: null,
+      fixedAt: null,
+      closedAt: null,
+    },
     reporterExperience: {
       state: 'READY_FOR_REVIEW',
       summary: 'mOS đã chuẩn bị kết quả để bạn kiểm tra.',
@@ -68,6 +87,7 @@ function makeMockBugItem(overrides?: Record<string, unknown>): MyBugReportItem {
 
 describe('useMyBugReports', () => {
   beforeEach(() => {
+    apiMocks.badgeSummary.mockReset();
     apiMocks.mine.mockReset();
     apiMocks.markNotificationsRead.mockReset();
     apiMocks.review.mockReset();
@@ -198,7 +218,12 @@ describe('useMyBugReports', () => {
     await waitFor(() => expect(result.current.data.length).toBe(1));
 
     await act(async () => {
-      await result.current.review(197, { decision: 'REOPEN', note: 'Vẫn còn lỗi', reopenIntent: 'DETAILS', attachments: [] });
+      await result.current.review(197, {
+        decision: 'REOPEN',
+        note: 'Vẫn còn lỗi',
+        reopenIntent: 'DETAILS',
+        attachments: [],
+      });
     });
 
     expect(result.current.data[0].canReview).toBe(false);
@@ -239,7 +264,12 @@ describe('useMyBugReports', () => {
     };
     apiMocks.mine.mockResolvedValue(initialResponse);
     let resolveReview: (val: any) => void;
-    apiMocks.review.mockImplementation(() => new Promise((resolve) => { resolveReview = resolve; }));
+    apiMocks.review.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveReview = resolve;
+        })
+    );
 
     const { result } = renderHook(() => useMyBugReports(true));
     await waitFor(() => expect(result.current.data.length).toBe(1));
@@ -306,5 +336,31 @@ describe('useMyBugReports', () => {
     expect(result.current.data[0]?.reporterExperience.state).toBe('NOT_PROCEEDING');
     expect(result.current.data[0]?.reporterExperience.label).toBe('Đã huỷ');
     expect(result.current.data[0]?.reporterExperience.summary).toContain('Báo nhầm không phải lỗi');
+  });
+
+  it('polls lightweight badgeSummary instead of mine when surface is closed', async () => {
+    vi.useFakeTimers();
+    try {
+      apiMocks.badgeSummary.mockResolvedValue({
+        unreadCount: 2,
+        actionRequiredCount: 1,
+        readyForDannyCount: 4,
+        unreadNotifications: [],
+      });
+
+      const { result } = renderHook(() => useMyBugReports(true, false));
+      expect(apiMocks.mine).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1_500);
+      });
+
+      expect(apiMocks.badgeSummary).toHaveBeenCalledTimes(1);
+      expect(apiMocks.mine).not.toHaveBeenCalled();
+      expect(result.current.unreadCount).toBe(2);
+      expect(result.current.actionRequiredCount).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
