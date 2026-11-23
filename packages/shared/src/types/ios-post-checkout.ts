@@ -80,6 +80,8 @@ export interface IosPostCheckoutPendingDraft {
   combinedPaymentMethod: IosPaymentMethod;
   combinedPaymentBreakdown: IosPaymentBreakdown;
   transferProofPhoto?: string;
+  tipTransferProofPhoto?: string;
+  qrSplitTipSeparate?: boolean;
   beforeSnapshot: IosPostCheckoutSnapshot;
   afterSnapshot: IosPostCheckoutSnapshot;
 }

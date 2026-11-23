@@ -84,6 +84,11 @@ export function IosAppGlobalOverlays({
           onRevertConsultation={state.handleSimRevertConsultation}
           onResetToIncoming={state.handleSimResetToIncoming}
           onExitSimulation={state.toggleSimulationMode}
+          simPresetMode={state.simPresetMode}
+          onSelectSimPresetMode={state.selectSimPresetMode}
+          onSimJumpToStep={state.handleSimJumpToStep}
+          simMaterialsChecklist={state.simMaterialsChecklist}
+          onToggleSimMaterial={state.toggleSimMaterialCheck}
         />
       )}
 

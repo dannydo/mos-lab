@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { computePreCheckoutPaymentSummary } from '@mos-lab/shared';
 import { Heart } from 'lucide-react';
 import type { BookingItem } from '../../../state/mockData';
 
@@ -36,6 +37,10 @@ export function ReceiptTotalsSummary({
   showStaffRewards,
 }: ReceiptTotalsSummaryProps) {
   const currentDiamondBalance = customerDiamondBalance ?? booking?.diamondBalance ?? 0;
+  const preCheckoutSummary = computePreCheckoutPaymentSummary({
+    grandTotal: finalGrandTotal,
+    billing: booking?.billing,
+  });
   return (
     <>
       <div
@@ -115,14 +120,14 @@ export function ReceiptTotalsSummary({
         ) : currentDiamondBalance > 0 ? (
           <div
             className={`flex items-center justify-between font-medium px-2.5 py-1.5 rounded-xl border text-[11.5px] ${
-              isDark ? 'text-cyan-300/90 bg-cyan-950/20 border-cyan-900/50' : 'text-cyan-900 bg-cyan-50/60 border-cyan-200/80'
+              isDark
+                ? 'text-cyan-300/90 bg-cyan-950/20 border-cyan-900/50'
+                : 'text-cyan-900 bg-cyan-50/60 border-cyan-200/80'
             }`}
           >
             <div className="flex items-center gap-1.5">
               <span>💎 Ví Kim Cương khách có:</span>
-              <span className="font-bold tabular-nums">
-                {currentDiamondBalance.toLocaleString('vi-VN')} 💎
-              </span>
+              <span className="font-bold tabular-nums">{currentDiamondBalance.toLocaleString('vi-VN')} 💎</span>
               <span className="opacity-75 text-[10.5px]">
                 (= {(currentDiamondBalance * 1000).toLocaleString('vi-VN')}đ)
               </span>
@@ -162,6 +167,43 @@ export function ReceiptTotalsSummary({
           {finalGrandTotal.toLocaleString('vi-VN')}đ
         </span>
       </div>
+
+      {preCheckoutSummary.hasPreCheckoutPayment && (
+        <div
+          data-testid="receipt-precheckout-summary"
+          className={`px-3.5 py-2.5 border-t space-y-1 text-[11.5px] tabular-nums ${
+            isDark
+              ? 'bg-emerald-950/35 border-emerald-700/50 text-emerald-200'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-950'
+          }`}
+        >
+          <div className="flex items-center justify-between font-bold">
+            <span>
+              ✓ Đã thu trước khi vào phòng
+              {preCheckoutSummary.preCheckoutServicePaidAmount > 0 && preCheckoutSummary.preCheckoutTipAmount > 0
+                ? ` (DV ${preCheckoutSummary.preCheckoutServicePaidAmount.toLocaleString('vi-VN')}đ + Tip ${preCheckoutSummary.preCheckoutTipAmount.toLocaleString('vi-VN')}đ)`
+                : preCheckoutSummary.preCheckoutTipAmount > 0
+                  ? ' (Tiền Tip)'
+                  : ' (Dịch vụ)'}
+              :
+            </span>
+            <span className="font-black text-emerald-500">
+              -{preCheckoutSummary.preCheckoutTotalPaid.toLocaleString('vi-VN')}đ
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-[12.5px] font-black">
+            <span>CÒN PHẢI THU TẠI CHECKOUT:</span>
+            <span className={preCheckoutSummary.remainingDue === 0 ? 'text-emerald-500' : 'text-[#FF9500]'}>
+              {preCheckoutSummary.remainingDue.toLocaleString('vi-VN')}đ
+            </span>
+          </div>
+          {preCheckoutSummary.overpaidAmount > 0 && (
+            <div className="text-[10.5px] font-bold text-amber-500">
+              ⚠ Đã thu trước dư {preCheckoutSummary.overpaidAmount.toLocaleString('vi-VN')}đ so với hóa đơn mới.
+            </div>
+          )}
+        </div>
+      )}
 
       {/* CV Rotation Points Recording Banner */}
       {booking?.cvRotationPoints && showStaffRewards && (

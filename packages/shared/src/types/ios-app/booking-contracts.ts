@@ -30,6 +30,7 @@ export interface IosBookingItem {
   customerName: string;
   customerPhone: string;
   customerId: number;
+  customerDateOfBirth?: string | null;
   customerVisits: number;
   customerNote: string;
   timeSlot: string;
@@ -178,6 +179,19 @@ export interface IosBookingItem {
     diamondUsed?: number;
     diamondDiscountAmount?: number;
     transferProofPhoto?: string;
+    tipTransferProofPhoto?: string;
+    qrSplitTipSeparate?: boolean;
+    preCheckoutTipAmount?: number;
+    preCheckoutServicePaidAmount?: number;
+    preCheckoutPaymentMethod?: IosPaymentMethod;
+    preCheckoutPaymentBreakdown?: IosPaymentBreakdown;
+    preCheckoutQrSplitMode?: 'COMBINED' | 'SEPARATE';
+    preCheckoutTransferProofPhoto?: string;
+    preCheckoutTipTransferProofPhoto?: string;
+    preCheckoutRecordedAt?: string;
+    preCheckoutRecordedByStaffId?: number;
+    preCheckoutRecordedByStaffName?: string;
+    preCheckoutNote?: string;
     zaloConsent?: {
       agreed: boolean;
       phone: string;
@@ -248,6 +262,7 @@ export type IosBookingActionType =
   | 'SAVE_SURVEY'
   | 'SAVE_UPSELL'
   | 'SAVE_PROMOTION'
+  | 'SAVE_PRE_CHECKOUT_PAYMENT'
   | 'COMPLETE_CHECKOUT'
   | 'UPDATE_CUSTOMER_AVATAR'
   | 'RESET_DEMO'

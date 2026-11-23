@@ -5,7 +5,7 @@ import {
   isCanonicalSuperAdminIdentity,
   isSuperAdminRole,
 } from '@mos-lab/shared';
-import { FALLBACK_CAREER_PROGRESSION_CONFIG } from '../career-path.constants';
+import { FALLBACK_CAREER_PROGRESSION_CONFIG, matchesCareerBranchFilter } from '../career-path.constants';
 import type { CareerSelectorMode } from '../components/StaffCareerSelector';
 
 export interface CareerCurrentUser {
@@ -104,18 +104,23 @@ export function resolveDefaultCareerStaff(params: {
   queryStaffId: string | null;
   selectedStaffId: number | null;
   currentUserId?: number;
+  activeBranchFilter?: string;
 }): CareerStaffSummary | undefined {
-  const { sortedList, queryStaffId, selectedStaffId, currentUserId } = params;
+  const { sortedList, queryStaffId, selectedStaffId, currentUserId, activeBranchFilter = 'ALL' } = params;
   const targetParamId = queryStaffId ? Number(queryStaffId) : null;
   const queryStaff = targetParamId ? findCareerStaffByIdOrLegacy(sortedList, targetParamId) : undefined;
-  const existingSelected = selectedStaffId ? sortedList.find((s) => s.id === selectedStaffId) : undefined;
   const ownStaff = currentUserId ? findCareerStaffByIdOrLegacy(sortedList, currentUserId) : undefined;
 
-  const cvPool = sortedList.filter((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole));
-  const targetPool = cvPool.length > 0 ? cvPool : sortedList;
+  const branchPool = sortedList.filter((s) => matchesCareerBranchFilter(s, activeBranchFilter));
+  const effectivePool = branchPool.length > 0 ? branchPool : sortedList;
+  const cvPool = effectivePool.filter((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole));
+  const targetPool = cvPool.length > 0 ? cvPool : effectivePool;
   const highestOrdersStaff = targetPool[0];
 
-  return queryStaff || existingSelected || ownStaff || highestOrdersStaff;
+  const selectedInBranch = selectedStaffId ? effectivePool.find((s) => s.id === selectedStaffId) : undefined;
+  const ownInBranch = ownStaff && matchesCareerBranchFilter(ownStaff, activeBranchFilter) ? ownStaff : undefined;
+
+  return queryStaff || selectedInBranch || ownInBranch || highestOrdersStaff;
 }
 
 export function getDefaultSimulationTarget(role?: CareerRole | string | null): SimulationTargetRole {

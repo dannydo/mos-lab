@@ -69,6 +69,23 @@ export const StaffCareerSelectedFooter: React.FC<StaffCareerSelectedFooterProps>
         Combo: <strong>{getStaffComboPercent(selectedStaff)}%</strong>
       </span>
       <span className="text-slate-400">·</span>
+      <span className="tabular-nums text-sky-600 dark:text-sky-400 font-semibold">
+        SPH:{' '}
+        <strong>
+          {(selectedStaff.servicesPerHour ?? selectedStaff.productivity?.servicesPerHour ?? 0).toFixed(2)}/h
+        </strong>
+      </span>
+      <span className="text-slate-400">·</span>
+      <span className="tabular-nums text-emerald-600 dark:text-emerald-400 font-semibold">
+        DT/h:{' '}
+        <strong>
+          {Math.round(
+            (selectedStaff.revenuePerHour ?? selectedStaff.productivity?.revenuePerHour ?? 0) / 1000
+          ).toLocaleString('vi-VN')}
+          K
+        </strong>
+      </span>
+      <span className="text-slate-400">·</span>
       <span className="tabular-nums text-amber-600 dark:text-amber-400 font-bold">
         Ví: <strong>{getBananaBalance(selectedStaff).toLocaleString('vi-VN')} 🍌</strong>
       </span>

@@ -4,7 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button, Table, Tag } from 'antd';
 import { SketchOutlined } from '@ant-design/icons';
 import { useTheme } from '../../../context/ThemeContext';
+import { useResponsiveTier } from '../../../hooks/useResponsiveTier';
 import { AdaptiveModal } from '../../ui';
+import { renderDesktopResizableModal } from './modalResizeRender';
 
 interface GemTransaction {
   id: number;
@@ -94,6 +96,7 @@ export const GemHistoryModal: React.FC<GemHistoryModalProps> = ({
   handleGemModalDragStart,
 }) => {
   const { themeMode } = useTheme();
+  const isMobile = useResponsiveTier() === 'mobile';
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => {
@@ -245,6 +248,9 @@ export const GemHistoryModal: React.FC<GemHistoryModalProps> = ({
       }
       open={open}
       onCancel={onCancel}
+      zIndex={2100}
+      maskClosable
+      closable
       footer={[
         <Button key="close" type="primary" onClick={onCancel}>
           Đóng
@@ -254,60 +260,9 @@ export const GemHistoryModal: React.FC<GemHistoryModalProps> = ({
       styles={{
         body: { padding: '12px 0 0 0' },
       }}
-      modalRender={(modal) => {
-        if (React.isValidElement(modal)) {
-          return React.cloneElement(modal as SafeAny, {
-            style: {
-              ...(modal.props as SafeAny)?.style,
-              position: 'relative',
-            },
-            children: (
-              <>
-                {(modal.props as SafeAny)?.children}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    right: '-4px',
-                    bottom: 0,
-                    width: '8px',
-                    cursor: 'ew-resize',
-                    zIndex: 10000,
-                    transition: 'background 0.2s',
-                  }}
-                  onMouseDown={(e) => handleGemModalDragStart(e, 'right')}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent';
-                  }}
-                />
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: '-4px',
-                    bottom: 0,
-                    width: '8px',
-                    cursor: 'ew-resize',
-                    zIndex: 10000,
-                    transition: 'background 0.2s',
-                  }}
-                  onMouseDown={(e) => handleGemModalDragStart(e, 'left')}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent';
-                  }}
-                />
-              </>
-            ),
-          });
-        }
-        return modal;
-      }}
+      modalRender={
+        isMobile ? undefined : (modal) => renderDesktopResizableModal(modal, isMobile, handleGemModalDragStart)
+      }
     >
       <Table
         components={components}

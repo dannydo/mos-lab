@@ -178,7 +178,13 @@ export function Screen13CheckoutTip({ booking, actor, cvPlusRules, onBack, onRec
               PHÂN BỔ TIỀN TIP THEO QUY ĐỊNH
             </span>
             <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-              {isSameStaffAllThree ? 'Trọn 90% Tip' : 'Chia 50/50 In/Out'}
+              {isSameStaffAllThree
+                ? 'Trọn 90% Tip'
+                : Boolean(booking?.isTrainingCvlOrder) ||
+                    tipBreakdown.actorEarnedPercent >= 90 ||
+                    (tip > 0 && tipBreakdown.checkInShareAmount === 0 && tipBreakdown.checkOutShareAmount === 0)
+                  ? '90% Tip · Training'
+                  : 'Chia 50/50 In/Out'}
             </span>
           </div>
 

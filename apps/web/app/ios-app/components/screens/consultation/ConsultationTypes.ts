@@ -1,7 +1,10 @@
 import type { BookingItem } from '../../../state/mockData';
 import type { ActiveActorProfile } from '../../../state/useIosAppState';
+import type { SavePreCheckoutPaymentPayload } from '../../modals/PreCheckoutPaymentModal';
 
 export type ConsultationSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+import type { IosSandboxPresetMode } from '../../../state/useIosSimulationMode';
 
 export interface ConsultationSavedAttributes {
   style: string;
@@ -66,6 +69,8 @@ export interface Screen03ConsultationMatrixProps {
   ) => Promise<any> | void;
   isSimulationMode?: boolean;
   isReadOnlyMentorView?: boolean;
+  simPresetMode?: IosSandboxPresetMode;
+  onSimJumpToStep?: (step: number, bookingId?: number) => void;
   onSimFastForwardToUpsell?: (bookingId: number) => void;
   onSelectComboWallet?: (params: {
     targetBookingId?: number;
@@ -79,6 +84,7 @@ export interface Screen03ConsultationMatrixProps {
     serviceType?: 'Normal' | 'Retain';
     upgradePrice?: number;
   }) => void;
+  onSavePreCheckoutPayment?: (payload: SavePreCheckoutPaymentPayload) => Promise<void> | void;
 }
 
 export interface PendingOverrideState {

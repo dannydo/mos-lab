@@ -1,13 +1,15 @@
 import type { FastifyInstance } from 'fastify';
-import type { SafeAny } from '@mos-lab/shared';
+import type { SafeAny, StaffHourlyProductivity } from '@mos-lab/shared';
 import { ComboRecognitionService } from '../../customers/services/combo-recognition.service.js';
 import {
   BranchTipStats,
   buildBranchTipStatsSummary,
   buildShopTipStatsSql,
   CareerPeriodDates,
+  computeHourlyProductivity,
   resolveStaffBranchStats,
 } from './career-helpers.js';
+import { fetchStaffHourlyProductivity } from './career-productivity-queries.js';
 
 export interface StaffProgressionLegacyMetrics {
   ordersCount: number;
@@ -47,6 +49,7 @@ export interface StaffProgressionLegacyMetrics {
   payrollAllowanceAmount: number;
   payrollDate: string | null;
   payrollMonthLabel: string | null;
+  productivity: StaffHourlyProductivity;
 }
 
 /**
@@ -128,6 +131,7 @@ export async function fetchStaffProgressionLegacyMetrics(
   let payrollAllowanceAmount = 0;
   let payrollDate: string | null = null;
   let payrollMonthLabel: string | null = null;
+  let productivity: StaffHourlyProductivity = computeHourlyProductivity({});
 
   try {
     const [
@@ -146,6 +150,7 @@ export async function fetchStaffProgressionLegacyMetrics(
       payrollRes,
       staffPeriodOrdersRes,
       staff90dOrdersRes,
+      fetchedProductivity,
     ] = await Promise.all([
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `
@@ -380,7 +385,10 @@ export async function fetchStaffProgressionLegacyMetrics(
           targetLegacyStaffId
         )
         .catch(() => []),
+      fetchStaffHourlyProductivity(fastify, targetLegacyStaffId, periodConfig),
     ]);
+
+    productivity = fetchedProductivity;
 
     if (payrollRes && payrollRes.length > 0) {
       const pr = payrollRes[0];
@@ -579,5 +587,6 @@ export async function fetchStaffProgressionLegacyMetrics(
     payrollAllowanceAmount,
     payrollDate,
     payrollMonthLabel,
+    productivity,
   };
 }

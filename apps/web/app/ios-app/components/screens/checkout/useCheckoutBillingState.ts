@@ -1,8 +1,9 @@
 'use client';
 
-import type React from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  combinePaymentBreakdowns,
+  computePreCheckoutPaymentSummary,
   resolveActiveBookingComboWallets,
   resolveNormalizedPaymentBreakdown,
   type IosPaymentBreakdown,
@@ -24,8 +25,7 @@ import {
 import { buildCheckoutVietQrInfo } from '../../../state/iosBillingMath';
 import { useCheckoutItemizedPromotions } from '../../../state/useCheckoutItemizedPromotions';
 import { resolveCheckoutBaseServicePrice, useCheckoutComboSelection } from '../../../state/useCheckoutComboSelection';
-import { compressLashImage } from '../../../utils/imageCompressor';
-import { IosCloudSyncStatus } from '../../ui-kit/IosCloudSyncBadge';
+import { useCheckoutModalControls, useCheckoutProofCapture } from '../../../state/useCheckoutProofCapture';
 import { resolveDisplayServiceName } from '../LashMaterialConstraintMatrix';
 import { addScannedProductToCartProducts, removeScannedUnitFromCartProducts } from '../upsell/upsellCheckoutHelpers';
 
@@ -51,6 +51,8 @@ export type CheckoutChoosePaymentHandler = (
     underComboPromotion?: IosPromotionOption | null;
     cartProducts?: BookingItem['cartProducts'];
     paymentBreakdown?: IosPaymentBreakdown;
+    tipTransferProofPhoto?: string;
+    qrSplitTipSeparate?: boolean;
   }
 ) => void;
 
@@ -115,48 +117,22 @@ export function useCheckoutBillingState({
   }, [booking?.id, booking?.cartProducts]);
 
   const handleForceResetDiamonds = useCallback(() => setDiamondUsed(0), []);
-  const [isProductQrScannerOpen, setIsProductQrScannerOpen] = useState<boolean>(false);
-  const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
-  const [isZaloModalOpen, setIsZaloModalOpen] = useState<boolean>(false);
-  const [zaloPhone, setZaloPhone] = useState<string>(
-    booking?.billing?.zaloConsent?.phone || booking?.customerPhone || '0938.204.567'
+  const [qrSplitMode, setQrSplitMode] = useState<'COMBINED' | 'SEPARATE'>(
+    booking?.billing?.qrSplitTipSeparate ? 'SEPARATE' : 'COMBINED'
   );
-  const [isSendingZalo, setIsSendingZalo] = useState<boolean>(false);
-  const [isZaloSentSuccess, setIsZaloSentSuccess] = useState<boolean>(false);
-  const [copySuccess, setCopySuccess] = useState<string | null>(null);
-  const [transferProofPhoto, setTransferProofPhoto] = useState<string | null>(
-    booking?.billing?.transferProofPhoto || null
+  const {
+    transferProofPhoto,
+    proofCloudSyncStatus,
+    tipTransferProofPhoto,
+    tipProofCloudSyncStatus,
+    fileInputRef,
+    tipFileInputRef,
+    handleCaptureProof,
+    handleCaptureTipProof,
+  } = useCheckoutProofCapture(
+    booking?.billing?.transferProofPhoto || booking?.billing?.preCheckoutTransferProofPhoto,
+    booking?.billing?.tipTransferProofPhoto || booking?.billing?.preCheckoutTipTransferProofPhoto
   );
-  const [proofCloudSyncStatus, setProofCloudSyncStatus] = useState<IosCloudSyncStatus>(
-    booking?.billing?.transferProofPhoto ? 'synced' : 'idle'
-  );
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleCaptureProof = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    let instantUrl: string | null = null;
-    try {
-      instantUrl = URL.createObjectURL(file);
-      setTransferProofPhoto(instantUrl);
-      setProofCloudSyncStatus('uploading');
-
-      const compressed = await compressLashImage(file, 1024, 0.72);
-      if (instantUrl) {
-        try {
-          URL.revokeObjectURL(instantUrl);
-        } catch (_) {}
-      }
-      setTransferProofPhoto(compressed);
-
-      await new Promise((resolve) => setTimeout(resolve, 850));
-      setProofCloudSyncStatus('synced');
-    } catch (err) {
-      console.warn('[Screen12] Failed to process proof image:', err);
-      setProofCloudSyncStatus('synced');
-    }
-    e.target.value = '';
-  };
 
   const customerName = booking?.customerName || 'Chị Trúc';
   const customerPhone = (booking?.customerPhone || '0933.779.207').replace(/\*+\s*/g, '').trim();
@@ -337,50 +313,64 @@ export function useCheckoutBillingState({
     }
   }, [activeTipPercent, percentTipSuggestions, tipAmount]);
 
+  const preCheckoutSummary = useMemo(
+    () => computePreCheckoutPaymentSummary({ grandTotal: finalGrandTotal, billing: booking?.billing }),
+    [finalGrandTotal, booking?.billing]
+  );
+  const amountDueAtCheckout = preCheckoutSummary.hasPreCheckoutPayment
+    ? preCheckoutSummary.remainingDue
+    : finalGrandTotal;
+  const remainingUnpaidTip = Math.max(0, tipAmount - preCheckoutSummary.preCheckoutTipAmount);
+
   const effectivePaymentSplit: IosPaymentBreakdown = useMemo(
     () =>
       isSplitPaymentMode
         ? customPaymentSplit
         : {
-            vietqrAmount: selectedMethod === 'VIETQR' ? finalGrandTotal : 0,
-            posAmount: selectedMethod === 'POS' ? finalGrandTotal : 0,
-            cashAmount: selectedMethod === 'CASH' ? finalGrandTotal : 0,
+            vietqrAmount: selectedMethod === 'VIETQR' ? amountDueAtCheckout : 0,
+            posAmount: selectedMethod === 'POS' ? amountDueAtCheckout : 0,
+            cashAmount: selectedMethod === 'CASH' ? amountDueAtCheckout : 0,
           },
-    [isSplitPaymentMode, customPaymentSplit, selectedMethod, finalGrandTotal]
+    [isSplitPaymentMode, customPaymentSplit, selectedMethod, amountDueAtCheckout]
   );
   const allocatedPaymentTotal =
     effectivePaymentSplit.vietqrAmount + effectivePaymentSplit.posAmount + effectivePaymentSplit.cashAmount;
-  const isPaymentAllocationValid = finalGrandTotal === 0 || allocatedPaymentTotal === finalGrandTotal;
-  const normalizedEffectivePayment = useMemo(
+  const isPaymentAllocationValid = amountDueAtCheckout === 0 || allocatedPaymentTotal === amountDueAtCheckout;
+  const normalizedRemainingPayment = useMemo(
     () =>
       resolveNormalizedPaymentBreakdown(
-        finalGrandTotal,
+        amountDueAtCheckout,
         isSplitPaymentMode ? 'MIXED' : selectedMethod,
         effectivePaymentSplit
       ),
-    [finalGrandTotal, isSplitPaymentMode, selectedMethod, effectivePaymentSplit]
+    [amountDueAtCheckout, isSplitPaymentMode, selectedMethod, effectivePaymentSplit]
   );
-  const vietQrTransferAmount = finalGrandTotal === 0 ? 0 : effectivePaymentSplit.vietqrAmount;
-  const { branchCode, qrTransferContent, vietQrUrl } = buildCheckoutVietQrInfo({
+  const normalizedEffectivePayment = useMemo(
+    () =>
+      preCheckoutSummary.hasPreCheckoutPayment
+        ? combinePaymentBreakdowns(
+            finalGrandTotal,
+            preCheckoutSummary.preCheckoutBreakdown,
+            normalizedRemainingPayment.breakdown
+          )
+        : normalizedRemainingPayment,
+    [finalGrandTotal, preCheckoutSummary, normalizedRemainingPayment]
+  );
+  const vietQrTransferAmount = amountDueAtCheckout === 0 ? 0 : effectivePaymentSplit.vietqrAmount;
+  const qrInfo = buildCheckoutVietQrInfo({
     booking,
-    tipAmount,
+    tipAmount: remainingUnpaidTip,
     vietQrTransferAmount,
+    tipTransferAmount: remainingUnpaidTip,
   });
-
-  const copyToClipboard = (text: string, label: string) => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(text);
-      setCopySuccess(label);
-      setTimeout(() => setCopySuccess(null), 2000);
-    }
-  };
+  const { branchCode, qrTransferContent, vietQrUrl } = qrInfo;
 
   const handleToggleSplitMode = (nextSplit: boolean) => {
     if (nextSplit) {
       setCustomPaymentSplit({
-        vietqrAmount: selectedMethod === 'VIETQR' ? finalGrandTotal : 0,
-        posAmount: selectedMethod === 'POS' ? finalGrandTotal : 0,
-        cashAmount: selectedMethod === 'CASH' ? finalGrandTotal : 0,
+        vietqrAmount: selectedMethod === 'VIETQR' ? amountDueAtCheckout : 0,
+        posAmount: selectedMethod === 'POS' ? amountDueAtCheckout : 0,
+        cashAmount: selectedMethod === 'CASH' ? amountDueAtCheckout : 0,
       });
       setIsSplitPaymentMode(true);
       return;
@@ -395,25 +385,6 @@ export function useCheckoutBillingState({
             : selectedMethod;
     setSelectedMethod(dominant);
     setIsSplitPaymentMode(false);
-  };
-
-  const handleProceed = () => {
-    if (
-      finalGrandTotal > 0 &&
-      (!isPaymentAllocationValid || (effectivePaymentSplit.posAmount > 0 && !transferProofPhoto))
-    ) {
-      return;
-    }
-    if (vietQrTransferAmount > 0) {
-      setIsQrModalOpen(true);
-      return;
-    }
-    setIsZaloModalOpen(true);
-  };
-
-  const handleConfirmQrPaid = () => {
-    setIsQrModalOpen(false);
-    setIsZaloModalOpen(true);
   };
 
   const dispatchChoosePayment = (zaloConsentData: {
@@ -442,34 +413,45 @@ export function useCheckoutBillingState({
         underComboPromotion: null,
         cartProducts,
         paymentBreakdown: normalizedEffectivePayment.breakdown,
+        tipTransferProofPhoto: tipTransferProofPhoto || undefined,
+        qrSplitTipSeparate: qrSplitMode === 'SEPARATE',
       }
     );
   };
 
-  const handleConfirmZaloSend = () => {
-    setIsSendingZalo(true);
-    setTimeout(() => {
-      setIsSendingZalo(false);
-      setIsZaloSentSuccess(true);
-      setTimeout(() => {
-        setIsZaloModalOpen(false);
-        setIsZaloSentSuccess(false);
-        dispatchChoosePayment({
-          agreed: true,
-          phone: zaloPhone,
-          sentAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          voucherCode: 'WINGS50K-ZALO',
-        });
-      }, 600);
-    }, 700);
-  };
+  const {
+    isProductQrScannerOpen,
+    setIsProductQrScannerOpen,
+    isQrModalOpen,
+    setIsQrModalOpen,
+    isZaloModalOpen,
+    setIsZaloModalOpen,
+    zaloPhone,
+    setZaloPhone,
+    isSendingZalo,
+    isZaloSentSuccess,
+    copySuccess,
+    copyToClipboard,
+    handleConfirmQrPaid,
+    handleConfirmZaloSend,
+    handleSkipZalo,
+  } = useCheckoutModalControls(
+    booking?.billing?.zaloConsent?.phone || booking?.customerPhone || '0938.204.567',
+    dispatchChoosePayment
+  );
 
-  const handleSkipZalo = () => {
-    setIsZaloModalOpen(false);
-    dispatchChoosePayment({
-      agreed: false,
-      phone: zaloPhone,
-    });
+  const handleProceed = () => {
+    if (
+      amountDueAtCheckout > 0 &&
+      (!isPaymentAllocationValid || (effectivePaymentSplit.posAmount > 0 && !transferProofPhoto))
+    ) {
+      return;
+    }
+    if (vietQrTransferAmount > 0) {
+      setIsQrModalOpen(true);
+      return;
+    }
+    setIsZaloModalOpen(true);
   };
 
   return {
@@ -501,8 +483,14 @@ export function useCheckoutBillingState({
     copySuccess,
     transferProofPhoto,
     proofCloudSyncStatus,
+    tipTransferProofPhoto,
+    tipProofCloudSyncStatus,
     fileInputRef,
+    tipFileInputRef,
     handleCaptureProof,
+    handleCaptureTipProof,
+    qrSplitMode,
+    setQrSplitMode,
     customerName,
     customerPhone,
     assignedStaff,
@@ -555,11 +543,15 @@ export function useCheckoutBillingState({
     diamondDiscountAmount,
     diamondRate: DIAMOND_RATE,
     finalGrandTotal,
+    preCheckoutSummary,
+    amountDueAtCheckout,
     tipBaseAmount,
     percentTipSuggestions,
     effectivePaymentSplit,
+    normalizedRemainingPayment,
     normalizedEffectivePayment,
     vietQrTransferAmount,
+    qrInfo,
     branchCode,
     qrTransferContent,
     vietQrUrl,

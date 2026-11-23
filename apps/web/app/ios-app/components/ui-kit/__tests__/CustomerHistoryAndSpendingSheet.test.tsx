@@ -238,9 +238,7 @@ describe('CustomerHistoryAndSpendingSheet (MOS-FEAT-235)', () => {
 
   it('loads and displays summary KPIs and switches across ALL, PAYMENTS, FIX, and REWARDS tabs', async () => {
     const handleClose = vi.fn();
-    render(
-      <CustomerHistoryAndSpendingSheet isOpen={true} onClose={handleClose} booking={SAMPLE_BOOKING} />
-    );
+    render(<CustomerHistoryAndSpendingSheet isOpen={true} onClose={handleClose} booking={SAMPLE_BOOKING} />);
 
     await waitFor(() => {
       expect(screen.getByText(/1\.425\.600 đ/)).toBeDefined();
@@ -268,13 +266,7 @@ describe('CustomerHistoryAndSpendingSheet (MOS-FEAT-235)', () => {
   });
 
   it('opens customer history & spending sheet directly on ALL tab from Screen03ConsultationMatrix header button and visit badge', async () => {
-    render(
-      <Screen03ConsultationMatrix
-        booking={SAMPLE_BOOKING}
-        onBack={vi.fn()}
-        onSave={vi.fn()}
-      />
-    );
+    render(<Screen03ConsultationMatrix booking={SAMPLE_BOOKING} onBack={vi.fn()} onSave={vi.fn()} />);
 
     const openBtn = screen.getByTestId('open-customer-history-btn');
     fireEvent.click(openBtn);
@@ -306,12 +298,7 @@ describe('CustomerHistoryAndSpendingSheet (MOS-FEAT-235)', () => {
 
   it('opens customer history & spending sheet on ALL tab from Screen02CheckInProfile and forwards isSimulationMode', async () => {
     render(
-      <Screen02CheckInProfile
-        booking={SAMPLE_BOOKING}
-        isSimulationMode={true}
-        onBack={vi.fn()}
-        onCheckIn={vi.fn()}
-      />
+      <Screen02CheckInProfile booking={SAMPLE_BOOKING} isSimulationMode={true} onBack={vi.fn()} onCheckIn={vi.fn()} />
     );
 
     fireEvent.click(screen.getByTestId('checkin-header-history-btn'));
@@ -337,5 +324,61 @@ describe('CustomerHistoryAndSpendingSheet (MOS-FEAT-235)', () => {
       />
     );
     expect(screen.getByTestId('history-missing-customer-id')).toBeDefined();
+  });
+
+  it('uses dvh + safe-area sizing, touch-pan-y scroll body, and supports swipe-down, Escape, and backdrop dismiss [MOS-BUG-248]', async () => {
+    const handleClose = vi.fn();
+    render(
+      <CustomerHistoryAndSpendingSheet
+        isOpen={true}
+        initialTab="ALL"
+        isSimulationMode={true}
+        onClose={handleClose}
+        booking={SAMPLE_BOOKING}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/1\.425\.600 đ/)).toBeDefined();
+    });
+
+    const backdrop = screen.getByTestId('customer-history-backdrop');
+    const sheet = screen.getByTestId('customer-history-sheet');
+    const dragHandle = screen.getByTestId('customer-history-drag-handle');
+    const scrollBody = screen.getByTestId('customer-history-scroll-body');
+
+    expect(backdrop.className).toContain('overscroll-contain');
+    expect(backdrop.className).toContain('env(safe-area-inset-top');
+    expect(sheet.className).toContain('max-h-[88dvh]');
+    expect(sheet.className).not.toContain('92vh');
+    expect(scrollBody.className).toContain('touch-pan-y');
+    expect(scrollBody.className).toContain('overscroll-contain');
+
+    // Swiping down inside scrollBody while scrolled down (scrollTop > 0) must NOT dismiss
+    Object.defineProperty(scrollBody, 'scrollTop', { value: 120, configurable: true });
+    fireEvent.touchStart(scrollBody, { touches: [{ clientX: 180, clientY: 300 }] });
+    fireEvent.touchMove(scrollBody, { touches: [{ clientX: 180, clientY: 430 }] });
+    fireEvent.touchEnd(scrollBody);
+    expect(handleClose).not.toHaveBeenCalled();
+
+    // Swiping down on drag handle / header dismisses the modal
+    fireEvent.touchStart(dragHandle, { touches: [{ clientX: 180, clientY: 120 }] });
+    fireEvent.touchMove(dragHandle, { touches: [{ clientX: 180, clientY: 230 }] });
+    fireEvent.touchEnd(dragHandle);
+    expect(handleClose).toHaveBeenCalledTimes(1);
+
+    // Swiping down inside scrollBody at scrollTop === 0 dismisses the modal
+    Object.defineProperty(scrollBody, 'scrollTop', { value: 0, configurable: true });
+    fireEvent.touchStart(scrollBody, { touches: [{ clientX: 180, clientY: 300 }] });
+    fireEvent.touchMove(scrollBody, { touches: [{ clientX: 180, clientY: 420 }] });
+    fireEvent.touchEnd(scrollBody);
+    expect(handleClose).toHaveBeenCalledTimes(2);
+
+    // Pressing Escape or tapping backdrop also dismisses
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(handleClose).toHaveBeenCalledTimes(3);
+
+    fireEvent.click(backdrop);
+    expect(handleClose).toHaveBeenCalledTimes(4);
   });
 });

@@ -9,6 +9,7 @@ import type { BookingItem } from '../../../state/mockData';
 import { IosStaffVisibilityToggle } from '../../ui-kit/IosStaffVisibilityToggle';
 import { PostCheckoutComboFormSections } from './PostCheckoutComboFormSections';
 import { PostCheckoutPendingPanel, PostCheckoutReconciliationCard } from './PostCheckoutReconciliationCard';
+import { PostCheckoutQrModalCluster } from './PostCheckoutQrModalCluster';
 import { usePostCheckoutComboSheetState } from './usePostCheckoutComboSheetState';
 
 export interface PostCheckoutComboSheetProps {
@@ -72,6 +73,10 @@ export function PostCheckoutComboSheet({
     setRejectionReason,
     showStaffRewards,
     setShowStaffRewards,
+    isQrModalOpen,
+    setIsQrModalOpen,
+    qrProofs,
+    setQrProofs,
     isSubmitting,
     errorMsg,
     originalCheckOutStaffId,
@@ -108,13 +113,13 @@ export function PostCheckoutComboSheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center overflow-hidden overscroll-contain bg-black/70 backdrop-blur-xs pt-[max(16px,env(safe-area-inset-top,0px))] px-0 sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Điều chỉnh gói Combo sau checkout"
     >
       <div
-        className={`w-full max-w-xl max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border shadow-2xl ${
+        className={`w-full max-w-xl max-h-[88dvh] sm:max-h-[86dvh] overflow-y-auto overscroll-contain touch-pan-y ios-touch-scroll pb-[env(safe-area-inset-bottom,0px)] rounded-t-3xl sm:rounded-3xl border shadow-2xl ${
           isDark ? 'bg-[#121214] border-neutral-800 text-neutral-100' : 'bg-white border-gray-200 text-gray-900'
         }`}
       >
@@ -247,12 +252,30 @@ export function PostCheckoutComboSheet({
                 onSetDeltaMethod={setDeltaMethod}
                 onSetDeltaSplit={setDeltaSplit}
                 onSetReason={setReason}
+                onOpenQr={() => setIsQrModalOpen(true)}
+                qrPortionAmount={delta.deltaPaymentBreakdown.vietqrAmount}
+                isPureTipDelta={
+                  tipAmount > Number(booking.billing?.tipAmount || 0) &&
+                  delta.amountToCollectNow > 0 &&
+                  delta.amountToCollectNow <= Math.max(0, tipAmount - Number(booking.billing?.tipAmount || 0))
+                }
+                hasQrProofAttached={Boolean(qrProofs.transferProofPhoto)}
                 onSubmit={() => void handleSubmitAdjustment()}
               />
             </>
           )}
         </div>
       </div>
+
+      <PostCheckoutQrModalCluster
+        open={isQrModalOpen}
+        isDark={isDark}
+        booking={booking}
+        vietqrAmount={delta.deltaPaymentBreakdown.vietqrAmount}
+        tipDeltaAmount={Math.max(0, tipAmount - Number(booking.billing?.tipAmount || 0))}
+        onClose={() => setIsQrModalOpen(false)}
+        onConfirmProofs={(proofs) => setQrProofs(proofs)}
+      />
     </div>
   );
 }

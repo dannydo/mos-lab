@@ -117,7 +117,9 @@ export class BugReportService {
     canOverride: boolean,
     input: CreateBugReportCommentRequest
   ) {
-    return addBugReportComment(fastify, actorStaffId, id, canOverride, input);
+    return addBugReportComment(fastify, actorStaffId, id, canOverride, input, (f, reportId) =>
+      BugReportService.detail(f, reportId)
+    );
   }
 
   static attachmentForUser(
@@ -144,7 +146,7 @@ export class BugReportService {
     id: number,
     input: ReviewBugReportRequest
   ): Promise<BugReportDetail> {
-    return reviewBugReport(fastify, reporterStaffId, id, input);
+    return reviewBugReport(fastify, reporterStaffId, id, input, (f, reportId) => BugReportService.detail(f, reportId));
   }
 
   static cancel(
@@ -154,15 +156,19 @@ export class BugReportService {
     canOverride: boolean,
     input?: CancelBugReportRequest
   ): Promise<BugReportDetail> {
-    return cancelBugReport(fastify, actorStaffId, id, canOverride, input);
+    return cancelBugReport(fastify, actorStaffId, id, canOverride, input, (f, reportId) =>
+      BugReportService.detail(f, reportId)
+    );
   }
 
   static triage(fastify: FastifyInstance, actorStaffId: number, id: number, input: TriageBugReportRequest) {
-    return triageBugReport(fastify, actorStaffId, id, input);
+    return triageBugReport(fastify, actorStaffId, id, input, (f, reportId) => BugReportService.detail(f, reportId));
   }
 
   static confirmClose(fastify: FastifyInstance, actorStaffId: number, id: number, input: ConfirmCloseBugReportRequest) {
-    return confirmCloseBugReport(fastify, actorStaffId, id, input);
+    return confirmCloseBugReport(fastify, actorStaffId, id, input, (f, reportId) =>
+      BugReportService.detail(f, reportId)
+    );
   }
 
   static reviewClarificationByAgent(
@@ -170,7 +176,7 @@ export class BugReportService {
     key: string,
     input: AgentReviewBugReportRequest
   ): Promise<BugReportDetail> {
-    return reviewClarificationByAgent(fastify, key, input);
+    return reviewClarificationByAgent(fastify, key, input, (f, reportId) => BugReportService.detail(f, reportId));
   }
 
   static markInboxFollowUpReviewed(fastify: FastifyInstance, key: string, note: string): Promise<boolean> {
@@ -178,7 +184,7 @@ export class BugReportService {
   }
 
   static retryClarification(fastify: FastifyInstance, id: number, actorStaffId: number): Promise<BugReportDetail> {
-    return retryClarification(fastify, id, actorStaffId);
+    return retryClarification(fastify, id, actorStaffId, (f, reportId) => BugReportService.detail(f, reportId));
   }
 
   static updateAgentProgress(
@@ -187,7 +193,7 @@ export class BugReportService {
     input: AgentUpdateBugProgressRequest,
     options: { dedupeSameStage?: boolean } = {}
   ): Promise<BugReportDetail> {
-    return updateAgentProgress(fastify, key, input, options);
+    return updateAgentProgress(fastify, key, input, options, (f, reportId) => BugReportService.detail(f, reportId));
   }
 
   static markFixedByAgent(
@@ -195,7 +201,7 @@ export class BugReportService {
     key: string,
     input: AgentMarkBugFixedRequest
   ): Promise<BugReportDetail> {
-    return markFixedByAgent(fastify, key, input);
+    return markFixedByAgent(fastify, key, input, (f, reportId) => BugReportService.detail(f, reportId));
   }
 
   static attachment(fastify: FastifyInstance, reportId: number, attachmentId: number) {
@@ -207,7 +213,10 @@ export class BugReportService {
   }
 
   static agentBundle(fastify: FastifyInstance, key: string): Promise<AgentBugBundle> {
-    return getAgentBugBundle(fastify, key);
+    return getAgentBugBundle(fastify, key, {
+      getDetail: (f, reportId) => BugReportService.detail(f, reportId),
+      updateProgress: (f, k, inp, opts) => BugReportService.updateAgentProgress(f, k, inp, opts),
+    });
   }
 
   static cleanupExpiredAttachments(fastify: FastifyInstance, now = new Date()): Promise<number> {

@@ -482,6 +482,7 @@ export function Screen14ThermalReceiptDone({
             isDark={isDark}
             isPendingPostAdj={isPendingPostAdj}
             onClick={() => setIsPostCheckoutOpen(true)}
+            onOpenTipQr={() => setIsPostCheckoutOpen(true)}
           />
         )}
 

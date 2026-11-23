@@ -344,7 +344,8 @@ export async function addBugReportComment(
   actorStaffId: number,
   id: number,
   canOverride: boolean,
-  input: CreateBugReportCommentRequest
+  input: CreateBugReportCommentRequest,
+  getDetail: (fastify: FastifyInstance, id: number) => Promise<BugReportDetail> = getBugReportDetail
 ) {
   const existing = await reportForUser(fastify, actorStaffId, id, canOverride);
   if (['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(existing.status)) {
@@ -398,7 +399,7 @@ export async function addBugReportComment(
 
   const attachmentWarnings = await saveAttachments(fastify, id, attachments, comment.id);
   fastify.cache?.invalidatePattern('^bug-reports:mine:');
-  return { report: await getBugReportDetail(fastify, id), attachmentWarnings };
+  return { report: await getDetail(fastify, id), attachmentWarnings };
 }
 
 export async function getBugReportAttachment(fastify: FastifyInstance, reportId: number, attachmentId: number) {

@@ -10,6 +10,7 @@ import {
   IosCreateBookingResponse,
   IosCustomerLookupCandidate,
   isAdminOrSuperAdminRole,
+  normalizeCustomerDateOfBirth,
   resolveAssignedSalonStoreId,
   SafeAny,
 } from '@mos-lab/shared';
@@ -301,6 +302,7 @@ export async function createIosDualModeBooking(
     let rawPhone = String(input.customerPhone || '').trim();
     let customerVisits = 1;
     let lastVisitDate: string | undefined;
+    let customerDateOfBirth: string | null = null;
     let comboLiveStatus: IosBookingItem['comboLiveStatus'];
     let underMinkComboStatus: IosBookingItem['underMinkComboStatus'];
     let comboWallets: IosBookingItem['comboWallets'];
@@ -322,9 +324,11 @@ export async function createIosDualModeBooking(
         const pool = getLegacyPool();
         const [[custRow]] = await pool.query<mysql.RowDataPacket[]>(
           `SELECT up.full_name, up.last_order_booking,
+             DATE_FORMAT(u.date_of_birth, '%Y-%m-%d') AS customer_dob,
              (SELECT uc.phone_number FROM user_contact uc WHERE uc.user_id = up.user_id AND uc.is_disabled = 0 ORDER BY uc.id DESC LIMIT 1) AS phone_number,
              (SELECT COUNT(*) FROM \`order\` o WHERE o.user_id = up.user_id AND o.order_state NOT IN ('Cancel','Deleted')) AS visits
            FROM user_profile up
+           LEFT JOIN user u ON u.id = up.user_id
            WHERE up.user_id = ?
            LIMIT 1`,
           [finalCustomerId]
@@ -334,6 +338,7 @@ export async function createIosDualModeBooking(
           rawPhone = String(custRow.phone_number || rawPhone || '');
           customerVisits = Math.max(1, Number(custRow.visits || 1));
           lastVisitDate = custRow.last_order_booking ? String(custRow.last_order_booking).slice(0, 10) : undefined;
+          customerDateOfBirth = normalizeCustomerDateOfBirth(custRow.customer_dob);
         }
         const enrichment = await fetchCustomerEnrichmentContext(pool, [finalCustomerId]);
         comboLiveStatus = enrichment.comboBalanceMap.get(finalCustomerId);
@@ -369,6 +374,7 @@ export async function createIosDualModeBooking(
       customerName: finalCustomerName,
       customerPhone: formatPhoneNumberDots(rawPhone || '0900000000', isCvl),
       customerId: finalCustomerId,
+      customerDateOfBirth,
       customerVisits,
       customerNote: String(input.bookingNote || '').trim() || 'Đặt lịch trong Phòng Tập Luyện Mô Phỏng',
       timeSlot: `${timeHm} (${finalServiceDuration}m)`,
@@ -431,6 +437,7 @@ export async function createIosDualModeBooking(
     let finalCustomerId = Number(input.existingCustomerId || 0);
     let finalCustomerName = String(input.customerName || '').trim();
     let finalCustomerPhone = String(input.customerPhone || '').trim();
+    let finalCustomerDob: string | null = null;
 
     if (input.customerMode === 'EXISTING') {
       if (!finalCustomerId || finalCustomerId <= 0) {
@@ -445,13 +452,17 @@ export async function createIosDualModeBooking(
       }
       const existingRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
         `SELECT up.full_name,
+           DATE_FORMAT(u.date_of_birth, '%Y-%m-%d') AS customer_dob,
            (SELECT uc.phone_number FROM user_contact uc WHERE uc.user_id = up.user_id AND uc.is_disabled = 0 ORDER BY uc.id DESC LIMIT 1) AS phone_number
-         FROM user_profile up WHERE up.user_id = ? LIMIT 1`,
+         FROM user_profile up
+         LEFT JOIN user u ON u.id = up.user_id
+         WHERE up.user_id = ? LIMIT 1`,
         finalCustomerId
       );
       if (existingRows.length > 0) {
         finalCustomerName = String(existingRows[0].full_name || finalCustomerName || `Khách #${finalCustomerId}`);
         finalCustomerPhone = String(existingRows[0].phone_number || finalCustomerPhone || '');
+        finalCustomerDob = normalizeCustomerDateOfBirth(existingRows[0].customer_dob);
       }
     } else {
       if (!finalCustomerName || !finalCustomerPhone) {
@@ -607,6 +618,7 @@ export async function createIosDualModeBooking(
           customerName: finalCustomerName,
           customerPhone: formatPhoneNumberDots(finalCustomerPhone, isCvl),
           customerId: finalCustomerId,
+          customerDateOfBirth: finalCustomerDob,
           customerVisits: isNew ? 1 : 2,
           customerNote: finalNote,
           timeSlot: `${timeHm} (${finalServiceDuration}m)`,

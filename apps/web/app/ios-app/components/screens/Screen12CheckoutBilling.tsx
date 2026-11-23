@@ -49,6 +49,8 @@ interface Screen12CheckoutBillingProps {
       underComboPromotion?: IosPromotionOption | null;
       cartProducts?: BookingItem['cartProducts'];
       paymentBreakdown?: IosPaymentBreakdown;
+      tipTransferProofPhoto?: string;
+      qrSplitTipSeparate?: boolean;
     }
   ) => void;
   onSavePromotion?: (promotion: IosPromotionOption | null, target?: SavePromotionTarget) => void;
@@ -106,8 +108,14 @@ export function Screen12CheckoutBilling({
     copySuccess,
     transferProofPhoto,
     proofCloudSyncStatus,
+    tipTransferProofPhoto,
+    tipProofCloudSyncStatus,
     fileInputRef,
+    tipFileInputRef,
     handleCaptureProof,
+    handleCaptureTipProof,
+    qrSplitMode,
+    setQrSplitMode,
     customerName,
     customerPhone,
     assignedStaff,
@@ -160,11 +168,14 @@ export function Screen12CheckoutBilling({
     diamondDiscountAmount,
     diamondRate,
     finalGrandTotal,
+    preCheckoutSummary,
+    amountDueAtCheckout,
     tipBaseAmount,
     percentTipSuggestions,
     effectivePaymentSplit,
-    normalizedEffectivePayment,
+    normalizedRemainingPayment,
     vietQrTransferAmount,
+    qrInfo,
     branchCode,
     qrTransferContent,
     vietQrUrl,
@@ -322,7 +333,8 @@ export function Screen12CheckoutBilling({
             const key = channel === 'VIETQR' ? 'vietqrAmount' : channel === 'POS' ? 'posAmount' : 'cashAmount';
             setCustomPaymentSplit((prev) => ({ ...prev, [key]: amount }));
           }}
-          finalGrandTotal={finalGrandTotal}
+          finalGrandTotal={amountDueAtCheckout}
+          preCheckoutTotalPaid={preCheckoutSummary.preCheckoutTotalPaid}
           effectiveDiamondUsed={effectiveDiamondUsed}
           diamondDiscountAmount={diamondDiscountAmount}
           transferProofPhoto={transferProofPhoto}
@@ -345,12 +357,23 @@ export function Screen12CheckoutBilling({
         vietQrUrl={vietQrUrl}
         qrTransferContent={qrTransferContent}
         vietQrTransferAmount={vietQrTransferAmount}
-        totalBillGrandTotal={normalizedEffectivePayment.isMixed ? finalGrandTotal : undefined}
+        totalBillGrandTotal={normalizedRemainingPayment.isMixed ? amountDueAtCheckout : undefined}
         copySuccess={copySuccess}
         onCopyToClipboard={copyToClipboard}
         transferProofPhoto={transferProofPhoto}
         proofCloudSyncStatus={proofCloudSyncStatus}
         onTriggerFilePicker={() => fileInputRef.current?.click()}
+        serviceQrAmount={qrInfo.serviceQrAmount}
+        serviceQrUrl={qrInfo.serviceQrUrl}
+        serviceQrContent={qrInfo.serviceQrContent}
+        tipQrAmount={qrInfo.tipQrAmount}
+        tipQrUrl={qrInfo.tipQrUrl}
+        tipQrContent={qrInfo.tipQrContent}
+        qrSplitMode={qrSplitMode}
+        onChangeQrSplitMode={setQrSplitMode}
+        tipTransferProofPhoto={tipTransferProofPhoto}
+        tipProofCloudSyncStatus={tipProofCloudSyncStatus}
+        onTriggerTipFilePicker={() => tipFileInputRef.current?.click()}
         onConfirmQrPaid={handleConfirmQrPaid}
         isZaloModalOpen={isZaloModalOpen}
         zaloPhone={zaloPhone}
@@ -376,6 +399,14 @@ export function Screen12CheckoutBilling({
         onScannedProduct={handleScannedProduct}
         onRemoveScannedUnit={handleRemoveScannedUnit}
         comboSelection={comboSelection}
+      />
+      <input
+        ref={tipFileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleCaptureTipProof}
       />
     </div>
   );

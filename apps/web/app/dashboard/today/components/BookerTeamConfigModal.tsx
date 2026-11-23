@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Modal, Card, Button, Space, Tag, Select, Typography, Row, Col, Spin, message } from 'antd';
+import { Card, Button, Space, Tag, Select, Typography, Row, Col, Spin, message } from 'antd';
 import {
   UserOutlined,
   PlusOutlined,
@@ -11,6 +11,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import { apiClient } from '../../../../lib/api-client';
+import { AdaptiveModal } from '../../../../components/ui';
 
 const { Text } = Typography;
 
@@ -218,10 +219,13 @@ export default function BookerTeamConfigModal({
   const borderCol = themeMode === 'dark' ? '#26334d' : '#e2e8f0';
 
   return (
-    <Modal
+    <AdaptiveModal
+      intent="data"
       open={open}
       onCancel={onClose}
       width={900}
+      maskClosable
+      closable
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <TeamOutlined style={{ color: '#D4A84B', fontSize: '18px' }} />
@@ -488,6 +492,6 @@ export default function BookerTeamConfigModal({
           </Col>
         </Row>
       </div>
-    </Modal>
+    </AdaptiveModal>
   );
 }

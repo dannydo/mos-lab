@@ -9,6 +9,7 @@ import type { CareerSelectorMode, StaffCareerSelectorProps } from './staff-caree
 import { getStaffOverallStatus } from './staff-career-selector/staffCareerMetrics';
 import { useStaffCareerSelectorState } from './staff-career-selector/useStaffCareerSelectorState';
 import {
+  BranchFilterChips,
   PeriodFilterChips,
   RoleFilterChips,
   SelectorModeSwitcher,
@@ -28,6 +29,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   lastSyncedAt,
   activeRoleFilter = 'ALL',
   onRoleFilterChange,
+  activeBranchFilter = 'ALL',
+  onBranchFilterChange,
   period = 'last_30_days',
   onPeriodChange,
   onSetRole,
@@ -47,6 +50,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     handleModeChange,
     currentFilter,
     setFilter,
+    currentBranchFilter,
+    setBranchFilter,
+    branchOptions,
     scrollRailRef,
     scrollRail,
     filteredStaff,
@@ -56,6 +62,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     selectedStaffId,
     activeRoleFilter,
     onRoleFilterChange,
+    activeBranchFilter,
+    onBranchFilterChange,
     isCollapsedHorizontal,
     onCollapseHorizontal,
     onExpandHorizontal,
@@ -83,6 +91,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
         onSelectStaff={onSelectStaff}
         currentFilter={currentFilter}
         onSelectFilter={setFilter}
+        branchOptions={branchOptions}
+        currentBranchFilter={currentBranchFilter}
+        onSelectBranch={setBranchFilter}
         period={period}
         onPeriodChange={onPeriodChange}
         currentMode={currentMode}
@@ -102,6 +113,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
         onSelectStaff={onSelectStaff}
         currentFilter={currentFilter}
         onSelectFilter={setFilter}
+        branchOptions={branchOptions}
+        currentBranchFilter={currentBranchFilter}
+        onSelectBranch={setBranchFilter}
         period={period}
         onPeriodChange={onPeriodChange}
         currentMode={currentMode}
@@ -149,8 +163,15 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
           </div>
         </div>
 
-        {/* Row 2: Full-width Role Filter Chips */}
-        <RoleFilterChips currentFilter={currentFilter} onSelectFilter={setFilter} variant="table" />
+        {/* Row 2: Role Filter Chips (Left) + Branch Filter Chips (Right) */}
+        <div className="flex items-center justify-between gap-2 flex-wrap py-0.5">
+          <RoleFilterChips currentFilter={currentFilter} onSelectFilter={setFilter} variant="table" />
+          <BranchFilterChips
+            branchOptions={branchOptions}
+            currentBranchFilter={currentBranchFilter}
+            onSelectBranch={setBranchFilter}
+          />
+        </div>
       </div>
 
       {/* Primary View: Table with all metrics */}
@@ -162,7 +183,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             rowKey="id"
             size="small"
             pagination={false}
-            scroll={{ y: 520 }}
+            stickyPrimaryColumn
+            scroll={{ x: 'max-content', y: 520 }}
             onRow={(record) => ({
               onClick: () => onSelectStaff(record.id),
               className: 'cursor-pointer group',

@@ -1,9 +1,17 @@
 import type { FastifyInstance } from 'fastify';
-import type { CareerPeriod, CareerProgressionConfig, CareerRole, SafeAny } from '@mos-lab/shared';
+import {
+  type CareerBranchFilter,
+  type CareerPeriod,
+  type CareerProgressionConfig,
+  type CareerRole,
+  matchesCareerBranchFilter,
+  type SafeAny,
+} from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 import { getCareerConfig } from './career-config.service.js';
 import {
   CareerPeriodDates,
+  computeHourlyProductivity,
   evaluateStaffQaAudits,
   normalizeAvatarUrl,
   resolveCareerPeriodDates,
@@ -131,6 +139,15 @@ function mapStaffToCareerListItem(
 
   const rawAvatar = staff.avatarUrl || (staff.legacyStaffId ? metrics.legacyAvatarMap.get(staff.legacyStaffId) : null);
   const avatarUrl = normalizeAvatarUrl(rawAvatar);
+  const prodRow = metrics.productivitySvcMap[legacyId];
+  const productivity = computeHourlyProductivity({
+    fullSetCount: prodRow?.fullSetCount ?? 0,
+    comboRetainCount: prodRow?.comboRetainCount ?? 0,
+    singleRetainCount: prodRow?.singleRetainCount ?? 0,
+    serviceRevenue: prodRow?.serviceRevenue ?? 0,
+    shiftHours: metrics.shiftHoursMap[legacyId] ?? 0,
+    payrollHours: metrics.payrollHoursMap[legacyId] ?? 0,
+  });
 
   const { qaAudit } = evaluateStaffQaAudits(
     staff.id,
@@ -158,6 +175,15 @@ function mapStaffToCareerListItem(
             ? config.cvPlusToCvPlusPlus?.minOrders
             : config.cvToCvPlus?.minOrders || config.cvToCc?.minOrders) ?? 330),
     period: periodConfig.period,
+    servicesPerHour: productivity.servicesPerHour,
+    revenuePerHour: productivity.revenuePerHour,
+    actualWorkingHours: productivity.actualWorkingHours,
+    totalCompletedServices: productivity.totalCompletedServices,
+    fullSetCount: productivity.fullSetCount,
+    comboRetainCount: productivity.comboRetainCount,
+    singleRetainCount: productivity.singleRetainCount,
+    serviceRevenue: productivity.serviceRevenue,
+    productivity,
     fixRate, // Bug trong kỳ được chọn
     totalTip,
     tipRatioAboveShop,
@@ -187,7 +213,7 @@ function mapStaffToCareerListItem(
  */
 export async function listCareerStaff(
   fastify: FastifyInstance,
-  query?: { role?: string; search?: string; period?: CareerPeriod }
+  query?: { role?: string; search?: string; period?: CareerPeriod; branch?: CareerBranchFilter | string }
 ): Promise<SafeAny[]> {
   // 1. Lấy danh sách ID Chuyên Viên và CC hoạt động từ cấu hình (ACTIVE_CV_STAFF_CONFIG, ACTIVE_CC_STAFF_CONFIG)
   let activeCvLegacyIds: number[] = [];
@@ -263,14 +289,19 @@ export async function listCareerStaff(
     mapStaffToCareerListItem(staff, metrics, config, periodConfig, activeCcLegacyIds, evaluatedWeeks)
   );
 
-  // Filter by query role if specified
-  const filteredResult =
+  // Filter by query role and branch if specified
+  const roleFilteredResult =
     query?.role && query.role !== 'ALL'
       ? result.filter((s) => {
           if (query.role === 'CV') return ['KTV', 'CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole);
           return s.careerRole === query.role;
         })
       : result;
+
+  const filteredResult =
+    query?.branch && query.branch !== 'ALL'
+      ? roleFilteredResult.filter((s) => matchesCareerBranchFilter(s, query.branch))
+      : roleFilteredResult;
 
   // Order by số bộ mi (ordersCount DESC) theo chuẩn nghiệp vụ, tie-break theo tên Chuyên Viên
   return filteredResult.sort((a, b) => {

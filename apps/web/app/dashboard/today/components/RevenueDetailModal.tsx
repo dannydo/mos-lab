@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Table, Tag, Row, Col, Card, Button, Space } from 'antd';
+import { Table, Tag, Row, Col, Card, Button, Space } from 'antd';
 import { PlusCircle, Gift, ShoppingBag, RotateCcw } from 'lucide-react';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
+import { AdaptiveModal } from '../../../../components/ui';
 import { useTodaySandbox } from '../context/SandboxModeContext';
 
 import { ColumnsType } from 'antd/es/table';
@@ -127,12 +128,7 @@ export const RevenueDetailModal: React.FC<RevenueDetailModalProps> = ({
           orderState: 'Completed',
         }));
 
-        const combinedTransactions = [
-          ...simComboRows,
-          ...simProdRows,
-          ...simGiftRows,
-          ...baseTransactions,
-        ];
+        const combinedTransactions = [...simComboRows, ...simProdRows, ...simGiftRows, ...baseTransactions];
 
         const comboRevenue = combinedTransactions
           .filter((t) => t.serviceType === 'combo')
@@ -248,7 +244,17 @@ export const RevenueDetailModal: React.FC<RevenueDetailModalProps> = ({
   if (context?.branchName) title += ` | Chi nhánh ${context.branchName}`;
 
   return (
-    <Modal title={title} open={open} onCancel={onClose} footer={null} width={1100} className="tabular-nums">
+    <AdaptiveModal
+      intent="data"
+      title={title}
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      width={1100}
+      className="tabular-nums"
+      maskClosable
+      closable
+    >
       {sandbox.isSandbox && (
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-md p-3 mb-4 flex justify-between items-center flex-wrap gap-2">
           <div className="flex items-center gap-2">
@@ -378,6 +384,6 @@ export const RevenueDetailModal: React.FC<RevenueDetailModalProps> = ({
           </Table.Summary.Row>
         )}
       />
-    </Modal>
+    </AdaptiveModal>
   );
 };

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CareerStaffSummary } from '@mos-lab/shared';
+import type { CareerBranchFilter, CareerStaffSummary } from '@mos-lab/shared';
+import { buildCareerBranchOptions } from '../../career-path.constants';
 import type { CareerSelectorMode } from './staffCareerSelectorTypes';
 import { filterAndSortCareerStaff } from './staffCareerMetrics';
 
@@ -8,6 +9,8 @@ interface UseStaffCareerSelectorStateParams {
   selectedStaffId: number | null;
   activeRoleFilter: string;
   onRoleFilterChange?: (role: string) => void;
+  activeBranchFilter: CareerBranchFilter | string;
+  onBranchFilterChange?: (branch: string) => void;
   isCollapsedHorizontal: boolean;
   onCollapseHorizontal?: () => void;
   onExpandHorizontal?: () => void;
@@ -20,6 +23,8 @@ export function useStaffCareerSelectorState({
   selectedStaffId,
   activeRoleFilter,
   onRoleFilterChange,
+  activeBranchFilter,
+  onBranchFilterChange,
   isCollapsedHorizontal,
   onCollapseHorizontal,
   onExpandHorizontal,
@@ -27,6 +32,7 @@ export function useStaffCareerSelectorState({
   onSelectorModeChange,
 }: UseStaffCareerSelectorStateParams) {
   const [internalRoleFilter, setInternalRoleFilter] = useState('ALL');
+  const [internalBranchFilter, setInternalBranchFilter] = useState<string>('ALL');
   const [viewMode] = useState<'table' | 'grid'>('table');
   const [internalMode, setInternalMode] = useState<CareerSelectorMode>(() => {
     if (typeof window !== 'undefined') {
@@ -70,6 +76,12 @@ export function useStaffCareerSelectorState({
     else setInternalRoleFilter(role);
   };
 
+  const currentBranchFilter: string = onBranchFilterChange ? activeBranchFilter : internalBranchFilter;
+  const setBranchFilter = (branch: string) => {
+    if (onBranchFilterChange) onBranchFilterChange(branch);
+    else setInternalBranchFilter(branch);
+  };
+
   const scrollRailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -90,7 +102,12 @@ export function useStaffCareerSelectorState({
     }
   };
 
-  const filteredStaff = useMemo(() => filterAndSortCareerStaff(staffList, currentFilter), [staffList, currentFilter]);
+  const branchOptions = useMemo(() => buildCareerBranchOptions(staffList, currentFilter), [staffList, currentFilter]);
+
+  const filteredStaff = useMemo(
+    () => filterAndSortCareerStaff(staffList, currentFilter, currentBranchFilter),
+    [staffList, currentFilter, currentBranchFilter]
+  );
 
   const selectedStaff = useMemo(
     () => staffList.find((s) => s.id === selectedStaffId) || null,
@@ -103,6 +120,9 @@ export function useStaffCareerSelectorState({
     handleModeChange,
     currentFilter,
     setFilter,
+    currentBranchFilter,
+    setBranchFilter,
+    branchOptions,
     scrollRailRef,
     scrollRail,
     filteredStaff,

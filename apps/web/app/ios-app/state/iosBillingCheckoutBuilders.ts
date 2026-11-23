@@ -45,6 +45,8 @@ export interface PaymentPromotionSelection {
   underComboPromotion?: IosPromotionOption | null;
   cartProducts?: CartProductItem[];
   paymentBreakdown?: IosPaymentBreakdown;
+  tipTransferProofPhoto?: string;
+  qrSplitTipSeparate?: boolean;
 }
 
 export interface ChoosePaymentUpdateParams {
@@ -258,9 +260,10 @@ export function buildChoosePaymentBookingUpdate(
   promoActionSnapshot: Record<string, any>;
 } {
   const tipAmount = chosenTip !== undefined ? chosenTip : (prev.billing?.tipAmount ?? 0);
-  const cvShare = Math.round(tipAmount * 0.7);
-  const checkInShare = Math.round(tipAmount * 0.1);
-  const checkOutShare = Math.round(tipAmount * 0.1);
+  const tipBreakdown = calculateActorTipBreakdown(prev, actor, tipAmount);
+  const cvShare = tipBreakdown.techShareAmount;
+  const checkInShare = tipBreakdown.checkInShareAmount;
+  const checkOutShare = tipBreakdown.checkOutShareAmount;
   const ccShare = checkInShare + checkOutShare;
 
   const nextBookingDraft: BookingItem = {
@@ -387,6 +390,14 @@ export function buildChoosePaymentBookingUpdate(
     diamondUsed,
     diamondDiscountAmount,
     transferProofPhoto: proofPhoto || prev.billing?.transferProofPhoto,
+    ...(promotionSelection?.tipTransferProofPhoto || prev.billing?.tipTransferProofPhoto
+      ? { tipTransferProofPhoto: promotionSelection?.tipTransferProofPhoto || prev.billing?.tipTransferProofPhoto }
+      : {}),
+    ...(promotionSelection?.qrSplitTipSeparate !== undefined
+      ? { qrSplitTipSeparate: promotionSelection.qrSplitTipSeparate }
+      : prev.billing?.qrSplitTipSeparate !== undefined
+        ? { qrSplitTipSeparate: prev.billing.qrSplitTipSeparate }
+        : {}),
     zaloConsent: zaloConsent || prev.billing?.zaloConsent,
     grandTotal,
     completedAt,

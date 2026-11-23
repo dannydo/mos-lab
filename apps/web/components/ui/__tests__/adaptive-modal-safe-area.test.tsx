@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import { AdaptiveModal, resolveAdaptiveModalConfig } from '../AdaptiveOverlay';
 import * as responsiveHook from '../../../hooks/useResponsiveTier';
 
@@ -32,6 +32,8 @@ describe('AdaptiveModal Safe Area & PWA Mobile Support', () => {
     const bodyStyles = config.styles?.body;
     expect(bodyStyles?.flex).toBe('1 1 auto');
     expect(bodyStyles?.overflowY).toBe('auto');
+    expect(bodyStyles?.overscrollBehavior).toBe('contain');
+    expect(bodyStyles?.touchAction).toBe('pan-y');
   });
 
   it('keeps confirmation modals non-fullscreen on mobile viewports', () => {
@@ -61,11 +63,7 @@ describe('AdaptiveModal Safe Area & PWA Mobile Support', () => {
     vi.spyOn(responsiveHook, 'useResponsiveTier').mockReturnValue('mobile');
 
     const { baseElement } = render(
-      <AdaptiveModal
-        open={true}
-        intent="form"
-        title="Phản hồi mOS"
-      >
+      <AdaptiveModal open={true} intent="form" title="Phản hồi mOS">
         <div>Modal Body Content</div>
       </AdaptiveModal>
     );
@@ -74,5 +72,23 @@ describe('AdaptiveModal Safe Area & PWA Mobile Support', () => {
     expect(modal).not.toBeNull();
     expect(modal?.classList.contains('adaptive-overlay')).toBe(true);
     expect(modal?.classList.contains('adaptive-overlay-mobile-fullscreen')).toBe(true);
+  });
+
+  it('supports swipe-down-to-dismiss on mobile fullscreen AdaptiveModal [MOS-BUG-248]', () => {
+    vi.spyOn(responsiveHook, 'useResponsiveTier').mockReturnValue('mobile');
+    const onCancel = vi.fn();
+
+    const { baseElement } = render(
+      <AdaptiveModal open={true} intent="data" title="Chi tiết Lịch sử" onCancel={onCancel}>
+        <div>Modal Body Content</div>
+      </AdaptiveModal>
+    );
+
+    const header = baseElement.querySelector('.ant-modal-header');
+    expect(header).not.toBeNull();
+    fireEvent.touchStart(header!, { touches: [{ clientX: 180, clientY: 40 }] });
+    fireEvent.touchMove(header!, { touches: [{ clientX: 180, clientY: 150 }] });
+    fireEvent.touchEnd(header!);
+    expect(onCancel).toHaveBeenCalledTimes(1);
   });
 });

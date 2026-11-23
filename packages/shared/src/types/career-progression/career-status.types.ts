@@ -1,5 +1,26 @@
 import type { CareerPeriod, CareerProgressionStatus, CareerRole } from './career-requirements.types.js';
 
+export interface StaffHourlyProductivity {
+  /** Tổng lượt làm mi hoàn tất trong kỳ (Full set + Dặm Combo + Dặm lẻ) */
+  totalCompletedServices: number;
+  /** Số lượt Full set (service_type = 'Normal') */
+  fullSetCount: number;
+  /** Số lượt Dặm Combo (service_type = 'Retain' & user_service_type = 'combo') */
+  comboRetainCount: number;
+  /** Số lượt Dặm lẻ (service_type = 'Retain' & user_service_type != 'combo') */
+  singleRetainCount: number;
+  /** Tổng thời gian làm việc thực tế trong kỳ (giờ công ca) */
+  actualWorkingHours: number;
+  /** Chỉ số Hiệu suất Giờ (SPH - Services Per Hour) = totalCompletedServices / actualWorkingHours */
+  servicesPerHour: number;
+  /** Tổng doanh thu dịch vụ làm mi hoàn tất trong kỳ (VNĐ) */
+  serviceRevenue: number;
+  /** Doanh thu phục vụ trên mỗi giờ công (Revenue Per Hour, VNĐ/giờ) */
+  revenuePerHour: number;
+  /** Nguồn giờ công sử dụng ('SHIFT' | 'PAYROLL' | 'NONE') */
+  workingHoursSource?: 'SHIFT' | 'PAYROLL' | 'NONE';
+}
+
 export interface CareerStaffSummary {
   id: number;
   displayName: string;
@@ -32,6 +53,15 @@ export interface CareerStaffSummary {
   branchAvgTip?: number;
   period?: CareerPeriod;
   targetOrders?: number;
+  servicesPerHour?: number;
+  revenuePerHour?: number;
+  actualWorkingHours?: number;
+  totalCompletedServices?: number;
+  fullSetCount?: number;
+  comboRetainCount?: number;
+  singleRetainCount?: number;
+  serviceRevenue?: number;
+  productivity?: StaffHourlyProductivity;
 }
 
 export interface StaffCareerStatus {
@@ -82,6 +112,12 @@ export interface StaffCareerStatus {
     facilityScore?: number | null;
     inventoryLossRate?: number | null;
     googleReviewsCount?: number | null;
+    servicesPerHour?: number;
+    revenuePerHour?: number;
+    actualWorkingHours?: number;
+    totalCompletedServices?: number;
+    serviceRevenue?: number;
+    productivity?: StaffHourlyProductivity;
     qaAudit?: {
       totalAudits: number;
       requiredAudits: number;

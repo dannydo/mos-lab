@@ -29,10 +29,12 @@ import {
   applyCartProductsUpdateToBookingDraft,
   applyCombosUpdateToBookingDraft,
   applyTargetPromotionToBookingDraft,
+  buildPreCheckoutBillingSnapshot,
   buildRecomputedCheckoutBilling,
   buildRecordedTipBillingSnapshot,
   computeFreshBillingLineTotals,
   type CartProductItem,
+  type PreCheckoutPaymentDraftInput,
   type SavePromotionTarget,
 } from './iosBillingMath';
 import {
@@ -61,6 +63,7 @@ export type {
   CheckoutTipPercentTier,
   CvToCvPlusRequirements,
   PercentTipSuggestionItem,
+  PreCheckoutPaymentDraftInput,
   SavePromotionTarget,
   UpsellPayload,
 };
@@ -278,6 +281,22 @@ export function useIosBillingCheckout({
     ]
   );
 
+  // Pre-Checkout: Lưu tiền dịch vụ và/hoặc tiền tip thu trước khi vào phòng mi (giữ nguyên tiến trình ca làm)
+  const handleSavePreCheckoutPayment = useCallback(
+    async (payload: PreCheckoutPaymentDraftInput) => {
+      const recordedAt = new Date().toISOString();
+      updateActiveBooking((prev) => ({
+        ...prev,
+        billing: buildPreCheckoutBillingSnapshot(prev, actor, payload, recordedAt),
+      }));
+      await postAction('SAVE_PRE_CHECKOUT_PAYMENT', {
+        ...payload,
+        tipAmount: payload.preCheckoutTipAmount,
+      });
+    },
+    [actor, postAction, updateActiveBooking]
+  );
+
   // Step 14: Record Tip (Kinh Thánh mOS Điều răn TIP-001 & CV-002: 70% Làm mi + 10% Check-in + 10% Check-out)
   const handleRecordTip = useCallback(
     (tipAmount: number) => {
@@ -285,7 +304,7 @@ export function useIosBillingCheckout({
       let calculatedBilling: any = null;
 
       updateActiveBooking((prev) => {
-        const nextBilling = buildRecordedTipBillingSnapshot(prev, tipAmount, actor.tier, completedAt);
+        const nextBilling = buildRecordedTipBillingSnapshot(prev, tipAmount, actor.tier, completedAt, actor);
         calculatedBilling = nextBilling;
 
         return {
@@ -354,6 +373,7 @@ export function useIosBillingCheckout({
     handleUpdateCartProducts,
     handleUpdateCombos,
     handleChoosePaymentMethod,
+    handleSavePreCheckoutPayment,
     handleRecordTip,
     handleFinishOrder,
   };

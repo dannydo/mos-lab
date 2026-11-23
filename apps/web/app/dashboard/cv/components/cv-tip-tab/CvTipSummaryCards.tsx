@@ -115,7 +115,9 @@ export function CvTipSummaryCards({
             elapsedRatioPercent={elapsedRatioPercent}
             periodNoun={periodNoun}
           />
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">Thực nhận 70% tiền tip từ khách</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+            Thực nhận 70% tiền tip (90% trong kỳ training CVL)
+          </div>
         </Card>
       </Col>
 

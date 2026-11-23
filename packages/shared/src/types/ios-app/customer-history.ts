@@ -134,6 +134,7 @@ export interface IosCustomerHistoryResponse {
   customerName: string;
   customerPhone: string;
   customerCode?: string | null;
+  customerDateOfBirth?: string | null;
   summary: IosCustomerHistorySummary;
   visits: IosCustomerHistoryVisitItem[];
   payments: IosCustomerHistoryVisitItem[];

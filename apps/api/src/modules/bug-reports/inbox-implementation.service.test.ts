@@ -11,6 +11,7 @@ import {
   evaluateInboxImplementationQualityGate,
   isInboxImplementationExecutionEligible,
   isInboxImplementationEligible,
+  resolveInboxImplementationCheckpointGate,
   normalizeInboxImplementationResult,
   qualityTestsForCheckpointApproval,
   recoverLegacyDeployQualityEvidence,
@@ -2367,4 +2368,169 @@ test('extractModelTierFromLabel and stripModelTierMarker round-trip model tier m
   assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:flash_lite]'), 'flash');
   assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:pro]'), 'orchestrator_argon');
   assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree'), undefined);
+});
+
+test('claimAgTaskProvisioning prioritizes fresh jobs (attemptCount asc) and respects PENDING defer cooldown', async () => {
+  InboxWorkerStatusService.resetForTesting();
+  const captured: {
+    findArgs: { where?: { OR?: unknown }; orderBy?: unknown } | null;
+  } = { findArgs: null };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmConfig: { findMany: async () => [], upsert: async () => ({}) },
+        crmInboxImplementationJob: {
+          count: async () => 0,
+          findFirst: async (args: { where?: { OR?: unknown }; orderBy?: unknown }) => {
+            captured.findArgs = args;
+            return null;
+          },
+        },
+      },
+    },
+  };
+
+  await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'danny-codex-desktop');
+  assert.deepEqual(captured.findArgs?.orderBy, [{ ideProvisioningAttemptCount: 'asc' }, { createdAt: 'asc' }]);
+  const orFilters = captured.findArgs?.where?.OR as Array<Record<string, unknown>> | undefined;
+  assert.equal(Array.isArray(orFilters), true);
+  assert.equal(orFilters?.[0]?.ideProvisioningState, 'PENDING');
+  assert.equal(Array.isArray(orFilters?.[0]?.OR), true);
+});
+
+test('deferIdeTaskProvisioning sets exponential cooldown backoff and preserves Mac AG + model tag', async () => {
+  const captured: { updateData: Record<string, unknown> | null } = { updateData: null };
+  const before = Date.now();
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: {
+          findUnique: async () => ({
+            ideProvisioningAttemptCount: 2,
+            executionOwner: 'AG_MAC',
+            progressLabel: 'Mac AG đang tạo handoff cục bộ. [model:hydrogen]',
+          }),
+          updateMany: async (args: { data: Record<string, unknown> }) => {
+            captured.updateData = args.data;
+            return { count: 1 };
+          },
+        },
+      },
+    },
+  };
+
+  const outcome = await InboxImplementationService.deferIdeTaskProvisioning(
+    fastify as never,
+    '11111111-1111-4111-8111-111111111111',
+    '22222222-2222-4222-8222-222222222222',
+    'AGENTAPI_UNAVAILABLE'
+  );
+  assert.equal(outcome, 'DEFERRED');
+  assert.equal(captured.updateData?.ideProvisioningState, 'PENDING');
+  assert.equal(captured.updateData?.progressLabel, 'Chờ Mac AG tạo handoff cục bộ. [model:hydrogen]');
+  const retryAt = captured.updateData?.ideProvisioningLeaseExpiresAt as Date;
+  assert.ok(retryAt instanceof Date);
+  const deltaMs = retryAt.getTime() - before;
+  assert.ok(deltaMs >= 115_000 && deltaMs <= 125_000, `Expected ~120s backoff for attempt 2, got ${deltaMs}ms`);
+});
+
+test('commit and deploy checkpoints succeed when STAFF comments arrive after Gate 1 approval, while core scope edits still fail', async () => {
+  const approvedAt = new Date('2026-11-21T09:58:18.000Z');
+  const preApprovalComment = {
+    id: 873,
+    body: 'Initial CVL tip clarification.',
+    createdAt: new Date('2026-11-21T09:50:00.000Z'),
+  };
+  const basePreApproval = source({
+    status: 'APPROVED',
+    implementationApprovedAt: approvedAt,
+    comments: [preApprovalComment],
+  });
+  const approvedVersion = inboxImplementationSourceVersion(basePreApproval);
+  const readyWithPostComments = source({
+    status: 'APPROVED',
+    implementationApprovedAt: approvedAt,
+    implementationApprovalSourceVersion: approvedVersion,
+    implementationActiveJobId: 'ag-drift-job',
+    comments: [
+      { id: 877, body: 'Post-approval thread reply #2', createdAt: new Date('2026-11-21T10:48:52.000Z') },
+      { id: 874, body: 'Same-second reply after Gate 1 approval', createdAt: approvedAt },
+      preApprovalComment,
+    ],
+    inboxPlanJobs: [
+      {
+        id: 'plan-drift-1',
+        status: 'COMPLETED',
+        resultAction: 'POST_PLAN',
+        sourceVersion: approvedVersion,
+        planVersion: 'v1:plan-drift',
+      },
+    ],
+  });
+
+  // Raw Gate 1 execution check still sees comment drift, whereas checkpoint gate resolves cleanly.
+  assert.equal(isInboxImplementationExecutionEligible(readyWithPostComments).eligible, false);
+  const checkpointGate = resolveInboxImplementationCheckpointGate(readyWithPostComments);
+  assert.equal(checkpointGate.eligible, true);
+  assert.equal(checkpointGate.sourceVersion, approvedVersion);
+
+  const coreChanged = { ...readyWithPostComments, description: 'Changed ticket scope after approval.' };
+  assert.equal(resolveInboxImplementationCheckpointGate(coreChanged).eligible, false);
+
+  const reopenedAfterDefer = {
+    ...readyWithPostComments,
+    triageNote: 'Mở lại ticket sau thời gian tạm hoãn',
+  };
+  assert.equal(resolveInboxImplementationCheckpointGate(reopenedAfterDefer).eligible, true);
+  assert.equal(
+    resolveInboxImplementationCheckpointGate({ ...reopenedAfterDefer, description: 'Altered scope.' }).eligible,
+    false
+  );
+
+  const agJob = {
+    id: 'ag-drift-job',
+    reportId: 16,
+    executionOwner: 'AG',
+    status: 'AWAITING_COMMIT_REVIEW',
+    sourceVersion: approvedVersion,
+    planVersion: 'v1:plan-drift',
+    commitSha: null as string | null,
+    changedFilesJson: JSON.stringify(['apps/api/src/modules/kpi/routes/cv-tip.routes.ts']),
+    testsJson: JSON.stringify([{ command: 'pnpm verify:quick', status: 'PASSED' }]),
+    updatedAt: new Date('2026-11-21T11:00:00.000Z'),
+  };
+  const updates: Array<Record<string, unknown>> = [];
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: { findUnique: async () => readyWithPostComments },
+        crmInboxImplementationJob: {
+          findFirst: async ({ where }: { where: { sourceVersion?: string; status?: string } }) =>
+            where.sourceVersion === agJob.sourceVersion && where.status === agJob.status ? agJob : null,
+          findUnique: async () => agJob,
+        },
+        crmBugReportComment: { findMany: async () => [] },
+        $transaction: async (callback: (tx: unknown) => Promise<boolean>) =>
+          callback({
+            $queryRaw: async () => [],
+            crmInboxImplementationJob: {
+              findUnique: async () => agJob,
+              updateMany: async (input: { data: Record<string, unknown> }) => {
+                updates.push(input.data);
+                return { count: 1 };
+              },
+            },
+            crmBugReportAudit: { findFirst: async () => null, create: async () => ({ id: 1 }) },
+            crmBugReport: { update: async () => ({}), updateMany: async () => ({ count: 1 }) },
+          }),
+      },
+    },
+  };
+
+  assert.equal(await InboxImplementationService.approveCommit(fastify as never, 16, 1), true);
+  agJob.status = 'AWAITING_DEPLOY_REVIEW';
+  agJob.commitSha = 'a'.repeat(40);
+  assert.equal(await InboxImplementationService.approveDeploy(fastify as never, 16, 1), true);
+  assert.equal(updates[0]?.executionPhase, 'IDE_COMMIT_HANDOFF');
+  assert.equal(updates[1]?.executionPhase, 'DEPLOY_APPROVED');
 });

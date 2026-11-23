@@ -453,18 +453,24 @@ export function PostCheckoutComboFormSections({
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-2 pt-1 border-t border-dashed border-neutral-700/40">
-          <span className="text-[11.5px] font-bold inline-flex items-center gap-1">
-            <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
-            <span>Tiền Tip (miễn VAT):</span>
-          </span>
-          <div className="flex items-center gap-1 flex-wrap justify-end">
-            {[0, 50000, 100000, 200000].map((amt) => (
+        <div className="space-y-1.5 pt-1 border-t border-dashed border-neutral-700/40">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11.5px] font-bold inline-flex items-center gap-1">
+              <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+              <span>Tiền Tip (miễn VAT):</span>
+            </span>
+            <span className="text-[12px] font-black text-rose-500 tabular-nums">
+              {tipAmount.toLocaleString('vi-VN')} đ
+            </span>
+          </div>
+          <div className="grid grid-cols-6 gap-1">
+            {[0, 50000, 100000, 200000, 500000].map((amt) => (
               <button
                 key={amt}
                 type="button"
+                data-testid={`post-checkout-tip-${amt}`}
                 onClick={() => onSetTipAmount(amt)}
-                className={`px-2 py-1 rounded-lg border text-[10.5px] font-bold tabular-nums cursor-pointer ${
+                className={`py-1.5 rounded-lg border text-[10.5px] font-bold tabular-nums cursor-pointer ${
                   tipAmount === amt
                     ? 'bg-rose-500 border-rose-500 text-white'
                     : isDark
@@ -475,6 +481,21 @@ export function PostCheckoutComboFormSections({
                 {amt === 0 ? '0đ' : `${amt / 1000}K`}
               </button>
             ))}
+            <input
+              type="text"
+              inputMode="numeric"
+              aria-label="Nhập tiền tip tùy ý sau checkout"
+              data-testid="post-checkout-tip-custom-input"
+              placeholder="Khác"
+              value={![0, 50000, 100000, 200000, 500000].includes(tipAmount) ? tipAmount.toLocaleString('vi-VN') : ''}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '');
+                onSetTipAmount(digits ? Number(digits) : 0);
+              }}
+              className={`px-1.5 py-1 rounded-lg border text-right text-[10.5px] font-bold tabular-nums ${
+                isDark ? 'bg-neutral-900 border-neutral-700 text-rose-300' : 'bg-white border-gray-300 text-rose-700'
+              }`}
+            />
           </div>
         </div>
 

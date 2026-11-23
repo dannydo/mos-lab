@@ -41,7 +41,8 @@ import {
 export async function reviewClarificationByAgent(
   fastify: FastifyInstance,
   key: string,
-  input: AgentReviewBugReportRequest
+  input: AgentReviewBugReportRequest,
+  getDetail: (fastify: FastifyInstance, id: number) => Promise<BugReportDetail> = getBugReportDetail
 ): Promise<BugReportDetail> {
   const id = parseBugReportKey(key);
   const existing = await fastify.prisma.crm.crmBugReport.findUnique({ where: { id } });
@@ -112,7 +113,7 @@ export async function reviewClarificationByAgent(
     }
   });
 
-  return getBugReportDetail(fastify, id);
+  return getDetail(fastify, id);
 }
 
 export async function markInboxFollowUpReviewed(fastify: FastifyInstance, key: string, note: string): Promise<boolean> {
@@ -149,7 +150,8 @@ export async function markInboxFollowUpReviewed(fastify: FastifyInstance, key: s
 export async function retryClarification(
   fastify: FastifyInstance,
   id: number,
-  actorStaffId: number
+  actorStaffId: number,
+  getDetail: (fastify: FastifyInstance, id: number) => Promise<BugReportDetail> = getBugReportDetail
 ): Promise<BugReportDetail> {
   const existing = await fastify.prisma.crm.crmBugReport.findUnique({ where: { id } });
   if (!existing) throw new BugReportError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
@@ -178,14 +180,15 @@ export async function retryClarification(
       },
     });
   });
-  return getBugReportDetail(fastify, id);
+  return getDetail(fastify, id);
 }
 
 export async function updateAgentProgress(
   fastify: FastifyInstance,
   key: string,
   input: AgentUpdateBugProgressRequest,
-  options: { dedupeSameStage?: boolean } = {}
+  options: { dedupeSameStage?: boolean } = {},
+  getDetail: (fastify: FastifyInstance, id: number) => Promise<BugReportDetail> = getBugReportDetail
 ): Promise<BugReportDetail> {
   const id = parseBugReportKey(key);
   const existing = await fastify.prisma.crm.crmBugReport.findUnique({ where: { id } });
@@ -211,7 +214,7 @@ export async function updateAgentProgress(
       },
       orderBy: { createdAt: 'desc' },
     });
-    if (latestHandoff?.action === action) return getBugReportDetail(fastify, id);
+    if (latestHandoff?.action === action) return getDetail(fastify, id);
   }
 
   const now = new Date();
@@ -241,13 +244,14 @@ export async function updateAgentProgress(
       },
     });
   });
-  return getBugReportDetail(fastify, id);
+  return getDetail(fastify, id);
 }
 
 export async function markFixedByAgent(
   fastify: FastifyInstance,
   key: string,
-  input: AgentMarkBugFixedRequest
+  input: AgentMarkBugFixedRequest,
+  getDetail: (fastify: FastifyInstance, id: number) => Promise<BugReportDetail> = getBugReportDetail
 ): Promise<BugReportDetail> {
   const id = parseBugReportKey(key);
   const existing = await fastify.prisma.crm.crmBugReport.findUnique({ where: { id } });
@@ -354,7 +358,7 @@ export async function markFixedByAgent(
     }
   });
 
-  return getBugReportDetail(fastify, id);
+  return getDetail(fastify, id);
 }
 
 async function findSimilarResolutions(
@@ -469,14 +473,23 @@ export async function listAgentBugQueue(fastify: FastifyInstance): Promise<Agent
   });
 }
 
-export async function getAgentBugBundle(fastify: FastifyInstance, key: string): Promise<AgentBugBundle> {
+export async function getAgentBugBundle(
+  fastify: FastifyInstance,
+  key: string,
+  deps?: {
+    getDetail?: (fastify: FastifyInstance, id: number) => Promise<BugReportDetail>;
+    updateProgress?: typeof updateAgentProgress;
+  }
+): Promise<AgentBugBundle> {
+  const getDetail = deps?.getDetail ?? getBugReportDetail;
+  const updateProgress = deps?.updateProgress ?? updateAgentProgress;
   const id = parseBugReportKey(key);
-  let report = await getBugReportDetail(fastify, id);
+  let report = await getDetail(fastify, id);
   if (!isAgentReadableBugStatus(report.status)) {
     throw new BugReportError('Ticket không còn trong phạm vi Agent được đọc.', 404, 'BUG_NOT_AGENT_READABLE');
   }
   if (report.clarification.status === 'PENDING_AGENT') {
-    report = await updateAgentProgress(fastify, key, { stage: 'ANALYZING' }, { dedupeSameStage: true });
+    report = await updateProgress(fastify, key, { stage: 'ANALYZING' }, { dedupeSameStage: true }, getDetail);
   }
   const similarResolutions = await findSimilarResolutions(fastify, report);
   return {

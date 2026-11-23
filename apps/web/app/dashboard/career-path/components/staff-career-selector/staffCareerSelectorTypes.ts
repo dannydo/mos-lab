@@ -1,5 +1,6 @@
 import type {
   BananaTransactionCategory,
+  CareerBranchFilter,
   CareerPeriod,
   CareerProgressionConfig,
   CareerRole,
@@ -17,6 +18,8 @@ export interface StaffCareerSelectorProps {
   lastSyncedAt?: string | null;
   activeRoleFilter?: string;
   onRoleFilterChange?: (role: string) => void;
+  activeBranchFilter?: CareerBranchFilter | string;
+  onBranchFilterChange?: (branch: string) => void;
   period?: CareerPeriod;
   onPeriodChange?: (period: CareerPeriod) => void;
   onSetRole?: (staffId: number, newRole: CareerRole) => Promise<void>;

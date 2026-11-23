@@ -2,9 +2,25 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, FlaskConical, History, RotateCcw, Eye, ChevronDown, AlertCircle, Check } from 'lucide-react';
+import {
+  X,
+  FlaskConical,
+  History,
+  RotateCcw,
+  Eye,
+  ChevronDown,
+  AlertCircle,
+  Check,
+  SlidersHorizontal,
+} from 'lucide-react';
 import type { IosBookingItem, IosSimulationMenteeOption } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
+import {
+  IOS_SANDBOX_MODE_OPTIONS,
+  type IosSandboxPresetMode,
+  type IosSimMaterialCheckItem,
+} from '../../state/iosSandboxPresetConfig';
+import { IosSimulationModeModal } from './IosSimulationModeModal';
 
 const SAMPLE_STAGE_LABELS: Record<
   'before' | 'cleaned' | 'after',
@@ -88,6 +104,11 @@ interface IosSimulationWorkspaceBarProps {
   onRevertConsultation: (bookingId: number) => void;
   onResetToIncoming: (bookingId: number) => void;
   onExitSimulation: () => void;
+  simPresetMode?: IosSandboxPresetMode;
+  onSelectSimPresetMode?: (mode: IosSandboxPresetMode) => void;
+  onSimJumpToStep?: (step: number, bookingId?: number) => void;
+  simMaterialsChecklist?: IosSimMaterialCheckItem[];
+  onToggleSimMaterial?: (id: string) => void;
 }
 
 export function IosSimulationWorkspaceBar({
@@ -106,11 +127,17 @@ export function IosSimulationWorkspaceBar({
   onRevertConsultation,
   onResetToIncoming,
   onExitSimulation,
+  simPresetMode = 'training',
+  onSelectSimPresetMode,
+  onSimJumpToStep,
+  simMaterialsChecklist = [],
+  onToggleSimMaterial,
 }: IosSimulationWorkspaceBarProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
   const [isRevertMenuOpen, setIsRevertMenuOpen] = useState(false);
   const [isMenteeMenuOpen, setIsMenteeMenuOpen] = useState(false);
+  const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
   const barRef = useRef<HTMLDivElement | null>(null);
   const [popoverTop, setPopoverTop] = useState<number>(32);
 
@@ -122,16 +149,18 @@ export function IosSimulationWorkspaceBar({
   useEffect(() => {
     setIsRevertMenuOpen(false);
     setIsMenteeMenuOpen(false);
+    setIsModeMenuOpen(false);
   }, [activeBooking?.id, currentStep, isSimulationMode]);
 
   useEffect(() => {
-    if (!isRevertMenuOpen && !isMenteeMenuOpen) return;
+    if (!isRevertMenuOpen && !isMenteeMenuOpen && !isModeMenuOpen) return;
     updatePopoverTop();
     const handleResize = () => updatePopoverTop();
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsRevertMenuOpen(false);
         setIsMenteeMenuOpen(false);
+        setIsModeMenuOpen(false);
       }
     };
     window.addEventListener('resize', handleResize);
@@ -140,7 +169,12 @@ export function IosSimulationWorkspaceBar({
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isRevertMenuOpen, isMenteeMenuOpen]);
+  }, [isRevertMenuOpen, isMenteeMenuOpen, isModeMenuOpen]);
+
+  const activePresetMeta = useMemo(
+    () => IOS_SANDBOX_MODE_OPTIONS.find((opt) => opt.id === simPresetMode) || IOS_SANDBOX_MODE_OPTIONS[0],
+    [simPresetMode]
+  );
 
   const hasMentees = Boolean(menteesList.length > 0 && onSelectMentee);
   const selectedMentee = useMemo(
@@ -214,6 +248,41 @@ export function IosSimulationWorkspaceBar({
                 {Math.max(1, (activeBooking.simulationAttemptCount || 0) + (activeBooking.status === 'DONE' ? 0 : 1))}
               </span>
             )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsRevertMenuOpen(false);
+                setIsMenteeMenuOpen(false);
+                setIsModeMenuOpen((prev) => {
+                  const next = !prev;
+                  if (next) updatePopoverTop();
+                  return next;
+                });
+              }}
+              aria-label="Chọn mode giả lập Sandbox"
+              aria-expanded={isModeMenuOpen}
+              title="Chuyển đổi chế độ giả lập Sandbox (Training Check-in / Bấm giờ / Sales Combo & Quà)"
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9.5px] font-bold leading-none shrink-0 transition-colors cursor-pointer ${
+                simPresetMode === 'sales'
+                  ? isDark
+                    ? 'bg-amber-500/20 text-amber-200 hover:bg-amber-500/30'
+                    : 'bg-amber-100 text-amber-900 hover:bg-amber-200'
+                  : simPresetMode === 'training'
+                    ? isDark
+                      ? 'bg-sky-500/20 text-sky-200 hover:bg-sky-500/30'
+                      : 'bg-sky-100 text-sky-900 hover:bg-sky-200'
+                    : isDark
+                      ? 'bg-neutral-800 text-neutral-200 hover:bg-neutral-700'
+                      : 'bg-white text-neutral-800 border border-pink-200 hover:bg-pink-50'
+              }`}
+            >
+              <SlidersHorizontal className="w-2.5 h-2.5 shrink-0" />
+              <span>{activePresetMeta.shortLabel}</span>
+              <ChevronDown
+                className={`w-2.5 h-2.5 shrink-0 transition-transform ${isModeMenuOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
 
             {isReadOnlyMentorView && (
               <span
@@ -377,6 +446,19 @@ export function IosSimulationWorkspaceBar({
             </div>,
             document.body
           )}
+
+        <IosSimulationModeModal
+          isOpen={isModeMenuOpen}
+          onClose={() => setIsModeMenuOpen(false)}
+          isDark={isDark}
+          isReadOnlyMentorView={isReadOnlyMentorView}
+          activeBooking={activeBooking}
+          simPresetMode={simPresetMode}
+          onSelectSimPresetMode={onSelectSimPresetMode}
+          onSimJumpToStep={onSimJumpToStep}
+          simMaterialsChecklist={simMaterialsChecklist}
+          onToggleSimMaterial={onToggleSimMaterial}
+        />
 
         {/* Revert 2-Level Portal Dialog */}
         {isRevertMenuOpen &&

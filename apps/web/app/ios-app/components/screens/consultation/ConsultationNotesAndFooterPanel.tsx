@@ -2,11 +2,15 @@
 
 import React from 'react';
 import type { IosCustomerNoteItem } from '@mos-lab/shared';
-import { FileText, ShieldCheck, CheckCircle2, Lock, ArrowRight } from 'lucide-react';
+import { FileText, ShieldCheck, CheckCircle2, Lock, ArrowRight, Clock, Gift } from 'lucide-react';
 import { CvFeather2Badge } from '../../ui-kit/CvFeatherLabels';
 import { CvlCustomerNotesBanner } from '../../ui-kit/CvlCustomerNotesBanner';
 import type { ActiveActorProfile } from '../../../state/useIosAppState';
+import type { IosSandboxPresetMode } from '../../../state/useIosSimulationMode';
+import type { BookingItem } from '../../../state/mockData';
 import type { LashPricingAndCvPointResult } from '../LashMaterialConstraintMatrix';
+import type { SavePreCheckoutPaymentPayload } from '../../modals/PreCheckoutPaymentModal';
+import { PreCheckoutStatusCard } from './PreCheckoutStatusCard';
 
 interface ConsultationNotesAndFooterPanelProps {
   isDark: boolean;
@@ -39,7 +43,12 @@ interface ConsultationNotesAndFooterPanelProps {
   isSimulationMode?: boolean;
   isReadOnlyMentorView?: boolean;
   simulationAttemptCount?: number;
+  simPresetMode?: IosSandboxPresetMode;
+  onSimJumpToStep?: (step: number, bookingId?: number) => void;
   onSimFastForwardToUpsell?: (bookingId: number) => void;
+  booking?: BookingItem;
+  quotedServiceTotalWithVat?: number;
+  onSavePreCheckoutPayment?: (payload: SavePreCheckoutPaymentPayload) => Promise<void> | void;
 }
 
 export function ConsultationNotesAndFooterPanel({
@@ -73,7 +82,12 @@ export function ConsultationNotesAndFooterPanel({
   isSimulationMode = false,
   isReadOnlyMentorView = false,
   simulationAttemptCount = 0,
+  simPresetMode = 'training',
+  onSimJumpToStep,
   onSimFastForwardToUpsell,
+  booking,
+  quotedServiceTotalWithVat,
+  onSavePreCheckoutPayment,
 }: ConsultationNotesAndFooterPanelProps) {
   return (
     <>
@@ -321,6 +335,15 @@ export function ConsultationNotesAndFooterPanel({
             </div>
           )}
 
+          {/* Thu tiền dịch vụ / Tip trước khi vào phòng mi (tùy chọn) */}
+          <PreCheckoutStatusCard
+            isDark={isDark}
+            booking={booking}
+            quotedServiceTotalWithVat={quotedServiceTotalWithVat ?? livePricingAndCvPoints.totalPriceWithVat}
+            isReadOnly={isReadOnlyMentorView}
+            onSavePreCheckoutPayment={onSavePreCheckoutPayment}
+          />
+
           {/* Big Action Button */}
           <div className="pt-1">
             {activeSubTab === 'PROFILE' ? (
@@ -356,7 +379,65 @@ export function ConsultationNotesAndFooterPanel({
             )}
 
             {isSimulationMode && bookingId && bookingId > 0 && !isReadOnlyMentorView && (
-              <div className="mt-2">
+              <div className="mt-2 space-y-1.5">
+                {onSimJumpToStep && (
+                  <div
+                    className={`p-2 rounded-xl border space-y-1.5 ${
+                      isDark
+                        ? 'bg-neutral-900/90 border-pink-500/30 text-neutral-200'
+                        : 'bg-pink-50/70 border-pink-200 text-neutral-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-[10.5px] font-bold">
+                      <span className="text-pink-400 uppercase tracking-wider">
+                        {simPresetMode === 'sales'
+                          ? '💎 Mode: Sales Combo & Quà Tặng'
+                          : simPresetMode === 'training'
+                            ? '🎓 Mode: Training Check-in · Bấm giờ'
+                            : '🧪 Mode: Full 15 Bước'}
+                      </span>
+                      <span className="text-[10px] opacity-75">Luyện nhanh:</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => onSimJumpToStep(9, bookingId)}
+                        className={`py-1.5 px-2 rounded-lg border text-[10.5px] font-bold flex items-center justify-center gap-1 cursor-pointer ${
+                          isDark
+                            ? 'bg-sky-950/60 border-sky-500/40 text-sky-200 hover:bg-sky-900/60'
+                            : 'bg-sky-50 border-sky-300 text-sky-900 hover:bg-sky-100'
+                        }`}
+                      >
+                        <Clock className="w-3 h-3 shrink-0" />
+                        <span>Bấm giờ</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onSimJumpToStep(12, bookingId)}
+                        className={`py-1.5 px-2 rounded-lg border text-[10.5px] font-bold flex items-center justify-center gap-1 cursor-pointer ${
+                          isDark
+                            ? 'bg-amber-950/60 border-amber-500/40 text-amber-200 hover:bg-amber-900/60'
+                            : 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
+                        }`}
+                      >
+                        <Gift className="w-3 h-3 shrink-0" />
+                        <span>Upsell</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onSimJumpToStep(13, bookingId)}
+                        className={`py-1.5 px-2 rounded-lg border text-[10.5px] font-bold flex items-center justify-center gap-1 cursor-pointer ${
+                          isDark
+                            ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-200 hover:bg-emerald-900/60'
+                            : 'bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100'
+                        }`}
+                      >
+                        <span>Check-out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {simulationAttemptCount >= 1 &&
                 (isNaturalLashComplete || !mustCompleteNaturalLashBeforeProceeding) &&
                 onSimFastForwardToUpsell ? (
@@ -371,7 +452,7 @@ export function ConsultationNotesAndFooterPanel({
                   >
                     <span>⚡ Tua nhanh kỹ thuật → Upsell & Checkout (PA #{simulationAttemptCount + 1})</span>
                   </button>
-                ) : simulationAttemptCount === 0 ? (
+                ) : simulationAttemptCount === 0 && !onSimJumpToStep ? (
                   <div
                     className={`text-center text-[10.5px] font-semibold px-2 py-1.5 rounded-xl border ${
                       isDark

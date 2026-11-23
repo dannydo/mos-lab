@@ -1,4 +1,4 @@
-import type { CareerPeriod, CareerRole, SafeAny, StaffCareerStatus } from '@mos-lab/shared';
+import type { CareerPeriod, CareerRole, SafeAny, StaffCareerStatus, StaffHourlyProductivity } from '@mos-lab/shared';
 import { qaShopService } from '../../qa-shop/qa-shop.service.js';
 
 export type CvRewardCalculationMode = 'ACTUAL_PAYROLL' | 'SIMULATION';
@@ -154,6 +154,15 @@ export function resolveCareerPeriodDates(period: CareerPeriod = 'last_30_days') 
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   };
+  const formatDateSql = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+  // For closed-month periods (last_month, last_3_months), periodEnd is 00:00:00 of the 1st of next month
+  const shiftEndDate =
+    period === 'last_month' || period === 'last_3_months'
+      ? new Date(periodEnd.getTime() - 24 * 60 * 60 * 1000)
+      : periodEnd;
 
   return {
     period: (period || 'last_30_days') as CareerPeriod,
@@ -162,6 +171,8 @@ export function resolveCareerPeriodDates(period: CareerPeriod = 'last_30_days') 
     periodEnd,
     periodStartSql: `'${formatSql(periodStart)}'`,
     periodEndSql: `'${formatSql(periodEnd)}'`,
+    shiftStartDateSql: `'${formatDateSql(periodStart)}'`,
+    shiftEndInclusiveSql: `'${formatDateSql(shiftEndDate)}'`,
     orders90dStart,
     orders90dEnd,
     orders90dStartSql: `'${formatSql(orders90dStart)}'`,
@@ -170,6 +181,52 @@ export function resolveCareerPeriodDates(period: CareerPeriod = 'last_30_days') 
 }
 
 export type CareerPeriodDates = ReturnType<typeof resolveCareerPeriodDates>;
+
+/**
+ * Chuẩn hóa tính toán Hiệu suất Phục vụ theo Giờ công (SPH & Revenue/Hour) theo Điều răn CAREER-SPH-001:
+ * SPH = (Full set + Dặm Combo + Dặm lẻ) / Tổng giờ công ca thực tế trong kỳ
+ */
+export function computeHourlyProductivity(input: {
+  fullSetCount?: number;
+  comboRetainCount?: number;
+  singleRetainCount?: number;
+  serviceRevenue?: number;
+  shiftHours?: number;
+  payrollHours?: number;
+}): StaffHourlyProductivity {
+  const fullSetCount = Math.max(0, Math.round(Number(input.fullSetCount || 0)));
+  const comboRetainCount = Math.max(0, Math.round(Number(input.comboRetainCount || 0)));
+  const singleRetainCount = Math.max(0, Math.round(Number(input.singleRetainCount || 0)));
+  const totalCompletedServices = fullSetCount + comboRetainCount + singleRetainCount;
+  const serviceRevenue = Math.max(0, Math.round(Number(input.serviceRevenue || 0)));
+  const rawShiftHours = Math.max(0, Number(input.shiftHours || 0));
+  const rawPayrollHours = Math.max(0, Number(input.payrollHours || 0));
+
+  let actualWorkingHours = 0;
+  let workingHoursSource: StaffHourlyProductivity['workingHoursSource'] = 'NONE';
+  if (rawShiftHours > 0) {
+    actualWorkingHours = Number(rawShiftHours.toFixed(1));
+    workingHoursSource = 'SHIFT';
+  } else if (rawPayrollHours > 0) {
+    actualWorkingHours = Number(rawPayrollHours.toFixed(1));
+    workingHoursSource = 'PAYROLL';
+  }
+
+  const servicesPerHour = actualWorkingHours > 0 ? Number((totalCompletedServices / actualWorkingHours).toFixed(2)) : 0;
+  const revenuePerHour = actualWorkingHours > 0 ? Math.round(serviceRevenue / actualWorkingHours) : 0;
+
+  return {
+    totalCompletedServices,
+    fullSetCount,
+    comboRetainCount,
+    singleRetainCount,
+    actualWorkingHours,
+    servicesPerHour,
+    serviceRevenue,
+    revenuePerHour,
+    workingHoursSource,
+  };
+}
 
 export function buildShopTipStatsSql(periodStartSql: string, periodEndSql: string): string {
   return `

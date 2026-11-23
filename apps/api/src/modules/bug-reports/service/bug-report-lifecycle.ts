@@ -17,6 +17,7 @@ import {
   STATUS_SORT,
   clipped,
   normalizedAttachments,
+  safeJsonParse,
   saveAttachments,
   serialize,
 } from './bug-report-filters.js';
@@ -26,7 +27,8 @@ export async function reviewBugReport(
   fastify: FastifyInstance,
   reporterStaffId: number,
   id: number,
-  input: ReviewBugReportRequest
+  input: ReviewBugReportRequest,
+  getDetail: (fastify: FastifyInstance, id: number) => Promise<BugReportDetail> = getBugReportDetail
 ): Promise<BugReportDetail> {
   const existing = await fastify.prisma.crm.crmBugReport.findFirst({ where: { id, reporterStaffId } });
   if (!existing) throw new BugReportError('Không tìm thấy ticket của bạn.', 404, 'BUG_NOT_FOUND');
@@ -133,7 +135,7 @@ export async function reviewBugReport(
     await saveAttachments(fastify, id, attachments, completed.commentId);
   }
   fastify.cache?.invalidatePattern('^bug-reports:mine:');
-  return getBugReportDetail(fastify, completed.row.id);
+  return getDetail(fastify, completed.row.id);
 }
 
 export async function cancelBugReport(
@@ -141,7 +143,8 @@ export async function cancelBugReport(
   actorStaffId: number,
   id: number,
   canOverride: boolean,
-  input?: CancelBugReportRequest
+  input?: CancelBugReportRequest,
+  getDetail: (fastify: FastifyInstance, id: number) => Promise<BugReportDetail> = getBugReportDetail
 ): Promise<BugReportDetail> {
   const existing = await fastify.prisma.crm.crmBugReport.findUnique({
     where: { id },
@@ -220,14 +223,15 @@ export async function cancelBugReport(
   fastify.cache?.invalidatePattern('^bug-reports:mine:');
   fastify.cache?.invalidatePattern('^bug-reports:');
 
-  return getBugReportDetail(fastify, completed.id);
+  return getDetail(fastify, completed.id);
 }
 
 export async function triageBugReport(
   fastify: FastifyInstance,
   actorStaffId: number,
   id: number,
-  input: TriageBugReportRequest
+  input: TriageBugReportRequest,
+  getDetail: (fastify: FastifyInstance, id: number) => Promise<BugReportDetail> = getBugReportDetail
 ) {
   const status = input?.status;
   if (!BUG_REPORT_STATUSES.includes(status)) throw new BugReportError('Trạng thái ticket không hợp lệ.');
@@ -266,6 +270,27 @@ export async function triageBugReport(
 
   const now = new Date();
   const updated = await fastify.prisma.crm.$transaction(async (tx) => {
+    // Reopening from temporary defer must restore the prior triageNote (or null) instead of
+    // overwriting it with the UI reopen note and poisoning Gate 1 sourceVersion for active jobs.
+    let nextTriageNote = note;
+    if (
+      previousStatus === 'REJECTED' &&
+      status === 'NEW' &&
+      note === 'Mở lại ticket sau thời gian tạm hoãn' &&
+      existing.triageNote?.startsWith('[Tạm hoãn]')
+    ) {
+      const auditDelegate = (tx as { crmBugReportAudit?: { findFirst?: unknown } }).crmBugReportAudit;
+      const rejectAudit =
+        typeof auditDelegate?.findFirst === 'function'
+          ? await tx.crmBugReportAudit.findFirst({
+              where: { reportId: id, action: 'STATUS_REJECTED' },
+              orderBy: { id: 'desc' },
+            })
+          : null;
+      const prevSnapshot = safeJsonParse<{ triageNote?: unknown } | null>(rejectAudit?.beforeJson ?? null, null);
+      nextTriageNote = typeof prevSnapshot?.triageNote === 'string' ? prevSnapshot.triageNote : null;
+    }
+
     const row = await tx.crmBugReport.update({
       where: { id },
       data: {
@@ -274,7 +299,7 @@ export async function triageBugReport(
         statusSort: STATUS_SORT[status],
         prioritySort: priority ? PRIORITY_SORT[priority] : 4,
         businessContext,
-        triageNote: note,
+        triageNote: nextTriageNote,
         clarificationStatus,
         clarificationSummary:
           clarificationStatus === 'READY' && existing.clarificationStatus !== 'READY'
@@ -308,14 +333,15 @@ export async function triageBugReport(
     });
     return row;
   });
-  return getBugReportDetail(fastify, updated.id);
+  return getDetail(fastify, updated.id);
 }
 
 export async function confirmCloseBugReport(
   fastify: FastifyInstance,
   actorStaffId: number,
   id: number,
-  input: ConfirmCloseBugReportRequest
+  input: ConfirmCloseBugReportRequest,
+  getDetail: (fastify: FastifyInstance, id: number) => Promise<BugReportDetail> = getBugReportDetail
 ) {
   const existing = await fastify.prisma.crm.crmBugReport.findUnique({ where: { id } });
   if (!existing) throw new BugReportError('Không tìm thấy ticket.', 404, 'BUG_NOT_FOUND');
@@ -357,5 +383,5 @@ export async function confirmCloseBugReport(
     });
     return current;
   });
-  return getBugReportDetail(fastify, completed.id);
+  return getDetail(fastify, completed.id);
 }

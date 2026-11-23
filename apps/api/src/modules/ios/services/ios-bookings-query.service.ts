@@ -167,7 +167,7 @@ export async function queryIosBookingsList(
     };
 
     const staffStats = {
-      ...buildDemoStaffMonthlyStats(allDemoBookings, activeStaffId, targetDate),
+      ...buildDemoStaffMonthlyStats(allDemoBookings, activeStaffId, targetDate, activeTrainingPairs),
       cvSelfSpeedHistory: getDemoSpeedProfile(activeStaffId),
     };
     const enrichedDemoList = effectiveList.map((b) => ({

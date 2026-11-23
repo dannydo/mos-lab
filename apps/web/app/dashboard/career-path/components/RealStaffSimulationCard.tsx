@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { SimulationFinancialJackpotCard } from './real-staff-simulation-card/SimulationFinancialJackpotCard';
+import { SimulationHourlyProductivityWidget } from './real-staff-simulation-card/SimulationHourlyProductivityWidget';
 import { SimulationMobileBottomBar } from './real-staff-simulation-card/SimulationMobileBottomBar';
 import { SimulationProfileHeader } from './real-staff-simulation-card/SimulationProfileHeader';
 import { SimulationQuestsPanel } from './real-staff-simulation-card/SimulationQuestsPanel';
@@ -56,6 +57,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
         onSetRole={onSetRole}
         onDemote={onDemote}
       />
+
+      <SimulationHourlyProductivityWidget status={status} questMetrics={state.questMetrics} />
 
       {/* DESKTOP FHD PANORAMIC 2-COLUMN COCKPIT (What-If on Left, 6 Ải on Right) */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 mt-4 items-start">

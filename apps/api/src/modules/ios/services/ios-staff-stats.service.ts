@@ -13,6 +13,8 @@ import {
 import {
   buildExcludeOtherMenteeTrainingOrderSql,
   buildIsMenteeTrainingWindowSql,
+  createMysqlPoolTipExecutor,
+  CvlTrainingMentorshipService,
 } from '../../kpi/services/cvl-training-mentorship.service.js';
 import { getCrmPool } from './db-pools.js';
 import { invalidateCvSelfSpeedCache } from './ios-cv-self-speed.service.js';
@@ -126,9 +128,16 @@ export function createInitialLiveStaffStats(activeStaffId: number, targetDate?: 
 export function buildDemoStaffMonthlyStats(
   bookings: IosBookingItem[],
   activeStaffId: number,
-  targetDate: string
+  targetDate: string,
+  activeTrainingPairs: CvlTrainingMentorshipPair[] = []
 ): IosStaffMonthlyStats {
   const base = createInitialLiveStaffStats(activeStaffId, targetDate);
+  const { dayStr } = resolveYearMonthFromDate(targetDate);
+  const todayPair = CvlTrainingMentorshipService.findMatchingTrainingPairForOrder(
+    activeTrainingPairs,
+    activeStaffId,
+    dayStr
+  );
   const rules = base.cvPlusRules;
   const completedForStaff = bookings.filter((b) => b.status === 'DONE' && Number(b.assignedStaffId) === activeStaffId);
   const checkedOutByStaff = bookings.filter((b) => {
@@ -189,6 +198,8 @@ export function buildDemoStaffMonthlyStats(
     comboBonusToday,
     serumBonusToday,
     comboBonusMonth: comboBonusToday + serumBonusToday,
+    isTrainingMentee: Boolean(todayPair),
+    ...(todayPair?.mentorDisplayName ? { trainingMentorName: todayPair.mentorDisplayName } : {}),
   };
 }
 
@@ -216,6 +227,14 @@ export async function fetchLiveStaffMonthlyStats(
   try {
     const cvPlusRules = await loadDynamicCvPlusRules();
     const menteePairs = activeTrainingPairs.filter((p) => p.isActive && p.menteeLegacyStaffId === activeStaffId);
+    const todayTrainingPair = CvlTrainingMentorshipService.findMatchingTrainingPairForOrder(
+      activeTrainingPairs,
+      activeStaffId,
+      dayStr
+    );
+    if (menteePairs.length > 0) {
+      await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(createMysqlPoolTipExecutor(pool), menteePairs);
+    }
     const menteeWindowSql = buildIsMenteeTrainingWindowSql(menteePairs, 'o.booking_date_start');
     const excludeOtherMenteeOrderSql = buildExcludeOtherMenteeTrainingOrderSql(
       activeTrainingPairs,
@@ -440,6 +459,8 @@ export async function fetchLiveStaffMonthlyStats(
       comboBonusMonth: comboBonusMonthOnly + serumBonusMonthOnly,
       hourlyPayMonth,
       shiftHours: '08:30 - 20:00',
+      isTrainingMentee: Boolean(todayTrainingPair),
+      ...(todayTrainingPair?.mentorDisplayName ? { trainingMentorName: todayTrainingPair.mentorDisplayName } : {}),
       cvPlusRules,
     };
 

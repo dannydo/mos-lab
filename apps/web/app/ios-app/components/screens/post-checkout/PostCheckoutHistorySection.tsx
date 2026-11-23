@@ -240,29 +240,101 @@ export function PostCheckoutAuditTimeline({
   );
 }
 
+export interface PostCheckoutTransferProofBoxProps {
+  booking: BookingItem;
+  isDark: boolean;
+  branchCode: string;
+}
+
+export function PostCheckoutTransferProofBox({ booking, isDark, branchCode }: PostCheckoutTransferProofBoxProps) {
+  if (!booking?.billing?.transferProofPhoto && !booking?.billing?.tipTransferProofPhoto) return null;
+  return (
+    <div
+      className={`${isDark ? 'bg-sky-950/30 border-sky-800' : 'bg-sky-50 border-sky-200'} p-2.5 rounded-xl border flex items-center justify-between gap-3`}
+    >
+      <div className="space-y-0.5 min-w-0">
+        <div className={`text-[11px] font-bold ${isDark ? 'text-sky-300' : 'text-sky-950'} flex items-center gap-1.5`}>
+          <span className="text-base leading-none">📸</span>
+          <span>
+            {booking?.billing?.tipTransferProofPhoto && booking?.billing?.transferProofPhoto
+              ? 'Ảnh bill DV & Tiền Tip đối soát (VCB):'
+              : 'Ảnh bill chuyển khoản đối soát (VCB):'}
+          </span>
+        </div>
+        <div className={`text-[10px] ${isDark ? 'text-sky-400' : 'text-sky-800'} font-medium truncate`}>
+          Mã GD: {branchCode} {booking?.orderNumber?.replace(/\D/g, '') || booking?.id}{' '}
+          {booking?.billing?.qrSplitTipSeparate ? 'DV + TIP (Tách 2 QR)' : 'DV TIP...'}
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        {booking?.billing?.transferProofPhoto && (
+          <img
+            src={booking.billing.transferProofPhoto}
+            alt="Bill đối soát"
+            className={`w-12 h-12 object-cover rounded-lg border ${isDark ? 'border-sky-700' : 'border-sky-300'} shadow-2xs shrink-0 cursor-pointer`}
+          />
+        )}
+        {booking?.billing?.tipTransferProofPhoto && (
+          <img
+            src={booking.billing.tipTransferProofPhoto}
+            alt="Bill Tip đối soát"
+            className={`w-12 h-12 object-cover rounded-lg border ${isDark ? 'border-rose-700' : 'border-rose-300'} shadow-2xs shrink-0 cursor-pointer`}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export interface PostCheckoutDoneCtaButtonProps {
   isDark: boolean;
   isPendingPostAdj: boolean;
   onClick: () => void;
+  onOpenTipQr?: () => void;
 }
 
-export function PostCheckoutDoneCtaButton({ isDark, isPendingPostAdj, onClick }: PostCheckoutDoneCtaButtonProps) {
+export function PostCheckoutDoneCtaButton({
+  isDark,
+  isPendingPostAdj,
+  onClick,
+  onOpenTipQr,
+}: PostCheckoutDoneCtaButtonProps) {
+  if (isPendingPostAdj) {
+    return (
+      <button
+        type="button"
+        data-testid="open-post-checkout-combo-btn"
+        onClick={onClick}
+        className={`w-full py-3 px-4 rounded-2xl border font-extrabold text-[13.5px] shadow-xs active:scale-98 transition-transform text-center cursor-pointer ${
+          isDark ? 'bg-amber-950/60 border-amber-500 text-amber-300' : 'bg-amber-50 border-amber-500 text-amber-900'
+        }`}
+      >
+        ⏳ DUYỆT / XỬ LÝ ĐIỀU CHỈNH GÓI COMBO
+      </button>
+    );
+  }
   return (
-    <button
-      type="button"
-      data-testid="open-post-checkout-combo-btn"
-      onClick={onClick}
-      className={`w-full py-3 px-4 rounded-2xl border font-extrabold text-[13.5px] shadow-xs active:scale-98 transition-transform text-center cursor-pointer ${
-        isPendingPostAdj
-          ? isDark
-            ? 'bg-amber-950/60 border-amber-500 text-amber-300'
-            : 'bg-amber-50 border-amber-500 text-amber-900'
-          : isDark
-            ? 'bg-neutral-900 border-amber-500/70 text-amber-300'
-            : 'bg-white border-amber-500 text-amber-900'
-      }`}
-    >
-      {isPendingPostAdj ? '⏳ DUYỆT / XỬ LÝ ĐIỀU CHỈNH GÓI COMBO' : '+ BỔ SUNG / ĐIỀU CHỈNH GÓI COMBO'}
-    </button>
+    <div className="grid grid-cols-2 gap-2">
+      <button
+        type="button"
+        data-testid="open-post-checkout-tip-qr-btn"
+        onClick={onOpenTipQr || onClick}
+        className={`py-3 px-3 rounded-2xl border font-extrabold text-[12.5px] shadow-xs active:scale-98 transition-transform text-center cursor-pointer ${
+          isDark ? 'bg-rose-950/40 border-rose-500/70 text-rose-300' : 'bg-rose-50 border-rose-300 text-rose-800'
+        }`}
+      >
+        ♥ Thêm Tip / QR Tip
+      </button>
+      <button
+        type="button"
+        data-testid="open-post-checkout-combo-btn"
+        onClick={onClick}
+        className={`py-3 px-3 rounded-2xl border font-extrabold text-[12.5px] shadow-xs active:scale-98 transition-transform text-center cursor-pointer ${
+          isDark ? 'bg-neutral-900 border-amber-500/70 text-amber-300' : 'bg-white border-amber-500 text-amber-900'
+        }`}
+      >
+        + Điều chỉnh Combo
+      </button>
+    </div>
   );
 }

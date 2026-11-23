@@ -59,15 +59,22 @@ export function BookingsCreatedStatCard({
                 Booking Tạo Hôm Nay
               </span>
               {sandbox.isSandbox && (
-                <span
-                  className={
-                    sandbox.mode === 'training'
-                      ? 'px-1.5 py-0.5 rounded text-[11px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                      : 'px-1.5 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-                  }
-                >
-                  {sandbox.mode === 'training' ? '🧪 Training Mode' : '💎 Sales Mode'}
-                </span>
+                <>
+                  <span
+                    className={
+                      sandbox.mode === 'training'
+                        ? 'px-1.5 py-0.5 rounded text-[11px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                        : 'px-1.5 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                    }
+                  >
+                    {sandbox.mode === 'training' ? '🧪 Training Mode' : '💎 Sales Mode'}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 tabular-nums">
+                    {sandbox.mode === 'training'
+                      ? `NVL ${sandbox.materialReadyCount}/${sandbox.materialsChecklist.length} · KH ${sandbox.designPlanTotals.completed}/${sandbox.designPlanTotals.target}`
+                      : `Tỉ lệ chốt ${sandbox.closingRate}% (+${sandbox.closingUpliftPercent}%)`}
+                  </span>
+                </>
               )}
             </div>
             <PeriodComparison

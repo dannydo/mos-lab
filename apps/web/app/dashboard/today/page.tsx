@@ -17,6 +17,7 @@ import TodayBookingsTable from './components/TodayBookingsTable';
 import TodayComingTable from './components/TodayComingTable';
 import { TodayControlToolbar } from './components/TodayControlToolbar';
 import { TodayShopAttendanceCard } from './components/TodayShopAttendanceCard';
+import SandboxControlPanel from './components/SandboxControlPanel';
 
 dayjs.extend(isoWeek);
 
@@ -119,6 +120,8 @@ function TodayDashboardContent() {
         onResetTrainingState={sandbox.resetTrainingState}
         onResetSalesState={sandbox.resetSalesState}
       />
+
+      {sandbox.isSandbox && <SandboxControlPanel />}
 
       <Spin spinning={data.loading}>
         {mainViewMode === 'calendar' ? (

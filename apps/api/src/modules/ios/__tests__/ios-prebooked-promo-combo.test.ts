@@ -240,3 +240,31 @@ test('computeBookingFinancials & Legacy payload apply 50% promo once in RETAIL_O
   assert.equal(builtLegacy.discountAmount, 0);
   assert.equal(builtLegacy.paymentUpdatePayload.promotion_id, undefined);
 });
+
+test('computeBookingFinancials hydrates legacyTipAmount on Completed orders and awards 90% tip when isTrainingCvlOrder is true', () => {
+  const res = computeBookingFinancials({
+    servicePrice: 770000,
+    upgradePrice: 0,
+    serviceName: 'HyperLight 4X 770',
+    isComboLive: false,
+    selectedCombo: null,
+    selectedUnderCombo: null,
+    comboRedemption: null,
+    cartProducts: [],
+    overrideBilling: { tipAmount: 0 },
+    legacyTipAmount: 100000,
+    assignedStaffId: 46272,
+    checkInStaffId: 37790, // Mentor checked in
+    checkOutStaffId: 46272, // Mentee checked out
+    activeStaffId: 46272,
+    dbOrderState: 'Completed',
+    isTrainingCvlOrder: true,
+  });
+
+  assert.equal(res.billing.tipAmount, 100000);
+  assert.equal(res.billing.tipCvShare, 90000);
+  assert.equal(res.cvRewardBreakdown.techTipPercent, 90);
+  assert.equal(res.cvRewardBreakdown.cvTotalTipPercent, 90);
+  assert.equal(res.cvRewardBreakdown.checkInTipPercent, 0);
+  assert.equal(res.cvRewardBreakdown.checkOutTipPercent, 0);
+});

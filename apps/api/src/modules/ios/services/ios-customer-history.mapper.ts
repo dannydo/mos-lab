@@ -9,7 +9,7 @@ import type {
   IosCustomerNoteItem,
   SafeAny,
 } from '@mos-lab/shared';
-import { maskPhoneNumber } from '@mos-lab/shared';
+import { maskPhoneNumber, normalizeCustomerDateOfBirth } from '@mos-lab/shared';
 import type { OrderHistoryLashHydration } from './ios-customer-history-lashes.helper.js';
 
 const VN_TZ_OFFSET_MS = 7 * 60 * 60 * 1000;
@@ -21,6 +21,7 @@ export function buildEmptyCustomerHistoryResponse(customerId: number, error?: st
     customerName: 'Khách hàng',
     customerPhone: '',
     customerCode: null,
+    customerDateOfBirth: null,
     summary: {
       totalSpent: 0,
       completedVisits: 0,
@@ -440,6 +441,7 @@ export function buildCustomerHistoryPayload(params: {
     customerName: rawName,
     customerPhone,
     customerCode: profileRow?.passcode ? String(profileRow.passcode) : null,
+    customerDateOfBirth: normalizeCustomerDateOfBirth(profileRow?.date_of_birth ?? null),
     summary,
     visits,
     payments,

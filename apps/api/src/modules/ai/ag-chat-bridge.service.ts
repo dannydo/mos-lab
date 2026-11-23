@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { execFile as execFileCallback, execSync } from 'node:child_process';
 import { get as httpGet } from 'node:http';
-import { accessSync, constants, existsSync, readFileSync } from 'node:fs';
+import { accessSync, constants, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
@@ -131,6 +131,71 @@ export class AgChatBridgeService {
   }
 
   /**
+   * Check whether a local PID is still running.
+   */
+  static isProcessAlive(pid: number): boolean {
+    if (!Number.isInteger(pid) || pid <= 0) return false;
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch (error) {
+      return (error as { code?: string })?.code === 'EPERM';
+    }
+  }
+
+  /**
+   * Read Antigravity 2.34+ standalone hub descriptor (~/.gemini/antigravity/daemon/hub_*.json),
+   * which carries httpPort + csrfToken after Antigravity stopped exposing --csrf_token in CLI/HTML.
+   */
+  static async readAntigravityDaemonHubEnv(options?: {
+    daemonDir?: string;
+    projectId?: string;
+    isPidAlive?: (pid: number) => boolean;
+    probePort?: (port: number) => Promise<{ ok: boolean; csrfToken?: string } | null>;
+  }): Promise<Record<string, string> | null> {
+    const daemonDir = options?.daemonDir || resolve(homedir(), '.gemini/antigravity/daemon');
+    if (!existsSync(daemonDir)) return null;
+    const isPidAlive = options?.isPidAlive || ((pid: number) => this.isProcessAlive(pid));
+    const probePort = options?.probePort || ((port: number) => this.probeIsAntigravityPort(port));
+    const projectId = options?.projectId || this.detectAntigravityProjectId();
+
+    let entries: Array<{ name: string; mtimeMs: number }> = [];
+    try {
+      entries = readdirSync(daemonDir)
+        .filter((name) => /^hub_.*\.json$/i.test(name))
+        .map((name) => ({ name, mtimeMs: statSync(resolve(daemonDir, name)).mtimeMs }))
+        .sort((a, b) => b.mtimeMs - a.mtimeMs);
+    } catch {
+      return null;
+    }
+
+    for (const entry of entries) {
+      try {
+        const parsed = JSON.parse(readFileSync(resolve(daemonDir, entry.name), 'utf8')) as {
+          pid?: unknown;
+          httpPort?: unknown;
+          csrfToken?: unknown;
+        };
+        const pid = typeof parsed.pid === 'number' ? parsed.pid : Number(parsed.pid);
+        const httpPort = typeof parsed.httpPort === 'number' ? parsed.httpPort : Number(parsed.httpPort);
+        const csrfToken = typeof parsed.csrfToken === 'string' ? parsed.csrfToken.trim() : '';
+        if (!Number.isInteger(httpPort) || httpPort <= 0 || !csrfToken) continue;
+        if (Number.isInteger(pid) && pid > 0 && !isPidAlive(pid)) continue;
+        const probe = await probePort(httpPort);
+        if (!probe?.ok) continue;
+        return {
+          ANTIGRAVITY_LS_ADDRESS: `127.0.0.1:${httpPort}`,
+          ANTIGRAVITY_CSRF_TOKEN: csrfToken,
+          ANTIGRAVITY_PROJECT_ID: projectId,
+        };
+      } catch {
+        // Ignore malformed or stale hub descriptor and try next
+      }
+    }
+    return null;
+  }
+
+  /**
    * Detect active Antigravity Language Server Environment (Address, CSRF Token, Project ID)
    */
   static async detectAntigravityLsEnv(): Promise<Record<string, string>> {
@@ -141,6 +206,10 @@ export class AgChatBridgeService {
         ANTIGRAVITY_CSRF_TOKEN: process.env.ANTIGRAVITY_CSRF_TOKEN,
         ANTIGRAVITY_PROJECT_ID: projectId,
       };
+    }
+    const hubEnv = await this.readAntigravityDaemonHubEnv({ projectId });
+    if (hubEnv) {
+      return hubEnv;
     }
     try {
       const ps = execSync('ps aux | grep "[l]anguage_server.*antigravity"', { encoding: 'utf8' });

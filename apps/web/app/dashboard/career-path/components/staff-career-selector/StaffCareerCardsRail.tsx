@@ -4,9 +4,11 @@ import React from 'react';
 import { Avatar } from 'antd';
 import { UserCheck } from 'lucide-react';
 import type { CareerPeriod, CareerProgressionConfig, CareerStaffSummary } from '@mos-lab/shared';
+import type { CareerBranchOption } from '../../career-path.constants';
 import type { CareerSelectorMode } from './staffCareerSelectorTypes';
 import { getStaffOverallStatus, getStaffTipPercent, getStatusLabel } from './staffCareerMetrics';
 import {
+  BranchFilterChips,
   PeriodFilterChips,
   RailScrollButtons,
   RoleFilterChips,
@@ -20,6 +22,9 @@ interface StaffCareerCardsRailProps {
   onSelectStaff: (staffId: number) => void;
   currentFilter: string;
   onSelectFilter: (role: string) => void;
+  branchOptions: CareerBranchOption[];
+  currentBranchFilter: string;
+  onSelectBranch: (branch: string) => void;
   period: CareerPeriod;
   onPeriodChange?: (period: CareerPeriod) => void;
   currentMode: CareerSelectorMode;
@@ -35,6 +40,9 @@ export const StaffCareerCardsRail: React.FC<StaffCareerCardsRailProps> = ({
   onSelectStaff,
   currentFilter,
   onSelectFilter,
+  branchOptions,
+  currentBranchFilter,
+  onSelectBranch,
   period,
   onPeriodChange,
   currentMode,
@@ -55,6 +63,12 @@ export const StaffCareerCardsRail: React.FC<StaffCareerCardsRailProps> = ({
           {filteredStaff.length} CV
         </span>
         <RoleFilterChips currentFilter={currentFilter} onSelectFilter={onSelectFilter} variant="cards" />
+        <BranchFilterChips
+          branchOptions={branchOptions}
+          currentBranchFilter={currentBranchFilter}
+          onSelectBranch={onSelectBranch}
+          compact
+        />
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
@@ -137,9 +151,28 @@ export const StaffCareerCardsRail: React.FC<StaffCareerCardsRailProps> = ({
                   <span className="scale-90 origin-left shrink-0">
                     <StaffRoleBadge role={staff.careerRole} compact />
                   </span>
+                  {staff.branchCode && (
+                    <span
+                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full border shrink-0 ${
+                        staff.branchCode === 'EP'
+                          ? 'bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/25'
+                          : 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25'
+                      }`}
+                    >
+                      {staff.branchCode}
+                    </span>
+                  )}
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-mono mt-0.5 whitespace-nowrap tabular-nums">
                   <span className="font-semibold text-slate-700 dark:text-slate-300">{staff.ordersCount || 0} mi</span>
+                  {(staff.actualWorkingHours ?? staff.productivity?.actualWorkingHours ?? 0) > 0 && (
+                    <>
+                      <span>·</span>
+                      <span className="text-sky-600 dark:text-sky-400 font-bold">
+                        {(staff.servicesPerHour ?? staff.productivity?.servicesPerHour ?? 0).toFixed(2)}/h
+                      </span>
+                    </>
+                  )}
                   <span>·</span>
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">{tipRate}% tip</span>
                   <span>·</span>

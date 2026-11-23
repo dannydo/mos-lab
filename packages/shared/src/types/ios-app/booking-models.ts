@@ -58,6 +58,8 @@ export interface IosStaffMonthlyStats {
   comboBonusMonth?: number;
   hourlyPayMonth?: number;
   shiftHours?: string;
+  isTrainingMentee?: boolean;
+  trainingMentorName?: string;
   cvPlusRules?: Partial<CvToCvPlusRequirements>;
   cvSelfSpeedHistory?: IosCvSelfSpeedHistoryProfile;
 }
@@ -71,6 +73,8 @@ export interface IosActiveActorProfile {
   storeId?: number;
   branchCode?: string;
   branchName?: string;
+  isTrainingMentee?: boolean;
+  trainingMentorName?: string;
 }
 
 export interface NaturalLashConsultationAttributes {

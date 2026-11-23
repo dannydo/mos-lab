@@ -3,6 +3,7 @@ import { SafeAny, calculateWheelBonusCap } from '@mos-lab/shared';
 import { CcKpiService } from '../../services/cc-kpi.service.js';
 import {
   buildExcludeTrainingCvlOrderSql,
+  createFastifyLegacyTipExecutor,
   CvlTrainingMentorshipService,
 } from '../../services/cvl-training-mentorship.service.js';
 import { parseDefaultDateRange } from './cc-paystub.helpers.js';
@@ -39,6 +40,10 @@ export function registerCcLegacySyncRoutes(fastify: FastifyInstance) {
         fastify,
         startPart,
         endPart
+      );
+      await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(
+        createFastifyLegacyTipExecutor(fastify),
+        activeTrainingPairs
       );
       const excludeTrainingLegacyTipSql = buildExcludeTrainingCvlOrderSql(
         activeTrainingPairs,

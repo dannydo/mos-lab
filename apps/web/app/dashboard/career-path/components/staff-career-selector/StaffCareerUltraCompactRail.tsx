@@ -4,6 +4,7 @@ import React from 'react';
 import { Avatar, Tooltip } from 'antd';
 import { UserCheck } from 'lucide-react';
 import type { CareerPeriod, CareerProgressionConfig, CareerStaffSummary } from '@mos-lab/shared';
+import type { CareerBranchOption } from '../../career-path.constants';
 import type { CareerSelectorMode } from './staffCareerSelectorTypes';
 import {
   getBananaBalance,
@@ -13,6 +14,7 @@ import {
   getStatusLabel,
 } from './staffCareerMetrics';
 import {
+  BranchFilterChips,
   PeriodFilterChips,
   RailScrollButtons,
   RoleFilterChips,
@@ -26,6 +28,9 @@ interface StaffCareerUltraCompactRailProps {
   onSelectStaff: (staffId: number) => void;
   currentFilter: string;
   onSelectFilter: (role: string) => void;
+  branchOptions: CareerBranchOption[];
+  currentBranchFilter: string;
+  onSelectBranch: (branch: string) => void;
   period: CareerPeriod;
   onPeriodChange?: (period: CareerPeriod) => void;
   currentMode: CareerSelectorMode;
@@ -41,6 +46,9 @@ export const StaffCareerUltraCompactRail: React.FC<StaffCareerUltraCompactRailPr
   onSelectStaff,
   currentFilter,
   onSelectFilter,
+  branchOptions,
+  currentBranchFilter,
+  onSelectBranch,
   period,
   onPeriodChange,
   currentMode,
@@ -61,6 +69,12 @@ export const StaffCareerUltraCompactRail: React.FC<StaffCareerUltraCompactRailPr
           {filteredStaff.length} CV
         </span>
         <RoleFilterChips currentFilter={currentFilter} onSelectFilter={onSelectFilter} variant="ultra_compact" />
+        <BranchFilterChips
+          branchOptions={branchOptions}
+          currentBranchFilter={currentBranchFilter}
+          onSelectBranch={onSelectBranch}
+          compact
+        />
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
@@ -92,10 +106,14 @@ export const StaffCareerUltraCompactRail: React.FC<StaffCareerUltraCompactRailPr
                     <span>{staff.displayName}</span>
                     <StaffRoleBadge role={staff.careerRole} compact />
                   </div>
-                  <div className="text-[10px] text-slate-300">{getStatusLabel(overallStatus)}</div>
+                  <div className="text-[10px] text-slate-300">
+                    {staff.branchName ? `${staff.branchName} · ` : ''}
+                    {getStatusLabel(overallStatus)}
+                  </div>
                   <div className="text-[10px] font-mono text-amber-300 border-t border-white/10 pt-1 tabular-nums">
-                    {staff.ordersCount || 0} mi · {tipRate}% tip · {getStaffComboPercent(staff)}% combo ·{' '}
-                    {balance.toLocaleString('vi-VN')} 🍌
+                    {staff.ordersCount || 0} mi ·{' '}
+                    {(staff.servicesPerHour ?? staff.productivity?.servicesPerHour ?? 0).toFixed(2)}/h · {tipRate}% tip
+                    · {getStaffComboPercent(staff)}% combo · {balance.toLocaleString('vi-VN')} 🍌
                   </div>
                 </div>
               }

@@ -296,16 +296,34 @@ export function buildCvTipRecordColumns({
       dataIndex: 'cvTipAmount',
       key: 'cvTipAmount',
       align: 'right' as const,
-      width: 130,
-      render: (val: number) => (
-        <span
-          className={`tabular-nums font-bold text-xs ${
-            val > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'
-          }`}
-        >
-          {val > 0 ? `+${val.toLocaleString('vi-VN')}\u00a0đ` : '0 đ'}
-        </span>
-      ),
+      width: 155,
+      render: (val: number, record: CvTipRecord) => {
+        const pct = Math.round(Number(record.cvTipPercentage || 70));
+        return (
+          <div className="inline-flex items-center justify-end gap-1.5">
+            {val > 0 && (
+              <span
+                className={`tabular-nums text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                  pct >= 90
+                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
+                    : pct >= 80
+                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
+                      : 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/20'
+                }`}
+              >
+                {pct}%
+              </span>
+            )}
+            <span
+              className={`tabular-nums font-bold text-xs ${
+                val > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'
+              }`}
+            >
+              {val > 0 ? `+${val.toLocaleString('vi-VN')}\u00a0đ` : '0 đ'}
+            </span>
+          </div>
+        );
+      },
     },
   ];
 }

@@ -8,6 +8,7 @@ import type {
   MosChatMissionSummary,
   MosChatTaskItem,
   MosChatTaskPriority,
+  MosChatThreadReply,
   MosChatWorkflowInstance,
   SafeAny,
   UpdateMosChatTaskRequest,
@@ -319,34 +320,80 @@ export function useMosChatTaskAndMissionActions({
         });
 
         if (res?.mission) {
+          const updatedMission = res.mission;
+          const systemReply = res.systemReply;
+          const targetConvId = updatedMission.conversationId || mission.conversationId || activeConvId;
+          const targetMsgId = res.message?.id || updatedMission.messageId || mission.messageId;
+          const matchesMissionMsg = (m: MosChatMessage) =>
+            (Boolean(targetMsgId) && m.id === targetMsgId) || m.missionId === mission.reportId;
+
+          const applyUpdatedMsg = (m: MosChatMessage): MosChatMessage => {
+            if (!matchesMissionMsg(m)) return m;
+            if (res.message) return res.message;
+            const nextThread =
+              systemReply && !(m.thread || []).some((r: MosChatThreadReply) => r.id === systemReply.id)
+                ? [...(m.thread || []), systemReply]
+                : m.thread;
+            return {
+              ...m,
+              missionId: updatedMission.reportId,
+              missionKey: updatedMission.missionKey,
+              mission: updatedMission,
+              ...(nextThread ? { thread: nextThread } : {}),
+            };
+          };
+
+          // Update task in state
           setTasks((prev) =>
             prev.map((t) => {
               if (t.id === mission.taskId || t.missionId === mission.reportId || t.missionKey === mission.missionKey) {
+                if (res.task && res.task.id === t.id) {
+                  return {
+                    ...res.task,
+                    mission: updatedMission,
+                    done: action === 'REPORTER_ACCEPT' ? true : res.task.done,
+                  };
+                }
                 return {
                   ...t,
-                  mission: res.mission,
+                  mission: updatedMission,
                   done: action === 'REPORTER_ACCEPT' ? true : t.done,
                 };
               }
               return t;
             })
           );
-          if (mission.messageId) {
+
+          // Update conversations (activeConversation / liveThreadMsg source)
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (targetConvId && c.id !== targetConvId) return c;
+              if (!(c.messages || []).some(matchesMissionMsg)) return c;
+              return {
+                ...c,
+                messages: (c.messages || []).map(applyUpdatedMsg),
+              };
+            })
+          );
+
+          // Also update allMessagesByConv & AI messages
+          if (targetConvId) {
             setAllMessagesByConv((prev) => {
-              const currentList = prev[mission.conversationId || activeConvId] || [];
+              const currentList = prev[targetConvId] || [];
+              if (!currentList.some(matchesMissionMsg)) return prev;
               return {
                 ...prev,
-                [mission.conversationId || activeConvId]: currentList.map((m) =>
-                  m.id === mission.messageId ? res.message || { ...m, mission: res.mission } : m
-                ),
+                [targetConvId]: currentList.map(applyUpdatedMsg),
               };
             });
-            if (mission.conversationId === AI_COPILOT_CONV_ID) {
-              setAiMessages((prev) =>
-                prev.map((m) => (m.id === mission.messageId ? res.message || { ...m, mission: res.mission } : m))
-              );
-            }
           }
+          if (targetConvId === AI_COPILOT_CONV_ID) {
+            setAiMessages((prev) => prev.map(applyUpdatedMsg));
+          }
+
+          // Immediately sync activeThreadMsg so ThreadSheet mission/replies reflect acceptance right away
+          setActiveThreadMsg((current) => (current && matchesMissionMsg(current) ? applyUpdatedMsg(current) : current));
+
           return res.mission;
         }
         return null;
@@ -355,7 +402,7 @@ export function useMosChatTaskAndMissionActions({
         throw err;
       }
     },
-    [activeConvId, setAiMessages, setAllMessagesByConv, setTasks]
+    [activeConvId, setActiveThreadMsg, setAiMessages, setAllMessagesByConv, setConversations, setTasks]
   );
 
   const triggerWorkflow = useCallback(

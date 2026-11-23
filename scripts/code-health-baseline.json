@@ -4,6 +4,6 @@
   "maxAgentsMdBytes": 15000,
   "maxDotAgentsMdBytes": 1500,
   "files": {
-    "apps/api/src/modules/bug-reports/inbox-implementation.service.ts": 4123
+    "apps/api/src/modules/bug-reports/inbox-implementation.service.ts": 4207
   }
 }

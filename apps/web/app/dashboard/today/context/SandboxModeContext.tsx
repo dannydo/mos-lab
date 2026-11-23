@@ -1,167 +1,60 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { message } from 'antd';
+import {
+  BASELINE_CLOSING_RATE,
+  DEFAULT_PRESETS,
+  DEFAULT_TRAINING_OVERRIDES,
+  FALLBACK_SANDBOX_CONTEXT,
+  INITIAL_DESIGN_PLAN,
+  INITIAL_MATERIALS_CHECKLIST,
+  STORAGE_KEY_MODE,
+} from './sandbox/sandboxDefaults';
+import type {
+  DesignPlanItem,
+  MaterialChecklistItem,
+  MaterialStatus,
+  SandboxPresetScenario,
+  SimulatedComboSale,
+  SimulatedGift,
+  SimulatedLogAction,
+  SimulatedProductSale,
+  StaffTrainingOverride,
+  TodaySandboxContextValue,
+  TodaySandboxMode,
+} from './sandbox/sandboxTypes';
+import { useSalesAndPlanSimulation } from './sandbox/useSalesAndPlanSimulation';
+import { useTrainingSimulation } from './sandbox/useTrainingSimulation';
 
-export type TodaySandboxMode = 'live' | 'training' | 'sales';
+export type {
+  DesignPlanItem,
+  MaterialChecklistItem,
+  MaterialStatus,
+  SandboxPresetScenario,
+  SimulatedComboSale,
+  SimulatedGift,
+  SimulatedLogAction,
+  SimulatedProductSale,
+  StaffTrainingOverride,
+  TodaySandboxContextValue,
+  TodaySandboxMode,
+};
 
-export interface StaffTrainingOverride {
-  attendance?: 'none' | 'checked_in' | 'checked_out' | 'late';
-  status?: 'busy' | 'available';
-  doing?: string;
-  shift?: 'sáng' | 'chiều' | 'full' | 'off';
-  timerStartedAt?: number | null; // epoch ms
-  timerElapsedMinutes?: number;
-  timerService?: string;
-  clientsIncrement?: number;
-  doneIncrement?: number;
-}
-
-export interface SimulatedComboSale {
-  id: string;
-  name: string;
-  price: number;
-  customerName: string;
-  ccName: string;
-  cvName: string;
-  time: string;
-}
-
-export interface SimulatedProductSale {
-  id: string;
-  name: string;
-  price: number;
-  customerName: string;
-  time: string;
-}
-
-export interface SimulatedGift {
-  id: string;
-  name: string;
-  estimatedValue: number;
-  customerName: string;
-  time: string;
-}
-
-export interface SimulatedLogAction {
-  id: string;
-  type: 'CHECK_IN' | 'CHECK_OUT' | 'START_TIMER' | 'STOP_TIMER' | 'ADD_COMBO' | 'ADD_PRODUCT' | 'ADD_GIFT' | 'RESET';
-  timestamp: string;
-  message: string;
-}
-
-export interface TodaySandboxContextValue {
-  mode: TodaySandboxMode;
-  setMode: (mode: TodaySandboxMode) => void;
-  isSandbox: boolean;
-
-  // Training Mode
-  staffOverrides: Record<string, StaffTrainingOverride>;
-  simulateStaffCheckIn: (staffName: string, role?: 'CV' | 'CC') => void;
-  simulateStaffCheckOut: (staffName: string, role?: 'CV' | 'CC') => void;
-  simulateStaffStartTimer: (staffName: string, serviceName?: string, estimatedMinutes?: number) => void;
-  simulateStaffStopTimer: (staffName: string) => void;
-  simulateBatchCheckInAll: (role?: 'CV' | 'CC' | 'ALL') => void;
-  simulateBatchStartAllTimers: () => void;
-  resetTrainingState: () => void;
-
-  // Sales Simulation Mode
-  simulatedCombos: SimulatedComboSale[];
-  simulatedProducts: SimulatedProductSale[];
-  simulatedGifts: SimulatedGift[];
-  totalSimulatedRevenue: number;
-  totalSimulatedComboRevenue: number;
-  totalSimulatedProductRevenue: number;
-  simulateAddCombo: (custom?: { name?: string; price?: number; customerName?: string }) => void;
-  simulateAddProduct: (custom?: { name?: string; price?: number; customerName?: string }) => void;
-  simulateAddGift: (custom?: { name?: string; estimatedValue?: number; customerName?: string }) => void;
-  resetSalesState: () => void;
-
-  // General
-  simulatedActions: SimulatedLogAction[];
-  clearActionLog: () => void;
-  resetAllSandbox: () => void;
-}
-
-const STORAGE_KEY_MODE = 'mos_today_sandbox_mode';
+export {
+  BASELINE_CLOSING_RATE,
+  DEFAULT_PRESETS,
+  DEFAULT_TRAINING_OVERRIDES,
+  INITIAL_DESIGN_PLAN,
+  INITIAL_MATERIALS_CHECKLIST,
+};
 
 const TodaySandboxContext = createContext<TodaySandboxContextValue | undefined>(undefined);
 
-export const DEFAULT_TRAINING_OVERRIDES: Record<string, StaffTrainingOverride> = {
-  'CV Lan Anh': {
-    attendance: 'checked_in',
-    status: 'busy',
-    doing: 'Đang làm mi Classic 60p (Bấm giờ: 35p)',
-    timerStartedAt: Date.now() - 35 * 60 * 1000,
-    timerElapsedMinutes: 35,
-    timerService: 'Nối Mi Classic Thiết Kế (60p)',
-  },
-  'CV Mai Phương': {
-    attendance: 'checked_in',
-    status: 'available',
-    doing: 'Sẵn sàng nhận khách tiếp theo',
-    timerStartedAt: null,
-  },
-  'CV Thu Thảo': {
-    attendance: 'none',
-    status: 'available',
-    doing: 'Chưa check-in (Ca chiều 13:00)',
-    timerStartedAt: null,
-  },
-  'CV Ngọc Trâm': {
-    attendance: 'checked_out',
-    status: 'available',
-    doing: 'Đã hoàn tất ca & check-out',
-    timerStartedAt: null,
-  },
-  'CC Thảo My': {
-    attendance: 'checked_in',
-    doing: 'Đang tiếp đón khách tư vấn dáng mi',
-  },
-  'CC Diệu Nhi': {
-    attendance: 'none',
-    doing: 'Chưa check-in ca chiều',
-  },
-};
-
-const INITIAL_SALES_COMBOS: SimulatedComboSale[] = [
-  {
-    id: 'combo-init-1',
-    name: 'Combo 10 Tặng 6 (Mi Thiết Kế VIP)',
-    price: 2_500_000,
-    customerName: 'Chị Minh Anh',
-    ccName: 'CC Thảo My',
-    cvName: 'CV Lan Anh',
-    time: '14:15',
-  },
-];
-
-const INITIAL_SALES_PRODUCTS: SimulatedProductSale[] = [
-  {
-    id: 'prod-init-1',
-    name: 'Serum Dưỡng Mi FKN Tế Bào Gốc',
-    price: 350_000,
-    customerName: 'Chị Minh Anh',
-    time: '14:20',
-  },
-];
-
-const INITIAL_SALES_GIFTS: SimulatedGift[] = [
-  {
-    id: 'gift-init-1',
-    name: 'Cọ chải mi pha lê & Túi nhung Wings',
-    estimatedValue: 120_000,
-    customerName: 'Chị Minh Anh',
-    time: '14:22',
-  },
-];
-
 export function TodaySandboxProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<TodaySandboxMode>('live');
-  const [staffOverrides, setStaffOverrides] = useState<Record<string, StaffTrainingOverride>>(DEFAULT_TRAINING_OVERRIDES);
-  const [simulatedCombos, setSimulatedCombos] = useState<SimulatedComboSale[]>(INITIAL_SALES_COMBOS);
-  const [simulatedProducts, setSimulatedProducts] = useState<SimulatedProductSale[]>(INITIAL_SALES_PRODUCTS);
-  const [simulatedGifts, setSimulatedGifts] = useState<SimulatedGift[]>(INITIAL_SALES_GIFTS);
+  const [presets, setPresets] = useState<SandboxPresetScenario[]>(DEFAULT_PRESETS);
+  const [activePresetId, setActivePresetId] = useState<string>('pa-1');
   const [simulatedActions, setSimulatedActions] = useState<SimulatedLogAction[]>([]);
 
   // Load initial mode from sessionStorage or URL query
@@ -171,17 +64,21 @@ export function TodaySandboxProvider({ children }: { children: React.ReactNode }
       const urlMode = urlParams.get('sandboxMode') || urlParams.get('mode');
       if (urlMode === 'training' || urlMode === 'sales' || urlMode === 'live') {
         setModeState(urlMode);
+        if (urlMode === 'sales') setActivePresetId('pa-2');
         return;
       }
       const saved = sessionStorage.getItem(STORAGE_KEY_MODE) as TodaySandboxMode | null;
       if (saved && (saved === 'training' || saved === 'sales' || saved === 'live')) {
         setModeState(saved);
+        if (saved === 'sales') setActivePresetId('pa-2');
       }
     }
   }, []);
 
   const setMode = useCallback((newMode: TodaySandboxMode) => {
     setModeState(newMode);
+    if (newMode === 'training') setActivePresetId((prev) => (prev === 'pa-2' ? 'pa-1' : prev));
+    if (newMode === 'sales') setActivePresetId((prev) => (prev === 'pa-1' ? 'pa-2' : prev));
     if (typeof window !== 'undefined') {
       try {
         sessionStorage.setItem(STORAGE_KEY_MODE, newMode);
@@ -208,224 +105,98 @@ export function TodaySandboxProvider({ children }: { children: React.ReactNode }
     setSimulatedActions((prev) => [action, ...prev.slice(0, 49)]);
   }, []);
 
-  // Training actions
-  const simulateStaffCheckIn = useCallback(
-    (staffName: string, role: 'CV' | 'CC' = 'CV') => {
-      setStaffOverrides((prev) => ({
-        ...prev,
-        [staffName]: {
-          ...(prev[staffName] || {}),
-          attendance: 'checked_in',
-          status: 'available',
-          doing: role === 'CV' ? 'Sẵn sàng nhận khách' : 'Đang đón tiếp khách tại sảnh',
-          timerStartedAt: null,
-          timerElapsedMinutes: 0,
-        },
-      }));
-      logAction('CHECK_IN', `[Training] Đã giả lập Check-in cho ${role} ${staffName}`);
-      message.success(`[Training] Đã giả lập Check-in cho ${staffName}`);
-    },
-    [logAction]
-  );
+  const training = useTrainingSimulation({ mode, logAction });
+  const salesAndPlan = useSalesAndPlanSimulation({ logAction });
 
-  const simulateStaffCheckOut = useCallback(
-    (staffName: string, role: 'CV' | 'CC' = 'CV') => {
-      setStaffOverrides((prev) => ({
-        ...prev,
-        [staffName]: {
-          ...(prev[staffName] || {}),
-          attendance: 'checked_out',
-          status: 'available',
-          doing: 'Đã hoàn tất ca & check-out',
-          timerStartedAt: null,
-          timerElapsedMinutes: 0,
-        },
-      }));
-      logAction('CHECK_OUT', `[Training] Đã giả lập Check-out kết ca cho ${role} ${staffName}`);
-      message.info(`[Training] Đã giả lập Check-out cho ${staffName}`);
-    },
-    [logAction]
-  );
+  const {
+    designPlanItems,
+    setDesignPlanItems,
+    materialsChecklist,
+    setMaterialsChecklist,
+    simulatedCombos,
+    setSimulatedCombos,
+    simulatedProducts,
+    setSimulatedProducts,
+    simulatedGifts,
+    setSimulatedGifts,
+    resetDesignPlan,
+    resetMaterialsChecklist,
+    resetSalesState,
+  } = salesAndPlan;
 
-  const simulateStaffStartTimer = useCallback(
-    (staffName: string, serviceName = 'Nối Mi Classic Thiết Kế (60p)', estimatedMinutes = 60) => {
-      const now = Date.now();
-      setStaffOverrides((prev) => {
-        const cur = prev[staffName] || {};
-        return {
-          ...prev,
-          [staffName]: {
-            ...cur,
-            attendance: 'checked_in',
-            status: 'busy',
-            doing: `Đang làm ${serviceName} (Bấm giờ 0/${estimatedMinutes}p)`,
-            timerStartedAt: now,
-            timerElapsedMinutes: 0,
-            timerService: serviceName,
-            clientsIncrement: (cur.clientsIncrement || 0) + 1,
-          },
-        };
-      });
-      logAction('START_TIMER', `[Training] Bắt đầu bấm giờ phục vụ cho ${staffName} (${serviceName})`);
-      message.success(`[Training] Đang bấm giờ phục vụ cho ${staffName} — ${serviceName}`);
-    },
-    [logAction]
-  );
+  const { resetTrainingState } = training;
 
-  const simulateStaffStopTimer = useCallback(
-    (staffName: string) => {
-      setStaffOverrides((prev) => {
-        const cur = prev[staffName] || {};
-        return {
-          ...prev,
-          [staffName]: {
-            ...cur,
-            status: 'available',
-            doing: 'Vừa hoàn tất phục vụ (Đã check-out khách)',
-            timerStartedAt: null,
-            timerElapsedMinutes: 0,
-            doneIncrement: (cur.doneIncrement || 0) + 1,
-          },
-        };
-      });
-      logAction('STOP_TIMER', `[Training] Hoàn tất phục vụ & check-out khách cho ${staffName}`);
-      message.success(`[Training] Hoàn tất phục vụ cho ${staffName}`);
-    },
-    [logAction]
-  );
-
-  const simulateBatchCheckInAll = useCallback(
-    (role: 'CV' | 'CC' | 'ALL' = 'ALL') => {
-      setStaffOverrides((prev) => {
-        const updated = { ...prev };
-        Object.keys(updated).forEach((name) => {
-          if (role === 'ALL' || (role === 'CV' && name.startsWith('CV')) || (role === 'CC' && name.startsWith('CC'))) {
-            if (updated[name].attendance !== 'checked_out') {
-              updated[name] = {
-                ...updated[name],
-                attendance: 'checked_in',
-                status: 'available',
-                doing: name.startsWith('CV') ? 'Sẵn sàng nhận khách' : 'Đang đón tiếp tại sảnh',
-              };
-            }
-          }
-        });
-        return updated;
-      });
-      logAction('CHECK_IN', `[Training] Đã giả lập Check-in đồng loạt cho toàn bộ nhân sự ca`);
-      message.success('[Training] Đã check-in đồng loạt cho nhân sự');
-    },
-    [logAction]
-  );
-
-  const simulateBatchStartAllTimers = useCallback(() => {
-    const now = Date.now();
-    setStaffOverrides((prev) => {
-      const updated = { ...prev };
-      Object.keys(updated).forEach((name) => {
-        if (name.startsWith('CV') && updated[name].attendance === 'checked_in') {
-          updated[name] = {
-            ...updated[name],
-            status: 'busy',
-            doing: 'Đang làm mi Volume 5D (Bấm giờ đồng loạt)',
-            timerStartedAt: now,
-            timerElapsedMinutes: 15,
-            timerService: 'Nối Mi Volume 5D',
-            clientsIncrement: (updated[name].clientsIncrement || 0) + 1,
-          };
+  // Preset actions (PA #1, PA #2...)
+  const applyPreset = useCallback(
+    (presetId: string) => {
+      const target = presets.find((p) => p.id === presetId);
+      if (!target) return;
+      setActivePresetId(target.id);
+      setModeState(target.mode);
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem(STORAGE_KEY_MODE, target.mode);
+        } catch {
+          // ignore
         }
-      });
-      return updated;
-    });
-    logAction('START_TIMER', `[Training] Giả lập bấm giờ đồng loạt cho tất cả giường phục vụ`);
-    message.success('[Training] Đã bấm giờ đồng loạt cho các giường');
-  }, [logAction]);
-
-  const resetTrainingState = useCallback(() => {
-    setStaffOverrides(DEFAULT_TRAINING_OVERRIDES);
-    logAction('RESET', '[Training] Đã khôi phục trạng thái chấm công & bấm giờ về kịch bản mẫu');
-    message.info('[Training] Đã reset phòng tập check-in/bấm giờ');
-  }, [logAction]);
-
-  // Sales actions
-  const simulateAddCombo = useCallback(
-    (custom?: { name?: string; price?: number; customerName?: string }) => {
-      const id = `combo-sim-${Date.now()}`;
-      const name = custom?.name || 'Combo 10 Tặng 6 (Mi Thiết Kế VIP)';
-      const price = custom?.price ?? 2_500_000;
-      const customerName = custom?.customerName || `Khách VIP ${Math.floor(100 + Math.random() * 900)}`;
-      const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-
-      const newCombo: SimulatedComboSale = {
-        id,
-        name,
-        price,
-        customerName,
-        ccName: 'CC Thảo My',
-        cvName: 'CV Lan Anh',
-        time,
-      };
-
-      setSimulatedCombos((prev) => [newCombo, ...prev]);
-      logAction('ADD_COMBO', `[Sales] Chốt thành công ${name} — ${price.toLocaleString('vi-VN')} đ cho ${customerName}`);
-      message.success(`[Sales] Đã giả lập chốt ${name} (+${price.toLocaleString('vi-VN')} đ)`);
+      }
+      if (target.designPlanSnapshot) setDesignPlanItems(target.designPlanSnapshot);
+      if (target.materialsSnapshot) setMaterialsChecklist(target.materialsSnapshot);
+      if (target.combosSnapshot) setSimulatedCombos(target.combosSnapshot);
+      if (target.productsSnapshot) setSimulatedProducts(target.productsSnapshot);
+      if (target.giftsSnapshot) setSimulatedGifts(target.giftsSnapshot);
+      logAction('PRESET_SWITCH', `[Preset] Đã chuyển sang ${target.code} · ${target.label}`);
+      message.success(`Đã áp dụng ${target.code}: ${target.label}`);
     },
-    [logAction]
+    [
+      presets,
+      logAction,
+      setDesignPlanItems,
+      setMaterialsChecklist,
+      setSimulatedCombos,
+      setSimulatedProducts,
+      setSimulatedGifts,
+    ]
   );
 
-  const simulateAddProduct = useCallback(
-    (custom?: { name?: string; price?: number; customerName?: string }) => {
-      const id = `prod-sim-${Date.now()}`;
-      const name = custom?.name || 'Serum Dưỡng Mi FKN Tế Bào Gốc';
-      const price = custom?.price ?? 350_000;
-      const customerName = custom?.customerName || `Khách VIP ${Math.floor(100 + Math.random() * 900)}`;
-      const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-
-      const newProd: SimulatedProductSale = {
-        id,
-        name,
-        price,
-        customerName,
-        time,
+  const saveCurrentAsPreset = useCallback(
+    (customLabel?: string) => {
+      const nextIndex = presets.length + 1;
+      const code = `PA #${nextIndex}`;
+      const label =
+        customLabel?.trim() ||
+        (mode === 'sales' ? `Kịch bản Sales #${nextIndex}` : `Kịch bản Training & NVL #${nextIndex}`);
+      const newPreset: SandboxPresetScenario = {
+        id: `pa-${nextIndex}-${Date.now()}`,
+        code,
+        label,
+        description:
+          mode === 'sales'
+            ? `Lưu kịch bản ${simulatedCombos.length} Combo · ${simulatedProducts.length} SP · ${simulatedGifts.length} Quà`
+            : 'Lưu kịch bản chấm công, kế hoạch thiết kế & kiểm tra nguyên vật liệu',
+        mode: mode === 'live' ? 'training' : mode,
+        combosSnapshot: [...simulatedCombos],
+        productsSnapshot: [...simulatedProducts],
+        giftsSnapshot: [...simulatedGifts],
+        designPlanSnapshot: [...designPlanItems],
+        materialsSnapshot: [...materialsChecklist],
       };
-
-      setSimulatedProducts((prev) => [newProd, ...prev]);
-      logAction('ADD_PRODUCT', `[Sales] Thêm sản phẩm dưỡng ${name} (+${price.toLocaleString('vi-VN')} đ)`);
-      message.success(`[Sales] Đã thêm sản phẩm ${name}`);
+      setPresets((prev) => [...prev, newPreset]);
+      setActivePresetId(newPreset.id);
+      logAction('PRESET_SWITCH', `[Preset] Đã lưu ${code} · ${label}`);
+      message.success(`Đã lưu phương án giả lập mới: ${code}`);
     },
-    [logAction]
+    [
+      presets.length,
+      mode,
+      simulatedCombos,
+      simulatedProducts,
+      simulatedGifts,
+      designPlanItems,
+      materialsChecklist,
+      logAction,
+    ]
   );
-
-  const simulateAddGift = useCallback(
-    (custom?: { name?: string; estimatedValue?: number; customerName?: string }) => {
-      const id = `gift-sim-${Date.now()}`;
-      const name = custom?.name || 'Cọ chải mi pha lê & Gương bỏ túi cao cấp';
-      const estimatedValue = custom?.estimatedValue ?? 120_000;
-      const customerName = custom?.customerName || `Khách VIP ${Math.floor(100 + Math.random() * 900)}`;
-      const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-
-      const newGift: SimulatedGift = {
-        id,
-        name,
-        estimatedValue,
-        customerName,
-        time,
-      };
-
-      setSimulatedGifts((prev) => [newGift, ...prev]);
-      logAction('ADD_GIFT', `[Sales] Tặng kèm quà tặng ${name} (Trị giá ${estimatedValue.toLocaleString('vi-VN')} đ) cho ${customerName}`);
-      message.success(`[Sales] Đã thêm quà tặng: ${name}`);
-    },
-    [logAction]
-  );
-
-  const resetSalesState = useCallback(() => {
-    setSimulatedCombos(INITIAL_SALES_COMBOS);
-    setSimulatedProducts(INITIAL_SALES_PRODUCTS);
-    setSimulatedGifts(INITIAL_SALES_GIFTS);
-    logAction('RESET', '[Sales] Đã khôi phục kịch bản bán hàng & quà tặng về mặc định');
-    message.info('[Sales] Đã đặt lại kịch bản bán hàng');
-  }, [logAction]);
 
   const clearActionLog = useCallback(() => {
     setSimulatedActions([]);
@@ -433,47 +204,58 @@ export function TodaySandboxProvider({ children }: { children: React.ReactNode }
 
   const resetAllSandbox = useCallback(() => {
     resetTrainingState();
+    resetDesignPlan();
+    resetMaterialsChecklist();
     resetSalesState();
     clearActionLog();
     message.info('Đã đặt lại toàn bộ phòng tập Sandbox');
-  }, [resetTrainingState, resetSalesState, clearActionLog]);
-
-  const totalSimulatedComboRevenue = useMemo(() => {
-    return simulatedCombos.reduce((sum, item) => sum + item.price, 0);
-  }, [simulatedCombos]);
-
-  const totalSimulatedProductRevenue = useMemo(() => {
-    return simulatedProducts.reduce((sum, item) => sum + item.price, 0);
-  }, [simulatedProducts]);
-
-  const totalSimulatedRevenue = useMemo(() => {
-    return totalSimulatedComboRevenue + totalSimulatedProductRevenue;
-  }, [totalSimulatedComboRevenue, totalSimulatedProductRevenue]);
+  }, [resetTrainingState, resetDesignPlan, resetMaterialsChecklist, resetSalesState, clearActionLog]);
 
   const value: TodaySandboxContextValue = {
     mode,
     setMode,
     isSandbox: mode !== 'live',
 
-    staffOverrides,
-    simulateStaffCheckIn,
-    simulateStaffCheckOut,
-    simulateStaffStartTimer,
-    simulateStaffStopTimer,
-    simulateBatchCheckInAll,
-    simulateBatchStartAllTimers,
+    staffOverrides: training.staffOverrides,
+    nowTickMs: training.nowTickMs,
+    formatStaffTimerMMSS: training.formatStaffTimerMMSS,
+    simulateStaffCheckIn: training.simulateStaffCheckIn,
+    simulateStaffCheckOut: training.simulateStaffCheckOut,
+    simulateStaffStartTimer: training.simulateStaffStartTimer,
+    simulateStaffStopTimer: training.simulateStaffStopTimer,
+    simulateBatchCheckInAll: training.simulateBatchCheckInAll,
+    simulateBatchStartAllTimers: training.simulateBatchStartAllTimers,
     resetTrainingState,
+
+    designPlanItems,
+    materialsChecklist,
+    materialReadyCount: salesAndPlan.materialReadyCount,
+    designPlanTotals: salesAndPlan.designPlanTotals,
+    updateDesignPlanTarget: salesAndPlan.updateDesignPlanTarget,
+    incrementDesignPlanDone: salesAndPlan.incrementDesignPlanDone,
+    resetDesignPlan,
+    toggleMaterialCheck: salesAndPlan.toggleMaterialCheck,
+    cycleMaterialStatus: salesAndPlan.cycleMaterialStatus,
+    resetMaterialsChecklist,
 
     simulatedCombos,
     simulatedProducts,
     simulatedGifts,
-    totalSimulatedRevenue,
-    totalSimulatedComboRevenue,
-    totalSimulatedProductRevenue,
-    simulateAddCombo,
-    simulateAddProduct,
-    simulateAddGift,
+    totalSimulatedRevenue: salesAndPlan.totalSimulatedRevenue,
+    totalSimulatedComboRevenue: salesAndPlan.totalSimulatedComboRevenue,
+    totalSimulatedProductRevenue: salesAndPlan.totalSimulatedProductRevenue,
+    baselineClosingRate: BASELINE_CLOSING_RATE,
+    closingRate: salesAndPlan.closingRate,
+    closingUpliftPercent: salesAndPlan.closingUpliftPercent,
+    simulateAddCombo: salesAndPlan.simulateAddCombo,
+    simulateAddProduct: salesAndPlan.simulateAddProduct,
+    simulateAddGift: salesAndPlan.simulateAddGift,
     resetSalesState,
+
+    presets,
+    activePresetId,
+    applyPreset,
+    saveCurrentAsPreset,
 
     simulatedActions,
     clearActionLog,
@@ -486,33 +268,7 @@ export function TodaySandboxProvider({ children }: { children: React.ReactNode }
 export function useTodaySandbox(): TodaySandboxContextValue {
   const ctx = useContext(TodaySandboxContext);
   if (!ctx) {
-    // Graceful fallback if used outside provider
-    return {
-      mode: 'live',
-      setMode: () => {},
-      isSandbox: false,
-      staffOverrides: {},
-      simulateStaffCheckIn: () => {},
-      simulateStaffCheckOut: () => {},
-      simulateStaffStartTimer: () => {},
-      simulateStaffStopTimer: () => {},
-      simulateBatchCheckInAll: () => {},
-      simulateBatchStartAllTimers: () => {},
-      resetTrainingState: () => {},
-      simulatedCombos: [],
-      simulatedProducts: [],
-      simulatedGifts: [],
-      totalSimulatedRevenue: 0,
-      totalSimulatedComboRevenue: 0,
-      totalSimulatedProductRevenue: 0,
-      simulateAddCombo: () => {},
-      simulateAddProduct: () => {},
-      simulateAddGift: () => {},
-      resetSalesState: () => {},
-      simulatedActions: [],
-      clearActionLog: () => {},
-      resetAllSandbox: () => {},
-    };
+    return FALLBACK_SANDBOX_CONTEXT;
   }
   return ctx;
 }

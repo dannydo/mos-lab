@@ -3,7 +3,7 @@
 import React from 'react';
 import { Avatar, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { Banana, Bug, Eye, Gem, HandCoins, Heart, ShieldCheck } from 'lucide-react';
+import { Banana, Bug, Eye, Gauge, Gem, HandCoins, Heart, ShieldCheck, TrendingUp } from 'lucide-react';
 import type {
   BananaTransactionCategory,
   CareerPeriod,
@@ -390,6 +390,117 @@ export function buildStaffCareerColumns({
               )}`}
             >
               {comboPct}%
+            </span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: (
+        <Tooltip
+          title={`SPH (Services Per Hour): Số lượt làm mi hoàn tất (Full set + Dặm Combo + Dặm lẻ) / 1 Giờ công thực tế trong ${currentPeriodLabel.toLowerCase()}`}
+        >
+          <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-[11px] font-bold text-sky-700 dark:text-sky-300">
+            <Gauge className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <span>SPH</span>
+          </span>
+        </Tooltip>
+      ),
+      key: 'servicesPerHour',
+      dataIndex: 'servicesPerHour',
+      width: 78,
+      align: 'center',
+      sorter: (a, b) =>
+        (a.servicesPerHour ?? a.productivity?.servicesPerHour ?? 0) -
+        (b.servicesPerHour ?? b.productivity?.servicesPerHour ?? 0),
+      render: (_, staff) => {
+        const prod = staff.productivity;
+        const sph = staff.servicesPerHour ?? prod?.servicesPerHour ?? 0;
+        const hours = staff.actualWorkingHours ?? prod?.actualWorkingHours ?? 0;
+        const totalSvc = staff.totalCompletedServices ?? prod?.totalCompletedServices ?? 0;
+        const fullSet = staff.fullSetCount ?? prod?.fullSetCount ?? 0;
+        const comboRetain = staff.comboRetainCount ?? prod?.comboRetainCount ?? 0;
+        const singleRetain = staff.singleRetainCount ?? prod?.singleRetainCount ?? 0;
+
+        if (hours <= 0) {
+          return (
+            <Tooltip title={`Chưa có dữ liệu giờ công ca trong ${currentPeriodLabel.toLowerCase()}`}>
+              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums border border-slate-200 dark:border-slate-700 text-slate-400">
+                —
+              </span>
+            </Tooltip>
+          );
+        }
+
+        const badgeClass =
+          sph >= 0.45
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
+            : sph >= 0.3
+              ? 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/25'
+              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25';
+
+        return (
+          <Tooltip
+            title={`Hiệu suất ${sph.toFixed(2)} lượt/giờ = ${totalSvc} lượt (${fullSet} Full set · ${comboRetain} Dặm Combo · ${singleRetain} Dặm lẻ) / ${hours}h ca`}
+          >
+            <span
+              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${badgeClass}`}
+            >
+              {sph.toFixed(2)}/h
+            </span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: (
+        <Tooltip
+          title={`Doanh thu / Giờ công (Revenue/Hour): Tổng doanh thu dịch vụ làm mi / Giờ công thực tế trong ${currentPeriodLabel.toLowerCase()}`}
+        >
+          <span className="inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>DT/h</span>
+          </span>
+        </Tooltip>
+      ),
+      key: 'revenuePerHour',
+      dataIndex: 'revenuePerHour',
+      width: 82,
+      align: 'center',
+      sorter: (a, b) =>
+        (a.revenuePerHour ?? a.productivity?.revenuePerHour ?? 0) -
+        (b.revenuePerHour ?? b.productivity?.revenuePerHour ?? 0),
+      render: (_, staff) => {
+        const prod = staff.productivity;
+        const rph = staff.revenuePerHour ?? prod?.revenuePerHour ?? 0;
+        const hours = staff.actualWorkingHours ?? prod?.actualWorkingHours ?? 0;
+        const rev = staff.serviceRevenue ?? prod?.serviceRevenue ?? 0;
+
+        if (hours <= 0) {
+          return (
+            <Tooltip title={`Chưa có dữ liệu giờ công ca trong ${currentPeriodLabel.toLowerCase()}`}>
+              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums border border-slate-200 dark:border-slate-700 text-slate-400">
+                —
+              </span>
+            </Tooltip>
+          );
+        }
+
+        const badgeClass =
+          rph >= 180000
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
+            : rph >= 120000
+              ? 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/25'
+              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25';
+
+        return (
+          <Tooltip
+            title={`Doanh thu/giờ: ${rph.toLocaleString('vi-VN')}đ/h = ${rev.toLocaleString('vi-VN')}đ / ${hours}h ca`}
+          >
+            <span
+              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${badgeClass}`}
+            >
+              {Math.round(rph / 1000)}K/h
             </span>
           </Tooltip>
         );

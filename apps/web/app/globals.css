@@ -7117,6 +7117,8 @@ body {
     flex: 1 1 auto !important;
     min-height: 0 !important;
     overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
     -webkit-overflow-scrolling: touch !important;
   }
 
@@ -7134,10 +7136,10 @@ body {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    min-height: 36px !important;
-    min-width: 36px !important;
-    width: 36px !important;
-    height: 36px !important;
+    min-height: 44px !important;
+    min-width: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
     top: max(12px, calc(env(safe-area-inset-top, 0px) + 6px)) !important;
     inset-inline-end: max(12px, env(safe-area-inset-right, 0px)) !important;
     z-index: 1020 !important;
@@ -8556,4 +8558,11 @@ input.no-spin-buttons::-webkit-inner-spin-button {
 input.no-spin-buttons {
   -moz-appearance: textfield !important;
   appearance: textfield !important;
+}
+
+/* Native iOS momentum scrolling inside mobile modal/sheet bodies */
+.ios-touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }

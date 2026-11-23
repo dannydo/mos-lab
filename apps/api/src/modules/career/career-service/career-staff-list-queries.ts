@@ -7,6 +7,11 @@ import {
   buildShopTipStatsSql,
   CareerPeriodDates,
 } from './career-helpers.js';
+import {
+  type BulkProductivityMaps,
+  type BulkProductivitySvcStats,
+  fetchBulkProductivityMaps,
+} from './career-productivity-queries.js';
 
 export interface BulkCareerMetrics {
   legacyAvatarMap: Map<number, string>;
@@ -22,6 +27,9 @@ export interface BulkCareerMetrics {
   staffPrimaryStoreMap: Record<number, number>;
   profileStoreMap: Record<number, number>;
   branchSummary: BranchTipStatsSummary;
+  productivitySvcMap: Record<number, BulkProductivitySvcStats>;
+  shiftHoursMap: Record<number, number>;
+  payrollHoursMap: Record<number, number>;
 }
 
 /**
@@ -49,6 +57,11 @@ export async function fetchBulkStaffCareerMetrics(
     defaultShopTipRate: 0.45,
     defaultShopAvgTip: 38000,
   };
+  let productivityMaps: BulkProductivityMaps = {
+    productivitySvcMap: {},
+    shiftHoursMap: {},
+    payrollHoursMap: {},
+  };
 
   try {
     const [
@@ -64,6 +77,7 @@ export async function fetchBulkStaffCareerMetrics(
       staffStoreRows,
       periodStaffOrdersRows,
       ninetyDaysStaffOrdersRows,
+      fetchedProductivityMaps,
     ] = await Promise.all([
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT 
@@ -219,7 +233,10 @@ export async function fetchBulkStaffCareerMetrics(
         `
         )
         .catch(() => []),
+      fetchBulkProductivityMaps(fastify, periodConfig),
     ]);
+
+    productivityMaps = fetchedProductivityMaps;
 
     const allOrderIdsToClassify = Array.from(
       new Set([
@@ -363,5 +380,6 @@ export async function fetchBulkStaffCareerMetrics(
     staffPrimaryStoreMap,
     profileStoreMap,
     branchSummary,
+    ...productivityMaps,
   };
 }

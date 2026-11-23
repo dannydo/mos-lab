@@ -1051,3 +1051,63 @@ test('BugReportService.cancel cancels active report and records comment and audi
     /Yêu cầu này đã kết thúc, không thể huỷ/
   );
 });
+
+test('triage reopen after temporary defer restores prior triageNote instead of overwriting it', async () => {
+  const existingRow = {
+    id: 261,
+    requestType: 'BUG',
+    requestMetadataJson: null,
+    status: 'REJECTED',
+    priority: 'P1',
+    businessContext: 'Training CVL tip 90%',
+    triageNote: '[Tạm hoãn] Tạm dừng kiểm tra lại',
+    clarificationStatus: 'READY',
+    clarificationSummary: 'Ready',
+    clarifiedAt: new Date('2026-11-21T09:50:00.000Z'),
+    duplicateOfId: null,
+    approvedByStaffId: 1,
+    approvedAt: new Date('2026-11-21T09:50:00.000Z'),
+    startedAt: null,
+    resolvedAt: null,
+    closedAt: new Date('2026-11-21T20:58:02.000Z'),
+  };
+  let savedTriageNote: string | null | undefined;
+  let auditNote: string | null | undefined;
+  const txMock = {
+    crmBugReport: {
+      update: async ({ data }: { data: { triageNote: string | null } }) => {
+        savedTriageNote = data.triageNote;
+        return { ...existingRow, status: 'NEW', triageNote: data.triageNote, closedAt: null };
+      },
+    },
+    crmBugReportAudit: {
+      findFirst: async () => ({ beforeJson: JSON.stringify({ triageNote: null }) }),
+      create: async ({ data }: { data: { note: string | null } }) => {
+        auditNote = data.note;
+        return { id: 1 };
+      },
+    },
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: {
+          findUnique: async () => existingRow,
+        },
+        $transaction: async (cb: (tx: typeof txMock) => Promise<unknown>) => cb(txMock),
+      },
+    },
+  };
+  const originalDetail = BugReportService.detail;
+  BugReportService.detail = (async () => ({ id: 261, status: 'NEW' })) as unknown as typeof BugReportService.detail;
+  try {
+    await BugReportService.triage(fastify as never, 1, 261, {
+      status: 'NEW',
+      note: 'Mở lại ticket sau thời gian tạm hoãn',
+    });
+    assert.equal(savedTriageNote, null);
+    assert.equal(auditNote, 'Mở lại ticket sau thời gian tạm hoãn');
+  } finally {
+    BugReportService.detail = originalDetail;
+  }
+});

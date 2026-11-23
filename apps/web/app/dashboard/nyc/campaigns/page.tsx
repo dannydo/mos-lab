@@ -9,7 +9,6 @@ import { buildCampaignTableColumns } from './campaigns-page-modules/CampaignTabl
 import { CAMPAIGN_PAGE_SIZE_OPTIONS } from './campaigns-page-modules/campaignManagementTypes';
 import { useCampaignManagement } from './campaigns-page-modules/useCampaignManagement';
 
-export { CampaignStatusTag } from './campaigns-page-modules/CampaignStatusTag';
 export type {
   CampaignFormPromotion,
   CampaignFormTouchpoint,

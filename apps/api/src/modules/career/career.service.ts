@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type {
   BananaTransactionResponse,
+  CareerBranchFilter,
   CareerPeriod,
   CareerProgressionConfig,
   CareerRole,
@@ -26,6 +27,7 @@ import { calculateCvPlusRewardsForStaff } from './career-service/career-cvl-rewa
 import { getAllCvPlusSimulations } from './career-service/career-cvl-simulation.service.js';
 import {
   buildCheckoutAttributionSqlCondition,
+  computeHourlyProductivity,
   type CvRewardCalculationMode,
   resolveBranchInfo,
   resolveCareerPeriodDates,
@@ -36,6 +38,7 @@ import { listCareerStaff } from './career-service/career-staff-list.service.js';
 
 export {
   buildCheckoutAttributionSqlCondition,
+  computeHourlyProductivity,
   type CvRewardCalculationMode,
   resolveBranchInfo,
   resolveCareerPeriodDates,
@@ -74,7 +77,7 @@ export class CareerProgressionService {
    */
   static listStaff(
     fastify: FastifyInstance,
-    query?: { role?: string; search?: string; period?: CareerPeriod }
+    query?: { role?: string; search?: string; period?: CareerPeriod; branch?: CareerBranchFilter | string }
   ): Promise<SafeAny[]> {
     return listCareerStaff(fastify, query);
   }

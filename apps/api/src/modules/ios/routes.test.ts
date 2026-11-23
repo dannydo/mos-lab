@@ -1163,3 +1163,63 @@ test('MOS-BUG-237: CVL is strictly locked to 1 assigned branch in Live, Demo, an
     [951]
   );
 });
+
+test('MOS-BUG-258: mapLiveOrdersToBookings normalizes customer_dob and ignores legacy placeholders', () => {
+  const baseOrder: RawIosOrderSnapshot = {
+    id: 342001,
+    order_number: '342001',
+    order_state: 'Confirmed',
+    booking_date_start: new Date('2026-11-21T09:00:00+07:00'),
+    booking_duration_minute: 90,
+    total_price: 550000,
+    client_store_id: 6,
+    booking_note: null,
+    user_id: 607235,
+    combo_sale_required: 0,
+    is_new: 0,
+    promotion_id: null,
+    customer_name: 'Hoàng Huyên',
+    customer_phone: '0909111222',
+    customer_avatar: null,
+    customer_dob: '1994-11-21',
+    booker_name: 'Tư vấn',
+    booker_avatar: null,
+    service_name: 'Flawless Mink 1D 880',
+    service_key: 'flawless-mink-880',
+    is_temporary: 0,
+    service_type: 'Normal',
+    staff_name: 'Chưa phân công',
+    staff_avatar: null,
+    assigned_staff_id: null,
+    booked_staff_id: null,
+    check_in_staff_id: null,
+    check_out_staff_id: null,
+    check_in_staff_name: null,
+    check_in_staff_avatar: null,
+    check_out_staff_name: null,
+    check_out_staff_avatar: null,
+    total_visits: 2,
+  };
+
+  const mapped = mapLiveOrdersToBookings({
+    orders: [
+      baseOrder,
+      { ...baseOrder, id: 342002, order_number: '342002', customer_dob: '1970-01-01' },
+      { ...baseOrder, id: 342003, order_number: '342003', customer_dob: '0000-00-00' },
+      { ...baseOrder, id: 342004, order_number: '342004', customer_dob: null },
+    ],
+    customerContext: createEmptyCustomerEnrichmentContext(),
+    overrides: {},
+    customerAvatarMap: {},
+    storeId: 6,
+    targetDate: '2026-11-21',
+    todayVn: '2026-11-21',
+    activeStaffId: 46272,
+    canViewFullPhone: true,
+  });
+
+  assert.equal(mapped[0].customerDateOfBirth, '1994-11-21');
+  assert.equal(mapped[1].customerDateOfBirth, null);
+  assert.equal(mapped[2].customerDateOfBirth, null);
+  assert.equal(mapped[3].customerDateOfBirth, null);
+});

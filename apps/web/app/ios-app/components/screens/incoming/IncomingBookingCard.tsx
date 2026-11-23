@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { isDoneBookingPendingPostCheckoutAdjustment } from '@mos-lab/shared';
+import { getCustomerBirthdayThisMonthStatus, isDoneBookingPendingPostCheckoutAdjustment } from '@mos-lab/shared';
 import {
   BookingItem,
   KNOWN_STAFF_AVATARS,
@@ -17,13 +17,13 @@ import {
   formatArrivalCountdownInMins,
   getBookingCompletionInfo,
   getDoneBookingSummary,
-  formatShortMoney,
-  formatTime24h,
 } from './incomingBookingHelpers';
-import { RotateCcw, Info, Package, Heart, Lock, Camera, PenLine } from 'lucide-react';
+import { IncomingCardAvatarCluster } from './card/IncomingCardAvatarCluster';
+import { IncomingCardRightColumn } from './card/IncomingCardRightColumn';
+import { Info, Lock, Camera, PenLine, Cake } from 'lucide-react';
 import { useTheme } from '../../../../../context/ThemeContext';
 
-interface IncomingBookingCardProps {
+export interface IncomingBookingCardProps {
   booking: BookingItem;
   idx: number;
   bookingSegment: 'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL';
@@ -78,6 +78,7 @@ export function IncomingBookingCard({
   const daysSinceLastVisit = parseDaysSinceLastVisit(lastVisitDateStr, viewRefDateStr);
   const daysText = visits > 1 && daysSinceLastVisit !== null ? ` · ${daysSinceLastVisit}N` : '';
   const isServicingActive = b.status === 'SERVICING' || bookingSegment === 'SERVICING';
+  const birthdayStatus = getCustomerBirthdayThisMonthStatus(b.customerDateOfBirth, now);
   const countdown = formatArrivalCountdownInMins(b.time12h || b.timeSlot, dateOffset, now, isDark);
   const completionInfo = getBookingCompletionInfo(b, now, isDark);
   const isDone = bookingSegment === 'DONE' || b.status === 'DONE';
@@ -169,6 +170,15 @@ export function IncomingBookingCard({
         };
 
   const servicingSubStatus = resolveServicingSubStatus(b, themeMode);
+  const prog = b.progress;
+  const todayPhotoCount = [
+    prog?.beforePhotoUrl,
+    prog?.cleanedPhotoUrl,
+    prog?.afterPhotoUrl,
+    prog?.underBeforePhotoUrl,
+    prog?.underCleanedPhotoUrl,
+    prog?.underAfterPhotoUrl,
+  ].filter((u) => typeof u === 'string' && u.trim().length > 0 && !u.trim().startsWith('DECLINED:')).length;
 
   return (
     <div
@@ -189,94 +199,19 @@ export function IncomingBookingCard({
       }`}
       style={cardInlineStyle}
     >
-      {/* 3.1 Avatar with Number Badge & Dual Corner Badges (Booker bottom-left & CV bottom-right) */}
-      <div className="relative w-12 h-12 flex-shrink-0">
-        {/* Badge số thứ tự 1, 2, 3... gắn ở góc trên bên trái của Avatar */}
-        <span
-          className="absolute -top-1 -left-1 min-w-[18px] h-[18px] px-1 rounded-full border text-[9.5px] font-black flex items-center justify-center tabular-nums shadow-sm leading-none z-10"
-          style={{
-            backgroundColor: 'var(--mos-surface-raised, var(--mos-surface))',
-            borderColor: 'var(--mos-surface-border-strong)',
-            color: 'var(--mos-accent)',
-          }}
-        >
-          {idx + 1}
-        </span>
-
-        <div
-          className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shadow-sm ${avatarRingClass}`}
-          style={{ backgroundColor: 'var(--mos-surface-muted)' }}
-        >
-          {b.customerAvatar ? (
-            <img
-              src={b.customerAvatar}
-              alt={b.customerName}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.currentTarget as HTMLElement).style.display = 'none';
-              }}
-            />
-          ) : (
-            <img src="/ios-assets/no-image.png" alt="No Image" className="w-full h-full object-cover" />
-          )}
-        </div>
-
-        {/* Góc dưới bên trái: Avatar Người đặt lịch (Booker / Telesales) hoặc Logo 1 cánh trái Wings khi đặt online */}
-        <div
-          className={`absolute -bottom-1 -left-1 w-5 h-5 rounded-full overflow-hidden border flex items-center justify-center shadow-md z-10 ${
-            isDark ? 'border-neutral-700 bg-neutral-900' : 'border-[#d6cab2] bg-[#faf5ea]'
-          }`}
-          title={b.bookerName ? `Người đặt lịch: ${b.bookerName}` : 'Khách đặt lịch online (Wings)'}
-        >
-          {b.bookerAvatar ? (
-            <img
-              src={b.bookerAvatar}
-              alt={b.bookerName || 'Booker'}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.currentTarget as HTMLElement).style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="w-full h-full bg-[#1A1500] flex items-center justify-center overflow-hidden">
-              <img
-                src="/images/combo-cards/wings-logo-gold.png"
-                alt="Wings Online"
-                className="w-[180%] max-w-none h-full object-cover object-left"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Góc dưới bên phải: Avatar Chuyên Viên (CV/CVL) đang làm hoặc được phân công */}
-        {cvStaffAvatar && (!isNextQueue || isServicingOrDone) && (
-          <div
-            className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full overflow-hidden shadow-md z-10 ${
-              isBookedInAdvance
-                ? 'border border-emerald-500 ring-1 ring-emerald-500/40'
-                : isServicingActive
-                  ? 'border-2 border-amber-400 ring-1 ring-amber-400/50'
-                  : isDark
-                    ? 'border border-neutral-500'
-                    : 'border border-[#c7b99e]'
-            } ${isDark ? 'bg-neutral-900' : 'bg-[#faf5ea]'} flex items-center justify-center`}
-            title={
-              isBookedInAdvance
-                ? `Book riêng trước: ${effectiveStaffName || 'Chuyên Viên'}`
-                : `Chuyên Viên: ${effectiveStaffName || 'Chuyên Viên'}`
-            }
-          >
-            <img
-              src={cvStaffAvatar}
-              alt={effectiveStaffName || 'Chuyên Viên'}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.currentTarget as HTMLElement).style.display = 'none';
-              }}
-            />
-          </div>
-        )}
-      </div>
+      <IncomingCardAvatarCluster
+        booking={b}
+        idx={idx}
+        isDark={isDark}
+        avatarRingClass={avatarRingClass}
+        birthdayStatus={birthdayStatus}
+        cvStaffAvatar={cvStaffAvatar}
+        effectiveStaffName={effectiveStaffName}
+        isNextQueue={isNextQueue}
+        isServicingOrDone={isServicingOrDone}
+        isServicingActive={isServicingActive}
+        isBookedInAdvance={isBookedInAdvance}
+      />
 
       {/* 3.2 Middle: 4 Lines Standardized by Danny */}
       <div className="flex-1 min-w-0 pr-1 flex flex-col justify-start">
@@ -362,6 +297,31 @@ export function IncomingBookingCard({
             </span>
           </button>
 
+          {birthdayStatus.isBirthdayThisMonth && (
+            <span
+              data-testid={`card-birthday-pill-${b.id}`}
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10.5px] font-bold tabular-nums leading-none ${
+                birthdayStatus.isBirthdayToday
+                  ? isDark
+                    ? 'bg-amber-500/25 border-amber-400/60 text-amber-300'
+                    : 'bg-amber-100 border-amber-400 text-amber-800'
+                  : isDark
+                    ? 'bg-amber-500/15 border-amber-500/35 text-amber-300'
+                    : 'bg-amber-50 border-amber-300 text-amber-800'
+              }`}
+              title={
+                birthdayStatus.isBirthdayToday
+                  ? `Hôm nay là sinh nhật khách hàng (${birthdayStatus.ddMm})`
+                  : `Sinh nhật trong tháng này (${birthdayStatus.ddMm})`
+              }
+            >
+              <Cake className="w-2.5 h-2.5 shrink-0" />
+              <span>
+                {birthdayStatus.isBirthdayToday ? `Hôm nay SN (${birthdayStatus.ddMm})` : `SN ${birthdayStatus.ddMm}`}
+              </span>
+            </span>
+          )}
+
           {isOtherCustomerLocked && (
             <span
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold leading-none"
@@ -378,270 +338,64 @@ export function IncomingBookingCard({
         </div>
 
         {/* LINE 4: notes + Ký hiệu xem Hồ Sơ Ảnh & Bộ Mi */}
-        {(() => {
-          const prog = b.progress;
-          const todayPhotoCount = [
-            prog?.beforePhotoUrl,
-            prog?.cleanedPhotoUrl,
-            prog?.afterPhotoUrl,
-            prog?.underBeforePhotoUrl,
-            prog?.underCleanedPhotoUrl,
-            prog?.underAfterPhotoUrl,
-          ].filter((u) => typeof u === 'string' && u.trim().length > 0 && !u.trim().startsWith('DECLINED:')).length;
-
-          return (
-            <div
-              data-testid={`card-open-portfolio-${b.id}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenCustomerDetail(b);
-              }}
-              className="text-[10.5px] leading-tight mt-1 line-clamp-1 italic font-normal cursor-pointer flex items-center justify-between group pt-0.5 gap-1.5"
-              style={{ color: 'var(--mos-text-muted)' }}
-              title="Bấm để xem ảnh Before/Cleaning/After & thông số bộ mi"
-            >
-              <span className="truncate">
-                {b.customerNote ? `“${b.customerNote}”` : 'Ảnh B/C/A & bộ mi các lần trước'}
+        <div
+          data-testid={`card-open-portfolio-${b.id}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenCustomerDetail(b);
+          }}
+          className="text-[10.5px] leading-tight mt-1 line-clamp-1 italic font-normal cursor-pointer flex items-center justify-between group pt-0.5 gap-1.5"
+          style={{ color: 'var(--mos-text-muted)' }}
+          title="Bấm để xem ảnh Before/Cleaning/After & thông số bộ mi"
+        >
+          <span className="truncate">{b.customerNote ? `“${b.customerNote}”` : 'Ảnh B/C/A & bộ mi các lần trước'}</span>
+          <div className="shrink-0 not-italic flex items-center gap-2 transition-colors">
+            {isDone && b.customerId > 0 && onOpenCustomerNotes && (
+              <button
+                type="button"
+                data-testid={`card-open-notes-${b.id}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenCustomerNotes(b);
+                }}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9.5px] font-bold leading-none cursor-pointer ${
+                  (b.cvlNotes?.length || 0) > 0
+                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-500'
+                    : isDark
+                      ? 'bg-neutral-800 border-neutral-700 text-neutral-300'
+                      : 'bg-neutral-100 border-neutral-200 text-neutral-700'
+                }`}
+                title="Ghi chú CVL"
+              >
+                <PenLine className="w-2.5 h-2.5" strokeWidth={1.9} />
+                <span className="tabular-nums">{(b.cvlNotes?.length || 0) > 0 ? b.cvlNotes!.length : 'Note'}</span>
+              </button>
+            )}
+            <span className="flex items-center gap-1" style={{ color: 'var(--mos-accent)' }}>
+              <span className="text-[9.5px] font-extrabold tabular-nums">
+                {todayPhotoCount > 0 ? `${todayPhotoCount} ảnh` : 'Bộ mi'}
               </span>
-              <div className="shrink-0 not-italic flex items-center gap-2 transition-colors">
-                {isDone && b.customerId > 0 && onOpenCustomerNotes && (
-                  <button
-                    type="button"
-                    data-testid={`card-open-notes-${b.id}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenCustomerNotes(b);
-                    }}
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9.5px] font-bold leading-none cursor-pointer ${
-                      (b.cvlNotes?.length || 0) > 0
-                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-500'
-                        : isDark
-                          ? 'bg-neutral-800 border-neutral-700 text-neutral-300'
-                          : 'bg-neutral-100 border-neutral-200 text-neutral-700'
-                    }`}
-                    title="Ghi chú CVL"
-                  >
-                    <PenLine className="w-2.5 h-2.5" strokeWidth={1.9} />
-                    <span className="tabular-nums">{(b.cvlNotes?.length || 0) > 0 ? b.cvlNotes!.length : 'Note'}</span>
-                  </button>
-                )}
-                <span className="flex items-center gap-1" style={{ color: 'var(--mos-accent)' }}>
-                  <span className="text-[9.5px] font-extrabold tabular-nums">
-                    {todayPhotoCount > 0 ? `${todayPhotoCount} ảnh` : 'Bộ mi'}
-                  </span>
-                  <Info className="w-3.5 h-3.5 stroke-[2.2]" />
-                </span>
-              </div>
-            </div>
-          );
-        })()}
+              <Info className="w-3.5 h-3.5 stroke-[2.2]" />
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* 3.3 Right Column */}
-      {isDone && doneSummary ? (
-        <div
-          className="w-[104px] flex-shrink-0 border-l pl-2.5 flex flex-col justify-center items-end text-right self-stretch space-y-1 tabular-nums"
-          style={{ borderColor: 'var(--mos-surface-border)' }}
-        >
-          {isDoneCardPendingCounter ? (
-            <>
-              {/* TẦNG 1: TRẠNG THÁI CHỜ QUẦY CHỐT (Pinned on top) */}
-              <span
-                className={`inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full border text-[9.5px] font-extrabold tracking-tight whitespace-nowrap ${
-                  isDark
-                    ? 'bg-amber-950/70 text-amber-300 border-amber-700/60'
-                    : 'bg-amber-50 text-amber-800 border-amber-300'
-                }`}
-              >
-                {isPendingPostAdj && !doneSummary.isPendingCheckout ? 'Chờ Quầy điều chỉnh' : 'Chờ Quầy chốt'}
-              </span>
-
-              {/* TẦNG 2: THỜI GIAN (09:00 · 84p) */}
-              <div
-                className="text-[11px] font-bold tabular-nums tracking-tight leading-none"
-                style={{ color: 'var(--mos-text-muted)' }}
-              >
-                {doneSummary.timeAndDurationStr}
-              </div>
-
-              {/* TẦNG 3: SỐ TIỀN DỰ KIẾN THU (Ẩn ↻ +pts và Tip cho tới khi Quầy hoàn tất) */}
-              <div className="flex items-center justify-end gap-1 leading-none">
-                {doneSummary.hasDebt ? (
-                  <span
-                    className={`font-black text-[12px] tabular-nums tracking-tight inline-flex items-center ${
-                      isDark ? 'text-rose-400' : 'text-rose-600'
-                    }`}
-                  >
-                    -{formatShortMoney(doneSummary.debtAmount)}
-                  </span>
-                ) : doneSummary.soldComboPrice > 0 ? (
-                  <span
-                    className={`font-black text-[12px] tabular-nums tracking-tight inline-flex items-center ${
-                      isDark ? 'text-purple-400' : 'text-purple-700'
-                    }`}
-                  >
-                    <Package className="w-3 h-3 stroke-[2.2] shrink-0 mr-1" />
-                    {formatShortMoney(doneSummary.soldComboPrice)}
-                  </span>
-                ) : doneSummary.upgradeOrPaidAmount > 0 ? (
-                  <span
-                    className={`font-black text-[12px] tabular-nums tracking-tight ${
-                      isDark ? 'text-amber-300' : 'text-amber-700'
-                    }`}
-                  >
-                    {formatShortMoney(doneSummary.upgradeOrPaidAmount)}
-                  </span>
-                ) : (
-                  <span className="font-bold text-[11.5px] tabular-nums" style={{ color: 'var(--mos-text-muted)' }}>
-                    0đ
-                  </span>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              {/* TẦNG 1: THỜI GIAN (09:00 · 84p) */}
-              <div
-                className="text-[11px] font-bold tabular-nums tracking-tight leading-none"
-                style={{ color: 'var(--mos-text-muted)' }}
-              >
-                {doneSummary.timeAndDurationStr}
-              </div>
-
-              {/* TẦNG 2: TIỀN (Quan trọng nhất: Nợ / Combo / Phụ thu / 0đ) */}
-              <div className="flex items-center justify-end gap-1 leading-none flex-wrap">
-                {doneSummary.hasDebt ? (
-                  <span
-                    className={`font-black text-[12.5px] tabular-nums tracking-tight animate-pulse inline-flex items-center ${
-                      isDark ? 'text-rose-400' : 'text-rose-600'
-                    }`}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 inline-block mr-1" />-
-                    {formatShortMoney(doneSummary.debtAmount)}
-                  </span>
-                ) : doneSummary.soldComboPrice > 0 ? (
-                  <span
-                    className={`font-black text-[12.5px] tabular-nums tracking-tight inline-flex items-center ${
-                      isDark ? 'text-purple-400' : 'text-purple-700'
-                    }`}
-                  >
-                    <Package className="w-3.5 h-3.5 stroke-[2.2] shrink-0 mr-1" />
-                    {formatShortMoney(doneSummary.soldComboPrice)}
-                  </span>
-                ) : doneSummary.upgradeOrPaidAmount > 0 ? (
-                  <span
-                    className={`font-black text-[12.5px] tabular-nums tracking-tight ${
-                      isDark ? 'text-emerald-400' : 'text-emerald-700'
-                    }`}
-                  >
-                    +{formatShortMoney(doneSummary.upgradeOrPaidAmount)}
-                  </span>
-                ) : (
-                  <span className="font-bold text-[12px] tabular-nums" style={{ color: 'var(--mos-text-muted)' }}>
-                    0đ
-                  </span>
-                )}
-              </div>
-
-              {/* TẦNG 3: ĐIỂM CVL & TIP (↻ +41 pts · Heart 50K) */}
-              <div
-                className="text-[10px] font-bold tabular-nums tracking-tight leading-none whitespace-nowrap inline-flex items-center justify-end"
-                style={{ color: 'var(--mos-accent)' }}
-              >
-                <span>↻ +{doneSummary.cvPoints}</span>
-                {doneSummary.tipAmount > 0 ? (
-                  <span className="inline-flex items-center ml-0.5">
-                    p ·{' '}
-                    <Heart
-                      className={`w-2.5 h-2.5 shrink-0 mx-0.5 ${
-                        isDark ? 'fill-rose-400 text-rose-400' : 'fill-rose-600 text-rose-600'
-                      }`}
-                    />
-                    {formatShortMoney(doneSummary.tipAmount)}
-                  </span>
-                ) : (
-                  ' pts'
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      ) : (
-        <div
-          className="w-[104px] flex-shrink-0 border-l pl-2.5 flex flex-col justify-center items-end text-right self-stretch tabular-nums"
-          style={{ borderColor: 'var(--mos-surface-border)' }}
-        >
-          {bookingSegment === 'SERVICING' ? (
-            <>
-              {/* TẦNG 1: BADGE TRẠNG THÁI ĐANG LÀM (Check-in, Cleaning, Lashing, Survey, Checkout) */}
-              <span
-                className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-black border tracking-tight leading-none whitespace-nowrap ${servicingSubStatus.colorClass}`}
-              >
-                {servicingSubStatus.label}
-              </span>
-
-              {/* TẦNG 2: THỜI GIAN DỰ KIẾN XONG + ĐẾM NGƯỢC */}
-              <div className="mt-1 flex flex-col items-end leading-tight">
-                <span
-                  className="text-[12.5px] font-black tabular-nums leading-tight"
-                  style={{ color: 'var(--mos-accent)' }}
-                >
-                  Xong {completionInfo.completionTimeStr}
-                </span>
-                <span
-                  className={`mt-0.5 text-[10.5px] tabular-nums tracking-tight leading-none ${completionInfo.colorClass}`}
-                >
-                  {completionInfo.shortCountdownText}
-                </span>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* TẦNG 1: GIỜ HẸN 24H */}
-              <span
-                className="text-[14px] font-black tabular-nums leading-tight"
-                style={{ color: 'var(--mos-accent)' }}
-              >
-                {formatTime24h(b.time12h || b.timeSlot)}
-              </span>
-
-              {/* TẦNG 2: ĐẾM NGƯỢC GIỜ ĐẾN */}
-              <div
-                className={`mt-1 text-[11.5px] font-extrabold tabular-nums tracking-tight leading-tight ${countdown.colorClass}`}
-                title={
-                  countdown.diffMins !== null
-                    ? countdown.diffMins >= 0
-                      ? `Khách sẽ đến trong ${countdown.diffMins} phút`
-                      : `Khách trễ ${Math.abs(countdown.diffMins)} phút`
-                    : undefined
-                }
-              >
-                {countdown.text}
-              </div>
-            </>
-          )}
-
-          {/* Nút Admin: Hoàn tác đưa khách hàng về Chờ đón (chỉ hiện khi Admin đang ở tab SERVICING) */}
-          {b.status === 'SERVICING' && isAdmin && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenRevertModal(b.id, cleanCustomerName);
-              }}
-              className={`mt-1.5 inline-flex items-center justify-center gap-1 py-0.5 px-2 rounded-md border text-[9.5px] font-bold leading-none active:scale-95 transition-all cursor-pointer shadow-xs whitespace-nowrap ${
-                isDark
-                  ? 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/40 text-rose-300'
-                  : 'bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-700'
-              }`}
-              title="Quyền Admin: Trả khách hàng này về danh sách Chờ đón"
-            >
-              <RotateCcw className="w-2.5 h-2.5 shrink-0" />
-              <span>Về Chờ đón</span>
-            </button>
-          )}
-        </div>
-      )}
+      <IncomingCardRightColumn
+        booking={b}
+        bookingSegment={bookingSegment}
+        isDark={isDark}
+        isAdmin={isAdmin}
+        isDone={isDone}
+        isPendingPostAdj={isPendingPostAdj}
+        isDoneCardPendingCounter={isDoneCardPendingCounter}
+        cleanCustomerName={cleanCustomerName}
+        doneSummary={doneSummary}
+        servicingSubStatus={servicingSubStatus}
+        completionInfo={completionInfo}
+        countdown={countdown}
+        onOpenRevertModal={onOpenRevertModal}
+      />
     </div>
   );
 }

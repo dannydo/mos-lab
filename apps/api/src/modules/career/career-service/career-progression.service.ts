@@ -232,6 +232,12 @@ export async function getStaffProgression(
       facilityScore: 96,
       inventoryLossRate: 0.003,
       googleReviewsCount: 32,
+      servicesPerHour: metrics.productivity.servicesPerHour,
+      revenuePerHour: metrics.productivity.revenuePerHour,
+      actualWorkingHours: metrics.productivity.actualWorkingHours,
+      totalCompletedServices: metrics.productivity.totalCompletedServices,
+      serviceRevenue: metrics.productivity.serviceRevenue,
+      productivity: metrics.productivity,
       qaAudit,
     },
     qualifiedQuests: {

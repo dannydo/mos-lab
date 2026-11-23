@@ -1,4 +1,5 @@
 import type { CareerPeriod, CareerProgressionConfig, CareerStaffSummary } from '@mos-lab/shared';
+import { matchesCareerBranchFilter, matchesCareerRoleFilter } from '../../career-path.constants';
 import type { CareerThresholdConfig, MetricStatus, PeriodTabItem } from './staffCareerSelectorTypes';
 
 export const PERIOD_TABS: PeriodTabItem[] = [
@@ -21,19 +22,14 @@ export function getPeriodLabel(period?: CareerPeriod): string {
   return currentPeriodTab ? currentPeriodTab.label : 'tháng trước';
 }
 
-export function filterAndSortCareerStaff(staffList: CareerStaffSummary[], currentFilter: string): CareerStaffSummary[] {
-  const list = staffList.filter((s) => {
-    if (currentFilter === 'ALL') return true;
-    if (currentFilter === 'KTV') return s.careerRole === 'KTV';
-    if (currentFilter === 'CV') return s.careerRole === 'CV';
-    if (currentFilter === 'CV_PLUS') return s.careerRole === 'CV_PLUS';
-    if (currentFilter === 'CV_PLUS_PLUS') return s.careerRole === 'CV_PLUS_PLUS';
-    if (currentFilter === 'CC') return s.careerRole === 'CC' || (s.role || '').toLowerCase() === 'cc';
-    if (currentFilter === 'FM') {
-      return s.careerRole === 'FM' || ['manager', 'fm'].includes((s.role || '').toLowerCase());
-    }
-    return true;
-  });
+export function filterAndSortCareerStaff(
+  staffList: CareerStaffSummary[],
+  currentFilter: string,
+  currentBranchFilter = 'ALL'
+): CareerStaffSummary[] {
+  const list = staffList.filter(
+    (s) => matchesCareerRoleFilter(s, currentFilter) && matchesCareerBranchFilter(s, currentBranchFilter)
+  );
 
   // Luôn sắp xếp danh sách theo số bộ mi (ordersCount) giảm dần (DESC)
   return [...list].sort((a, b) => {

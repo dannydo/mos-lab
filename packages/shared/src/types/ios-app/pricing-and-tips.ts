@@ -321,37 +321,44 @@ export function calculateActorTipBreakdown(
 
   const techStaffId = Number(booking?.assignedStaffId || actorStaffId || 0);
   const techStaffName = booking?.assignedStaffName || actorName;
-  const isTrainingCvl = Boolean(booking?.isTrainingCvlOrder && techStaffId > 0);
+  const isTrainingCvl = Boolean(
+    techStaffId > 0 &&
+    (booking?.isTrainingCvlOrder || (actor?.isTrainingMentee && actorStaffId > 0 && techStaffId === actorStaffId))
+  );
 
-  const checkInStaffId = isTrainingCvl
-    ? techStaffId
-    : Number(booking?.checkInStaffId || techStaffId || actorStaffId || 0);
-  const checkInStaffName = isTrainingCvl ? techStaffName : booking?.checkInStaffName || techStaffName;
+  const checkInStaffId = Number(booking?.checkInStaffId || techStaffId || actorStaffId || 0);
+  const checkInStaffName = booking?.checkInStaffName || techStaffName;
 
-  const checkOutStaffId = isTrainingCvl
-    ? techStaffId
-    : Number(booking?.checkOutStaffId || actorStaffId || techStaffId || 0);
-  const checkOutStaffName = isTrainingCvl ? techStaffName : booking?.checkOutStaffName || actorName;
+  const checkOutStaffId = Number(booking?.checkOutStaffId || actorStaffId || techStaffId || 0);
+  const checkOutStaffName = booking?.checkOutStaffName || actorName;
 
-  const techShareAmount = Math.round(tipAmount * 0.7);
-  const checkInShareAmount = Math.round(tipAmount * 0.1);
-  const checkOutShareAmount = Math.round(tipAmount * 0.1);
+  const techShareAmount = isTrainingCvl ? Math.round(tipAmount * 0.9) : Math.round(tipAmount * 0.7);
+  const checkInShareAmount = isTrainingCvl ? 0 : Math.round(tipAmount * 0.1);
+  const checkOutShareAmount = isTrainingCvl ? 0 : Math.round(tipAmount * 0.1);
   const fundShareAmount = Math.max(0, tipAmount - techShareAmount - checkInShareAmount - checkOutShareAmount);
 
   const isActorTech = actorStaffId > 0 && techStaffId === actorStaffId;
-  const isActorCheckIn = actorStaffId > 0 && checkInStaffId === actorStaffId;
-  const isActorCheckOut = actorStaffId > 0 && checkOutStaffId === actorStaffId;
+  const isActorCheckIn = !isTrainingCvl && actorStaffId > 0 && checkInStaffId === actorStaffId;
+  const isActorCheckOut = !isTrainingCvl && actorStaffId > 0 && checkOutStaffId === actorStaffId;
 
-  const actorEarnedPercent = (isActorTech ? 70 : 0) + (isActorCheckIn ? 10 : 0) + (isActorCheckOut ? 10 : 0);
+  const actorEarnedPercent = isTrainingCvl
+    ? isActorTech
+      ? 90
+      : 0
+    : (isActorTech ? 70 : 0) + (isActorCheckIn ? 10 : 0) + (isActorCheckOut ? 10 : 0);
   const actorEarnedAmount =
     (isActorTech ? techShareAmount : 0) +
     (isActorCheckIn ? checkInShareAmount : 0) +
     (isActorCheckOut ? checkOutShareAmount : 0);
 
   const roles: string[] = [];
-  if (isActorTech) roles.push('Làm mi 70%');
-  if (isActorCheckIn) roles.push('Check-in 10%');
-  if (isActorCheckOut) roles.push('Check-out 10%');
+  if (isTrainingCvl) {
+    if (isActorTech) roles.push('Làm mi · Training 90%');
+  } else {
+    if (isActorTech) roles.push('Làm mi 70%');
+    if (isActorCheckIn) roles.push('Check-in 10%');
+    if (isActorCheckOut) roles.push('Check-out 10%');
+  }
 
   return {
     tipAmount,

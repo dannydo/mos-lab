@@ -408,6 +408,17 @@ export async function executePostCheckoutAdjustmentAction(params: {
         current.billing?.transferProofPhoto ||
         ''
     ).trim() || undefined;
+  const tipTransferProofPhoto =
+    String(
+      (isApproveAction ? pendingDraft?.tipTransferProofPhoto : body?.tipTransferProofPhoto) ||
+        current.billing?.tipTransferProofPhoto ||
+        ''
+    ).trim() || undefined;
+  const qrSplitTipSeparate = isApproveAction
+    ? pendingDraft?.qrSplitTipSeparate
+    : body?.qrSplitTipSeparate !== undefined
+      ? Boolean(body.qrSplitTipSeparate)
+      : current.billing?.qrSplitTipSeparate;
 
   if (!isApproveAction && delta.requiresCounterApproval) {
     const draftId = `adj-${bookingId}-${Date.now()}`;
@@ -439,6 +450,8 @@ export async function executePostCheckoutAdjustmentAction(params: {
       combinedPaymentMethod: delta.combinedPaymentMethod,
       combinedPaymentBreakdown: delta.combinedPaymentBreakdown,
       ...(transferProofPhoto ? { transferProofPhoto } : {}),
+      ...(tipTransferProofPhoto ? { tipTransferProofPhoto } : {}),
+      ...(qrSplitTipSeparate !== undefined ? { qrSplitTipSeparate } : {}),
       beforeSnapshot,
       afterSnapshot,
     };
@@ -521,6 +534,8 @@ export async function executePostCheckoutAdjustmentAction(params: {
       paymentBreakdown: delta.combinedPaymentBreakdown,
       grandTotal: delta.newGrandTotal,
       ...(transferProofPhoto ? { transferProofPhoto } : {}),
+      ...(tipTransferProofPhoto ? { tipTransferProofPhoto } : {}),
+      ...(qrSplitTipSeparate !== undefined ? { qrSplitTipSeparate } : {}),
       previousPaidGrandTotal: previousPaidTotal,
       previousPaymentMethod,
       previousPaymentBreakdown: delta.previousPaymentBreakdown,

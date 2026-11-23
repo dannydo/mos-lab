@@ -54,7 +54,7 @@ export function CvTipDetailTableCard({
       title={
         <div className="flex flex-wrap justify-between items-center gap-2 py-1">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-900 dark:text-slate-100">Chi Tiết Ca Làm Nhận Tip 70%</span>
+            <span className="font-bold text-slate-900 dark:text-slate-100">Chi Tiết Ca Làm Nhận Tip CV</span>
             {selectedCvName ? (
               <StatusTag status="gold" label={`Chuyên viên: ${selectedCvName}`} className="font-bold text-xs ml-2" />
             ) : null}

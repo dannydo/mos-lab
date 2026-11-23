@@ -132,6 +132,12 @@ export function usePostCheckoutComboSheetState({
   const [reason, setReason] = useState<string>('');
   const [rejectionReason, setRejectionReason] = useState<string>('');
   const [showStaffRewards, setShowStaffRewards] = useState<boolean>(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
+  const [qrProofs, setQrProofs] = useState<{
+    transferProofPhoto?: string;
+    tipTransferProofPhoto?: string;
+    qrSplitTipSeparate?: boolean;
+  }>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -175,6 +181,8 @@ export function usePostCheckoutComboSheetState({
     setReason('');
     setRejectionReason('');
     setShowStaffRewards(false);
+    setIsQrModalOpen(false);
+    setQrProofs({});
     setErrorMsg(null);
 
     let active = true;
@@ -444,6 +452,9 @@ export function usePostCheckoutComboSheetState({
         paymentMode: delta.effectiveMode,
         deltaPaymentMethod: delta.deltaPaymentMethod,
         deltaPaymentBreakdown: delta.deltaPaymentBreakdown,
+        ...(qrProofs.transferProofPhoto ? { transferProofPhoto: qrProofs.transferProofPhoto } : {}),
+        ...(qrProofs.tipTransferProofPhoto ? { tipTransferProofPhoto: qrProofs.tipTransferProofPhoto } : {}),
+        ...(qrProofs.qrSplitTipSeparate !== undefined ? { qrSplitTipSeparate: qrProofs.qrSplitTipSeparate } : {}),
         reason: reason.trim() || undefined,
         isTrainingCvlOrder: Boolean(booking.isTrainingCvlOrder),
       });
@@ -526,6 +537,10 @@ export function usePostCheckoutComboSheetState({
     setRejectionReason,
     showStaffRewards,
     setShowStaffRewards,
+    isQrModalOpen,
+    setIsQrModalOpen,
+    qrProofs,
+    setQrProofs,
     isSubmitting,
     errorMsg,
     originalCheckOutStaffId,

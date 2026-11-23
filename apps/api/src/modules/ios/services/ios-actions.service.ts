@@ -22,6 +22,7 @@ import {
   resolveSavePromotionOverride,
   runPostSaveLegacyStepSync,
 } from './ios-actions-completion.helper.js';
+import { buildPreCheckoutPaymentOverride } from './ios-pre-checkout-payment.helper.js';
 import { ExecuteIosActionResult, ExecuteIosActionOptions } from './ios-actions.types.js';
 
 export type IosOverrideRepository = ReturnType<typeof createOverrideRepository>;
@@ -458,6 +459,15 @@ export async function executeIosBookingAction(
         return promoOutcome.errorResult;
       }
       nextOverride = promoOutcome.nextOverride ?? null;
+    } else if (action === 'SAVE_PRE_CHECKOUT_PAYMENT') {
+      nextOverride = await buildPreCheckoutPaymentOverride({
+        bookingId,
+        current,
+        body,
+        actorStaffId,
+        actorStaffName,
+        isSimulationMode,
+      });
     } else if (action === 'COMPLETE_ORDER' || action === 'COMPLETE_CHECKOUT') {
       nextOverride = await executeCompleteOrderTransition({
         authUser,

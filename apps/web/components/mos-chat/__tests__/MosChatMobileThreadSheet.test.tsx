@@ -810,4 +810,147 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
       })
     );
   });
+
+  it('hides "Đã đúng ý (Nghiệm thu hoàn tất)" immediately on click and when mission is already CLOSED/COMPLETED (MOS-BUG-260)', async () => {
+    const fixedMission: MosChatMissionSummary = {
+      ...mockMissionGate1,
+      reportId: 254,
+      key: 'MOS-FEAT-254',
+      missionKey: 'MOS-FEAT-254',
+      missionCode: 'MSN-254',
+      status: 'FIXED',
+      stage: 'READY_FOR_REVIEW',
+      stepIndex: 3,
+      humanBadge: '🟢 Đã lên sóng · Mời kiểm tra',
+      stageLabel: '🟢 Đã lên sóng · Mời kiểm tra',
+      humanSummary: 'Đã cập nhật lên web.',
+      humanStatusSummary: 'Đã cập nhật lên web.',
+      canReporterAccept: true,
+      conversationId: 'dm-pair-1-6',
+      messageId: 'msg-mission-254',
+      superAdminActions: {
+        canApproveImplementation: false,
+        canApproveCommit: false,
+        canApproveDeploy: false,
+        canConfirmClose: true,
+        activeJobId: null,
+        executionPhase: 'AWAITING_REPORTER_ACCEPTANCE',
+        changedFilesCount: 1,
+        diffStat: '1 file changed',
+        agentSummary: null,
+      },
+      reporterActions: {
+        canAcceptOrReopen: true,
+      },
+    };
+
+    const closedMission: MosChatMissionSummary = {
+      ...fixedMission,
+      status: 'CLOSED',
+      stage: 'COMPLETED',
+      stepIndex: 4,
+      humanBadge: '✅ Hoàn tất nhiệm vụ',
+      stageLabel: '✅ Hoàn tất nhiệm vụ',
+      canReporterAccept: false,
+      superAdminActions: {
+        ...fixedMission.superAdminActions!,
+        canConfirmClose: false,
+      },
+      reporterActions: {
+        canAcceptOrReopen: true,
+      },
+    };
+
+    const msg254: MosChatMessage = {
+      id: 'msg-mission-254',
+      conversationId: 'dm-pair-1-6',
+      senderId: '6',
+      senderName: 'Thảo Ly',
+      senderRole: 'Staff',
+      text: 'lưu ghi chú sau nối bị lỗi',
+      timeLabel: '12:46',
+      createdAt: new Date().toISOString(),
+      reactions: {},
+      attachments: [],
+      missionId: 254,
+      missionKey: 'MOS-FEAT-254',
+      mission: fixedMission,
+      thread: [],
+    };
+
+    const completedReply = {
+      id: 'th-msn-done-254',
+      senderId: 'mos-mission-bot',
+      senderName: '🚀 mOS Mission',
+      senderRole: 'Trợ lý Kỹ thuật',
+      text: '✅ **Hoàn tất nhiệm vụ #MSN-254!**\nCảm ơn bạn đã kiểm tra và xác nhận kết quả.',
+      timeLabel: '20:42',
+      createdAt: new Date().toISOString(),
+      isMissionMilestone: true,
+      missionStage: 'COMPLETED' as const,
+      missionId: 254,
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      conversations: [
+        {
+          id: 'dm-pair-1-6',
+          type: 'dm',
+          name: 'Thảo Ly',
+          messages: [msg254],
+        },
+      ],
+      tasks: [],
+      staffDirectory: [{ id: 6, displayName: 'Thảo Ly', role: 'Staff' }],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    (apiClient.chat.missionAction as any).mockResolvedValue({
+      success: true,
+      mission: closedMission,
+      message: {
+        ...msg254,
+        mission: closedMission,
+        thread: [completedReply],
+      },
+      systemReply: completedReply,
+    });
+
+    const TestHost: React.FC = () => {
+      const { setActiveThreadMsg, setMobileView } = useMosChat();
+      React.useEffect(() => {
+        setActiveThreadMsg(msg254);
+        setMobileView('thread');
+      }, [setActiveThreadMsg, setMobileView]);
+      return <MosChatMobileThreadSheet />;
+    };
+
+    render(
+      <MosChatProvider
+        currentUser={{ id: 6, username: 'thaoly', displayName: 'Thảo Ly', role: 'staff' }}
+        initialConvId="dm-pair-1-6"
+      >
+        <TestHost />
+      </MosChatProvider>
+    );
+
+    const acceptButtons = await screen.findAllByText('🎉 Đã đúng ý (Nghiệm thu hoàn tất)');
+    expect(acceptButtons.length).toBeGreaterThan(0);
+
+    fireEvent.click(acceptButtons[0]);
+
+    await waitFor(() => {
+      expect(apiClient.chat.missionAction).toHaveBeenCalledWith(
+        254,
+        expect.objectContaining({ action: 'REPORTER_ACCEPT' })
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('🎉 Đã đúng ý (Nghiệm thu hoàn tất)')).toBeNull();
+    });
+
+    expect(screen.getByText('🔄 Yêu cầu chỉnh sửa thêm / Nâng cấp tiếp')).toBeTruthy();
+  });
 });

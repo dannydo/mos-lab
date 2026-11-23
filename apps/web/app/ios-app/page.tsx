@@ -256,8 +256,11 @@ function IosAppInner() {
             onAutoSaveDraft={state.handleAutoSaveConsultationDraft}
             isSimulationMode={state.isSimulationMode}
             isReadOnlyMentorView={state.isReadOnlyMentorView}
+            simPresetMode={state.simPresetMode}
+            onSimJumpToStep={state.handleSimJumpToStep}
             onSimFastForwardToUpsell={state.handleSimFastForwardToUpsell}
             onSelectComboWallet={state.handleSelectComboWallet}
+            onSavePreCheckoutPayment={state.handleSavePreCheckoutPayment}
           />
         );
       case IOS_STEPS.STAFF_ASSIGN:
@@ -290,6 +293,8 @@ function IosAppInner() {
               state.setCurrentStep(IOS_STEPS.INCOMING);
             }}
             staffStats={state.staffStats}
+            isReadOnlyMentorView={state.isReadOnlyMentorView}
+            onSavePreCheckoutPayment={state.handleSavePreCheckoutPayment}
           />
         );
       case IOS_STEPS.LASH_BEFORE:
@@ -322,6 +327,7 @@ function IosAppInner() {
             onFinishTimer={state.handleFinishTimer}
             onEditService={() => state.handleOpenConsultation(IOS_STEPS.LASH_TIMER)}
             isAdmin={state.isAdmin}
+            isSimulationMode={state.isSimulationMode}
             onRevertToIncoming={state.handleRevertToIncoming}
           />
         );

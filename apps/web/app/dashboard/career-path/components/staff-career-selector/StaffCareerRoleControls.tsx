@@ -2,9 +2,15 @@
 
 import React from 'react';
 import { Dropdown, Tooltip } from 'antd';
-import { ChevronLeft, ChevronRight, CircleUser, CreditCard, Sparkles, Table as TableIcon } from 'lucide-react';
-import type { CareerPeriod, CareerRole, CareerStaffSummary } from '@mos-lab/shared';
+import { ChevronLeft, ChevronRight, CircleUser, CreditCard, MapPin, Sparkles, Table as TableIcon } from 'lucide-react';
+import {
+  normalizeCareerBranchFilter,
+  type CareerPeriod,
+  type CareerRole,
+  type CareerStaffSummary,
+} from '@mos-lab/shared';
 import { StatusTag } from '~/components/ui';
+import type { CareerBranchOption } from '../../career-path.constants';
 import { WingRoleLabel } from '../IslandGameIcon';
 import type { CareerSelectorMode } from './staffCareerSelectorTypes';
 import { PERIOD_TABS } from './staffCareerMetrics';
@@ -291,6 +297,71 @@ export const RoleFilterChips: React.FC<{
               }`}
             >
               <WingRoleLabel text={tab.label} />
+            </button>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+};
+
+export const BranchFilterChips: React.FC<{
+  branchOptions: CareerBranchOption[];
+  currentBranchFilter: string;
+  onSelectBranch: (branch: string) => void;
+  compact?: boolean;
+}> = ({ branchOptions, currentBranchFilter, onSelectBranch, compact = false }) => {
+  if (branchOptions.length <= 1) return null;
+
+  return (
+    <div
+      className="flex items-center gap-0.5 bg-slate-100/80 dark:bg-slate-800/60 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 overflow-x-auto no-scrollbar shrink-0 max-w-full"
+      role="group"
+      aria-label="Lọc theo chi nhánh"
+    >
+      <span className="inline-flex items-center gap-1 px-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400 shrink-0 select-none">
+        <MapPin className="w-3 h-3 text-rose-500 dark:text-rose-400" />
+        {!compact && <span className="hidden xl:inline">Chi nhánh:</span>}
+      </span>
+      {branchOptions.map((branch) => {
+        const isActive =
+          currentBranchFilter === branch.key ||
+          (branch.key !== 'ALL' &&
+            normalizeCareerBranchFilter(currentBranchFilter) !== 'ALL' &&
+            normalizeCareerBranchFilter(currentBranchFilter) === normalizeCareerBranchFilter(branch.key));
+        const label = branch.key === 'ALL' ? 'Tất cả' : branch.label;
+        return (
+          <Tooltip
+            key={branch.key}
+            title={
+              branch.key === 'ALL'
+                ? `Tất cả chi nhánh (${branch.count} nhân sự)`
+                : `Chi nhánh ${branch.label} (${branch.count} nhân sự)`
+            }
+          >
+            <button
+              type="button"
+              data-testid={`branch-filter-${branch.key}`}
+              aria-pressed={isActive}
+              onClick={() => onSelectBranch(branch.key)}
+              className={`inline-flex items-center justify-center gap-1 rounded-md font-semibold transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap tabular-nums leading-none ${
+                compact ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-[11px]'
+              } ${
+                isActive
+                  ? 'bg-rose-500 text-white shadow-xs font-bold'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/70'
+              }`}
+            >
+              <span>{label}</span>
+              <span
+                className={`text-[9px] px-1 py-0.5 rounded-full font-mono leading-none ${
+                  isActive
+                    ? 'bg-white/20 text-white'
+                    : 'bg-slate-200/90 dark:bg-slate-700/80 text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                {branch.count}
+              </span>
             </button>
           </Tooltip>
         );

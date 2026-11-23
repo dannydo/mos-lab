@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Avatar, Popconfirm, Tooltip } from 'antd';
-import { ArrowDownCircle, ArrowRight, ChevronRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowDownCircle, ArrowRight, ChevronRight, MapPin, ShieldCheck, Sparkles } from 'lucide-react';
 import type { StaffCareerStatus } from '@mos-lab/shared';
 import { formatCareerRoleName } from '../../career-path.constants';
 import { WingRoleLabel } from '../IslandGameIcon';
@@ -87,6 +87,18 @@ export const SimulationProfileHeader: React.FC<SimulationProfileHeaderProps> = (
               <h2 className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-100 m-0 truncate">
                 {status.staffName}
               </h2>
+              {status.metrics?.branchName && (
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+                    status.metrics.branchCode === 'EP'
+                      ? 'bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/30'
+                      : 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/30'
+                  }`}
+                >
+                  <MapPin className="w-3 h-3 shrink-0" />
+                  <span>{status.metrics.branchName}</span>
+                </span>
+              )}
               <SimulationStatusBadge
                 hasFailedQa={hasFailedQa}
                 isQaPassed={isQaPassed}

@@ -32,6 +32,8 @@ interface CareerPathDrawersProps {
   safeConfig: CareerProgressionConfig;
   staffList: CareerStaffSummary[];
   selectedStaffId: number | null;
+  activeBranchFilter?: string;
+  onBranchFilterChange?: (branch: string) => void;
   onSelectStaff: (staffId: number) => void;
   isEncyclopediaDrawerOpen: boolean;
   onCloseEncyclopediaDrawer: () => void;
@@ -63,6 +65,8 @@ export const CareerPathDrawers: React.FC<CareerPathDrawersProps> = ({
   safeConfig,
   staffList,
   selectedStaffId,
+  activeBranchFilter,
+  onBranchFilterChange,
   onSelectStaff,
   isEncyclopediaDrawerOpen,
   onCloseEncyclopediaDrawer,
@@ -164,6 +168,8 @@ export const CareerPathDrawers: React.FC<CareerPathDrawersProps> = ({
           config={safeConfig}
           staffList={staffList}
           selectedStaffId={selectedStaffId}
+          activeBranchFilter={activeBranchFilter}
+          onBranchFilterChange={onBranchFilterChange}
           onSelectStaff={onSelectStaff}
           onClose={onCloseMobileStaffDrawer}
         />

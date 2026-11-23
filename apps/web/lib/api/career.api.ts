@@ -4,6 +4,7 @@ import {
   type StaffCareerStatus,
   type CareerStaffSummary,
   type CareerPeriod,
+  type CareerBranchFilter,
   type BananaTransactionResponse,
   type CvPlusRewardSnapshot,
   type CvPlusSimulationSummaryResponse,
@@ -43,7 +44,7 @@ export const careerApi = {
       return res.data;
     },
     listStaff: async (
-      params?: { role?: string; search?: string; period?: CareerPeriod },
+      params?: { role?: string; search?: string; period?: CareerPeriod; branch?: CareerBranchFilter },
       options?: ApiRequestOptions
     ): Promise<CareerStaffSummary[]> => {
       try {

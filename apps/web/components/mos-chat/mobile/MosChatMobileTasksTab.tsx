@@ -24,6 +24,7 @@ import type { MosChatTaskItem } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import { useTheme } from '../../../context/ThemeContext';
 import { MosChatAvatar } from '../MosChatAvatar';
+import { resolveMissionActionFlags } from '../shared/missions/mission-action-flags';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -344,29 +345,11 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
             const assigner = t.assignerName || t.creatorName || t.sourceAuthorName || 'Hệ thống';
             const assignee = t.assigneeName || 'Chung';
 
-            const isMissionAwaitingCommit = Boolean(
-              t.mission &&
-              (t.mission.canSuperAdminApproveCommit ||
-                t.mission.superAdminActions?.canApproveCommit ||
-                t.mission.status === 'AWAITING_DANNY_COMMIT_REVIEW' ||
-                t.mission.superAdminActions?.executionPhase === 'AWAITING_COMMIT_REVIEW')
-            );
-
-            const isMissionAwaitingDeploy = Boolean(
-              t.mission &&
-              (t.mission.canSuperAdminApproveDeploy ||
-                t.mission.superAdminActions?.canApproveDeploy ||
-                t.mission.status === 'AWAITING_DANNY_DEPLOY_APPROVAL' ||
-                t.mission.superAdminActions?.executionPhase === 'AWAITING_DEPLOY_REVIEW')
-            );
-
-            const isMissionAwaitingAccept = Boolean(
-              t.mission &&
-              (t.mission.canReporterAccept ||
-                t.mission.reporterActions?.canAcceptOrReopen ||
-                t.mission.status === 'FIXED' ||
-                t.mission.status === 'AWAITING_REPORTER_ACCEPTANCE')
-            );
+            const {
+              canSuperAdminApproveCommit: isMissionAwaitingCommit,
+              canSuperAdminApproveDeploy: isMissionAwaitingDeploy,
+              canReporterAccept: isMissionAwaitingAccept,
+            } = resolveMissionActionFlags(t.mission);
 
             return (
               <div
@@ -500,11 +483,7 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
                       <div className="flex items-center gap-1 mt-2 text-[11px] font-medium tabular-nums">
                         <Clock
                           className={`w-3 h-3 shrink-0 ${
-                            isOverdue
-                              ? isDark
-                                ? 'text-rose-400'
-                                : 'text-rose-600'
-                              : 'text-[var(--mos-text-muted)]'
+                            isOverdue ? (isDark ? 'text-rose-400' : 'text-rose-600') : 'text-[var(--mos-text-muted)]'
                           }`}
                         />
                         <span

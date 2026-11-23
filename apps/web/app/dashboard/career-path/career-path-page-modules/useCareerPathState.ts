@@ -10,12 +10,18 @@ import {
   type CareerRole,
   type CareerPeriod,
   type BananaTransactionCategory,
+  normalizeCareerBranchFilter,
 } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import { useTheme } from '~/context/ThemeContext';
 import type { CareerSelectorMode } from '../components/StaffCareerSelector';
 import type { CareerBibleTopic } from '../components/CareerBibleDrawer';
-import { FALLBACK_CAREER_PROGRESSION_CONFIG, getCareerIslands, formatCareerRoleName } from '../career-path.constants';
+import {
+  FALLBACK_CAREER_PROGRESSION_CONFIG,
+  getCareerIslands,
+  formatCareerRoleName,
+  matchesCareerBranchFilter,
+} from '../career-path.constants';
 import { playCareerSound, triggerCareerConfetti } from '../career-path-fx';
 import {
   type CareerConfigSavePayload,
@@ -37,6 +43,7 @@ export function useCareerPathState() {
   const { themeMode } = useTheme();
   const searchParams = useSearchParams();
   const queryStaffId = searchParams.get('staffId');
+  const queryBranch = searchParams.get('branch');
   const [currentUser, setCurrentUser] = useState<CareerCurrentUser | null>(null);
 
   useEffect(() => {
@@ -58,6 +65,11 @@ export function useCareerPathState() {
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [activeRoleFilter, setActiveRoleFilter] = useState<string>('ALL');
+  const [activeBranchFilter, setActiveBranchFilter] = useState<string>(() =>
+    queryBranch ? normalizeCareerBranchFilter(queryBranch) : 'ALL'
+  );
+  const activeBranchFilterRef = useRef<string>(activeBranchFilter);
+  activeBranchFilterRef.current = activeBranchFilter;
   const [selectedPeriod, setSelectedPeriod] = useState<CareerPeriod>('last_30_days');
 
   const [isConfigDrawerOpen, setIsConfigDrawerOpen] = useState<boolean>(false);
@@ -141,6 +153,7 @@ export function useCareerPathState() {
             queryStaffId,
             selectedStaffId,
             currentUserId: currentUser?.id,
+            activeBranchFilter: activeBranchFilterRef.current,
           });
 
           if (defaultStaff) {
@@ -181,6 +194,30 @@ export function useCareerPathState() {
       loadData(newPeriod);
     },
     [playSound, loadData]
+  );
+
+  const handleBranchFilterChange = useCallback(
+    (newBranch: string) => {
+      playSound('pop');
+      setActiveBranchFilter(newBranch);
+      if (newBranch === 'ALL' || staffList.length === 0) return;
+
+      const currentSelected = staffList.find((s) => s.id === selectedStaffId);
+      if (currentSelected && matchesCareerBranchFilter(currentSelected, newBranch)) {
+        return;
+      }
+
+      const branchPool = staffList.filter((s) => matchesCareerBranchFilter(s, newBranch));
+      const cvBranchPool = branchPool.filter((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole));
+      const nextStaff = cvBranchPool[0] || branchPool[0];
+      if (nextStaff) {
+        setSelectedStaffId(nextStaff.id);
+        const defaultTarget = getDefaultSimulationTarget(nextStaff.careerRole);
+        setSimulationTarget(defaultTarget);
+        fetchStaffProgression(nextStaff.id, false, defaultTarget, selectedPeriod);
+      }
+    },
+    [playSound, staffList, selectedStaffId, fetchStaffProgression, selectedPeriod]
   );
 
   const openBananaDrawer = useCallback(
@@ -399,6 +436,8 @@ export function useCareerPathState() {
     actionLoading,
     activeRoleFilter,
     setActiveRoleFilter,
+    activeBranchFilter,
+    handleBranchFilterChange,
     selectedPeriod,
     isConfigDrawerOpen,
     setIsConfigDrawerOpen,

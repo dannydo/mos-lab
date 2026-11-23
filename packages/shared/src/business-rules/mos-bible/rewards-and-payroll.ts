@@ -192,6 +192,7 @@ export const MOS_BIBLE_REWARDS_AND_PAYROLL_COMMANDMENTS: readonly MosBibleComman
       'Quy tắc Tự Tư Vấn & Tự Checkout trên /ios-app (Phân quyền CV🪶 & 🪶CV🪶): CV🪶 (1 lông · CVL) được xem danh sách khách hàng của chính mình (assigned_staff_id = mình) trên /ios-app, tự xem hồ sơ khách (lịch sử mi, số dư gói Combo Live vs Not Combo Live), tự bấm Check-in, Tư vấn chọn dịch vụ / bán gói Combo mới, Khảo sát hài lòng (HI), thêm Dưỡng mi Yeppeum và bấm Chốt Check-out mà không cần nhờ CC. 🪶CV🪶 (2 lông · CVLL) ngoài khách của mình còn được xem danh sách khách trong tiệm để hỗ trợ Check-in / Tư vấn / Check-out chéo giùm cho CV khác.',
       'Quy tắc Chia Tip 50/50 Check-in & Check-out, Gộp Giá Trị Khi Mua Nhiều Combo Cùng Lúc & Ghi Nhận Thưởng Theo Người Checkout: Phần 20% Tip tư vấn giữ nguyên quy tắc chia 50/50: người bấm Check-in (check_in_staff_id) nhận 10% Tip và người bấm Check-out (check_out_staff_id) nhận 10% Tip (cộng với 70% Tip làm mi của assigned_staff_id = 90% Tip khi CVL tự làm trọn gói; Báo Cáo CV đối chiếu trực tiếp tip_percentage trong bảng staff_tip để tuyệt đối không nhân trùng 9/7). Đơn hàng có bán gói Combo (order_service_combo) hoặc sản phẩm Dưỡng mi (order_product) ghi nhận thưởng CVL cho đúng người thực hiện Check-out (os.check_out_staff_id = CVL/CVLL); nếu khách mua 2 (hoặc nhiều) gói Combo cùng lúc trên cùng 1 đơn (order_id), bắt buộc cộng gộp tổng giá trị các gói lại rồi tính thưởng 1 lần theo công thức < 2M = 50K, mỗi 1M kế tiếp = +50K trong CAREER_PROGRESSION_RULES. Nếu CC thực hiện Check-out trên đơn CV thường thì tính theo quy chế Combo-Sold của CC và không cộng trùng sang Báo Cáo CV. Riêng khi CVL đang trong kỳ Training có Mentor CC kèm cặp (Điều răn CC-006), toàn bộ thưởng Gói Combo, Dưỡng mi Yeppeum và +20% Tip trên đơn của CVL đều ghi nhận trực tiếp 100% cho CVL dù CC bấm Check-in/Check-out giùm.',
       'Kết chuyển Sổ sách 100% tương thích iOS App cũ (Idempotent Legacy PHP Bridge): Mọi ca hoàn tất trên /ios-app đều đồng bộ qua chuỗi API gốc /1/order/... của hệ thống quản trị (kèm khóa chống gửi đúp theo order_id) để bảo đảm không sai lệch một đồng ở cả 3 sổ: Tiền của khách hàng (user_service_balance, user_balance), Tiền thưởng nhân viên (staff_bonus, staff_tip, Báo Cáo CV & CC) và Thuế với nhà nước (order_payment, report_order, accountant_revenue_gst).',
+      'Khóa Phân Nhóm Thưởng Vòng Xoay (CC user_group_id === 5 Guard): Khi đơn hàng tự Check-out bởi CV🪶 (user_group_id === 4) có Check-in bởi CC (user_group_id === 5), nhánh thưởng client-consultant trong generate-staff-bonus.php chỉ được phép tính cho nhân sự thực sự thuộc nhóm CC (user_group_id === 5). Tuyệt đối không ghi nhầm dòng thưởng 50% theo vai trò check_out cho CV🪶/KTV vì ràng buộc duy nhất (user_id, order_service_id, staff_bonus_rule_id) trong StaffBonus::validation() sẽ chặn nhánh technician 100% phía sau, gây hụt 50% tiền thưởng vòng xoay và điểm tích lũy.',
       'Quy chuẩn Hiển thị Lông Vũ Vector trên Giao diện (UI Vector Feather Invariant): Ký tự Unicode Feather 🪶 (U+1FAB6) trên font Apple Color Emoji của macOS/iOS bị render thành màu nâu sọc vằn, ở kích cỡ nhỏ (10-14px) nhìn giống ổ bánh mì baguette (🥖) hoặc điếu thuốc, làm tổn hại đến sự sang trọng, thanh thoát của thương hiệu Wings. Do đó, trên toàn bộ giao diện Web và iOS App, BẮT BUỘC sử dụng component vector <CvFeather1Badge /> và <CvFeather2Badge /> (kèm <FeatherSvg /> từ lucide-react) với màu vàng kim (text-amber-400 / #FFB400 hoặc #F59E0B) và đường nét vector sắc sảo, tuyệt đối không render chuỗi ký tự emoji thô 🪶 trên UI người dùng.',
     ],
     rationale:
@@ -235,8 +236,8 @@ export const MOS_BIBLE_REWARDS_AND_PAYROLL_COMMANDMENTS: readonly MosBibleComman
     ],
     routeScopes: ['/dashboard/career-path', '/dashboard/cv', '/dashboard/cc', '/ios-app'],
     status: 'ACTIVE',
-    version: '2.8.0',
-    effectiveFrom: '2026-11-12',
+    version: '2.9.0',
+    effectiveFrom: '2026-11-22',
     sources: [
       { label: 'Kinh Thánh mOS · Điều răn CV-002', reference: 'packages/shared/src/business-rules/mos-bible.ts' },
       {
@@ -251,6 +252,10 @@ export const MOS_BIBLE_REWARDS_AND_PAYROLL_COMMANDMENTS: readonly MosBibleComman
       {
         label: 'Idempotent Legacy PHP Bridge',
         reference: 'apps/api/src/modules/ios/services/ios-legacy-bridge.service.ts',
+      },
+      {
+        label: 'Legacy Bonus Role Guard (WingsLashes)',
+        reference: 'WingsLashes/Server/src/api/1/tool/generate-staff-bonus.php',
       },
     ],
   },
@@ -348,7 +353,7 @@ export const MOS_BIBLE_REWARDS_AND_PAYROLL_COMMANDMENTS: readonly MosBibleComman
     commandments: [
       'Ghép cặp 1-kèm-1 cố định theo kỳ cấu hình động (CVL_TRAINING_MENTORSHIP_CONFIG trong crmConfig, chỉ Admin / Super Admin được chỉnh sửa): Mỗi cặp quy định rõ 1 Mentor CC kèm 1 Mentee CVL kèm khoảng ngày hiệu lực [startDate, endDate] (ví dụ Tháng 11/2026 tại Đề Thám: Diễm Hương kèm Thảo Ly, Thục Nghi kèm Khanh Cao tính trọn tháng 01/11/2026 – 30/11/2026).',
       'Triệt tiêu 100% thưởng của mọi CC trên đơn của Mentee CVL đang trong kỳ Training: Bất kể CC nào bấm Check-in hay Check-out giùm trên đơn có assigned_staff_id là Mentee CVL (kể cả Mentor CC lẫn các CC khác trong tiệm), tất cả CC đều nhận 0đ và 0 điểm từ đơn đó — loại trừ khỏi CC Xoay, CC Daily Sales Bonus (Combo, Nâng cấp, Sản phẩm, Thu nợ, Lượt khách) và 20% CC Tip. Các đơn phục vụ CV thường khác vẫn tính thưởng CC bình thường.',
-      'Quy nạp trực tiếp 100% quyền lợi về Mentee CVL trên Thu nhập CV: Trong suốt khoảng ngày hiệu lực Training, mọi gói Combo (order_service_combo), sản phẩm Dưỡng mi Yeppeum (order_product) và phần +20% Tip tư vấn/checkout phát sinh trên đơn của Mentee CVL đều được ghi nhận trực tiếp cho Mentee CVL ở tầng tính toán mOS (không sửa bảng giao dịch gốc staff_tip của Legacy MySQL) để Mentee CVL hưởng trọn 90% Tip, thưởng bậc thang Combo, thưởng Dưỡng mi và chênh lệch lương giờ +2.000đ/giờ khi mở khóa.',
+      'Quy nạp trực tiếp 100% quyền lợi về Mentee CVL trên Thu nhập CV & Đồng nhất 90% Tip trên staff_tip: Trong suốt khoảng ngày hiệu lực Training, mọi gói Combo (order_service_combo), sản phẩm Dưỡng mi Yeppeum (order_product) và phần +20% Tip tư vấn/checkout phát sinh trên đơn của Mentee CVL đều được ghi nhận trực tiếp 100% cho Mentee CVL (hợp nhất dòng tip ≤ 20% của Mentor/CC trên cùng ca vào dòng 90% của Mentee CVL trong staff_tip cũng như ở tầng tính toán mOS) để cả App Wings lẫn mOS đều hiển thị thống nhất 90% Tip (Mentor nhận 0đ tip), cùng thưởng bậc thang Combo, thưởng Dưỡng mi và chênh lệch lương giờ +2.000đ/giờ khi mở khóa.',
       'Công thức Thưởng Đào Tạo Cuối Tháng cho Mentor CC trên Thu nhập CC: Cơ sở nhân 50% bằng đúng Tổng đãi ngộ tăng thêm của Mentee CVL trên bảng Thu nhập CV (totalAdditionalIncome = Lương giờ tăng thêm + Tip tư vấn +20% + Thưởng Gói Combo bậc thang + Thưởng Dưỡng mi Yeppeum).',
       'Điều kiện mở khóa đồng bộ Điều răn CV-002 (≥ 20,0% Combo trên tập khách Not Combo Live): Nếu cuối kỳ Mentee CVL đạt tỷ lệ chốt Combo ≥ 20,0%, Mentor CC được cộng trực tiếp (1.000.000đ + 50% × totalAdditionalIncome) vào Tổng Thu Nhập và Thực Lãnh trên bảng Thu nhập CC. Nếu Mentee CVL không đạt ngưỡng 20,0%, Mentor CC mất toàn bộ gói thưởng Training (nhận 0đ, không nhận cả 1.000.000đ cứng lẫn 50%).',
     ],
@@ -376,8 +381,8 @@ export const MOS_BIBLE_REWARDS_AND_PAYROLL_COMMANDMENTS: readonly MosBibleComman
     ],
     routeScopes: ['/dashboard/cc', '/dashboard/cv', '/dashboard/career-path', '/ios-app'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-11-01',
+    version: '1.1.0',
+    effectiveFrom: '2026-11-21',
     sources: [
       {
         label: 'Cấu hình & Công thức Thưởng Đào Tạo CVL',

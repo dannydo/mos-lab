@@ -145,8 +145,41 @@ export async function runCrawler() {
     const warmPage = await context.newPage();
     warmPage.setDefaultTimeout(8000);
     await warmPage.goto(`${baseUrl}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    // Thao tác canvas 2D đầu tiên có thể bị chặn đến ~80s trong Chromium headless "lạnh" (xem
+    // investigate_frozen_routes.md). Trang dashboard tự vẽ badge favicon ngay khi tải, nên chờ một
+    // thao tác canvas thật hoàn tất ở đây (tối đa 150s) để các route sau không bị treo oan.
+    const canvasProbeStart = Date.now();
+    const canvasProbe = await Promise.race([
+      warmPage
+        .evaluate(() => {
+          const c = document.createElement('canvas');
+          c.width = 32;
+          c.height = 32;
+          const ctx2d = c.getContext('2d');
+          const s = performance.now();
+          if (ctx2d) {
+            ctx2d.clearRect(0, 0, 32, 32);
+            ctx2d.fillText('m', 16, 17);
+          }
+          return Math.round(performance.now() - s);
+        })
+        .then((ms) => ({ ok: true, ms })),
+      new Promise((resolve) => setTimeout(() => resolve({ ok: false }), 150000)),
+    ]);
+    const canvasWaitMs = Date.now() - canvasProbeStart;
+    if (canvasProbe.ok) {
+      console.log(
+        `[Crawler] Warm-up canvas: thao tác đầu tiên xong, chờ ${canvasWaitMs}ms (thao tác ${canvasProbe.ms}ms).` +
+          (canvasWaitMs > 5000 ? ' ⚠️ Máy đang "lạnh": đã khởi tạo canvas trước khi đo.' : '')
+      );
+    } else {
+      console.warn(`[Crawler] ⚠️ Warm-up canvas chưa xong sau ${canvasWaitMs}ms; các route đo có thể bị treo oan.`);
+    }
     await warmPage.waitForTimeout(3000);
-    await Promise.race([warmPage.close({ runBeforeUnload: false }).catch(() => {}), new Promise((r) => setTimeout(r, 3000))]);
+    await Promise.race([
+      warmPage.close({ runBeforeUnload: false }).catch(() => {}),
+      new Promise((r) => setTimeout(r, 3000)),
+    ]);
     console.log('[Crawler] Warm-up hoàn tất (không tính vào số đo).');
   } catch (warmErr) {
     console.warn(`[Crawler] Warm-up bỏ qua: ${warmErr.message}`);
@@ -484,7 +517,9 @@ export async function runCrawler() {
         return loads.length ? Math.round(loads.reduce((a, b) => a + b, 0) / loads.length) : null;
       })(),
       // Thời gian bot click tab/popup, tách riêng khỏi tải trang.
-      averageInteractionMs: Math.round(results.reduce((sum, r) => sum + (r.interactionMs || 0), 0) / (results.length || 1)),
+      averageInteractionMs: Math.round(
+        results.reduce((sum, r) => sum + (r.interactionMs || 0), 0) / (results.length || 1)
+      ),
       blockedInteractionRoutes: results.filter((r) => r.interactionBlocked).length,
       mainThreadBlockedRoutes: results.filter((r) => r.mainThreadBlocked).map((r) => r.path),
       totalTabClickFailures: results.reduce((sum, r) => sum + (r.tabClickFailures || 0), 0),

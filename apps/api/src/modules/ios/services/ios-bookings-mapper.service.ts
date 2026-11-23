@@ -5,6 +5,7 @@ import {
   IosCartProductItem,
   IosPromotionOption,
   NaturalLashConsultationAttributes,
+  normalizeCustomerDateOfBirth,
   resolveActiveBookingComboWallets,
   resolveIosCustomerTypeIcon,
   resolveIosHasDiscountTag,
@@ -219,6 +220,7 @@ export function mapLiveOrdersToBookings(params: {
       comboRedemption,
       cartProducts,
       overrideBilling: override.billing,
+      legacyTipAmount: r.legacy_tip_amount ?? 0,
       assignedStaffId,
       checkInStaffId,
       checkOutStaffId,
@@ -345,6 +347,7 @@ export function mapLiveOrdersToBookings(params: {
       customerName: (r.customer_name || 'Khách').replace(/\s*\(\s*Khách\s*Mới\s*\)/i, '').trim(),
       customerPhone: formatPhoneNumberDots(r.customer_phone, !canViewFullPhone),
       customerId,
+      customerDateOfBirth: normalizeCustomerDateOfBirth(r.customer_dob),
       diamondBalance: customerContext.diamondBalanceMap.get(customerId) ?? 0,
       customerAvatar:
         (override.customerAvatar !== undefined ? override.customerAvatar : customerAvatarMap[String(customerId)]) ||
@@ -567,6 +570,7 @@ export function buildDemoModeBookings(params: {
       skipUpperCombo: resolvedDemoWallets.skipUpperCombo,
       skipUnderCombo: resolvedDemoWallets.skipUnderCombo,
       customerPhone: formatPhoneNumberDots(mock.customerPhone, !canViewFullPhone),
+      customerDateOfBirth: normalizeCustomerDateOfBirth((mock as unknown as IosBookingItem).customerDateOfBirth),
       customerVisits: mock.customerVisits ?? 1,
       customerNote: mock.customerNote ?? '',
       customerAvatar:

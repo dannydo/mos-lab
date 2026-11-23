@@ -51,6 +51,8 @@ export default function CareerPathPage() {
             lastSyncedAt={state.lastSyncedAt}
             activeRoleFilter={state.activeRoleFilter}
             onRoleFilterChange={state.setActiveRoleFilter}
+            activeBranchFilter={state.activeBranchFilter}
+            onBranchFilterChange={state.handleBranchFilterChange}
             period={state.selectedPeriod}
             onPeriodChange={state.handlePeriodChange}
             onSetRole={state.isDanny ? state.handleSetRole : undefined}
@@ -122,6 +124,8 @@ export default function CareerPathPage() {
         safeConfig={state.safeConfig}
         staffList={state.staffList}
         selectedStaffId={state.selectedStaffId}
+        activeBranchFilter={state.activeBranchFilter}
+        onBranchFilterChange={state.handleBranchFilterChange}
         onSelectStaff={state.handleSelectStaff}
         isEncyclopediaDrawerOpen={state.isEncyclopediaDrawerOpen}
         onCloseEncyclopediaDrawer={() => state.setIsEncyclopediaDrawerOpen(false)}

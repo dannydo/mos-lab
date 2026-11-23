@@ -2,6 +2,8 @@ export type CareerRole = 'KTV' | 'CV' | 'CV_PLUS' | 'CV_PLUS_PLUS' | 'FM' | 'CHO
 
 export type CareerPeriod = 'last_30_days' | 'this_month' | 'last_month' | 'last_3_months';
 
+export type CareerBranchFilter = 'ALL' | 'DE_THAM' | 'ESTELLA';
+
 export type CareerProgressionStatus = 'IN_PROGRESS' | 'TRIAL_GATE' | 'QUALIFIED' | 'PROMOTED' | 'SPECIALIST_PATH';
 
 export interface CvToCvPlusRequirements {

@@ -36,6 +36,7 @@ interface Screen08LashProgressTimerProps {
   onFinishTimer: () => void;
   onEditService?: () => void;
   isAdmin?: boolean;
+  isSimulationMode?: boolean;
   onRevertToIncoming?: (bookingId: number) => void;
 }
 
@@ -45,6 +46,7 @@ export function Screen08LashProgressTimer({
   onFinishTimer,
   onEditService,
   isAdmin = false,
+  isSimulationMode = false,
   onRevertToIncoming,
 }: Screen08LashProgressTimerProps) {
   // 1. Tính toán thời gian định mức (Target Duration) tách biệt Vòng 1 Mi Trên & Vòng 2 Mi Dưới
@@ -483,9 +485,43 @@ export function Screen08LashProgressTimer({
           </div>
         </div>
 
-        {/* Action Buttons: Pause/Resume (Admin Only) & Finish */}
+        {isSimulationMode && (
+          <div
+            className={`mx-1 p-2.5 rounded-2xl border flex items-center justify-between gap-2 ${
+              isDark ? 'bg-pink-950/30 border-pink-500/35 text-pink-100' : 'bg-pink-50 border-pink-200 text-pink-950'
+            }`}
+          >
+            <span className="text-[11px] font-bold truncate">🧪 Giả lập bấm giờ (Sandbox):</span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setSeconds((s) => s + 900)}
+                className={`px-2 py-1 rounded-lg border text-[11px] font-bold tabular-nums cursor-pointer ${
+                  isDark
+                    ? 'bg-neutral-900 border-pink-400/40 text-pink-200 hover:bg-neutral-800'
+                    : 'bg-white border-pink-300 text-pink-800 hover:bg-pink-100'
+                }`}
+              >
+                +15p
+              </button>
+              <button
+                type="button"
+                onClick={() => setSeconds((s) => s + 1800)}
+                className={`px-2 py-1 rounded-lg border text-[11px] font-bold tabular-nums cursor-pointer ${
+                  isDark
+                    ? 'bg-neutral-900 border-pink-400/40 text-pink-200 hover:bg-neutral-800'
+                    : 'bg-white border-pink-300 text-pink-800 hover:bg-pink-100'
+                }`}
+              >
+                +30p
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons: Pause/Resume (Admin or Sandbox) & Finish */}
         <div className="flex gap-2.5 pt-1 mx-1">
-          {isAdmin && (
+          {(isAdmin || isSimulationMode) && (
             <button
               onClick={() => setIsRunning(!isRunning)}
               className={`py-3.5 px-4 rounded-2xl font-bold text-[13.5px] active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${

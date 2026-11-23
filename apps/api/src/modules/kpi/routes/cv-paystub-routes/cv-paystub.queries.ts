@@ -3,7 +3,10 @@ import { SafeAny } from '@mos-lab/shared';
 import { TeamService } from '../../../teams/team.service.js';
 import { StaffOffDayService } from '../../../staff/services/staff-off-day.service.js';
 import { HolidayWorkService } from '../../../holiday-work/holiday-work.service.js';
-import { CvlTrainingMentorshipService } from '../../services/cvl-training-mentorship.service.js';
+import {
+  createFastifyLegacyTipExecutor,
+  CvlTrainingMentorshipService,
+} from '../../services/cvl-training-mentorship.service.js';
 import { CvPaystubRawSources, getExtendedWeekBounds } from './cv-paystub.helpers.js';
 
 export async function fetchActiveCvStaffProfiles(
@@ -257,6 +260,11 @@ export async function fetchCvPaystubSources(
     }),
     CvlTrainingMentorshipService.getActivePairsForRange(fastify, startPart, endPart),
   ]);
+
+  await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(
+    createFastifyLegacyTipExecutor(fastify),
+    activeTrainingPairs
+  );
 
   const transferredTrainingTipMap = await CvlTrainingMentorshipService.queryTransferredCcTipsByMentee(
     fastify,

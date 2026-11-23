@@ -1,5 +1,11 @@
-import type { CareerProgressionConfig, StaffCareerStatus } from '@mos-lab/shared';
-import { DEFAULT_CAREER_PROGRESSION_CONFIG, calculateComboBonus, formatComboTierBracketLabel } from '@mos-lab/shared';
+import type { CareerProgressionConfig, CareerStaffSummary, StaffCareerStatus } from '@mos-lab/shared';
+import {
+  DEFAULT_CAREER_PROGRESSION_CONFIG,
+  calculateComboBonus,
+  formatComboTierBracketLabel,
+  matchesCareerBranchFilter as matchesSharedCareerBranchFilter,
+  resolveCareerBranchFilterStoreId,
+} from '@mos-lab/shared';
 
 export { calculateComboBonus, formatComboTierBracketLabel };
 
@@ -336,5 +342,90 @@ export function computeHudMetrics(
       isPassed: isBananaPassed,
       tooltip: `Chuối yêu thương: ${bananaCount}/${minBananaCount} chuối · ${isBananaPassed ? '✓ Đạt chuẩn' : '⚡ Chưa đủ'} (Bấm để xem)`,
     },
+  ];
+}
+
+export interface CareerBranchOption {
+  key: string;
+  label: string;
+  count: number;
+}
+
+const BRANCH_DISPLAY_PRIORITY: Record<string, number> = {
+  'Đề Thám': 1,
+  'Estella Place': 2,
+  PXL: 3,
+};
+
+/** Resolve canonical branch key for Career Path filtering. */
+export function getStaffBranchKey(staff: Pick<CareerStaffSummary, 'branchName' | 'branchCode' | 'storeId'>): string {
+  const name = staff.branchName?.trim();
+  if (name) return name;
+  const code = staff.branchCode?.trim();
+  if (code) return code;
+  if (staff.storeId) return String(staff.storeId);
+  return '';
+}
+
+/** Check whether a staff member matches the selected career role filter. */
+export function matchesCareerRoleFilter(
+  staff: Pick<CareerStaffSummary, 'careerRole' | 'role'>,
+  roleFilter: string
+): boolean {
+  if (!roleFilter || roleFilter === 'ALL') return true;
+  if (roleFilter === 'CC') return staff.careerRole === 'CC' || (staff.role || '').toLowerCase() === 'cc';
+  if (roleFilter === 'FM')
+    return staff.careerRole === 'FM' || ['manager', 'fm'].includes((staff.role || '').toLowerCase());
+  return staff.careerRole === roleFilter;
+}
+
+/** Check whether a staff member matches the selected branch filter. */
+export function matchesCareerBranchFilter(
+  staff: Pick<CareerStaffSummary, 'branchName' | 'branchCode' | 'storeId'>,
+  branchFilter: string
+): boolean {
+  if (!branchFilter || branchFilter === 'ALL') return true;
+  if (resolveCareerBranchFilterStoreId(branchFilter) !== null) {
+    return matchesSharedCareerBranchFilter(staff, branchFilter);
+  }
+  return getStaffBranchKey(staff) === branchFilter;
+}
+
+/** Build deterministic branch filter options with per-branch counts for the active role. */
+export function buildCareerBranchOptions(
+  staffList: CareerStaffSummary[],
+  activeRoleFilter = 'ALL'
+): CareerBranchOption[] {
+  const allBranches = new Set<string>();
+  const roleMatchedCounts = new Map<string, number>();
+  let totalForRole = 0;
+
+  for (const staff of staffList) {
+    const branchKey = getStaffBranchKey(staff);
+    if (branchKey) {
+      allBranches.add(branchKey);
+    }
+    if (matchesCareerRoleFilter(staff, activeRoleFilter)) {
+      totalForRole += 1;
+      if (branchKey) {
+        roleMatchedCounts.set(branchKey, (roleMatchedCounts.get(branchKey) || 0) + 1);
+      }
+    }
+  }
+
+  const sortedBranches = Array.from(allBranches).sort((a, b) => {
+    const pa = BRANCH_DISPLAY_PRIORITY[a] ?? 99;
+    const pb = BRANCH_DISPLAY_PRIORITY[b] ?? 99;
+    if (pa !== pb) return pa - pb;
+    return a.localeCompare(b, 'vi');
+  });
+
+  return [
+    { key: 'ALL', label: 'Tất cả chi nhánh', count: totalForRole },
+    ...sortedBranches.map((branch) => ({
+      key: branch,
+      label: branch,
+      count: roleMatchedCounts.get(branch) || 0,
+    })),
   ];
 }
