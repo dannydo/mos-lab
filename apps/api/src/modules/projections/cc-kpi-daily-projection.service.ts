@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildDailyBonusSummary } from '../kpi/services/cc-kpi.service.js';
 
 export const CC_KPI_DAILY_PROJECTION_KEY = 'cc-kpi-daily';
-export const CC_KPI_DAILY_FORMULA_VERSION = 'cc-kpi-daily-v1';
+export const CC_KPI_DAILY_FORMULA_VERSION = 'cc-kpi-daily-v2';
 
 type DailyRow = Record<string, unknown>;
 
@@ -208,6 +208,16 @@ export class CcKpiDailyProjectionService {
         single_sales: asNumber(row.single_sales),
         debt_collected: asNumber(row.debt_collected),
         daily_bonus: asNumber(row.daily_bonus),
+        ...(row.actual_combo_gross !== undefined
+          ? {
+              actual_combo_gross: asNumber(row.actual_combo_gross),
+              actual_combo_net: asNumber(row.actual_combo_net),
+              actual_product_gross: asNumber(row.actual_product_gross),
+              actual_product_net: asNumber(row.actual_product_net),
+              actual_single_gross: asNumber(row.actual_single_gross),
+              actual_single_net: asNumber(row.actual_single_net),
+            }
+          : {}),
       })),
       elapsedRatio
     );

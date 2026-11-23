@@ -19,6 +19,7 @@ import {
   resolveFalRule,
   splitCcShares,
 } from './cc-kpi.service.js';
+import { allocateActualRevenueShares } from './cc-kpi/cc-kpi-actual-revenue.helper.js';
 
 const expectedRules = ['Fix', 'Adjust', 'Log', 'Replace'] as const;
 
@@ -369,4 +370,71 @@ test('MOS-BUG-218: debt_collected from combo debt payments is recorded into tota
 
   const dailyBonus = Math.round((totalSales * tierRate) / 100);
   assert.equal(dailyBonus, 340_000);
+});
+
+test('MOS-BUG-253: allocateActualRevenueShares preserves 100% of salon revenue across CCs', () => {
+  // Both CCs active & distinct -> 50/50 split
+  assert.deepEqual(allocateActualRevenueShares(10, 20, [10, 20], false), [
+    { staffId: 20, isPrimarySplit: true, share: 0.5 },
+    { staffId: 10, isPrimarySplit: false, share: 0.5 },
+  ]);
+
+  // Only CC IN active (CC OUT is a CVL) -> 100% attributed to active CC when viewing all CCs
+  assert.deepEqual(allocateActualRevenueShares(10, 999, [10, 20], false), [
+    { staffId: 10, isPrimarySplit: true, share: 1 },
+  ]);
+
+  // Filtering a single CC keeps strict 50% share
+  assert.deepEqual(allocateActualRevenueShares(10, 999, [10], true), [
+    { staffId: 10, isPrimarySplit: true, share: 0.5 },
+  ]);
+
+  // Neither active -> falls back to check_out || check_in || 0 so salon total never drops
+  assert.deepEqual(allocateActualRevenueShares(888, 999, [10, 20], false), [
+    { staffId: 999, isPrimarySplit: true, share: 1 },
+  ]);
+  assert.deepEqual(allocateActualRevenueShares(null, null, [10, 20], false), [
+    { staffId: 0, isPrimarySplit: true, share: 1 },
+  ]);
+});
+
+test('MOS-BUG-253: buildDailyBonusSummary aggregates canonical actual Gross/Net totals alongside CC bonus totals', () => {
+  const summary = buildDailyBonusSummary(
+    [
+      {
+        combo_sales: 100_000_000,
+        product_sales: 5_000_000,
+        single_sales: 50_000_000,
+        debt_collected: 2_000_000,
+        daily_bonus: 1_500_000,
+        actual_combo_gross: 150_000_000,
+        actual_combo_net: 138_888_889,
+        actual_product_gross: 8_000_000,
+        actual_product_net: 7_407_407,
+        actual_single_gross: 60_000_000,
+        actual_single_net: 55_555_556,
+      },
+      {
+        combo_sales: 30_000_000,
+        product_sales: 1_000_000,
+        single_sales: 20_000_000,
+        debt_collected: 0,
+        daily_bonus: 500_000,
+        actual_combo_gross: 93_140_555,
+        actual_combo_net: 86_241_255,
+        actual_product_gross: 2_000_000,
+        actual_product_net: 1_851_852,
+        actual_single_gross: 30_000_000,
+        actual_single_net: 27_777_778,
+      },
+    ],
+    0.5
+  );
+
+  assert.equal(summary.actualComboGross, 243_140_555);
+  assert.equal(summary.actualComboNet, 225_130_144);
+  assert.equal(summary.actualProductGross, 10_000_000);
+  assert.equal(summary.actualSingleGross, 90_000_000);
+  assert.equal(summary.actualTotalGross, 343_140_555);
+  assert.equal(summary.totalCcBonus, 2_000_000);
 });

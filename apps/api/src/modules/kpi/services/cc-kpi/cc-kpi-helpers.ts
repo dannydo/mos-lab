@@ -195,6 +195,12 @@ export interface DailySalesBonusSummaryInput {
   single_sales?: number | null;
   debt_collected?: number | null;
   daily_bonus?: number | null;
+  actual_combo_gross?: number | null;
+  actual_combo_net?: number | null;
+  actual_product_gross?: number | null;
+  actual_product_net?: number | null;
+  actual_single_gross?: number | null;
+  actual_single_net?: number | null;
 }
 
 export function buildDailyBonusSummary(
@@ -209,6 +215,14 @@ export function buildDailyBonusSummary(
     totalSingleSales: number;
     totalSales: number;
     totalCcBonus: number;
+    actualComboGross?: number;
+    actualComboNet?: number;
+    actualProductGross?: number;
+    actualProductNet?: number;
+    actualSingleGross?: number;
+    actualSingleNet?: number;
+    actualTotalGross?: number;
+    actualTotalNet?: number;
   }
 ) {
   const totalComboSales = Math.round(result.reduce((sum, r) => sum + (Number(r.combo_sales) || 0), 0));
@@ -218,6 +232,34 @@ export function buildDailyBonusSummary(
   // Total sales for the top KPI summary includes all service categories (combo + product + single + debt)
   const totalSales = Math.round(totalComboSales + totalProductSales + totalSingleSales + totalDebtCollected);
   const totalCcBonus = Math.round(result.reduce((sum, r) => sum + (Number(r.daily_bonus) || 0), 0));
+
+  const hasActualFields = result.some((r) => r.actual_combo_gross !== undefined);
+  const actualComboGross = hasActualFields
+    ? Math.round(result.reduce((sum, r) => sum + (Number(r.actual_combo_gross) || 0), 0))
+    : undefined;
+  const actualComboNet = hasActualFields
+    ? Math.round(result.reduce((sum, r) => sum + (Number(r.actual_combo_net) || 0), 0))
+    : undefined;
+  const actualProductGross = hasActualFields
+    ? Math.round(result.reduce((sum, r) => sum + (Number(r.actual_product_gross) || 0), 0))
+    : undefined;
+  const actualProductNet = hasActualFields
+    ? Math.round(result.reduce((sum, r) => sum + (Number(r.actual_product_net) || 0), 0))
+    : undefined;
+  const actualSingleGross = hasActualFields
+    ? Math.round(result.reduce((sum, r) => sum + (Number(r.actual_single_gross) || 0), 0))
+    : undefined;
+  const actualSingleNet = hasActualFields
+    ? Math.round(result.reduce((sum, r) => sum + (Number(r.actual_single_net) || 0), 0))
+    : undefined;
+  const actualTotalGross =
+    actualComboGross !== undefined && actualProductGross !== undefined && actualSingleGross !== undefined
+      ? actualComboGross + actualProductGross + actualSingleGross
+      : undefined;
+  const actualTotalNet =
+    actualComboNet !== undefined && actualProductNet !== undefined && actualSingleNet !== undefined
+      ? actualComboNet + actualProductNet + actualSingleNet
+      : undefined;
 
   const safeRatio = elapsedRatio > 0 ? elapsedRatio : 1;
 
@@ -232,6 +274,26 @@ export function buildDailyBonusSummary(
     projectedSingleSales: Math.round(totalSingleSales / safeRatio),
     projectedTotalSales: Math.round(totalSales / safeRatio),
     projectedCcBonus: Math.round(totalCcBonus / safeRatio),
+    ...(hasActualFields
+      ? {
+          actualComboGross,
+          actualComboNet,
+          actualProductGross,
+          actualProductNet,
+          actualSingleGross,
+          actualSingleNet,
+          actualTotalGross,
+          actualTotalNet,
+          projectedActualComboGross: Math.round((actualComboGross || 0) / safeRatio),
+          projectedActualComboNet: Math.round((actualComboNet || 0) / safeRatio),
+          projectedActualProductGross: Math.round((actualProductGross || 0) / safeRatio),
+          projectedActualProductNet: Math.round((actualProductNet || 0) / safeRatio),
+          projectedActualSingleGross: Math.round((actualSingleGross || 0) / safeRatio),
+          projectedActualSingleNet: Math.round((actualSingleNet || 0) / safeRatio),
+          projectedActualTotalGross: Math.round((actualTotalGross || 0) / safeRatio),
+          projectedActualTotalNet: Math.round((actualTotalNet || 0) / safeRatio),
+        }
+      : {}),
     elapsedRatioPercent: Math.round(elapsedRatio * 1000) / 10,
     comparison,
   };

@@ -174,21 +174,36 @@ export const CcThuongLeaderboardCard: React.FC<CcThuongLeaderboardCardProps> = (
       key: 'comboSales',
       width: 160,
       align: 'right',
-      render: (val: number) => (
-        <div className="w-full text-right">
-          <div className="tabular-nums font-semibold text-sky-600 dark:text-sky-400 text-xs">
-            {Math.round(val || 0).toLocaleString('vi-VN')} đ
-          </div>
-          {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
-            <div
-              className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
-              title={`Dự kiến cả ${periodNoun}`}
-            >
-              🔮 ~{Math.round((val || 0) / ratio).toLocaleString('vi-VN')} đ
+      render: (val: number, record: DailySalesBonusLeaderboardEntry) => {
+        const displayVal = record.actualComboSales ?? val ?? 0;
+        const bonusCombo = record.bonusComboSales;
+        const hasDiff = bonusCombo !== undefined && Math.round(bonusCombo) !== Math.round(displayVal);
+        const content = (
+          <div className={`w-full text-right${hasDiff ? ' cursor-help' : ''}`}>
+            <div className="tabular-nums font-semibold text-sky-600 dark:text-sky-400 text-xs">
+              {Math.round(displayVal).toLocaleString('vi-VN')} đ
             </div>
-          )}
-        </div>
-      ),
+            {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+              <div
+                className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
+                title={`Dự kiến cả ${periodNoun}`}
+              >
+                🔮 ~{Math.round(displayVal / ratio).toLocaleString('vi-VN')} đ
+              </div>
+            )}
+          </div>
+        );
+
+        if (!hasDiff) return content;
+
+        return (
+          <Tooltip
+            title={`Doanh thu Combo thực tế: ${Math.round(displayVal).toLocaleString('vi-VN')} đ • Doanh số Combo tính thưởng (đã trừ nợ/CVL training + nâng cấp): ${Math.round(bonusCombo || 0).toLocaleString('vi-VN')} đ`}
+          >
+            {content}
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'SP & Single (Tham Khảo)',
@@ -198,12 +213,12 @@ export const CcThuongLeaderboardCard: React.FC<CcThuongLeaderboardCardProps> = (
       align: 'right',
       render: (val: number, record: DailySalesBonusLeaderboardEntry) => (
         <Tooltip
-          title={`Đã bán ${val} Sản phẩm. Doanh số Single tham khảo: ${Math.round(record.singleSales || 0).toLocaleString('vi-VN')} đ`}
+          title={`Đã bán ${val} Sản phẩm (${Math.round(record.actualProductSales || 0).toLocaleString('vi-VN')} đ). Doanh thu Single thực tế: ${Math.round(record.actualSingleSales ?? record.singleSales ?? 0).toLocaleString('vi-VN')} đ`}
         >
           <div className="w-full text-right">
             <div className="tabular-nums font-semibold text-purple-600 dark:text-purple-400 text-xs">{val} SP</div>
             <div className="tabular-nums text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Single: {Math.round(record.singleSales || 0).toLocaleString('vi-VN')} đ
+              Single: {Math.round(record.actualSingleSales ?? record.singleSales ?? 0).toLocaleString('vi-VN')} đ
             </div>
             {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
               <div
@@ -222,34 +237,35 @@ export const CcThuongLeaderboardCard: React.FC<CcThuongLeaderboardCardProps> = (
       dataIndex: 'totalSales',
       key: 'totalSales',
       align: 'right',
-      render: (val: number, record: DailySalesBonusLeaderboardEntry) => (
-        <Tooltip
-          title={
-            record.debtCollected && record.debtCollected > 0
-              ? `Combo: ${Math.round(record.comboSales || 0).toLocaleString('vi-VN')} đ • Thu nợ: ${Math.round(record.debtCollected).toLocaleString('vi-VN')} đ • SP: ${Math.round(val - (record.comboSales || 0) - (record.debtCollected || 0)).toLocaleString('vi-VN')} đ`
-              : undefined
-          }
-        >
-          <div className="w-full text-right cursor-help">
-            <div className="tabular-nums font-bold text-amber-600 dark:text-amber-400 text-xs">
-              {Math.round(val || 0).toLocaleString('vi-VN')} đ
+      render: (val: number, record: DailySalesBonusLeaderboardEntry) => {
+        const comboForBonus = record.bonusComboSales ?? record.comboSales ?? 0;
+        const debtCollected = record.debtCollected || 0;
+        const productForBonus = Math.max(0, val - comboForBonus - debtCollected);
+        return (
+          <Tooltip
+            title={`Doanh số tính thưởng: Combo ${Math.round(comboForBonus).toLocaleString('vi-VN')} đ • SP ${Math.round(productForBonus).toLocaleString('vi-VN')} đ • Thu nợ ${Math.round(debtCollected).toLocaleString('vi-VN')} đ`}
+          >
+            <div className="w-full text-right cursor-help">
+              <div className="tabular-nums font-bold text-amber-600 dark:text-amber-400 text-xs">
+                {Math.round(val || 0).toLocaleString('vi-VN')} đ
+              </div>
+              {debtCollected > 0 ? (
+                <div className="tabular-nums text-[10px] text-emerald-500 font-medium">
+                  Thu nợ: +{Math.round(debtCollected).toLocaleString('vi-VN')} đ
+                </div>
+              ) : null}
+              {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
+                <div
+                  className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
+                  title={`Dự kiến cả ${periodNoun}`}
+                >
+                  🔮 ~{Math.round((val || 0) / ratio).toLocaleString('vi-VN')} đ
+                </div>
+              )}
             </div>
-            {record.debtCollected && record.debtCollected > 0 ? (
-              <div className="tabular-nums text-[10px] text-emerald-500 font-medium">
-                Thu nợ: +{Math.round(record.debtCollected).toLocaleString('vi-VN')} đ
-              </div>
-            ) : null}
-            {!isPastPeriod && !isDayMode && ratio > 0 && ratio < 1 && (
-              <div
-                className="tabular-nums text-[10px] text-slate-400 font-medium mt-0.5"
-                title={`Dự kiến cả ${periodNoun}`}
-              >
-                🔮 ~{Math.round((val || 0) / ratio).toLocaleString('vi-VN')} đ
-              </div>
-            )}
-          </div>
-        </Tooltip>
-      ),
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Thưởng CC Bonus & Tiến Độ',

@@ -21,6 +21,22 @@ export interface CcThuongSummary {
   projectedSingleSales?: number;
   projectedTotalSales?: number;
   projectedCcBonus?: number;
+  actualComboGross?: number;
+  actualComboNet?: number;
+  actualProductGross?: number;
+  actualProductNet?: number;
+  actualSingleGross?: number;
+  actualSingleNet?: number;
+  actualTotalGross?: number;
+  actualTotalNet?: number;
+  projectedActualComboGross?: number;
+  projectedActualComboNet?: number;
+  projectedActualProductGross?: number;
+  projectedActualProductNet?: number;
+  projectedActualSingleGross?: number;
+  projectedActualSingleNet?: number;
+  projectedActualTotalGross?: number;
+  projectedActualTotalNet?: number;
   elapsedRatioPercent?: number;
   comparison?: DailySalesBonusPeriodComparison;
 }
@@ -147,16 +163,53 @@ export function useCcThuongData({
     void fetchData();
   }, [fetchData]);
 
+  const hasActualRevenue = useMemo(
+    () =>
+      summary?.actualComboGross !== undefined ||
+      data.some((r) => r.actual_combo_gross !== undefined),
+    [data, summary]
+  );
+
   // Mapped Data based on includeVat (ON: Gross with 8% VAT, OFF: Net before 8% VAT)
   const mappedData = useMemo(() => {
     if (!data || data.length === 0) return [];
     return data.map((r) => {
+      const actualCombo =
+        r.actual_combo_gross !== undefined
+          ? includeVat
+            ? r.actual_combo_gross || 0
+            : r.actual_combo_net || 0
+          : includeVat
+            ? Math.round((r.combo_sales || 0) * 1.08)
+            : r.combo_sales || 0;
+      const actualProduct =
+        r.actual_product_gross !== undefined
+          ? includeVat
+            ? r.actual_product_gross || 0
+            : r.actual_product_net || 0
+          : includeVat
+            ? Math.round((r.product_sales || 0) * 1.08)
+            : r.product_sales || 0;
+      const actualSingle =
+        r.actual_single_gross !== undefined
+          ? includeVat
+            ? r.actual_single_gross || 0
+            : r.actual_single_net || 0
+          : includeVat
+            ? Math.round((r.single_sales || 0) * 1.08)
+            : r.single_sales || 0;
+
       if (!includeVat) {
         // VAT OFF (Tắt VAT 8%): Use Net DB values directly from backend
-        return r;
+        return {
+          ...r,
+          actualComboDisplay: actualCombo,
+          actualProductDisplay: actualProduct,
+          actualSingleDisplay: actualSingle,
+        };
       }
 
-      // VAT ON (Bật VAT 8%): Multiply 1.08 for display sales columns (Gross with 8% VAT)
+      // VAT ON (Bật VAT 8%): Multiply 1.08 for bonus breakdown display columns (Gross with 8% VAT)
       return {
         ...r,
         combo_sales: Math.round((r.combo_sales || 0) * 1.08),
@@ -164,40 +217,44 @@ export function useCcThuongData({
         single_sales: Math.round((r.single_sales || 0) * 1.08),
         debt_collected: Math.round((r.debt_collected || 0) * 1.08),
         total_sales: Math.round((r.total_sales || 0) * 1.08),
+        actualComboDisplay: actualCombo,
+        actualProductDisplay: actualProduct,
+        actualSingleDisplay: actualSingle,
         // Keep daily_bonus unchanged as it is calculated on Net sales
       };
     });
   }, [data, includeVat]);
 
   const totalComboSales = useMemo(
-    () => mappedData.reduce((acc, curr) => acc + (curr.combo_sales || 0), 0),
+    () => Math.round(mappedData.reduce((acc, curr) => acc + (curr.actualComboDisplay || 0), 0)),
     [mappedData]
   );
 
   const totalProductSales = useMemo(
-    () => mappedData.reduce((acc, curr) => acc + (curr.product_sales || 0), 0),
+    () => Math.round(mappedData.reduce((acc, curr) => acc + (curr.actualProductDisplay || 0), 0)),
     [mappedData]
   );
 
   const totalSingleSales = useMemo(
-    () => mappedData.reduce((acc, curr) => acc + (curr.single_sales || 0), 0),
+    () => Math.round(mappedData.reduce((acc, curr) => acc + (curr.actualSingleDisplay || 0), 0)),
     [mappedData]
   );
 
-  // totalSales = Total Revenue for display (includes all categories)
-  const totalSales = useMemo(
-    () =>
-      mappedData.reduce(
-        (acc, curr) =>
-          acc +
-          (curr.combo_sales || 0) +
-          (curr.product_sales || 0) +
-          (curr.single_sales || 0) +
-          (curr.debt_collected || 0),
-        0
-      ),
-    [mappedData]
-  );
+  // totalSales = Total Revenue for display (matches /dashboard/today Combo + Product + Single when canonical fields exist)
+  const totalSales = useMemo(() => {
+    if (hasActualRevenue) {
+      return totalComboSales + totalProductSales + totalSingleSales;
+    }
+    return mappedData.reduce(
+      (acc, curr) =>
+        acc +
+        (curr.combo_sales || 0) +
+        (curr.product_sales || 0) +
+        (curr.single_sales || 0) +
+        (curr.debt_collected || 0),
+      0
+    );
+  }, [hasActualRevenue, mappedData, totalComboSales, totalProductSales, totalSingleSales]);
 
   const totalCcBonus = useMemo(() => mappedData.reduce((acc, curr) => acc + (curr.daily_bonus || 0), 0), [mappedData]);
 
@@ -223,25 +280,37 @@ export function useCcThuongData({
 
   const vatMultiplier = includeVat ? 1.08 : 1;
 
-  const projectedComboSales = useMemo(
-    () => projectByElapsed(summary?.projectedComboSales, totalComboSales, vatMultiplier, elapsedRatioPercent),
-    [summary, vatMultiplier, totalComboSales, elapsedRatioPercent]
-  );
+  const projectedComboSales = useMemo(() => {
+    if (hasActualRevenue) {
+      const precomputed = includeVat ? summary?.projectedActualComboGross : summary?.projectedActualComboNet;
+      return projectByElapsed(precomputed, totalComboSales, 1, elapsedRatioPercent);
+    }
+    return projectByElapsed(summary?.projectedComboSales, totalComboSales, vatMultiplier, elapsedRatioPercent);
+  }, [hasActualRevenue, includeVat, summary, totalComboSales, vatMultiplier, elapsedRatioPercent]);
 
-  const projectedProductSales = useMemo(
-    () => projectByElapsed(summary?.projectedProductSales, totalProductSales, vatMultiplier, elapsedRatioPercent),
-    [summary, vatMultiplier, totalProductSales, elapsedRatioPercent]
-  );
+  const projectedProductSales = useMemo(() => {
+    if (hasActualRevenue) {
+      const precomputed = includeVat ? summary?.projectedActualProductGross : summary?.projectedActualProductNet;
+      return projectByElapsed(precomputed, totalProductSales, 1, elapsedRatioPercent);
+    }
+    return projectByElapsed(summary?.projectedProductSales, totalProductSales, vatMultiplier, elapsedRatioPercent);
+  }, [hasActualRevenue, includeVat, summary, totalProductSales, vatMultiplier, elapsedRatioPercent]);
 
-  const projectedSingleSales = useMemo(
-    () => projectByElapsed(summary?.projectedSingleSales, totalSingleSales, vatMultiplier, elapsedRatioPercent),
-    [summary, vatMultiplier, totalSingleSales, elapsedRatioPercent]
-  );
+  const projectedSingleSales = useMemo(() => {
+    if (hasActualRevenue) {
+      const precomputed = includeVat ? summary?.projectedActualSingleGross : summary?.projectedActualSingleNet;
+      return projectByElapsed(precomputed, totalSingleSales, 1, elapsedRatioPercent);
+    }
+    return projectByElapsed(summary?.projectedSingleSales, totalSingleSales, vatMultiplier, elapsedRatioPercent);
+  }, [hasActualRevenue, includeVat, summary, totalSingleSales, vatMultiplier, elapsedRatioPercent]);
 
-  const projectedTotalSales = useMemo(
-    () => projectByElapsed(summary?.projectedTotalSales, totalSales, vatMultiplier, elapsedRatioPercent),
-    [summary, vatMultiplier, totalSales, elapsedRatioPercent]
-  );
+  const projectedTotalSales = useMemo(() => {
+    if (hasActualRevenue) {
+      const precomputed = includeVat ? summary?.projectedActualTotalGross : summary?.projectedActualTotalNet;
+      return projectByElapsed(precomputed, totalSales, 1, elapsedRatioPercent);
+    }
+    return projectByElapsed(summary?.projectedTotalSales, totalSales, vatMultiplier, elapsedRatioPercent);
+  }, [hasActualRevenue, includeVat, summary, totalSales, vatMultiplier, elapsedRatioPercent]);
 
   const projectedCcBonus = useMemo(
     () => projectByElapsed(summary?.projectedCcBonus, totalCcBonus, 1, elapsedRatioPercent),
@@ -260,9 +329,12 @@ export function useCcThuongData({
         comboCount: number;
         greenComboCount: number;
         comboSales: number;
+        actualComboSales: number;
         debtCollected: number;
         productCount: number;
         singleSales: number;
+        actualProductSales: number;
+        actualSingleSales: number;
         totalVisits: number;
         greenVisits: number;
         totalSales: number;
@@ -279,9 +351,12 @@ export function useCcThuongData({
         comboCount: 0,
         greenComboCount: 0,
         comboSales: 0,
+        actualComboSales: 0,
         debtCollected: 0,
         productCount: 0,
         singleSales: 0,
+        actualProductSales: 0,
+        actualSingleSales: 0,
         totalVisits: 0,
         greenVisits: 0,
         totalSales: 0,
@@ -299,9 +374,12 @@ export function useCcThuongData({
           comboCount: 0,
           greenComboCount: 0,
           comboSales: 0,
+          actualComboSales: 0,
           debtCollected: 0,
           productCount: 0,
           singleSales: 0,
+          actualProductSales: 0,
+          actualSingleSales: 0,
           totalVisits: 0,
           greenVisits: 0,
           totalSales: 0,
@@ -312,9 +390,12 @@ export function useCcThuongData({
       item.comboCount += r.combo_count || 0;
       item.greenComboCount += r.green_combo_count || 0;
       item.comboSales += r.combo_sales || 0;
+      item.actualComboSales += r.actualComboDisplay || 0;
       item.debtCollected = (item.debtCollected || 0) + (r.debt_collected || 0);
       item.productCount += r.product_count || 0;
       item.singleSales += r.single_sales || 0;
+      item.actualProductSales += r.actualProductDisplay || 0;
+      item.actualSingleSales += r.actualSingleDisplay || 0;
       item.totalVisits += r.total_visits || 0;
       item.greenVisits += r.green_visits || 0;
       item.totalSales += r.total_sales || 0;
@@ -323,7 +404,9 @@ export function useCcThuongData({
       if (r.avatar && !item.avatar) item.avatar = r.avatar;
     });
 
-    const sorted = Array.from(map.values()).sort((a, b) => b.totalBonus - a.totalBonus);
+    const sorted = Array.from(map.values()).sort(
+      (a, b) => b.totalBonus - a.totalBonus || b.actualComboSales - a.actualComboSales
+    );
     const maxBonus = sorted.length > 0 ? sorted[0].totalBonus : 1;
 
     return sorted.map((item, idx) => {
@@ -339,10 +422,14 @@ export function useCcThuongData({
         store: item.store,
         comboSalesCount: item.comboCount,
         greenComboSalesCount: item.greenComboCount,
-        comboSales: item.comboSales,
+        comboSales: Math.round(item.actualComboSales),
+        bonusComboSales: Math.round(item.comboSales),
+        actualComboSales: Math.round(item.actualComboSales),
         debtCollected: item.debtCollected,
         productSalesCount: item.productCount,
-        singleSales: item.singleSales,
+        singleSales: Math.round(item.actualSingleSales),
+        actualProductSales: Math.round(item.actualProductSales),
+        actualSingleSales: Math.round(item.actualSingleSales),
         totalVisits: item.totalVisits,
         greenVisits: item.greenVisits,
         greenComboConversionRate: greenConversionRate,
