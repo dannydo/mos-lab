@@ -28,6 +28,7 @@ export function buildCustomerFilterParams(props: {
   birthdayPreset: 'today' | 'this_month' | 'next_month' | undefined;
   ageMin: number | undefined;
   ageMax: number | undefined;
+  isForeignFilter?: 'all' | 'foreign' | 'local';
   campaignId: number | undefined;
   campaignFilterMode: 'ALL' | 'IN' | 'NOT_IN';
 }) {
@@ -59,6 +60,7 @@ export function buildCustomerFilterParams(props: {
     birthdayPreset: props.birthdayPreset,
     ageMin: props.ageMin,
     ageMax: props.ageMax,
+    isForeign: props.isForeignFilter && props.isForeignFilter !== 'all' ? props.isForeignFilter : undefined,
     campaignId: props.campaignId,
     campaignFilterMode: props.campaignFilterMode,
   };
@@ -81,6 +83,9 @@ export function countActiveCustomerFilters(props: {
   referralUsed: 'yes' | 'no' | 'all';
   referralCountMin: number | undefined;
   referralCountMax: number | undefined;
+  callStatuses?: string[];
+  lastCallDaysMin?: number | undefined;
+  lastCallDaysMax?: number | undefined;
   assignedStaffId: string;
   userRole: string | undefined;
   assignedDaysMin: number | undefined;
@@ -90,6 +95,8 @@ export function countActiveCustomerFilters(props: {
   birthdayPreset: 'today' | 'this_month' | 'next_month' | undefined;
   ageMin: number | undefined;
   ageMax: number | undefined;
+  isForeignFilter?: 'all' | 'foreign' | 'local';
+  campaignId?: number | undefined;
 }): number {
   let count = 0;
   if (props.daysSinceLastVisitMin !== undefined || props.daysSinceLastVisitMax !== undefined) count++;
@@ -107,11 +114,15 @@ export function countActiveCustomerFilters(props: {
   if (props.referralUsed !== 'all' || props.referralCountMin !== undefined || props.referralCountMax !== undefined) {
     count++;
   }
+  if (props.callStatuses && props.callStatuses.length > 0) count++;
+  if (props.lastCallDaysMin !== undefined || props.lastCallDaysMax !== undefined) count++;
   if (props.assignedStaffId && props.assignedStaffId !== (props.userRole === 'telesales' ? 'me' : 'all')) count++;
   if (props.assignedDaysMin !== undefined || props.assignedDaysMax !== undefined) count++;
   if (props.retainedOnly) count++;
   if (props.dobMonth !== undefined || props.birthdayPreset !== undefined) count++;
   if (props.ageMin !== undefined || props.ageMax !== undefined) count++;
+  if (props.isForeignFilter && props.isForeignFilter !== 'all') count++;
+  if (props.campaignId !== undefined) count++;
   return count;
 }
 
@@ -146,6 +157,7 @@ export type ClearSingleFilterHandlers = Pick<
   | 'setBirthdayPreset'
   | 'setAgeMin'
   | 'setAgeMax'
+  | 'setIsForeignFilter'
   | 'setCallStatuses'
   | 'setLastCallDaysMin'
   | 'setLastCallDaysMax'
@@ -241,6 +253,9 @@ export function clearSingleCustomerFilter(key: string, handlers: ClearSingleFilt
       break;
     case 'ageMax':
       handlers.setAgeMax?.(undefined);
+      break;
+    case 'isForeign':
+      handlers.setIsForeignFilter?.('all');
       break;
     case 'callStatuses':
       handlers.setCallStatuses?.([]);

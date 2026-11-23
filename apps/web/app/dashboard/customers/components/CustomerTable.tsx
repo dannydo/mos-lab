@@ -12,7 +12,11 @@ import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { DataTable } from '../../../../components/ui';
 import { CustomerTableMobileCard } from './customer-table/CustomerTableMobileCard';
 import { buildCustomerTableColumns } from './customer-table/customer-table-columns';
-import { CUSTOMER_COLUMN_PRIORITY, getCustomerRowClassName } from './customer-table/customer-table-utils';
+import {
+  CUSTOMER_COLUMN_PRIORITY,
+  getCustomerRowClassName,
+  resolveCustomerTableSortField,
+} from './customer-table/customer-table-utils';
 
 interface CustomerTableProps {
   customers: Customer[];
@@ -22,6 +26,8 @@ interface CustomerTableProps {
   setCurrentPage: (page: number) => void;
   pageSize: number;
   setPageSize: (size: number) => void;
+  sortField?: string;
+  onSortChange?: (sortField: string) => void;
   selectedRowKeys: React.Key[];
   setSelectedRowKeys: (keys: React.Key[]) => void;
   currentUser: SafeAny;
@@ -43,6 +49,8 @@ const CustomerTable = React.memo(
       setCurrentPage,
       pageSize,
       setPageSize,
+      sortField,
+      onSortChange,
       selectedRowKeys,
       setSelectedRowKeys,
       currentUser,
@@ -64,6 +72,7 @@ const CustomerTable = React.memo(
         buildCustomerTableColumns({
           currentPage,
           pageSize,
+          sortField,
           canMakeCall,
           makeCall,
           openDetailModal,
@@ -78,6 +87,7 @@ const CustomerTable = React.memo(
         openDetailModal,
         currentPage,
         pageSize,
+        sortField,
         dailyPlanList,
         addingIds,
         handleAddToPlan,
@@ -114,6 +124,17 @@ const CustomerTable = React.memo(
       []
     );
 
+    const handleTableChange = React.useCallback<NonNullable<TableProps<Customer>['onChange']>>(
+      (_pagination, _filters, tableSorter) => {
+        if (!onSortChange) return;
+        const nextSortField = resolveCustomerTableSortField(tableSorter);
+        if (nextSortField && nextSortField !== sortField) {
+          onSortChange(nextSortField);
+        }
+      },
+      [onSortChange, sortField]
+    );
+
     return (
       <>
         <DataTable
@@ -123,6 +144,7 @@ const CustomerTable = React.memo(
           rowClassName={(record) => getCustomerRowClassName(record, themeMode)}
           size="small"
           loading={loading || configLoading}
+          onChange={handleTableChange}
           rowSelection={
             isManagerOrAdmin
               ? {

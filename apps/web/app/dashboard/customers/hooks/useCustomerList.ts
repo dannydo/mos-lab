@@ -50,6 +50,102 @@ export const useCustomerList = (
     };
   }, []);
 
+  const buildSharedCustomerFilterParams = useCallback(
+    (
+      base: ListCustomersParams,
+      options?: { idsToUse?: number[] | null; includeNonEmptySearchOnly?: boolean }
+    ): ListCustomersParams => {
+      const params: ListCustomersParams = { ...base };
+      if (filterParams.showTrash) {
+        params.trash = 'true';
+      }
+
+      const idsToUse = options?.idsToUse;
+      if (idsToUse && idsToUse.length > 0) {
+        params.ids = idsToUse.join(',');
+      } else if (filterParams.ids) {
+        params.ids = filterParams.ids;
+      }
+
+      if (filterParams.allocationBatchId) {
+        params.allocationBatchId = filterParams.allocationBatchId;
+      }
+
+      if (!options?.includeNonEmptySearchOnly) {
+        params.search = filterParams.searchQuery;
+      } else if (filterParams.searchQuery && filterParams.searchQuery.trim() !== '') {
+        params.search = filterParams.searchQuery;
+      }
+
+      if (filterParams.daysSinceLastVisitMin !== undefined)
+        params.daysSinceLastVisitMin = filterParams.daysSinceLastVisitMin.toString();
+      if (filterParams.daysSinceLastVisitMax !== undefined)
+        params.daysSinceLastVisitMax = filterParams.daysSinceLastVisitMax.toString();
+      if (filterParams.totalSpentMin !== undefined) params.totalSpentMin = filterParams.totalSpentMin.toString();
+      if (filterParams.totalSpentMax !== undefined) params.totalSpentMax = filterParams.totalSpentMax.toString();
+      if (filterParams.totalVisitsMin !== undefined) params.totalVisitsMin = filterParams.totalVisitsMin.toString();
+      if (filterParams.totalVisitsMax !== undefined) params.totalVisitsMax = filterParams.totalVisitsMax.toString();
+      if (filterParams.serviceIds) params.serviceIds = filterParams.serviceIds;
+      if (filterParams.serviceVisitCountMin !== undefined)
+        params.serviceVisitCountMin = filterParams.serviceVisitCountMin.toString();
+      if (filterParams.serviceVisitCountMax !== undefined)
+        params.serviceVisitCountMax = filterParams.serviceVisitCountMax.toString();
+
+      if (filterParams.promoUsed && filterParams.promoUsed !== 'all') params.promoUsed = filterParams.promoUsed;
+      if (filterParams.promoCountMin !== undefined) params.promoCountMin = filterParams.promoCountMin.toString();
+      if (filterParams.promoCountMax !== undefined) params.promoCountMax = filterParams.promoCountMax.toString();
+
+      if (filterParams.referralUsed && filterParams.referralUsed !== 'all')
+        params.referralUsed = filterParams.referralUsed;
+      if (filterParams.referralCountMin !== undefined)
+        params.referralCountMin = filterParams.referralCountMin.toString();
+      if (filterParams.referralCountMax !== undefined)
+        params.referralCountMax = filterParams.referralCountMax.toString();
+
+      if (filterParams.assignedStaffId && filterParams.assignedStaffId !== 'all') {
+        params.assignedStaffId = filterParams.assignedStaffId;
+      }
+      if (filterParams.assignedDaysMin !== undefined)
+        params.assignedDaysMin = filterParams.assignedDaysMin.toString();
+      if (filterParams.assignedDaysMax !== undefined)
+        params.assignedDaysMax = filterParams.assignedDaysMax.toString();
+      if (filterParams.retainedOnly) {
+        params.retainedOnly = filterParams.retainedOnly;
+      }
+      if (filterParams.dobMonth !== undefined) {
+        params.dobMonth = filterParams.dobMonth.toString();
+      }
+      if (filterParams.birthdayPreset) {
+        params.birthdayPreset = filterParams.birthdayPreset;
+      }
+      if (filterParams.ageMin !== undefined) {
+        params.ageMin = filterParams.ageMin.toString();
+      }
+      if (filterParams.ageMax !== undefined) {
+        params.ageMax = filterParams.ageMax.toString();
+      }
+      if (filterParams.isForeign && filterParams.isForeign !== 'all') {
+        params.isForeign = filterParams.isForeign;
+      }
+      if (filterParams.callStatuses && filterParams.callStatuses.trim() !== '') {
+        params.callStatuses = filterParams.callStatuses;
+      }
+      if (filterParams.lastCallDaysMin !== undefined)
+        params.lastCallDaysMin = filterParams.lastCallDaysMin.toString();
+      if (filterParams.lastCallDaysMax !== undefined)
+        params.lastCallDaysMax = filterParams.lastCallDaysMax.toString();
+      if (filterParams.campaignId !== undefined) {
+        params.campaignId = filterParams.campaignId.toString();
+        if (filterParams.campaignFilterMode) {
+          params.campaignFilterMode = filterParams.campaignFilterMode;
+        }
+      }
+
+      return params;
+    },
+    [filterParams]
+  );
+
   const fetchStats = useCallback(
     async (overrideSearchVal?: string) => {
       if (isCvRole(currentUser?.role)) return;
@@ -59,79 +155,12 @@ export const useCustomerList = (
       const abortController = new AbortController();
       statsAbortControllerRef.current = abortController;
       try {
-        const params: ListCustomersParams = {
-          search: overrideSearchVal !== undefined ? overrideSearchVal : filterParams.searchQuery,
-        };
-        if (filterParams.showTrash) {
-          params.trash = 'true';
-        }
-        if (randomSelectedIds && randomSelectedIds.length > 0) {
-          params.ids = randomSelectedIds.join(',');
-        } else if (filterParams.ids) {
-          params.ids = filterParams.ids;
-        }
-        if (filterParams.daysSinceLastVisitMin !== undefined)
-          params.daysSinceLastVisitMin = filterParams.daysSinceLastVisitMin.toString();
-        if (filterParams.daysSinceLastVisitMax !== undefined)
-          params.daysSinceLastVisitMax = filterParams.daysSinceLastVisitMax.toString();
-        if (filterParams.totalSpentMin !== undefined) params.totalSpentMin = filterParams.totalSpentMin.toString();
-        if (filterParams.totalSpentMax !== undefined) params.totalSpentMax = filterParams.totalSpentMax.toString();
-        if (filterParams.totalVisitsMin !== undefined) params.totalVisitsMin = filterParams.totalVisitsMin.toString();
-        if (filterParams.totalVisitsMax !== undefined) params.totalVisitsMax = filterParams.totalVisitsMax.toString();
-        if (filterParams.serviceIds) params.serviceIds = filterParams.serviceIds;
-        if (filterParams.serviceVisitCountMin !== undefined)
-          params.serviceVisitCountMin = filterParams.serviceVisitCountMin.toString();
-        if (filterParams.serviceVisitCountMax !== undefined)
-          params.serviceVisitCountMax = filterParams.serviceVisitCountMax.toString();
-
-        if (filterParams.promoUsed && filterParams.promoUsed !== 'all') params.promoUsed = filterParams.promoUsed;
-        if (filterParams.promoCountMin !== undefined) params.promoCountMin = filterParams.promoCountMin.toString();
-        if (filterParams.promoCountMax !== undefined) params.promoCountMax = filterParams.promoCountMax.toString();
-
-        if (filterParams.referralUsed && filterParams.referralUsed !== 'all')
-          params.referralUsed = filterParams.referralUsed;
-        if (filterParams.referralCountMin !== undefined)
-          params.referralCountMin = filterParams.referralCountMin.toString();
-        if (filterParams.referralCountMax !== undefined)
-          params.referralCountMax = filterParams.referralCountMax.toString();
-
-        if (filterParams.assignedStaffId && filterParams.assignedStaffId !== 'all') {
-          params.assignedStaffId = filterParams.assignedStaffId;
-        }
-        if (filterParams.assignedDaysMin !== undefined)
-          params.assignedDaysMin = filterParams.assignedDaysMin.toString();
-        if (filterParams.assignedDaysMax !== undefined)
-          params.assignedDaysMax = filterParams.assignedDaysMax.toString();
-        if (filterParams.retainedOnly) {
-          params.retainedOnly = filterParams.retainedOnly;
-        }
-        if (filterParams.allocationBatchId) {
-          params.allocationBatchId = filterParams.allocationBatchId;
-        }
-        if (filterParams.dobMonth !== undefined) {
-          params.dobMonth = filterParams.dobMonth.toString();
-        }
-        if (filterParams.birthdayPreset) {
-          params.birthdayPreset = filterParams.birthdayPreset;
-        }
-        if (filterParams.ageMin !== undefined) {
-          params.ageMin = filterParams.ageMin.toString();
-        }
-        if (filterParams.ageMax !== undefined) {
-          params.ageMax = filterParams.ageMax.toString();
-        }
-        if (filterParams.callStatuses && filterParams.callStatuses.trim() !== '') {
-          params.callStatuses = filterParams.callStatuses;
-        }
-        if (filterParams.lastCallDaysMin !== undefined)
-          params.lastCallDaysMin = filterParams.lastCallDaysMin.toString();
-        if (filterParams.lastCallDaysMax !== undefined)
-          params.lastCallDaysMax = filterParams.lastCallDaysMax.toString();
-        if (filterParams.campaignId !== undefined) {
-          params.campaignId = filterParams.campaignId.toString();
-          if (filterParams.campaignFilterMode) {
-            params.campaignFilterMode = filterParams.campaignFilterMode;
-          }
+        const params = buildSharedCustomerFilterParams(
+          {},
+          { idsToUse: randomSelectedIds && randomSelectedIds.length > 0 ? randomSelectedIds : null }
+        );
+        if (overrideSearchVal !== undefined) {
+          params.search = overrideSearchVal;
         }
 
         const cacheKey = JSON.stringify(params);
@@ -167,7 +196,7 @@ export const useCustomerList = (
         console.error('Fetch stats error:', error);
       }
     },
-    [filterParams, randomSelectedIds]
+    [buildSharedCustomerFilterParams, currentUser?.role, randomSelectedIds]
   );
 
   const fetchIdRef = useRef(0);
@@ -182,92 +211,19 @@ export const useCustomerList = (
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
       try {
-        const params: ListCustomersParams = {
+        const idsToUse = overrideIds !== undefined ? overrideIds : randomSelectedIds;
+        const baseParams: ListCustomersParams = {
           page: page.toString(),
           limit: limit.toString(),
           sort: filterParams.sortField,
         };
-        if (filterParams.showTrash) {
-          params.trash = 'true';
-        }
-
-        const idsToUse = overrideIds !== undefined ? overrideIds : randomSelectedIds;
-        if (idsToUse && idsToUse.length > 0) {
-          params.ids = idsToUse.join(',');
-        } else if (filterParams.ids) {
-          params.ids = filterParams.ids;
-        }
-
         if (filterParams.activeTab !== 'ALL' && filterParams.activeTab !== 'ALLOCATION') {
-          params.bucket = filterParams.activeTab;
+          baseParams.bucket = filterParams.activeTab;
         }
-        if (filterParams.allocationBatchId) {
-          params.allocationBatchId = filterParams.allocationBatchId;
-        }
-        if (filterParams.searchQuery && filterParams.searchQuery.trim() !== '') {
-          params.search = filterParams.searchQuery;
-        }
-
-        if (filterParams.daysSinceLastVisitMin !== undefined)
-          params.daysSinceLastVisitMin = filterParams.daysSinceLastVisitMin.toString();
-        if (filterParams.daysSinceLastVisitMax !== undefined)
-          params.daysSinceLastVisitMax = filterParams.daysSinceLastVisitMax.toString();
-        if (filterParams.totalSpentMin !== undefined) params.totalSpentMin = filterParams.totalSpentMin.toString();
-        if (filterParams.totalSpentMax !== undefined) params.totalSpentMax = filterParams.totalSpentMax.toString();
-        if (filterParams.totalVisitsMin !== undefined) params.totalVisitsMin = filterParams.totalVisitsMin.toString();
-        if (filterParams.totalVisitsMax !== undefined) params.totalVisitsMax = filterParams.totalVisitsMax.toString();
-        if (filterParams.serviceIds) params.serviceIds = filterParams.serviceIds;
-        if (filterParams.serviceVisitCountMin !== undefined)
-          params.serviceVisitCountMin = filterParams.serviceVisitCountMin.toString();
-        if (filterParams.serviceVisitCountMax !== undefined)
-          params.serviceVisitCountMax = filterParams.serviceVisitCountMax.toString();
-
-        if (filterParams.promoUsed && filterParams.promoUsed !== 'all') params.promoUsed = filterParams.promoUsed;
-        if (filterParams.promoCountMin !== undefined) params.promoCountMin = filterParams.promoCountMin.toString();
-        if (filterParams.promoCountMax !== undefined) params.promoCountMax = filterParams.promoCountMax.toString();
-
-        if (filterParams.referralUsed && filterParams.referralUsed !== 'all')
-          params.referralUsed = filterParams.referralUsed;
-        if (filterParams.referralCountMin !== undefined)
-          params.referralCountMin = filterParams.referralCountMin.toString();
-        if (filterParams.referralCountMax !== undefined)
-          params.referralCountMax = filterParams.referralCountMax.toString();
-
-        if (filterParams.assignedStaffId && filterParams.assignedStaffId !== 'all') {
-          params.assignedStaffId = filterParams.assignedStaffId;
-        }
-        if (filterParams.assignedDaysMin !== undefined)
-          params.assignedDaysMin = filterParams.assignedDaysMin.toString();
-        if (filterParams.assignedDaysMax !== undefined)
-          params.assignedDaysMax = filterParams.assignedDaysMax.toString();
-        if (filterParams.retainedOnly) {
-          params.retainedOnly = filterParams.retainedOnly;
-        }
-        if (filterParams.dobMonth !== undefined) {
-          params.dobMonth = filterParams.dobMonth.toString();
-        }
-        if (filterParams.birthdayPreset) {
-          params.birthdayPreset = filterParams.birthdayPreset;
-        }
-        if (filterParams.ageMin !== undefined) {
-          params.ageMin = filterParams.ageMin.toString();
-        }
-        if (filterParams.ageMax !== undefined) {
-          params.ageMax = filterParams.ageMax.toString();
-        }
-        if (filterParams.callStatuses && filterParams.callStatuses.trim() !== '') {
-          params.callStatuses = filterParams.callStatuses;
-        }
-        if (filterParams.lastCallDaysMin !== undefined)
-          params.lastCallDaysMin = filterParams.lastCallDaysMin.toString();
-        if (filterParams.lastCallDaysMax !== undefined)
-          params.lastCallDaysMax = filterParams.lastCallDaysMax.toString();
-        if (filterParams.campaignId !== undefined) {
-          params.campaignId = filterParams.campaignId.toString();
-          if (filterParams.campaignFilterMode) {
-            params.campaignFilterMode = filterParams.campaignFilterMode;
-          }
-        }
+        const params = buildSharedCustomerFilterParams(baseParams, {
+          idsToUse,
+          includeNonEmptySearchOnly: true,
+        });
 
         const cacheKey = JSON.stringify({ ...params, idsToUse });
         const cached = listCacheRef.current.get(cacheKey);
@@ -321,7 +277,7 @@ export const useCustomerList = (
         }
       }
     },
-    [filterParams, randomSelectedIds, optionsRef]
+    [buildSharedCustomerFilterParams, currentUser?.role, filterParams.activeTab, filterParams.sortField, randomSelectedIds, optionsRef]
   );
 
   const prevFilterRef = useRef(filterParams);

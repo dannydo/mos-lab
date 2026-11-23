@@ -183,9 +183,11 @@ function CustomersPageContent() {
     { value: 'assignedAt_desc', label: 'Phân bổ mới nhất' },
     { value: 'id_desc', label: 'Mới nhất' },
     { value: 'name_asc', label: 'Tên A → Z' },
+    { value: 'name_desc', label: 'Tên Z → A' },
     { value: 'daysSinceLastVisit_desc', label: 'Chưa ghé lâu nhất' },
     { value: 'daysSinceLastVisit_asc', label: 'Chưa ghé gần đây' },
     { value: 'totalSpent_desc', label: 'Chi tiêu giảm dần' },
+    { value: 'totalSpent_asc', label: 'Chi tiêu tăng dần' },
   ];
   const activeSortLabel = sortOptions.find((option) => option.value === data.sortField)?.label ?? 'Sắp xếp';
   const handleSortChange = (value: string) => {
@@ -231,6 +233,8 @@ function CustomersPageContent() {
               expandButtonLabel="Mở tìm kiếm khách hàng"
               allowClear
               size="middle"
+              value={data.searchQuery}
+              onChange={(e) => data.handleSearch(e.target.value)}
               onSearch={data.handleSearch}
               className="customer-search"
               expandedWidth={280}
@@ -303,6 +307,8 @@ function CustomersPageContent() {
               setAgeMin={data.setAgeMin}
               ageMax={data.ageMax}
               setAgeMax={data.setAgeMax}
+              isForeignFilter={data.isForeignFilter}
+              setIsForeignFilter={data.setIsForeignFilter}
               setActiveFilterId={data.setActiveFilterId}
               staffList={data.staffList}
               campaignId={data.campaignId}
@@ -538,6 +544,8 @@ function CustomersPageContent() {
         setCurrentPage={data.setCurrentPage}
         pageSize={data.pageSize}
         setPageSize={data.setPageSize}
+        sortField={data.sortField}
+        onSortChange={handleSortChange}
         selectedRowKeys={data.selectedRowKeys}
         setSelectedRowKeys={data.setSelectedRowKeys}
         currentUser={data.currentUser}

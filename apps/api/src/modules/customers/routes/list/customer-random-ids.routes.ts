@@ -2,8 +2,15 @@ import { FastifyInstance } from 'fastify';
 import { SafeAny } from '@mos-lab/shared';
 import { requireAuth } from '../../../../middlewares/auth.js';
 import { CustomerAccessService } from '../../services/customer-access.service.js';
+import { getForeignSqlFilter } from '../../services/foreign-customer.service.js';
 import { AllocationLedgerService } from '../../../allocation/allocation-ledger.service.js';
-import { buildCompletedServiceUsageJoin, buildSearchCondition, parseServiceFilterIds } from '../helpers.js';
+import {
+  buildBirthdayAgeWhereClauses,
+  buildCallLogWhereClauses,
+  buildCompletedServiceUsageJoin,
+  buildSearchCondition,
+  parseServiceFilterIds,
+} from '../helpers.js';
 
 export async function registerCustomerRandomIdsRoutes(fastify: FastifyInstance) {
   // GET /api/customers/random-ids
@@ -34,6 +41,14 @@ export async function registerCustomerRandomIdsRoutes(fastify: FastifyInstance) 
       retainedOnly,
       campaignId,
       campaignFilterMode,
+      isForeign,
+      dobMonth,
+      birthdayPreset,
+      ageMin,
+      ageMax,
+      callStatuses,
+      lastCallDaysMin,
+      lastCallDaysMax,
       excludeAssigned = 'true',
       excludeFutureBooking = 'true',
       excludeUnconfirmedAllocation = 'true',
@@ -398,6 +413,19 @@ export async function registerCustomerRandomIdsRoutes(fastify: FastifyInstance) 
         innerWhereClauses.push('COALESCE(ref_counts.totalReferrals, 0) <= ?');
         innerParams.push(parseInt(referralCountMax, 10));
       }
+
+      const foreignFilterSql = getForeignSqlFilter(isForeign);
+      if (foreignFilterSql) {
+        innerWhereClauses.push(foreignFilterSql);
+      }
+
+      const birthdayAgeSql = buildBirthdayAgeWhereClauses({ dobMonth, birthdayPreset, ageMin, ageMax });
+      innerWhereClauses.push(...birthdayAgeSql.clauses);
+      innerParams.push(...birthdayAgeSql.params);
+
+      const callLogSql = buildCallLogWhereClauses({ callStatuses, lastCallDaysMin, lastCallDaysMax });
+      innerWhereClauses.push(...callLogSql.clauses);
+      innerParams.push(...callLogSql.params);
 
       const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
 

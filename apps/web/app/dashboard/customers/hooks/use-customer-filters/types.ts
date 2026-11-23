@@ -30,6 +30,15 @@ export interface CustomerFilterCriteria {
   assignedStaffId: string;
   assignedDaysMin: number | undefined;
   assignedDaysMax: number | undefined;
+  retainedOnly?: boolean;
+  dobMonth?: number | string | undefined;
+  birthdayPreset?: CustomerBirthdayPreset | undefined;
+  ageMin?: number | undefined;
+  ageMax?: number | undefined;
+  callStatuses?: string[];
+  lastCallDaysMin?: number | undefined;
+  lastCallDaysMax?: number | undefined;
+  isForeignFilter?: CustomerForeignFilter;
   campaignId: number | undefined;
   campaignFilterMode: CustomerCampaignFilterMode;
 }

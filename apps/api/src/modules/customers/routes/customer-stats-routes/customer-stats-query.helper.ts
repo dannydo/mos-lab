@@ -1,7 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { SafeAny } from '@mos-lab/shared';
 import { getForeignSqlFilter } from '../../services/foreign-customer.service.js';
-import { buildCompletedServiceUsageJoin, buildSearchCondition } from '../helpers.js';
+import {
+  buildBirthdayAgeWhereClauses,
+  buildCallLogWhereClauses,
+  buildCompletedServiceUsageJoin,
+  buildSearchCondition,
+} from '../helpers.js';
 import {
   CustomerStatsLiveUsbInfo,
   CustomerStatsQuery,
@@ -203,35 +208,9 @@ export async function queryMatchingCustomerIds({
   }
 
   // Birthday & Age Filters
-  if (dobMonth !== undefined && dobMonth !== '' && dobMonth !== 'ALL') {
-    innerWhereClauses.push('u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = ?');
-    innerParams.push(parseInt(String(dobMonth), 10));
-  }
-
-  if (birthdayPreset === 'today') {
-    innerWhereClauses.push(
-      'u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(CURDATE()) AND DAY(u.date_of_birth) = DAY(CURDATE())'
-    );
-  } else if (birthdayPreset === 'this_month') {
-    innerWhereClauses.push('u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(CURDATE())');
-  } else if (birthdayPreset === 'next_month') {
-    innerWhereClauses.push(
-      'u.date_of_birth IS NOT NULL AND MONTH(u.date_of_birth) = MONTH(ADDDATE(CURDATE(), INTERVAL 1 MONTH))'
-    );
-  }
-
-  if (ageMin !== undefined && ageMin !== '') {
-    innerWhereClauses.push(
-      'u.date_of_birth IS NOT NULL AND YEAR(u.date_of_birth) <= YEAR(CURDATE()) - 10 AND TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) >= ?'
-    );
-    innerParams.push(parseInt(String(ageMin), 10));
-  }
-  if (ageMax !== undefined && ageMax !== '') {
-    innerWhereClauses.push(
-      'u.date_of_birth IS NOT NULL AND YEAR(u.date_of_birth) <= YEAR(CURDATE()) - 10 AND TIMESTAMPDIFF(YEAR, u.date_of_birth, CURDATE()) <= ?'
-    );
-    innerParams.push(parseInt(String(ageMax), 10));
-  }
+  const birthdayAgeSql = buildBirthdayAgeWhereClauses({ dobMonth, birthdayPreset, ageMin, ageMax });
+  innerWhereClauses.push(...birthdayAgeSql.clauses);
+  innerParams.push(...birthdayAgeSql.params);
 
   // LoCa Campaign Filters (hsd30 / lsd1 resolved via standalone liveUsbMap)
   if (hasProduct === 'true') {
@@ -285,55 +264,9 @@ export async function queryMatchingCustomerIds({
   }
 
   // Call Status Multi-Select Filter & Last Call Days Filter
-  if (callStatuses && callStatuses.trim() !== '') {
-    const statusList = callStatuses
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const hasNotCalled = statusList.includes('NOT_CALLED');
-    const realStatuses = statusList.filter((s) => s !== 'NOT_CALLED');
-
-    const callConds: string[] = [];
-    if (realStatuses.length > 0) {
-      const placeholders = realStatuses.map(() => '?').join(',');
-      callConds.push(`EXISTS (
-            SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
-            WHERE ccl_latest.legacy_user_id = u.id 
-              AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
-              AND ccl_latest.call_result IN (${placeholders})
-          )`);
-      innerParams.push(...realStatuses);
-    }
-    if (hasNotCalled) {
-      callConds.push(`NOT EXISTS (
-            SELECT 1 FROM mos_lab.crm_call_logs ccl_all WHERE ccl_all.legacy_user_id = u.id
-          )`);
-    }
-
-    if (callConds.length > 0) {
-      innerWhereClauses.push(`(${callConds.join(' OR ')})`);
-    }
-  }
-
-  if (lastCallDaysMin !== undefined && lastCallDaysMin !== '') {
-    innerWhereClauses.push(`EXISTS (
-          SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
-          WHERE ccl_latest.legacy_user_id = u.id
-            AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
-            AND DATEDIFF(NOW(), ccl_latest.created_at) >= ?
-        )`);
-    innerParams.push(parseInt(lastCallDaysMin, 10));
-  }
-
-  if (lastCallDaysMax !== undefined && lastCallDaysMax !== '') {
-    innerWhereClauses.push(`EXISTS (
-          SELECT 1 FROM mos_lab.crm_call_logs ccl_latest
-          WHERE ccl_latest.legacy_user_id = u.id
-            AND ccl_latest.id = (SELECT MAX(id) FROM mos_lab.crm_call_logs WHERE legacy_user_id = u.id)
-            AND DATEDIFF(NOW(), ccl_latest.created_at) <= ?
-        )`);
-    innerParams.push(parseInt(lastCallDaysMax, 10));
-  }
+  const callLogSql = buildCallLogWhereClauses({ callStatuses, lastCallDaysMin, lastCallDaysMax });
+  innerWhereClauses.push(...callLogSql.clauses);
+  innerParams.push(...callLogSql.params);
 
   const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
 
