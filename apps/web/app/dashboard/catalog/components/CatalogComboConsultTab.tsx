@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { Card, Switch, Button, Select, Row, Col, Space, Typography, Divider, Alert, message } from 'antd';
-import { Sparkles, Scale, Copy, Check, Calculator, Lock, ShieldCheck, ArrowRight } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Card, Switch, Button, Row, Col, Space, Typography, message } from 'antd';
+import { Sparkles, Lock, ShieldCheck } from 'lucide-react';
 import {
   WINGS_COMBO_CATEGORIES,
   WingsComboCategoryId,
@@ -16,7 +16,9 @@ import {
   formatComboConsultationQuote,
 } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
-import { WingsComboCard } from '../../../ios-app/components/ui-kit/WingsComboCard';
+import { CatalogComboComparePanel } from './combo-consult/CatalogComboComparePanel';
+import { CatalogComboPackageGrid } from './combo-consult/CatalogComboPackageGrid';
+import { CatalogComboAccountingSimulator } from './combo-consult/CatalogComboAccountingSimulator';
 
 const { Text, Title } = Typography;
 
@@ -285,397 +287,49 @@ export default function CatalogComboConsultTab() {
       </Card>
 
       {/* Side-by-Side Comparison Panel (when 1-3 packages are selected) */}
-      {comparedPackages.length > 0 && (
-        <Card
-          size="small"
-          className="rounded-2xl border-amber-500"
-          title={
-            <Space>
-              <Scale className="w-4 h-4 text-amber-500" />
-              <span>Bàn Cân So Sánh Trực Tiếp ({comparedPackages.length}/3 Gói Combo)</span>
-            </Space>
-          }
-          extra={
-            <Button size="small" type="link" danger onClick={() => setCompareIds([])}>
-              Xóa tất cả so sánh
-            </Button>
-          }
-        >
-          <Row gutter={[12, 12]}>
-            {comparedPackages.map((cp) => {
-              const displayPrice = includeVat ? cp.comboPriceWithVat : cp.comboPrice;
-              const acc = calculateComboPurchaseAccounting(cp);
-              return (
-                <Col xs={24} md={8} key={cp.id}>
-                  <div
-                    className={`p-3 rounded-xl border h-full flex flex-col justify-between space-y-2 ${
-                      isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-amber-50/70 border-amber-200'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="font-extrabold text-sm">{cp.displayName}</span>
-                        <Button size="small" type="text" onClick={() => toggleCompare(cp.id)}>
-                          ✕
-                        </Button>
-                      </div>
-                      <div className="text-xs mt-0.5 text-neutral-500">
-                        {cp.readableContent} · HSD {cp.validityMonths} tháng
-                      </div>
-                    </div>
-                    <div className="space-y-1 text-xs pt-2 border-t border-neutral-200 dark:border-neutral-700 tabular-nums">
-                      <div className="flex justify-between">
-                        <span>Giá gói ({includeVat ? 'Gồm VAT' : 'Chưa VAT'}):</span>
-                        <strong className="text-amber-600 text-sm">{displayPrice.toLocaleString('vi-VN')} đ</strong>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Giá lẻ tổng {cp.totalSessions} lần:</span>
-                        <span className="line-through">{cp.retailTotal.toLocaleString('vi-VN')} đ</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Tiết kiệm cho khách:</span>
-                        <strong className="text-emerald-600">
-                          -{cp.savingsAmount.toLocaleString('vi-VN')} đ (+{cp.discountPct}%)
-                        </strong>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Đơn giá bình quân:</span>
-                        <strong>~{cp.avgPerSessionPrice.toLocaleString('vi-VN')} đ/lần</strong>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Sau khi trừ buổi 1 hôm nay:</span>
-                        <strong className="text-indigo-600">
-                          Còn {acc.remainingWalletAfterToday.totalRemaining}/{cp.totalSessions} lần (
-                          {acc.remainingWalletAfterToday.totalPaidRemaining} Mua +{' '}
-                          {acc.remainingWalletAfterToday.totalBonusRemaining} Tặng 0đ)
-                        </strong>
-                      </div>
-                    </div>
-                  </div>
-                </Col>
-              );
-            })}
-          </Row>
-        </Card>
-      )}
+      <CatalogComboComparePanel
+        comparedPackages={comparedPackages}
+        includeVat={includeVat}
+        isDark={isDark}
+        onClearCompare={() => setCompareIds([])}
+        onToggleCompare={toggleCompare}
+      />
 
-      {/* Package Cards Grid */}
-      <Row gutter={[12, 12]}>
-        {packages.map((pkg) => {
-          const isCompared = compareIds.includes(pkg.id);
-          const isSimSelected = activeSimPkg?.id === pkg.id;
-          const acc = calculateComboPurchaseAccounting(pkg);
+      {/* Package Grid Display (with Unified WingsComboCard) */}
+      <CatalogComboPackageGrid
+        packages={packages}
+        compareIds={compareIds}
+        activeSimPkgId={activeSimPkg?.id}
+        copiedId={copiedId}
+        includeVat={includeVat}
+        isDark={isDark}
+        onSelectSimPkg={setSimSelectedPkgId}
+        onToggleCompare={toggleCompare}
+        onCopyQuote={(pkg) => {
+          void handleCopyQuote(pkg);
+        }}
+        onZoomCard={setZoomedCard}
+      />
 
-          return (
-            <Col xs={24} md={12} xl={8} key={pkg.id}>
-              <Card
-                size="small"
-                hoverable={!pkg.isLocked}
-                className={`rounded-2xl h-full ${pkg.isLocked ? 'opacity-75' : ''} ${
-                  isSimSelected ? 'border-2 border-amber-500' : ''
-                }`}
-              >
-                <div className="flex flex-col justify-between h-full space-y-3">
-                  <div className="space-y-2.5">
-                    {/* Luxury Membership Card Design */}
-                    <WingsComboCard
-                      pkg={pkg}
-                      selected={isSimSelected}
-                      includeVat={includeVat}
-                      compact
-                      onSelect={() => {
-                        if (!pkg.isLocked) setSimSelectedPkgId(pkg.id);
-                      }}
-                      onZoomOriginalCard={
-                        pkg.cardImageUrl || pkg.cardPreviewUrl
-                          ? () =>
-                              setZoomedCard({
-                                title: pkg.displayName,
-                                imageUrl: pkg.cardImageUrl || pkg.cardPreviewUrl,
-                              })
-                          : undefined
-                      }
-                    />
-
-                    {/* Accounting Summary Box */}
-                    <div
-                      className={`p-2.5 rounded-xl border text-xs space-y-1 tabular-nums ${
-                        isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    >
-                      <div className="font-bold flex items-center justify-between">
-                        <span>Hạch toán khi mua tại Checkout:</span>
-                        <span className="text-emerald-600">Trừ luôn buổi 1 hôm nay (0đ lẻ)</span>
-                      </div>
-                      <div className="flex justify-between text-neutral-500">
-                        <span>• Số dư ví còn sau hôm nay:</span>
-                        <strong>
-                          {acc.remainingWalletAfterToday.totalRemaining}/{pkg.totalSessions} lần (
-                          {acc.remainingWalletAfterToday.totalPaidRemaining} Mua +{' '}
-                          {acc.remainingWalletAfterToday.totalBonusRemaining} Tặng 0đ)
-                        </strong>
-                      </div>
-                      <div className="flex justify-between text-neutral-500">
-                        <span>• Doanh thu thực hiện hôm nay / Giữ ví:</span>
-                        <strong>
-                          {acc.recognizedRevenueToday.toLocaleString('vi-VN')}đ /{' '}
-                          {acc.deferredRevenueBalance.toLocaleString('vi-VN')}đ
-                        </strong>
-                      </div>
-                    </div>
-
-                    {pkg.isLocked && pkg.lockReason && <Alert type="warning" showIcon message={pkg.lockReason} />}
-                  </div>
-
-                  {/* Card Actions */}
-                  <div className="flex items-center gap-2 pt-1">
-                    <Button
-                      size="small"
-                      type={isCompared ? 'primary' : 'default'}
-                      icon={<Scale className="w-3.5 h-3.5" />}
-                      onClick={() => toggleCompare(pkg.id)}
-                    >
-                      {isCompared ? 'Đang so sánh' : 'So sánh'}
-                    </Button>
-                    <Button
-                      size="small"
-                      icon={copiedId === pkg.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      onClick={() => void handleCopyQuote(pkg)}
-                    >
-                      {copiedId === pkg.id ? 'Đã copy' : 'Copy báo giá Zalo'}
-                    </Button>
-                    <Button
-                      size="small"
-                      type={isSimSelected ? 'primary' : 'dashed'}
-                      disabled={pkg.isLocked}
-                      className="flex-1"
-                      onClick={() => setSimSelectedPkgId(pkg.id)}
-                    >
-                      Mô phỏng kế toán
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </Col>
-          );
-        })}
-      </Row>
-
-      {/* Interactive Accounting & Wallet Deduction Simulator */}
+      {/* Accounting & Redemption Simulator */}
       {activeSimPkg && (
-        <Card
-          size="small"
-          className="rounded-2xl"
-          title={
-            <Space>
-              <Calculator className="w-4 h-4 text-indigo-500" />
-              <span>Bàn Mô Phỏng Hạch Toán Kế Toán & Trừ Ví Gói Tự Động ({activeSimPkg.displayName})</span>
-            </Space>
-          }
-          extra={
-            <Space>
-              <Button
-                size="small"
-                type={simMode === 'BUY_NEW' ? 'primary' : 'default'}
-                onClick={() => setSimMode('BUY_NEW')}
-              >
-                1. Khi Khách Mua Gói Mới Tại Checkout
-              </Button>
-              <Button
-                size="small"
-                type={simMode === 'REDEEM_EXISTING' ? 'primary' : 'default'}
-                onClick={() => setSimMode('REDEEM_EXISTING')}
-              >
-                2. Khi Khách Dùng Gói Đang Có (Tính Phụ Thu)
-              </Button>
-            </Space>
-          }
-        >
-          {simMode === 'BUY_NEW' && purchaseAccounting ? (
-            <Row gutter={[16, 16]}>
-              <Col xs={24} md={12}>
-                <div
-                  className={`p-3.5 rounded-xl border space-y-2 tabular-nums ${
-                    isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  <div className="font-extrabold text-sm text-indigo-600">
-                    A. Hạch Toán Tiền Thu & Doanh Thu Ca Làm Hôm Nay
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>Giá lẻ buổi nối mới hôm nay ({activeSimPkg.volumeMeta.shortLabel}):</span>
-                    <span className="line-through text-gray-400">
-                      {purchaseAccounting.todaySingleServiceOriginalPrice.toLocaleString('vi-VN')} đ (Miễn thu lẻ)
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>Tiền gói Combo khách thanh toán (Chưa VAT):</span>
-                    <strong className="text-sm">{purchaseAccounting.comboPrice.toLocaleString('vi-VN')} đ</strong>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>Tổng thanh toán gồm 8% VAT:</span>
-                    <strong className="text-amber-600 text-sm">
-                      {purchaseAccounting.comboPriceWithVat.toLocaleString('vi-VN')} đ
-                    </strong>
-                  </div>
-                  <Divider className="!my-2" />
-                  <div className="flex justify-between text-xs">
-                    <span>Doanh thu thực hiện ghi nhận hôm nay (Buổi 1):</span>
-                    <strong className="text-emerald-600">
-                      {purchaseAccounting.recognizedRevenueToday.toLocaleString('vi-VN')} đ
-                    </strong>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>Doanh thu chưa thực hiện giữ trong ví (Deferred Revenue):</span>
-                    <strong className="text-indigo-600">
-                      {purchaseAccounting.deferredRevenueBalance.toLocaleString('vi-VN')} đ
-                    </strong>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>Thưởng tiền tươi bậc thang cho CV🪶 chốt đơn:</span>
-                    <strong className="text-emerald-600">
-                      +{purchaseAccounting.cvComboBonus.toLocaleString('vi-VN')} đ
-                    </strong>
-                  </div>
-                </div>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <div
-                  className={`p-3.5 rounded-xl border space-y-2 tabular-nums ${
-                    isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  <div className="font-extrabold text-sm text-emerald-600">
-                    B. Sổ Cái Ví Gói Khách Hàng (Tách Lượt Mua vs Lượt Tặng 0đ)
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>Tổng số lượt ban đầu của gói ({activeSimPkg.ruleName}):</span>
-                    <strong>
-                      {purchaseAccounting.initialWallet.totalSessions} lần ({purchaseAccounting.initialWallet.paidNew}{' '}
-                      New mua + {purchaseAccounting.initialWallet.paidRefill} Refill mua ·{' '}
-                      {purchaseAccounting.initialWallet.bonusNew + purchaseAccounting.initialWallet.bonusRefill} Tặng
-                      0đ)
-                    </strong>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>Đã trừ ngay tại Checkout hôm nay:</span>
-                    <strong className="text-rose-500">-1 Lượt Nối Mới Mua (Paid New #1)</strong>
-                  </div>
-                  <Divider className="!my-2" />
-                  <div className="flex justify-between text-xs">
-                    <span>• Lượt Nối Mới Mua (Paid New) còn lại:</span>
-                    <strong>{purchaseAccounting.remainingWalletAfterToday.paidNew} lần</strong>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>• Lượt Dặm Mua (Paid Refill) còn lại:</span>
-                    <strong>{purchaseAccounting.remainingWalletAfterToday.paidRefill} lần</strong>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span>• Lượt Tặng Kèm 0đ (Bonus New + Refill) còn lại:</span>
-                    <strong className="text-amber-600">
-                      {purchaseAccounting.remainingWalletAfterToday.totalBonusRemaining} lần (Hạch toán 0đ khi dùng sau
-                      cùng)
-                    </strong>
-                  </div>
-                </div>
-              </Col>
-            </Row>
-          ) : (
-            redemptionAccounting && (
-              <div className="space-y-3">
-                <Row gutter={[12, 12]}>
-                  <Col xs={24} md={6}>
-                    <div className="text-xs font-bold mb-1">Trạng thái ví gói của khách:</div>
-                    <Select
-                      className="w-full"
-                      value={simWalletState}
-                      onChange={setSimWalletState}
-                      options={[
-                        { value: 'NORMAL', label: 'Ví còn đủ cả lượt New & Refill (Paid)' },
-                        { value: 'ONLY_REFILL_LEFT', label: 'Ví HẾT lượt New, chỉ còn lượt Refill' },
-                        { value: 'BONUS_ONLY_LEFT', label: 'Đã hết lượt Mua, đang dùng lượt Tặng (0đ)' },
-                      ]}
-                    />
-                  </Col>
-                  <Col xs={24} md={6}>
-                    <div className="text-xs font-bold mb-1">Dịch vụ khách yêu cầu hôm nay:</div>
-                    <Select
-                      className="w-full"
-                      value={simRedeemServiceType}
-                      onChange={setSimRedeemServiceType}
-                      options={[
-                        { value: 'Normal', label: 'Nối Mới (Normal / Quá 25 ngày)' },
-                        { value: 'Retain', label: 'Dặm Mi (Retain trong 25 ngày)' },
-                      ]}
-                    />
-                  </Col>
-                  <Col xs={24} md={6}>
-                    <div className="text-xs font-bold mb-1">Dòng mi khách làm hôm nay:</div>
-                    <Select
-                      className="w-full"
-                      value={simTargetCategoryId}
-                      onChange={(val) => {
-                        setSimTargetCategoryId(val);
-                        const cat = getWingsComboCategory(val);
-                        const firstVol = cat.unitPrices.find((u) => !u.isUnderLash && typeof u.volume === 'number');
-                        if (firstVol) setSimTargetVolume(Number(firstVol.volume));
-                      }}
-                      options={WINGS_COMBO_CATEGORIES.filter((c) => c.id !== 'VVIP').map((c) => ({
-                        value: c.id,
-                        label: c.name,
-                      }))}
-                    />
-                  </Col>
-                  <Col xs={24} md={6}>
-                    <div className="text-xs font-bold mb-1">Mã số sợi khách làm hôm nay:</div>
-                    <Select
-                      className="w-full"
-                      value={String(simTargetVolume)}
-                      onChange={(v) => setSimTargetVolume(v === 'under' ? 'under' : Number(v))}
-                      options={targetCategoryObj.unitPrices.map((u) => ({
-                        value: String(u.volume),
-                        label: u.isUnderLash
-                          ? 'Mi Dưới 390'
-                          : `Mã ${u.volume} (${u.newPrice.toLocaleString('vi-VN')}đ)`,
-                      }))}
-                    />
-                  </Col>
-                </Row>
-
-                <div
-                  className={`p-3.5 rounded-xl border space-y-1.5 tabular-nums ${
-                    isDark ? 'bg-sky-950/30 border-sky-500' : 'bg-sky-50 border-sky-400'
-                  }`}
-                >
-                  <div className="font-extrabold text-sm flex items-center justify-between">
-                    <span>Kết quả tự động trừ gói & tính phụ thu:</span>
-                    <span className="text-base text-amber-600">
-                      Khách trả thêm hôm nay: {redemptionAccounting.totalCustomerPayToday.toLocaleString('vi-VN')} đ
-                    </span>
-                  </div>
-                  <div className="text-xs">{redemptionAccounting.explanation}</div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1 text-xs">
-                    <div>
-                      • Phụ thu quy đổi Refill <ArrowRight className="w-3 h-3 inline" /> New:{' '}
-                      <strong>+{redemptionAccounting.typeConversionSurcharge.toLocaleString('vi-VN')} đ</strong>
-                    </div>
-                    <div>
-                      • Phụ thu nâng cấp số sợi / dòng mi:{' '}
-                      <strong>+{redemptionAccounting.upgradeVolumeSurcharge.toLocaleString('vi-VN')} đ</strong>
-                    </div>
-                    <div>
-                      • Doanh thu thực hiện ghi nhận cho ca làm:{' '}
-                      <strong className="text-emerald-600">
-                        {redemptionAccounting.recognizedRevenueToday.toLocaleString('vi-VN')} đ
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          )}
-        </Card>
+        <CatalogComboAccountingSimulator
+          activeSimPkg={activeSimPkg}
+          simMode={simMode}
+          onChangeSimMode={setSimMode}
+          purchaseAccounting={purchaseAccounting}
+          redemptionAccounting={redemptionAccounting}
+          simWalletState={simWalletState}
+          onChangeSimWalletState={setSimWalletState}
+          simRedeemServiceType={simRedeemServiceType}
+          onChangeSimRedeemServiceType={setSimRedeemServiceType}
+          simTargetCategoryId={simTargetCategoryId}
+          onChangeSimTargetCategoryId={setSimTargetCategoryId}
+          simTargetVolume={simTargetVolume}
+          onChangeSimTargetVolume={setSimTargetVolume}
+          targetCategoryObj={targetCategoryObj}
+          isDark={isDark}
+        />
       )}
 
       {/* Artwork Zoom Overlay */}

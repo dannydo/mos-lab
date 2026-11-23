@@ -1,44 +1,3 @@
-import React from 'react';
-import {
-  ClockCircleOutlined,
-  DashboardOutlined,
-  TeamOutlined,
-  HeartOutlined,
-  CalendarOutlined,
-  PhoneOutlined,
-  AudioOutlined,
-  BarChartOutlined,
-  SolutionOutlined,
-  ShopOutlined,
-  ShareAltOutlined,
-  BgColorsOutlined,
-  CustomerServiceOutlined,
-  SafetyCertificateOutlined,
-} from '@ant-design/icons';
-import {
-  BookOpen,
-  BarChart3,
-  CalendarCheck,
-  Egg,
-  GraduationCap,
-  LayoutDashboard,
-  Rocket,
-  Presentation,
-  Settings2,
-  Target,
-  UserRound,
-  UserRoundCog,
-  UserRoundPlus,
-  UsersRound,
-  Wallet,
-  WalletCards,
-  CalendarClock,
-  Sparkles,
-  FlaskConical,
-  Trophy,
-  DollarSign,
-} from 'lucide-react';
-
 import {
   canAccessLoca,
   CV_DEFAULT_ALLOWED_MENU_KEYS,
@@ -46,25 +5,17 @@ import {
   isCvRole,
   isManagedMenuAccessKey,
   isSuperAdminRole,
-  SafeAny,
+  type SafeAny,
 } from '@mos-lab/shared';
-import { AppIcon } from '../components/ui/AppIcon';
+import { buildAdminAndReportSidebarGroups } from './sidebar/sidebar-groups-admin';
+import { buildPrimarySidebarGroups } from './sidebar/sidebar-groups-core';
+import type { SidebarGroupConfig, SidebarItemConfig } from './sidebar/sidebar-types';
 
-export interface SidebarItemConfig {
-  key: string;
-  label: string;
-  icon?: React.ReactNode;
-  badgeCount?: number;
-  path?: string;
-  allowedRoles?: string[];
-  children?: SidebarItemConfig[];
-}
+export type { SidebarItemConfig, SidebarGroupConfig };
+export { getSelectedMenuKey } from './sidebar/sidebar-route-matcher';
 
-export interface SidebarGroupConfig {
-  groupKey: string;
-  groupTitle: string;
-  items: SidebarItemConfig[];
-}
+// Zero-Trust R&D & Mission keys remain strictly hidden from non-admins unless explicitly granted via menuVisibility
+const ZERO_TRUST_EXPLICIT_GRANT_KEYS = new Set(['labs-hub', 'pilot-dark-lashes', 'cc-payroll-pilot', 'bug-reports']);
 
 export function getSidebarGroups(
   userRole: string = '',
@@ -87,506 +38,37 @@ export function getSidebarGroups(
   const isCrmCategoryVisible = categoryVisibility.crm !== false;
   const isAcademyCategoryVisible = categoryVisibility.academy !== false;
 
-  // Group 1: TRANG CHỦ
-  const homeGroup: SidebarGroupConfig = {
-    groupKey: 'grp-home',
-    groupTitle: 'TRANG CHỦ',
-    items: [
-      {
-        key: 'dashboard',
-        label: 'Tổng quan',
-        icon: <AppIcon icon={LayoutDashboard} size="sm" />,
-        path: '/dashboard',
-      },
-      {
-        key: 'today',
-        label: 'Hôm nay',
-        icon: <AppIcon icon={CalendarCheck} size="sm" />,
-        path: '/dashboard/today',
-      },
-      {
-        key: 'schedule-calendar',
-        label: 'Lịch & Công suất',
-        icon: <CalendarOutlined />,
-        path: '/dashboard/schedule-calendar',
-      },
-      {
-        key: 'branches',
-        label: 'Chi nhánh',
-        icon: <ShopOutlined />,
-        path: '/dashboard/branches',
-      },
-    ],
-  };
-
-  // Group 2: KHÁCH HÀNG & CHIẾN DỊCH
-  const customerChildren: SidebarItemConfig[] = [];
-  if (isAdmin) {
-    customerChildren.push({
-      key: 'customers-all',
-      label: 'Tất cả KH',
-      icon: <AppIcon icon={UsersRound} size="sm" />,
-      path: '/dashboard/customers?assignedStaffId=all',
-    });
-  }
-  customerChildren.push(
-    {
-      key: 'my-customers',
-      label: 'KH của tôi',
-      icon: <AppIcon icon={UserRound} size="sm" />,
-      // A personal queue must not inherit a prior campaign/bucket tab.
-      path: '/dashboard/customers?assignedStaffId=me&tab=ALL',
-    },
-    {
-      key: 'referrals',
-      label: 'KH giới thiệu',
-      icon: <AppIcon icon={UserRoundPlus} size="sm" />,
-      path: '/dashboard/referrals',
-    }
-  );
-
-  const nycChildren: SidebarItemConfig[] = [
-    {
-      key: 'nyc-main',
-      label: 'NYC Chính',
-      icon: <AppIcon icon={Target} size="sm" />,
-      path: '/dashboard/nyc',
-    },
-  ];
-
-  if (showCustomCampaigns && activeCampaigns && activeCampaigns.length > 0) {
-    activeCampaigns.forEach((c: SafeAny) => {
-      const isNotDeleted = c.status !== 'DELETED';
-      const isVisible =
-        isNotDeleted &&
-        campaignVisibility[c.slug] !== false &&
-        (c.id === undefined || campaignVisibility[String(c.id)] !== false);
-      if (isVisible) {
-        nycChildren.push({
-          key: `nyc-campaign-${c.slug}`,
-          label: c.name,
-          icon: <AppIcon icon={Rocket} size="sm" className="text-emerald-500" />,
-          path: `/dashboard/nyc/campaigns/${c.slug}`,
-        });
-      }
-    });
-  }
-
-  nycChildren.push({
-    key: 'nyc-campaigns-mgmt',
-    label: 'Quản lý Chiến dịch',
-    icon: <AppIcon icon={Settings2} size="sm" />,
-    path: '/dashboard/nyc/campaigns',
+  const { homeGroup, crmGroup, academyGroup, operationsGroup, qualityGroup } = buildPrimarySidebarGroups({
+    normalizedRole,
+    isAdmin,
+    isLocaAllowed,
+    activeCampaigns,
+    showCustomCampaigns,
+    campaignVisibility,
+    academySidebarCampaigns,
+    academyAccess,
   });
 
-  const crmGroupItems: SidebarItemConfig[] = [
-    {
-      key: 'customers-parent',
-      label: 'Khách hàng',
-      icon: <TeamOutlined />,
-      children: customerChildren,
-    },
-  ];
-
-  crmGroupItems.push({
-    key: 'nyc-parent',
-    label: 'Chiến dịch NYC',
-    icon: <ClockCircleOutlined />,
-    children: nycChildren,
+  const { scheduleGroup, reportsGroup, labsGroup, financeGroup, systemGroup } = buildAdminAndReportSidebarGroups({
+    normalizedRole,
+    isAdmin,
+    isSuperAdmin,
+    isCv,
+    bugInboxApprovalCount,
+    activeFunds,
   });
-
-  if (isLocaAllowed) {
-    crmGroupItems.push({
-      key: 'loca',
-      label: 'Chiến dịch LoCa',
-      icon: <HeartOutlined />,
-      path: '/dashboard/loca',
-    });
-  }
-
-  crmGroupItems.push({
-    key: 'cs-hub',
-    label: 'Trung Tâm CSKH',
-    icon: <CustomerServiceOutlined />,
-    path: '/dashboard/cskh',
-  });
-
-  // This is customer booking work, not internal staff scheduling.
-  crmGroupItems.push({
-    key: 'my-appointments',
-    label: 'Lịch hẹn của tôi',
-    icon: <CalendarOutlined />,
-    path: '/dashboard/appointments',
-  });
-
-  const academyItems: SidebarItemConfig[] = [];
-  if (academyAccess) {
-    const academyChildren: SidebarItemConfig[] = [
-      {
-        key: 'academy-customers',
-        label: 'Học viên',
-        icon: <AppIcon icon={UsersRound} size="sm" />,
-        path: '/dashboard/academy-leads',
-      },
-      {
-        key: 'academy-lead-manager',
-        label: 'Lead Manager',
-        icon: <AppIcon icon={GraduationCap} size="sm" />,
-        path: '/dashboard/academy-leads/lead-manager',
-      },
-      {
-        key: 'academy-campaigns',
-        label: 'Chiến dịch',
-        icon: <AppIcon icon={Rocket} size="sm" />,
-        path: '/dashboard/academy-leads/campaigns',
-      },
-      {
-        key: 'academy-workshops',
-        label: 'Workshop OS',
-        icon: <AppIcon icon={Presentation} size="sm" />,
-        path: '/dashboard/academy-leads/workshops',
-      },
-    ];
-
-    academySidebarCampaigns.forEach((campaign: SafeAny) => {
-      const slug = String(campaign?.slug || '').trim();
-      const name = String(campaign?.name || '').trim();
-      if (!slug || !name) return;
-      academyChildren.push({
-        key: `academy-campaign-${slug}`,
-        label: name,
-        icon: <AppIcon icon={Rocket} size="sm" className="text-emerald-500" />,
-        path: `/dashboard/academy-leads/campaigns/${slug}`,
-      });
-    });
-
-    academyChildren.push({
-      key: 'academy-courses',
-      label: 'Khóa học',
-      icon: <AppIcon icon={BookOpen} size="sm" />,
-      path: '/dashboard/academy-leads/courses',
-    });
-
-    academyChildren.push({
-      key: 'academy-payment-management',
-      label: 'Thu học phí',
-      icon: <AppIcon icon={WalletCards} size="sm" />,
-      path: '/dashboard/academy-leads/payments',
-    });
-
-    academyChildren.push({
-      key: 'academy-instructors',
-      label: 'Giảng viên',
-      icon: <AppIcon icon={UserRoundCog} size="sm" />,
-      path: '/dashboard/academy-leads/instructors',
-    });
-
-    academyItems.push({
-      key: 'academy',
-      label: 'Academy',
-      icon: <AppIcon icon={GraduationCap} size="sm" />,
-      children: academyChildren,
-    });
-    academyItems.push({
-      key: 'post-hub',
-      label: 'Chiến Thần',
-      icon: <AppIcon icon={Egg} size="sm" />,
-      path: '/dashboard/post-hub',
-    });
-  }
-
-  const crmGroup: SidebarGroupConfig = {
-    groupKey: 'grp-crm',
-    groupTitle: 'KHÁCH HÀNG & CHIẾN DỊCH',
-    items: crmGroupItems,
-  };
-
-  // Academy is a dedicated operating domain, separate from customer campaigns.
-  const academyGroup: SidebarGroupConfig = {
-    groupKey: 'grp-academy',
-    groupTitle: 'ACADEMY',
-    items: academyItems,
-  };
-
-  // Keep call work separate from quality governance and staff scheduling so
-  // each sidebar group answers one operating question.
-  // Group 4: VẬN HÀNH CUỘC GỌI
-  const operationsItems: SidebarItemConfig[] = [
-    {
-      key: 'telesale-target',
-      label: 'Mục Tiêu Telesales T10',
-      icon: <AppIcon icon={Target} size="sm" className="text-amber-500" />,
-      path: '/dashboard/telesale-target',
-    },
-    {
-      key: 'telesale-competency',
-      label: 'Khung Năng Lực Telesales',
-      icon: <AppIcon icon={Trophy} size="sm" className="text-amber-500" />,
-      path: '/dashboard/telesale-competency',
-    },
-    {
-      key: 'plans',
-      label: 'Kế hoạch gọi',
-      icon: <CalendarOutlined />,
-      path: '/dashboard/plans',
-    },
-    {
-      key: 'calls',
-      label: 'Lịch sử cuộc gọi',
-      icon: <PhoneOutlined />,
-      path: '/dashboard/calls',
-    },
-    {
-      key: 'omicall',
-      label: 'Cuộc gọi OmiCall (AI)',
-      icon: <AudioOutlined />,
-      path: '/dashboard/omicall',
-    },
-  ];
-
-  const operationsGroup: SidebarGroupConfig = {
-    groupKey: 'grp-operations',
-    groupTitle: 'VẬN HÀNH CUỘC GỌI',
-    items: operationsItems,
-  };
-
-  // Group 5: QA/QC. New assessment surfaces for staff and lash technicians
-  // belong here as they are introduced; this remains distinct from call work.
-  const qualityItems: SidebarItemConfig[] = [
-    {
-      key: 'qa-shop',
-      label: 'QA & QC Shop',
-      icon: <SafetyCertificateOutlined />,
-      path: '/dashboard/qa-shop',
-    },
-  ];
-
-  if (['admin', 'manager', 'oc', 'cc'].includes(normalizedRole)) {
-    qualityItems.push({
-      key: 'fal-control-tower',
-      label: 'FAL Control Tower',
-      icon: <SafetyCertificateOutlined />,
-      path: '/dashboard/fal',
-    });
-  }
-
-  const qualityGroup: SidebarGroupConfig = {
-    groupKey: 'grp-quality',
-    groupTitle: 'QA / QC',
-    items: qualityItems,
-  };
-
-  // Group 6: NHÂN SỰ & LỊCH LÀM VIỆC
-  const scheduleItems: SidebarItemConfig[] = [];
-  if (isAdmin || ['manager', 'hr', 'lead'].includes(normalizedRole)) {
-    scheduleItems.push(
-      {
-        key: 'staff-directory',
-        label: 'Danh sách nhân sự',
-        icon: <SolutionOutlined />,
-        path: '/dashboard/staff',
-      },
-      {
-        key: 'teams',
-        label: 'Cấu hình Đội nhóm',
-        icon: <TeamOutlined />,
-        path: '/dashboard/staff/teams',
-      }
-    );
-  }
-  scheduleItems.push({
-    key: 'holiday-work',
-    label: 'Lịch nghỉ lễ',
-    icon: <AppIcon icon={CalendarClock} size="sm" />,
-    path: '/dashboard/holiday-work',
-  });
-  if (isSuperAdmin) {
-    scheduleItems.push({
-      key: 'menu-access',
-      label: 'Quyền hiển thị menu',
-      icon: <AppIcon icon={Settings2} size="sm" />,
-      path: '/dashboard/staff/menu-access',
-    });
-  }
-
-  const scheduleGroup: SidebarGroupConfig = {
-    groupKey: 'grp-schedule',
-    groupTitle: 'NHÂN SỰ & LỊCH LÀM VIỆC',
-    items: scheduleItems,
-  };
-
-  // Group 7: BÁO CÁO & KPI
-  const reportsGroup: SidebarGroupConfig = {
-    groupKey: 'grp-reports',
-    groupTitle: 'BÁO CÁO & KPI',
-    items: [
-      {
-        key: 'kpi',
-        label: 'KPI hiệu suất',
-        icon: <BarChartOutlined />,
-        path: '/dashboard/kpi',
-      },
-      {
-        key: 'cc',
-        label: 'Báo Cáo CC',
-        icon: <AppIcon icon={BarChart3} size="sm" />,
-        path: '/dashboard/cc',
-      },
-      {
-        key: 'cv',
-        label: 'Báo Cáo CV',
-        icon: <AppIcon icon={Wallet} size="sm" />,
-        path: '/dashboard/cv',
-      },
-      {
-        key: 'bk',
-        label: 'Báo Cáo BK',
-        icon: <CalendarOutlined />,
-        path: '/dashboard/bk',
-      },
-      {
-        key: 'financial-goals',
-        label: 'Mục Tiêu Tài Chính',
-        icon: <AppIcon icon={DollarSign} size="sm" className="text-amber-500" />,
-        path: '/dashboard/financial-goals',
-      },
-      {
-        key: 'cs',
-        label: 'Báo Cáo CS',
-        icon: <CustomerServiceOutlined />,
-        path: '/dashboard/cs',
-      },
-    ],
-  };
-
-  // Dedicated R&D / In-development Lab group (governed by Zero-Trust grants; career-path open by default for CV/CC)
-  const labsGroup: SidebarGroupConfig = {
-    groupKey: 'grp-labs',
-    groupTitle: 'mOS LAB · ĐANG PHÁT TRIỂN',
-    items: [
-      {
-        key: 'labs-hub',
-        label: 'Vườn ươm mOS Lab',
-        icon: <AppIcon icon={FlaskConical} size="sm" className="text-cyan-500" />,
-        path: '/dashboard/labs',
-      },
-      {
-        key: 'career-path',
-        label: 'Career Path (Lộ trình CV)',
-        icon: <AppIcon icon={Trophy} size="sm" />,
-        path: '/dashboard/career-path',
-      },
-      {
-        key: 'pilot-dark-lashes',
-        label: 'Pilot Uốn Mi Đề Thám',
-        icon: <AppIcon icon={Sparkles} size="sm" />,
-        path: '/dashboard/pilot-dark-lashes',
-      },
-      {
-        key: 'cc-payroll-pilot',
-        label: 'Pilot Payroll CC',
-        icon: <SafetyCertificateOutlined />,
-        path: '/dashboard/payroll-pilot',
-      },
-    ],
-  };
-
-  // Group 8: QUẢN TRỊ HỆ THỐNG & MISSION
-  const systemGroupItems: SidebarItemConfig[] = [];
-  if (!isCv) {
-    systemGroupItems.push({
-      key: 'bug-reports',
-      label: 'mOS Mission',
-      icon: <AppIcon icon={Rocket} size="sm" />,
-      badgeCount: bugInboxApprovalCount,
-      path: '/dashboard/bug-reports',
-    });
-  }
-  if (isAdmin) {
-    systemGroupItems.push(
-      {
-        key: 'catalog',
-        label: 'Quản lý Catalog',
-        icon: <ShopOutlined />,
-        path: '/dashboard/catalog',
-      },
-      {
-        key: 'architecture',
-        label: 'Sơ đồ Kiến trúc AI',
-        icon: <ShareAltOutlined />,
-        path: '/dashboard/architecture',
-      },
-      {
-        key: 'design-system',
-        label: 'Hệ Thống Thiết Kế',
-        icon: <BgColorsOutlined />,
-        path: '/dashboard/design-system',
-      }
-    );
-  }
-
-  const systemGroup: SidebarGroupConfig = {
-    groupKey: 'grp-system',
-    groupTitle: 'QUẢN TRỊ HỆ THỐNG',
-    items: systemGroupItems,
-  };
-
-  // Group: TÀI CHÍNH
-  const financeItems: SidebarItemConfig[] = [];
-  if (isAdmin || ['manager', 'accountant', 'boss', 'cho'].includes(normalizedRole)) {
-    const fundChildren: SidebarItemConfig[] = [];
-    if (Array.isArray(activeFunds) && activeFunds.length > 0) {
-      activeFunds.forEach((f: SafeAny) => {
-        fundChildren.push({
-          key: `finance-fund-${f.id || f.code}`,
-          label: f.name,
-          icon: <AppIcon icon={WalletCards} size="sm" className="text-emerald-500" />,
-          path: `/dashboard/funds?fundId=${f.id || f.code}`,
-        });
-      });
-    }
-
-    fundChildren.push({
-      key: 'finance-funds-manage',
-      label: 'Quản lý Quỹ',
-      icon: <AppIcon icon={Settings2} size="sm" />,
-      path: '/dashboard/funds',
-    });
-
-    financeItems.push({
-      key: 'finance-funds-parent',
-      label: 'Quỹ Hoạt Động Nội Bộ',
-      icon: <AppIcon icon={WalletCards} size="sm" className="text-emerald-500" />,
-      children: fundChildren,
-    });
-    financeItems.push({
-      key: 'finance-cash-flow',
-      label: 'Dự báo dòng tiền',
-      icon: <AppIcon icon={WalletCards} size="sm" className="text-emerald-500" />,
-      path: '/dashboard/finance/cash-flow',
-    });
-  }
-
-  const financeGroup: SidebarGroupConfig = {
-    groupKey: 'grp-finance',
-    groupTitle: 'TÀI CHÍNH',
-    items: financeItems,
-  };
 
   const groups: SidebarGroupConfig[] = [homeGroup, crmGroup];
-  if (academyItems.length > 0) {
+  if (academyGroup) {
     groups.push(academyGroup);
   }
   groups.push(operationsGroup, qualityGroup, scheduleGroup, reportsGroup, labsGroup);
-  if (financeItems.length > 0) {
+  if (financeGroup) {
     groups.push(financeGroup);
   }
-  if (systemGroupItems.length > 0) {
+  if (systemGroup) {
     groups.push(systemGroup);
   }
-
-  // Zero-Trust R&D & Mission keys remain strictly hidden from non-admins unless explicitly granted via menuVisibility
-  const ZERO_TRUST_EXPLICIT_GRANT_KEYS = new Set(['labs-hub', 'pilot-dark-lashes', 'cc-payroll-pilot', 'bug-reports']);
 
   const filterItems = (items: SidebarItemConfig[]): SidebarItemConfig[] =>
     items.flatMap((item) => {
@@ -620,7 +102,7 @@ export function getSidebarGroups(
       if (isCv) {
         if (menuVisibility[item.key] === false) return [];
         if (menuVisibility[item.key] === true) return [item];
-        return CV_DEFAULT_ALLOWED_MENU_KEYS.includes(item.key as any) ? [item] : [];
+        return CV_DEFAULT_ALLOWED_MENU_KEYS.includes(item.key as SafeAny) ? [item] : [];
       }
       return menuVisibility[item.key] === false ? [] : [item];
     });
@@ -628,74 +110,4 @@ export function getSidebarGroups(
   return groups
     .map((group) => ({ ...group, items: filterItems(group.items) }))
     .filter((group) => group.items.length > 0);
-}
-
-export function getSelectedMenuKey(
-  pathname: string,
-  assignedStaffId?: string | null,
-  academySidebarCampaigns: SafeAny[] = [],
-  activeTab?: string | null
-): string {
-  if (pathname === '/dashboard') return 'dashboard';
-  if (pathname.includes('/dashboard/today')) return 'today';
-  if (pathname.includes('/dashboard/branches') || pathname.includes('/branches')) return 'branches';
-  if (pathname.includes('/dashboard/fal')) return 'fal-control-tower';
-  if (pathname.includes('/dashboard/holiday-work')) return 'holiday-work';
-  if (pathname.includes('/dashboard/customers')) {
-    return assignedStaffId === 'me' ? 'my-customers' : 'customers-all';
-  }
-  if (pathname.includes('/dashboard/academy-leads/lead-manager')) return 'academy-lead-manager';
-  if (pathname.includes('/dashboard/academy-leads/payments')) return 'academy-payment-management';
-  if (pathname.includes('/dashboard/academy-leads/workshops')) return 'academy-workshops';
-  if (pathname.startsWith('/dashboard/academy-leads/campaigns/')) {
-    const slug = pathname.replace('/dashboard/academy-leads/campaigns/', '').split('/')[0];
-    if (academySidebarCampaigns.some((campaign) => String(campaign?.slug || '') === slug)) {
-      return `academy-campaign-${slug}`;
-    }
-    return 'academy-campaigns';
-  }
-  if (pathname.includes('/dashboard/academy-leads/campaigns')) return 'academy-campaigns';
-  if (pathname.includes('/dashboard/academy-leads/instructors')) return 'academy-instructors';
-  if (pathname.includes('/dashboard/academy-leads/courses')) return 'academy-courses';
-  if (pathname.includes('/dashboard/academy-leads')) return 'academy-customers';
-  if (pathname === '/dashboard/nyc') return 'nyc-main';
-  if (pathname.includes('/dashboard/post-hub')) return 'post-hub';
-  if (pathname === '/dashboard/nyc/campaigns') return 'nyc-campaigns-mgmt';
-  if (pathname.startsWith('/dashboard/nyc/campaigns/')) {
-    const slug = pathname.replace('/dashboard/nyc/campaigns/', '');
-    return `nyc-campaign-${slug}`;
-  }
-  if (pathname.includes('/dashboard/nyc')) return 'nyc-parent';
-  if (pathname.includes('/dashboard/loca')) return 'loca';
-  if (pathname.includes('/dashboard/schedule-calendar')) return 'schedule-calendar';
-  if (pathname.includes('/dashboard/appointments')) return 'my-appointments';
-  if (pathname.includes('/dashboard/plans')) return 'plans';
-  if (pathname.includes('/dashboard/calls')) return 'calls';
-  if (pathname.includes('/dashboard/omicall')) return 'omicall';
-  if (pathname.includes('/dashboard/qa-shop')) return 'qa-shop';
-  if (pathname.includes('/dashboard/kpi')) return 'kpi';
-  if (pathname.includes('/dashboard/labs')) return 'labs-hub';
-  if (pathname.includes('/dashboard/career-path')) return 'career-path';
-  if (pathname.includes('/dashboard/pilot-dark-lashes')) return 'pilot-dark-lashes';
-  if (pathname.includes('/dashboard/payroll-pilot')) return 'cc-payroll-pilot';
-
-  if (pathname.includes('/dashboard/financial-goals')) return 'financial-goals';
-  if (pathname.includes('/dashboard/telesale-competency')) return 'telesale-competency';
-  if (pathname.includes('/dashboard/telesale-target')) return 'telesale-target';
-  if (pathname.includes('/dashboard/cc')) return 'cc';
-  if (pathname.includes('/dashboard/cv')) return 'cv';
-  if (pathname.includes('/dashboard/bk')) return 'bk';
-  if (pathname.includes('/dashboard/staff/teams')) return 'teams';
-  if (pathname.includes('/dashboard/staff/menu-access')) return 'menu-access';
-  if (pathname.includes('/dashboard/staff')) return 'staff-directory';
-  if (pathname.includes('/dashboard/referrals')) return 'referrals';
-  if (pathname.includes('/dashboard/catalog')) return 'catalog';
-  if (pathname.includes('/dashboard/architecture')) return 'architecture';
-  if (pathname.includes('/dashboard/design-system')) return 'design-system';
-  if (pathname.includes('/dashboard/funds')) return 'finance-funds-manage';
-  if (pathname.includes('/dashboard/finance/cash-flow')) return 'finance-cash-flow';
-  if (pathname.includes('/dashboard/bug-reports')) return 'bug-reports';
-  if (pathname.includes('/dashboard/cskh')) return 'cs-hub';
-  if (pathname.includes('/dashboard/cs')) return 'cs';
-  return 'today';
 }

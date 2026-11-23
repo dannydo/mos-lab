@@ -16,34 +16,31 @@ export function useCheckoutProofCapture(initialServiceProof?: string | null, ini
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tipFileInputRef = useRef<HTMLInputElement>(null);
 
-  const captureForTarget = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>, target: 'service' | 'tip') => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const setPhoto = target === 'tip' ? setTipTransferProofPhoto : setTransferProofPhoto;
-      const setStatus = target === 'tip' ? setTipProofCloudSyncStatus : setProofCloudSyncStatus;
-      let instantUrl: string | null = null;
-      try {
-        instantUrl = URL.createObjectURL(file);
-        setPhoto(instantUrl);
-        setStatus('uploading');
-        const compressed = await compressLashImage(file, 1024, 0.72);
-        if (instantUrl) {
-          try {
-            URL.revokeObjectURL(instantUrl);
-          } catch (_) {}
-        }
-        setPhoto(compressed);
-        await new Promise((resolve) => setTimeout(resolve, 850));
-        setStatus('synced');
-      } catch (err) {
-        console.warn('[useCheckoutProofCapture] Failed to process proof image:', err);
-        setStatus('synced');
+  const captureForTarget = useCallback(async (e: React.ChangeEvent<HTMLInputElement>, target: 'service' | 'tip') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const setPhoto = target === 'tip' ? setTipTransferProofPhoto : setTransferProofPhoto;
+    const setStatus = target === 'tip' ? setTipProofCloudSyncStatus : setProofCloudSyncStatus;
+    let instantUrl: string | null = null;
+    try {
+      instantUrl = URL.createObjectURL(file);
+      setPhoto(instantUrl);
+      setStatus('uploading');
+      const compressed = await compressLashImage(file, 1024, 0.72);
+      if (instantUrl) {
+        try {
+          URL.revokeObjectURL(instantUrl);
+        } catch (_) {}
       }
-      e.target.value = '';
-    },
-    []
-  );
+      setPhoto(compressed);
+      await new Promise((resolve) => setTimeout(resolve, 850));
+      setStatus('synced');
+    } catch (err) {
+      console.warn('[useCheckoutProofCapture] Failed to process proof image:', err);
+      setStatus('synced');
+    }
+    e.target.value = '';
+  }, []);
 
   const handleCaptureProof = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => captureForTarget(e, 'service'),

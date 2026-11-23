@@ -1,81 +1,14 @@
 'use client';
 
-import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
-import dayjs from 'dayjs';
-import { Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message, Tag, Modal, Alert } from 'antd';
-import {
-  PhoneOutlined,
-  UserOutlined,
-  CalendarOutlined,
-  DeleteOutlined,
-  UndoOutlined,
-  EditOutlined,
-  FormOutlined,
-  PushpinFilled,
-  PushpinOutlined,
-  ExportOutlined,
-} from '@ant-design/icons';
-import dynamic from 'next/dynamic';
-import { useTheme } from '../context/ThemeContext';
-import { useOmiCall } from '../context/OmiCallContext';
-import { AdaptiveDrawer, CopyPhoneButton } from './ui';
-import { useResponsiveTier } from '../hooks/useResponsiveTier';
-import { BOOKING_HISTORY_UPDATED_EVENT, type BookingMutationEventDetail } from '../lib/booking-events';
-import { apiClient } from '../lib/api-client';
+import React from 'react';
+import { AdaptiveDrawer } from './ui';
+import { CustomerDetailBody } from './customer-detail-drawer/CustomerDetailBody';
+import { CustomerDetailHeader } from './customer-detail-drawer/CustomerDetailHeader';
+import { CustomerDetailModals } from './customer-detail-drawer/CustomerDetailModals';
+import type { CustomerDetailDrawerProps } from './customer-detail-drawer/types';
+import { useCustomerDetailDrawerState } from './customer-detail-drawer/useCustomerDetailDrawerState';
 
-const RescheduleBookingModal = dynamic(() => import('./RescheduleBookingModal').then((m) => m.RescheduleBookingModal), {
-  ssr: false,
-});
-const BookingWizardDrawer = dynamic(() => import('./BookingWizardDrawer'), { ssr: false });
-import CalendarPlusIcon from './icons/CalendarPlusIcon';
-import { useCustomerDetail } from './customer-detail/hooks/useCustomerDetail';
-import { isAdminOrSuperAdminRole, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
-
-// Sub-components
-import { KpiStatsCard } from './customer-detail/components/KpiStatsCard';
-import { ProfileDetailsCard } from './customer-detail/components/ProfileDetailsCard';
-import { BookingHabitsCard } from './customer-detail/components/BookingHabitsCard';
-import { ComboBalancesCard } from './customer-detail/components/ComboBalancesCard';
-import { ReferralCard } from './customer-detail/components/ReferralCard';
-import { BookingsTab } from './customer-detail/components/BookingsTab';
-import { NotesTab } from './customer-detail/components/NotesTab';
-import { CallsTab } from './customer-detail/components/CallsTab';
-import { TimelineViewTab } from './customer-detail/components/TimelineViewTab';
-import { CustomerAssignmentTimeline } from './customer-detail/components/CustomerAssignmentTimeline';
-
-const GemHistoryModal = dynamic(
-  () => import('./customer-detail/components/GemHistoryModal').then((m) => m.GemHistoryModal),
-  { ssr: false }
-);
-const ComboHistoryModal = dynamic(
-  () => import('./customer-detail/components/ComboHistoryModal').then((m) => m.ComboHistoryModal),
-  { ssr: false }
-);
-const EditCustomerModal = dynamic(
-  () => import('./customer-detail/components/EditCustomerModal').then((m) => m.EditCustomerModal),
-  { ssr: false }
-);
-const CreateNoteModal = dynamic(
-  () => import('./customer-detail/components/CreateNoteModal').then((m) => m.CreateNoteModal),
-  { ssr: false }
-);
-const TipHistoryModal = dynamic(
-  () => import('./customer-detail/components/TipHistoryModal').then((m) => m.TipHistoryModal),
-  { ssr: false }
-);
-const RevenueHistoryModal = dynamic(
-  () => import('./customer-detail/components/RevenueHistoryModal').then((m) => m.RevenueHistoryModal),
-  { ssr: false }
-);
-
-export interface CustomerDetailDrawerProps {
-  open: boolean;
-  customerId: number | null;
-  onClose: () => void;
-  onDeleteSuccess?: () => void;
-  onUpdate?: () => void;
-  zIndex?: number;
-}
+export type { CustomerDetailDrawerProps } from './customer-detail-drawer/types';
 
 const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   open,
@@ -85,306 +18,96 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   onUpdate,
   zIndex = 2000,
 }) => {
-  const { themeMode } = useTheme();
-  const { token } = theme.useToken();
-  const { makeCall, canAccessOmiCall, isAdmin, adminOmiCallEnabled } = useOmiCall();
-  const canMakeCall = canAccessOmiCall && (!isAdmin || adminOmiCallEnabled);
-  const mutedTextColor = themeMode === 'dark' ? '#cbd5e1' : '#475569';
-  const responsiveTier = useResponsiveTier();
-  const isCompactTier = responsiveTier === 'mobile' || responsiveTier === 'tablet';
-
-  const [currentCustomerId, setCurrentCustomerId] = useState<number | null>(customerId);
-  useEffect(() => {
-    setCurrentCustomerId(customerId);
-  }, [customerId]);
-
-  const [editForm] = Form.useForm();
+  const state = useCustomerDetailDrawerState({
+    open,
+    customerId,
+    onClose,
+    onDeleteSuccess,
+    onUpdate,
+  });
 
   const {
-    activeTab,
-    tabDataMap,
-    handleTabChange: hookTabChange,
-    fetchTabData,
-    counts,
-    loading,
-    data,
-    detailData,
-    rescheduleModalVisible,
-    selectedBookingForReschedule,
-    isGemModalOpen,
-    isComboModalOpen,
-    bookingWizardOpen,
-    deleteLoading,
-    isEditModalOpen,
-    saveLoading,
-    restoreLoading,
-    forbiddenError,
+    themeMode,
+    responsiveTier,
+    isCompactTier,
     drawerWidth,
     isDragging,
-    modalWidth,
-    gemModalWidth,
-    isTipModalOpen,
-    tipModalWidth,
-    isRevenueModalOpen,
-    revenueModalWidth,
-    // data items
-
+    handleMouseDown,
     customer,
+    isMaskedRole,
+    canMakeCall,
+    isManagerOrAdmin,
+    restoreLoading,
+    deleteLoading,
+    legacyProfileUrl,
+    makeCall,
+    handleRestoreCustomer,
+    handleDeleteCustomer,
+    handleOpenEditModal,
+    setIsNoteModalOpen,
+    setBookingWizardOpen,
+    loading,
+    forbiddenError,
+    data,
     stats,
     comboBalances,
     bookings,
     notes,
     calls,
-    // handlers
-    setRescheduleModalVisible,
-    setSelectedBookingForReschedule,
+    activeBookings,
+    tabDataMap,
+    counts,
+    activeTabKey,
+    currentUser,
+    unpinLoading,
+    setCurrentCustomerId,
     setIsGemModalOpen,
-    setIsComboModalOpen,
-    setBookingWizardOpen,
-    setIsEditModalOpen,
     setIsTipModalOpen,
     setIsRevenueModalOpen,
-    fetchDetails,
+    setIsComboModalOpen,
     loadDetailedData,
-    refetchTabData,
-    refreshBookingHistory,
-    refreshAllDetails,
-    handleMouseDown,
-
-    handleModalDragStart,
-    handleGemModalDragStart,
-    handleTipModalDragStart,
-    handleRevenueModalDragStart,
-    handleOpenEditModal,
-
-    handleSaveEdit,
     handleToggleForeign,
-    handleDeleteCustomer,
-    handleRestoreCustomer,
-    handleCancelBooking,
+    refreshAllDetails,
     handleUnpinNote,
     handlePinToggle,
-    unpinLoading,
-    // helpers
-    getMostFrequentDay,
-    getFavoriteTechnicians,
-    getComboDisplayInfo,
+    handleTabChange,
+    fetchTabData,
+    handleCancelBooking,
+    handleRescheduleRequest,
     getFavoriteBranch,
+    getFavoriteTechnicians,
     getRecentTechnician,
+    getMostFrequentDay,
     getFavoriteTimeSlot,
     getRecentVisitTime,
-  } = useCustomerDetail({
-    open,
-    customerId: currentCustomerId,
-    onClose,
-    onDeleteSuccess,
-    onUpdate,
+    getComboDisplayInfo,
+    detailData,
     editForm,
-  });
-
-  const currentUser = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      const userStr =
-        localStorage.getItem('mos_user') || localStorage.getItem('user') || localStorage.getItem('crm_user');
-      if (userStr) {
-        try {
-          return JSON.parse(userStr);
-        } catch {
-          // ignore
-        }
-      }
-    }
-    return null;
-  }, []);
-
-  const isManagerOrAdmin = useMemo(() => {
-    const role = currentUser?.role?.toLowerCase();
-    return isAdminOrSuperAdminRole(role) || role === 'manager';
-  }, [currentUser]);
-
-  const isMaskedRole = useMemo(() => {
-    return shouldMaskCustomerPhone(currentUser?.role);
-  }, [currentUser]);
-
-  const handleRescheduleRequest = useCallback(
-    async (booking: SafeAny) => {
-      const orderId = Number(booking?.id);
-      if (!Number.isInteger(orderId) || orderId <= 0) {
-        Modal.error({
-          title: 'Không thể dời lịch',
-          content: 'Lịch hẹn không hợp lệ. Vui lòng tải lại thông tin khách hàng và thử lại.',
-        });
-        return;
-      }
-
-      try {
-        const eligibility = await apiClient.customers.getRescheduleEligibility(orderId);
-        if (!eligibility.allowed) {
-          Modal.warning({
-            title: 'Không thể dời lịch',
-            content: eligibility.message,
-            okText: 'Đã hiểu',
-          });
-          return;
-        }
-
-        setSelectedBookingForReschedule({
-          ...booking,
-          customerName: customer?.name || 'Khách Hàng',
-          customerPhone: customer?.phone || '',
-          customerId: customer?.id,
-        });
-        setRescheduleModalVisible(true);
-      } catch (err) {
-        Modal.error({
-          title: 'Không thể kiểm tra quyền dời lịch',
-          content: (err as SafeAny).response?.data?.message || 'Vui lòng tải lại trang hoặc thử lại sau.',
-        });
-      }
-    },
-    [customer, setRescheduleModalVisible, setSelectedBookingForReschedule]
-  );
-
-  const [activeTabKey, setActiveTabKey] = useState<string>('bookings');
-  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
-
-  const hookTabChangeRef = useRef(hookTabChange);
-  hookTabChangeRef.current = hookTabChange;
-
-  const prevOpenRef = useRef(false);
-  // Sync tab with localStorage on mount & open changes
-  useEffect(() => {
-    if (open && !prevOpenRef.current && typeof window !== 'undefined') {
-      const saved = localStorage.getItem('customer_detail_active_tab') || 'bookings';
-      setActiveTabKey(saved);
-      if (saved !== 'bookings') {
-        hookTabChangeRef.current?.(saved);
-      }
-    }
-    prevOpenRef.current = open;
-  }, [open]);
-
-  const handleTabChange = (key: string) => {
-    setActiveTabKey(key);
-    hookTabChange(key);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('customer_detail_active_tab', key);
-    }
-  };
-
-  const returnToBookingHistory = useCallback(() => {
-    setActiveTabKey('bookings');
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('customer_detail_active_tab', 'bookings');
-    }
-    void refreshBookingHistory();
-  }, [refreshBookingHistory]);
-
-  useEffect(() => {
-    const handleBookingHistoryUpdated = (event: Event) => {
-      const detail = (event as CustomEvent<BookingMutationEventDetail>).detail;
-      if (!open || !customerId || detail?.customerId !== customerId) return;
-      returnToBookingHistory();
-    };
-
-    window.addEventListener(BOOKING_HISTORY_UPDATED_EVENT, handleBookingHistoryUpdated);
-    return () => window.removeEventListener(BOOKING_HISTORY_UPDATED_EVENT, handleBookingHistoryUpdated);
-  }, [customerId, open, returnToBookingHistory]);
-
-  const timelineCount = useMemo(() => {
-    const bookingIdsWithNotes = new Set<string>();
-
-    bookings.forEach((b: SafeAny) => {
-      if (b.bookingNote && b.bookingNote.trim() !== '') {
-        bookingIdsWithNotes.add(String(b.id));
-      }
-    });
-
-    const findClosestBooking = (dateStr: string | null) => {
-      if (!dateStr || bookings.length === 0) return null;
-      const targetTime = new Date(dateStr).getTime();
-      let closestBooking: SafeAny = null;
-      let minDiff = Infinity;
-
-      bookings.forEach((b: SafeAny) => {
-        if (!b.bookingDate) return;
-        const diff = Math.abs(new Date(b.bookingDate).getTime() - targetTime);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closestBooking = b;
-        }
-      });
-
-      if (minDiff <= 432000000) {
-        return closestBooking;
-      }
-      return null;
-    };
-
-    const safeNotes = notes || [];
-    const safeCalls = calls || [];
-    if (safeNotes.length === 0 && safeCalls.length === 0) {
-      return bookingIdsWithNotes.size;
-    }
-
-    let hasGeneralNotes = false;
-
-    safeNotes.forEach((n: SafeAny) => {
-      let targetBookingId = n.orderId ? String(n.orderId) : null;
-      if (!targetBookingId) {
-        const closest = findClosestBooking(n.dateCreated);
-        if (closest) targetBookingId = String(closest.id);
-      }
-      if (targetBookingId) {
-        bookingIdsWithNotes.add(targetBookingId);
-      } else {
-        hasGeneralNotes = true;
-      }
-    });
-
-    calls.forEach((c: SafeAny) => {
-      if (!c.note || c.note.trim() === '') return;
-      const closest = findClosestBooking(c.createdAt);
-      const targetBookingId = closest ? String(closest.id) : null;
-      if (targetBookingId) {
-        bookingIdsWithNotes.add(targetBookingId);
-      } else {
-        hasGeneralNotes = true;
-      }
-    });
-
-    return bookingIdsWithNotes.size + (hasGeneralNotes ? 1 : 0);
-  }, [bookings, notes, calls]);
-
-  const activePhone = useMemo(() => {
-    if (!customer) return '';
-    if (customer.phones && customer.phones.length > 0) {
-      const enabled = customer.phones.find((p: SafeAny) => !p.is_disabled);
-      if (enabled && enabled.phone_number) return enabled.phone_number;
-      if (customer.phones[0] && customer.phones[0].phone_number) return customer.phones[0].phone_number;
-    }
-    return customer.phone || '';
-  }, [customer]);
-
-  const getLegacyDomain = () => {
-    if (typeof window !== 'undefined') {
-      const host = window.location.hostname;
-      if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.')) {
-        return 'http://localhost';
-      }
-    }
-    return 'https://wingslashes.com';
-  };
-
-  const domain = getLegacyDomain();
-  const phoneToUse = activePhone || customer?.phone || '';
-  const legacyProfileUrl = phoneToUse
-    ? `${domain}/admin/customer-support/user/customer?phone=${encodeURIComponent(phoneToUse)}`
-    : `${domain}/admin/customer-support/user/customer?id=${customer?.id || ''}`;
-
-  const activeBookings = useMemo(() => {
-    return tabDataMap['bookings']?.items || bookings || [];
-  }, [tabDataMap, bookings]);
+    rescheduleModalVisible,
+    selectedBookingForReschedule,
+    setRescheduleModalVisible,
+    setSelectedBookingForReschedule,
+    rescheduleAlert,
+    closeRescheduleAlert,
+    isGemModalOpen,
+    gemModalWidth,
+    handleGemModalDragStart,
+    isTipModalOpen,
+    tipModalWidth,
+    handleTipModalDragStart,
+    isRevenueModalOpen,
+    revenueModalWidth,
+    handleRevenueModalDragStart,
+    isComboModalOpen,
+    modalWidth,
+    handleModalDragStart,
+    isEditModalOpen,
+    setIsEditModalOpen,
+    handleSaveEdit,
+    saveLoading,
+    isNoteModalOpen,
+    bookingWizardOpen,
+  } = state;
 
   return (
     <AdaptiveDrawer
@@ -393,306 +116,24 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
       zIndex={zIndex}
       title={
         customer && (
-          <div
-            className="customer-detail-header"
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              width: '100%',
-              paddingRight: '12px',
-            }}
-          >
-            {isCompactTier && (
-              <div
-                className="customer-detail-mobile-topbar"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  width: '100%',
-                  paddingBottom: '8px',
-                  marginBottom: '6px',
-                  borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 active:scale-95 transition-all cursor-pointer"
-                  style={{ minHeight: '32px' }}
-                  aria-label="Quay lại"
-                >
-                  <UndoOutlined style={{ fontSize: '13px' }} />
-                  <span>Quay lại</span>
-                </button>
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    color: mutedTextColor,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  Hồ sơ khách hàng
-                </span>
-              </div>
-            )}
-            <div className="customer-detail-identity" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Avatar
-                className="customer-detail-avatar"
-                size={40}
-                src={customer.avatar || undefined}
-                icon={!customer.avatar && <UserOutlined />}
-                style={{
-                  backgroundColor: themeMode === 'dark' ? '#334155' : '#D4A84B',
-                  border: `2px solid ${themeMode === 'dark' ? '#475569' : '#ffffff'}`,
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                }}
-              />
-              <div className="customer-detail-identity-copy">
-                <div
-                  className="customer-detail-name"
-                  style={{
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    color: themeMode === 'dark' ? '#ffffff' : '#1f2937',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  {customer.name}
-                  <span style={{ color: '#D4A84B', fontSize: '14px' }}>⭐⭐⭐⭐•</span>
-                  {customer.isForeign && (
-                    <Tag
-                      color="purple"
-                      style={{
-                        margin: 0,
-                        fontSize: '10px',
-                        fontWeight: 600,
-                        padding: '0 6px',
-                        borderRadius: '4px',
-                        lineHeight: '20px',
-                      }}
-                    >
-                      🌐 Nước ngoài
-                    </Tag>
-                  )}
-                </div>
-                <div
-                  className="customer-detail-contact-row"
-                  style={{
-                    fontSize: '12px',
-                    color: mutedTextColor,
-                    marginTop: '2px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <div
-                    className="customer-detail-phone-list"
-                    style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}
-                  >
-                    {customer.phones && customer.phones.length > 0 ? (
-                      customer.phones.map((phoneObj: SafeAny) => {
-                        const displayPhone = isMaskedRole
-                          ? maskPhoneNumber(phoneObj.phone_number)
-                          : phoneObj.phone_number;
-                        return (
-                          <div key={phoneObj.id} className="inline-flex items-center gap-1">
-                            <span
-                              className={`inline-flex items-center gap-1.5 select-text ${phoneObj.is_disabled ? 'opacity-50 line-through' : ''} ${!isMaskedRole && canMakeCall ? 'cursor-pointer hover:underline' : ''}`}
-                              onClick={() => {
-                                if (!isMaskedRole && !phoneObj.is_disabled && canMakeCall) {
-                                  makeCall(
-                                    phoneObj.phone_number,
-                                    customer.name,
-                                    customer.id,
-                                    customer.avatar || undefined
-                                  );
-                                }
-                              }}
-                              style={{
-                                fontSize: '12px',
-                                color: phoneObj.is_disabled ? token.colorTextDisabled : token.colorText,
-                                fontWeight: phoneObj.is_disabled ? 'normal' : '600',
-                              }}
-                            >
-                              <PhoneOutlined style={{ color: phoneObj.is_disabled ? '#bbb' : '#D4A84B' }} />
-                              <span>
-                                {displayPhone} {phoneObj.is_disabled && '(Vô hiệu hóa)'}
-                              </span>
-                            </span>
-                            {!isMaskedRole && <CopyPhoneButton phone={phoneObj.phone_number} size="xs" />}
-                          </div>
-                        );
-                      })
-                    ) : customer.phone ? (
-                      <div className="inline-flex items-center gap-1">
-                        <span
-                          className={`inline-flex items-center gap-1.5 select-text ${!isMaskedRole && canMakeCall ? 'cursor-pointer hover:underline' : ''}`}
-                          onClick={() => {
-                            if (!isMaskedRole && canMakeCall) {
-                              makeCall(customer.phone, customer.name, customer.id, customer.avatar || undefined);
-                            }
-                          }}
-                          style={{ fontSize: '12px', color: token.colorText, fontWeight: '600' }}
-                        >
-                          <PhoneOutlined style={{ color: '#D4A84B' }} />
-                          <span>{isMaskedRole ? maskPhoneNumber(customer.phone) : customer.phone}</span>
-                        </span>
-                        {!isMaskedRole && <CopyPhoneButton phone={customer.phone} size="xs" />}
-                      </div>
-                    ) : (
-                      <span>
-                        <PhoneOutlined /> -
-                      </span>
-                    )}
-                  </div>
-                  {!isMaskedRole && (
-                    <Tooltip title="Mở hồ sơ trên hệ thống Legacy">
-                      <a
-                        className="customer-detail-legacy-profile"
-                        href={legacyProfileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          color: themeMode === 'dark' ? '#60a5fa' : '#2563eb',
-                          fontSize: '12px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '6px',
-                          background: themeMode === 'dark' ? 'rgba(37, 99, 235, 0.15)' : '#eff6ff',
-                          border: `1px solid ${themeMode === 'dark' ? 'rgba(96, 165, 250, 0.3)' : '#bfdbfe'}`,
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        <ExportOutlined style={{ fontSize: '12px' }} />
-                      </a>
-                    </Tooltip>
-                  )}
-                  {customer.email && <span>Email: {customer.email}</span>}
-                  {customer.dob && (
-                    <span
-                      className="customer-detail-birthday"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      🎂 {dayjs(customer.dob).format('DD/MM/YYYY')}
-                      {customer.age !== undefined && customer.age !== null && (
-                        <span
-                          style={{
-                            background: themeMode === 'dark' ? '#262626' : '#e6f7ff',
-                            color: themeMode === 'dark' ? '#1890ff' : '#096dd9',
-                            padding: '0 6px',
-                            borderRadius: '10px',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                          }}
-                        >
-                          {customer.age} tuổi
-                        </span>
-                      )}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <Space className="customer-detail-actions">
-              {isManagerOrAdmin &&
-                (customer.isDeleted ? (
-                  <Popconfirm
-                    title="Khôi phục khách hàng"
-                    description="Bạn có chắc chắn muốn khôi phục khách hàng này?"
-                    onConfirm={handleRestoreCustomer}
-                    okText="Khôi phục"
-                    cancelText="Hủy"
-                    okButtonProps={{ loading: restoreLoading }}
-                  >
-                    <Tooltip title="Khôi Phục Khách Hàng">
-                      <Button
-                        className="customer-detail-action"
-                        type="primary"
-                        icon={<UndoOutlined />}
-                        style={{ fontWeight: 'bold', background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}
-                      />
-                    </Tooltip>
-                  </Popconfirm>
-                ) : (
-                  <Popconfirm
-                    title="Xóa khách hàng"
-                    description="Bạn có chắc chắn muốn xóa khách hàng này không? Khách hàng sẽ bị chuyển vào thùng rác."
-                    onConfirm={handleDeleteCustomer}
-                    okText="Xóa"
-                    cancelText="Hủy"
-                    okButtonProps={{ danger: true, loading: deleteLoading }}
-                  >
-                    <Tooltip title="Xóa Khách Hàng">
-                      <Button
-                        className="customer-detail-action"
-                        danger
-                        type="dashed"
-                        icon={<DeleteOutlined />}
-                        style={{ fontWeight: 'bold' }}
-                      />
-                    </Tooltip>
-                  </Popconfirm>
-                ))}
-              <Tooltip title="Sửa Thông Tin">
-                <Button
-                  className="customer-detail-action"
-                  type="default"
-                  icon={<EditOutlined />}
-                  style={{
-                    fontWeight: 'bold',
-                    borderColor: themeMode === 'dark' ? '#334155' : '#d9d9d9',
-                    color: themeMode === 'dark' ? '#fff' : '#1f2937',
-                  }}
-                  onClick={handleOpenEditModal}
-                />
-              </Tooltip>
-              <Tooltip title="Thêm Ghi Chú">
-                <Button
-                  className="customer-detail-action"
-                  type="default"
-                  icon={<FormOutlined />}
-                  style={{
-                    fontWeight: 'bold',
-                    borderColor: themeMode === 'dark' ? '#334155' : '#d9d9d9',
-                    color: themeMode === 'dark' ? '#fff' : '#1f2937',
-                  }}
-                  onClick={() => setIsNoteModalOpen(true)}
-                />
-              </Tooltip>
-              <Tooltip title="Đặt Lịch Hẹn">
-                <Button
-                  className="customer-detail-action customer-detail-primary-action"
-                  type="primary"
-                  icon={<CalendarPlusIcon fontSize={18} />}
-                  style={{
-                    background: '#D4A84B',
-                    borderColor: '#D4A84B',
-                    height: '36px',
-                    width: '36px',
-                    padding: 0,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: '8px',
-                    boxShadow: '0 2px 6px rgba(212, 168, 75, 0.3)',
-                  }}
-                  onClick={() => setBookingWizardOpen(true)}
-                />
-              </Tooltip>
-            </Space>
-          </div>
+          <CustomerDetailHeader
+            customer={customer}
+            themeMode={themeMode}
+            isCompactTier={isCompactTier}
+            isMaskedRole={isMaskedRole}
+            canMakeCall={canMakeCall}
+            isManagerOrAdmin={isManagerOrAdmin}
+            restoreLoading={restoreLoading}
+            deleteLoading={deleteLoading}
+            legacyProfileUrl={legacyProfileUrl}
+            onClose={onClose}
+            makeCall={makeCall}
+            onRestoreCustomer={handleRestoreCustomer}
+            onDeleteCustomer={handleDeleteCustomer}
+            onOpenEditModal={handleOpenEditModal}
+            onOpenNoteModal={() => setIsNoteModalOpen(true)}
+            onOpenBookingWizard={() => setBookingWizardOpen(true)}
+          />
         )
       }
       placement="right"
@@ -714,465 +155,95 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
       {/* Drag handle for resizable drawer */}
       {!isCompactTier && (
         <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            bottom: 0,
-            width: '6px',
-            cursor: 'ew-resize',
-            zIndex: 1000,
-            background: isDragging ? '#D4A84B' : 'transparent',
-            borderLeft: isDragging ? '2px solid #D4A84B' : 'none',
-            transition: 'background 0.2s',
-          }}
           onMouseDown={handleMouseDown}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(212, 168, 75, 0.3)';
-          }}
-          onMouseLeave={(e) => {
-            if (!isDragging) e.currentTarget.style.background = 'transparent';
-          }}
-        />
-      )}
-      <Spin spinning={loading}>
-        {forbiddenError ? (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '400px',
-              padding: '40px 20px',
-              textAlign: 'center',
-              background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-              borderRadius: '12px',
-              border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-            }}
-          >
-            <div style={{ fontSize: '56px', marginBottom: '16px' }}>🔒</div>
-            <h3
-              style={{
-                fontSize: '18px',
-                fontWeight: 'bold',
-                color: themeMode === 'dark' ? '#fff' : '#1f2937',
-                marginBottom: '8px',
-              }}
-            >
-              Quyền Truy Cập Bị Hạn Chế
-            </h3>
-            <p
-              style={{
-                fontSize: '14px',
-                color: mutedTextColor,
-                maxWidth: '400px',
-                marginBottom: '24px',
-                lineHeight: '1.5',
-              }}
-            >
-              {forbiddenError}
-            </p>
-            <Button
-              type="primary"
-              onClick={onClose}
-              style={{ background: '#D4A84B', borderColor: '#D4A84B', fontWeight: 'bold', borderRadius: '6px' }}
-            >
-              Đóng cửa sổ
-            </Button>
-          </div>
-        ) : (
-          customer && (
-            <div>
-              {data?.duplicateNotice && (
-                <Alert
-                  type="info"
-                  showIcon
-                  message="Phát hiện hồ sơ gốc có đầy đủ lịch sử"
-                  description={
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: '8px',
-                        marginTop: '4px',
-                      }}
-                    >
-                      <span>
-                        Hồ sơ hiện tại có thể là bản trùng chưa có lịch sử. Tìm thấy hồ sơ gốc{' '}
-                        <b>
-                          {data.duplicateNotice.originalCustomerName} (ID: #{data.duplicateNotice.originalCustomerId})
-                        </b>{' '}
-                        với <b>{data.duplicateNotice.bookingCount}</b> lượt đặt lịch.
-                      </span>
-                      <Button
-                        type="primary"
-                        size="small"
-                        onClick={() => setCurrentCustomerId(data.duplicateNotice.originalCustomerId)}
-                        style={{ background: '#D4A84B', borderColor: '#D4A84B', fontWeight: 600, color: '#fff' }}
-                      >
-                        Mở hồ sơ #{data.duplicateNotice.originalCustomerId}
-                      </Button>
-                    </div>
-                  }
-                  style={{ marginBottom: '16px', borderRadius: '8px' }}
-                />
-              )}
-              {customer?.isDeleted ? (
-                <Alert
-                  type="warning"
-                  showIcon
-                  message="Hồ sơ này đã bị xóa hoặc đã được gộp vào hồ sơ chính"
-                  style={{ marginBottom: '16px', borderRadius: '8px' }}
-                />
-              ) : null}
-              <div
-                className="customer-detail-layout"
-                style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}
-              >
-                {/* SIDEBAR: Info & Stats */}
-                <div
-                  className="customer-detail-sidebar"
-                  style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
-                >
-                  <KpiStatsCard
-                    stats={stats}
-                    themeMode={themeMode}
-                    onOpenGemModal={() => {
-                      setIsGemModalOpen(true);
-                      void loadDetailedData();
-                    }}
-                    onOpenTipModal={() => {
-                      setIsTipModalOpen(true);
-                      void loadDetailedData();
-                    }}
-                    onOpenRevenueModal={() => {
-                      setIsRevenueModalOpen(true);
-                      void loadDetailedData();
-                    }}
-                  />
-
-                  <ProfileDetailsCard customer={customer} themeMode={themeMode} onToggleForeign={handleToggleForeign} />
-
-                  <BookingHabitsCard
-                    themeMode={themeMode}
-                    bookings={activeBookings}
-                    getFavoriteBranch={getFavoriteBranch}
-                    getFavoriteTechnicians={getFavoriteTechnicians}
-                    getRecentTechnician={getRecentTechnician}
-                    getMostFrequentDay={getMostFrequentDay}
-                    getFavoriteTimeSlot={getFavoriteTimeSlot}
-                    getRecentVisitTime={getRecentVisitTime}
-                  />
-
-                  <ComboBalancesCard
-                    comboBalances={comboBalances}
-                    customerName={customer?.name || ''}
-                    customerId={customer?.id}
-                    customer={customer}
-                    onRefreshCustomer={refreshAllDetails}
-                    themeMode={themeMode}
-                    getComboDisplayInfo={getComboDisplayInfo}
-                    onOpenComboModal={() => {
-                      setIsComboModalOpen(true);
-                      void loadDetailedData();
-                    }}
-                  />
-
-                  <ReferralCard data={data} themeMode={themeMode} />
-                </div>
-
-                {/* MAIN PANEL: Timelines & History */}
-                <div
-                  className="customer-detail-history"
-                  style={{
-                    background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                    border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-                    borderRadius: '8px',
-                    padding: '20px',
-                    minHeight: '600px',
-                  }}
-                >
-                  {/* Pinned / Sticky Notes Alert Box */}
-                  {notes && notes.some((n: SafeAny) => n.isSticky) && (
-                    <div
-                      style={{
-                        background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.05)' : '#fff1f0',
-                        border: `1px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.2)' : '#ffccc7'}`,
-                        borderRadius: '8px',
-                        padding: '12px 16px',
-                        marginBottom: '16px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                        <PushpinFilled
-                          style={{ color: themeMode === 'dark' ? '#f87171' : '#b91c1c', fontSize: '15px' }}
-                        />
-                        <strong
-                          style={{
-                            color: themeMode === 'dark' ? '#f87171' : '#cf1322',
-                            fontSize: '13px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                          }}
-                        >
-                          Ghi chú quan trọng
-                        </strong>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {notes
-                          .filter((n: SafeAny) => n.isSticky)
-                          .map((n: SafeAny) => {
-                            let formattedDate = '';
-                            if (n.dateCreated) {
-                              const d = new Date(n.dateCreated);
-                              formattedDate = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
-                            }
-                            return (
-                              <div
-                                key={n.id}
-                                style={{
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                  alignItems: 'flex-start',
-                                  gap: '12px',
-                                  borderLeft: `2px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.4)' : '#ffa39e'}`,
-                                  paddingLeft: '10px',
-                                }}
-                              >
-                                <div style={{ flex: 1 }}>
-                                  <div
-                                    style={{
-                                      whiteSpace: 'pre-wrap',
-                                      fontWeight: '500',
-                                      fontSize: '13px',
-                                      color: themeMode === 'dark' ? '#cbd5e1' : '#3f3f46',
-                                      lineHeight: '1.5',
-                                    }}
-                                  >
-                                    {n.note}
-                                  </div>
-                                  <div style={{ fontSize: '11px', color: mutedTextColor, marginTop: '2px' }}>
-                                    Bởi: <strong>{n.staffName}</strong> ({formattedDate})
-                                  </div>
-                                </div>
-                                {isManagerOrAdmin && (
-                                  <Tooltip title="Bỏ ghim ghi chú">
-                                    <Button
-                                      type="text"
-                                      size="small"
-                                      danger
-                                      icon={<PushpinOutlined style={{ fontSize: '14px' }} />}
-                                      loading={unpinLoading}
-                                      onClick={() => handleUnpinNote(n.id)}
-                                      style={{
-                                        padding: '0 4px',
-                                        height: '22px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                      }}
-                                    />
-                                  </Tooltip>
-                                )}
-                              </div>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  )}
-                  {(() => {
-                    const activeBookings = tabDataMap['bookings']?.items || bookings || [];
-                    const activeNotes = tabDataMap['notes']?.items || notes || [];
-                    const activeCalls = tabDataMap['calls']?.items || calls || [];
-
-                    const bCount = Math.max(counts?.bookingCount ?? 0, activeBookings.length);
-                    const nCount = Math.max(counts?.noteCount ?? 0, activeNotes.length);
-                    const cCount = Math.max(counts?.callCount ?? 0, activeCalls.length);
-
-                    return (
-                      <Tabs
-                        className="customer-detail-tabs"
-                        activeKey={activeTabKey}
-                        onChange={handleTabChange}
-                        items={[
-                          {
-                            key: 'bookings',
-                            label: `Lịch sử đặt lịch (${bCount})`,
-                            children: (
-                              <BookingsTab
-                                bookings={activeBookings}
-                                notes={activeNotes}
-                                themeMode={themeMode}
-                                customer={customer}
-                                handleCancelBooking={handleCancelBooking}
-                                onRequestReschedule={handleRescheduleRequest}
-                                loading={tabDataMap['bookings']?.loading}
-                                hasMore={tabDataMap['bookings']?.hasMore}
-                                onLoadMore={() =>
-                                  fetchTabData('bookings', (tabDataMap['bookings']?.page || 1) + 1, true)
-                                }
-                                onRefreshDetails={refreshAllDetails}
-                              />
-                            ),
-                          },
-                          {
-                            key: 'timeline',
-                            label: `Tổng hợp ghi chú (${nCount})`,
-                            children: (
-                              <TimelineViewTab
-                                bookings={activeBookings}
-                                notes={activeNotes}
-                                calls={activeCalls}
-                                themeMode={themeMode}
-                              />
-                            ),
-                          },
-                          {
-                            key: 'notes',
-                            label: `Nhật ký ghi chú (${nCount})`,
-                            children: (
-                              <NotesTab
-                                notes={activeNotes}
-                                themeMode={themeMode}
-                                currentUser={currentUser}
-                                onPinToggle={handlePinToggle}
-                                unpinLoading={unpinLoading}
-                                loading={tabDataMap['notes']?.loading}
-                                hasMore={tabDataMap['notes']?.hasMore}
-                                onLoadMore={() => fetchTabData('notes', (tabDataMap['notes']?.page || 1) + 1, true)}
-                              />
-                            ),
-                          },
-                          {
-                            key: 'calls',
-                            label: `Lịch sử cuộc gọi (${cCount})`,
-                            children: (
-                              <CallsTab
-                                calls={activeCalls}
-                                themeMode={themeMode}
-                                loading={tabDataMap['calls']?.loading}
-                                hasMore={tabDataMap['calls']?.hasMore}
-                                onLoadMore={() => fetchTabData('calls', (tabDataMap['calls']?.page || 1) + 1, true)}
-                              />
-                            ),
-                          },
-                          {
-                            key: 'assignment-timeline',
-                            label: `Lịch sử Phân bổ`,
-                            children: <CustomerAssignmentTimeline customerId={customer.id} />,
-                          },
-                        ]}
-                      />
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-          )
-        )}
-      </Spin>
-
-      {rescheduleModalVisible && (
-        <RescheduleBookingModal
-          open={rescheduleModalVisible}
-          booking={selectedBookingForReschedule}
-          onClose={() => {
-            setRescheduleModalVisible(false);
-            setSelectedBookingForReschedule(null);
-          }}
-          onSuccess={() => {
-            refreshAllDetails();
-          }}
+          className={`absolute inset-y-0 left-0 z-[1000] w-1.5 cursor-ew-resize transition-colors duration-200 ${
+            isDragging ? 'border-l-2 border-amber-500 bg-amber-500' : 'bg-transparent hover:bg-amber-500/30'
+          }`}
         />
       )}
 
-      {isGemModalOpen && (
-        <GemHistoryModal
-          open={isGemModalOpen}
-          onCancel={() => setIsGemModalOpen(false)}
-          customer={customer}
-          gemTransactions={detailData?.gemTransactions || []}
-          gemModalWidth={gemModalWidth}
-          handleGemModalDragStart={handleGemModalDragStart}
-        />
-      )}
+      <CustomerDetailBody
+        loading={loading}
+        forbiddenError={forbiddenError}
+        themeMode={themeMode}
+        data={data}
+        customer={customer}
+        stats={stats}
+        comboBalances={comboBalances}
+        bookings={bookings}
+        notes={notes}
+        calls={calls}
+        activeBookings={activeBookings}
+        tabDataMap={tabDataMap}
+        counts={counts}
+        activeTabKey={activeTabKey}
+        currentUser={currentUser}
+        isManagerOrAdmin={isManagerOrAdmin}
+        unpinLoading={unpinLoading}
+        onClose={onClose}
+        onSelectCustomerId={setCurrentCustomerId}
+        onOpenGemModal={() => setIsGemModalOpen(true)}
+        onOpenTipModal={() => setIsTipModalOpen(true)}
+        onOpenRevenueModal={() => setIsRevenueModalOpen(true)}
+        onOpenComboModal={() => setIsComboModalOpen(true)}
+        onLoadDetailedData={loadDetailedData}
+        onToggleForeign={handleToggleForeign}
+        onRefreshAllDetails={refreshAllDetails}
+        onUnpinNote={handleUnpinNote}
+        onPinToggle={handlePinToggle}
+        onTabChange={handleTabChange}
+        onFetchTabData={fetchTabData}
+        onCancelBooking={handleCancelBooking}
+        onRequestReschedule={handleRescheduleRequest}
+        getFavoriteBranch={getFavoriteBranch}
+        getFavoriteTechnicians={getFavoriteTechnicians}
+        getRecentTechnician={getRecentTechnician}
+        getMostFrequentDay={getMostFrequentDay}
+        getFavoriteTimeSlot={getFavoriteTimeSlot}
+        getRecentVisitTime={getRecentVisitTime}
+        getComboDisplayInfo={getComboDisplayInfo}
+      />
 
-      {isTipModalOpen && (
-        <TipHistoryModal
-          open={isTipModalOpen}
-          onCancel={() => setIsTipModalOpen(false)}
-          customer={customer}
-          tipTransactions={detailData?.tipTransactions || []}
-          modalWidth={tipModalWidth}
-          handleModalDragStart={handleTipModalDragStart}
-        />
-      )}
-
-      {isRevenueModalOpen && (
-        <RevenueHistoryModal
-          open={isRevenueModalOpen}
-          onCancel={() => setIsRevenueModalOpen(false)}
-          customer={customer}
-          revenueTransactions={detailData?.revenueTransactions || []}
-          modalWidth={revenueModalWidth}
-          handleModalDragStart={handleRevenueModalDragStart}
-        />
-      )}
-
-      {isComboModalOpen && (
-        <ComboHistoryModal
-          open={isComboModalOpen}
-          onCancel={() => setIsComboModalOpen(false)}
-          customer={customer}
-          comboBalances={detailData?.comboBalances || comboBalances}
-          modalWidth={modalWidth}
-          handleModalDragStart={handleModalDragStart}
-        />
-      )}
-
-      {isEditModalOpen && (
-        <EditCustomerModal
-          open={isEditModalOpen}
-          onCancel={() => setIsEditModalOpen(false)}
-          onOk={handleSaveEdit}
-          confirmLoading={saveLoading}
-          form={editForm}
-        />
-      )}
-
-      {isNoteModalOpen && (
-        <CreateNoteModal
-          open={isNoteModalOpen}
-          customerId={customer ? customer.id : null}
-          onCancel={() => setIsNoteModalOpen(false)}
-          onSuccess={() => {
-            setIsNoteModalOpen(false);
-            refreshAllDetails();
-          }}
-        />
-      )}
-
-      {bookingWizardOpen && (
-        <BookingWizardDrawer
-          open={bookingWizardOpen}
-          onClose={() => setBookingWizardOpen(false)}
-          onSuccess={() => {
-            setBookingWizardOpen(false);
-          }}
-          initialCustomer={{
-            id: customer.id,
-            name: customer.name,
-            phone: customer.phone,
-            bucket: customer.bucket,
-            lastVisit: customer.lastVisit,
-            lastCompletedVisit: (customer as SafeAny)?.lastCompletedVisit || customer.lastVisit,
-          }}
-        />
-      )}
+      <CustomerDetailModals
+        themeMode={themeMode}
+        customer={customer}
+        detailData={detailData}
+        comboBalances={comboBalances}
+        editForm={editForm}
+        rescheduleModalVisible={rescheduleModalVisible}
+        selectedBookingForReschedule={selectedBookingForReschedule}
+        onCloseRescheduleModal={() => {
+          setRescheduleModalVisible(false);
+          setSelectedBookingForReschedule(null);
+        }}
+        rescheduleAlert={rescheduleAlert}
+        onCloseRescheduleAlert={closeRescheduleAlert}
+        isGemModalOpen={isGemModalOpen}
+        onCloseGemModal={() => setIsGemModalOpen(false)}
+        gemModalWidth={gemModalWidth}
+        handleGemModalDragStart={handleGemModalDragStart}
+        isTipModalOpen={isTipModalOpen}
+        onCloseTipModal={() => setIsTipModalOpen(false)}
+        tipModalWidth={tipModalWidth}
+        handleTipModalDragStart={handleTipModalDragStart}
+        isRevenueModalOpen={isRevenueModalOpen}
+        onCloseRevenueModal={() => setIsRevenueModalOpen(false)}
+        revenueModalWidth={revenueModalWidth}
+        handleRevenueModalDragStart={handleRevenueModalDragStart}
+        isComboModalOpen={isComboModalOpen}
+        onCloseComboModal={() => setIsComboModalOpen(false)}
+        modalWidth={modalWidth}
+        handleModalDragStart={handleModalDragStart}
+        isEditModalOpen={isEditModalOpen}
+        onCloseEditModal={() => setIsEditModalOpen(false)}
+        onSaveEdit={handleSaveEdit}
+        saveLoading={saveLoading}
+        isNoteModalOpen={isNoteModalOpen}
+        onCloseNoteModal={() => setIsNoteModalOpen(false)}
+        bookingWizardOpen={bookingWizardOpen}
+        onCloseBookingWizard={() => setBookingWizardOpen(false)}
+        onRefreshAllDetails={refreshAllDetails}
+      />
     </AdaptiveDrawer>
   );
 };

@@ -1,53 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import {
-  Check,
-  Plus,
-  Trash2,
-  Sparkles,
-  History,
-  ChevronDown,
-  ChevronUp,
-  MessageSquare,
-  Clock,
-  ListTodo,
-  Pencil,
-  Calendar,
-  UserPlus,
-  X,
-  Wand2,
-  Loader2,
-} from 'lucide-react';
-import { Tooltip, Modal, Input, Progress, message, Popover } from 'antd';
-import {
-  parseChecklistTitleBadges,
-  type MosChatTaskItem,
-  type MosChatTaskChecklistItem,
-  type MosChatMessage,
-  type MosChatStaffMember,
-  type UpdateMosChatTaskRequest,
-} from '@mos-lab/shared';
-import { apiClient } from '../../../lib/api-client';
-import {
-  buildQuickDeadlineOptions,
-  formatShortDeadlineLabel,
-  getDomainBadgeStyle,
-  getStaffAvatarColor,
-  getStaffInitials,
-} from './MosChatTaskInlineChecklist';
+'use client';
 
-export interface MosChatThreadChecklistProps {
-  task: MosChatTaskItem;
-  activeThreadMessage: MosChatMessage;
-  onToggleChecklistItem: (checklistItemId: string) => Promise<void> | void;
-  onAddChecklistItem: (title: string, sourceReplyId?: string | null) => Promise<void> | void;
-  onDeleteChecklistItem: (checklistItemId: string) => Promise<unknown> | unknown;
-  onUpdateTask?: (taskId: string, payload: UpdateMosChatTaskRequest) => Promise<unknown> | unknown;
-  onScrollToReply?: (replyId: string) => void;
-  staffList?: MosChatStaffMember[];
-  isDark: boolean;
-  token?: any;
-  isMobile?: boolean;
-}
+import React from 'react';
+import { ThreadChecklistAiExtractModal } from './mos-chat-thread-checklist/ThreadChecklistAiExtractModal';
+import { ThreadChecklistHeader } from './mos-chat-thread-checklist/ThreadChecklistHeader';
+import { ThreadChecklistHistoryModal } from './mos-chat-thread-checklist/ThreadChecklistHistoryModal';
+import { ThreadChecklistItemRow } from './mos-chat-thread-checklist/ThreadChecklistItemRow';
+import { ThreadChecklistQuickAddRow } from './mos-chat-thread-checklist/ThreadChecklistQuickAddRow';
+import type { MosChatThreadChecklistProps } from './mos-chat-thread-checklist/threadChecklistTypes';
+import { useMosChatThreadChecklist } from './mos-chat-thread-checklist/useMosChatThreadChecklist';
+
+export type { MosChatThreadChecklistProps };
 
 export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
   task,
@@ -60,335 +22,83 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
   staffList = [],
   isDark,
 }) => {
-  const [collapsed, setCollapsed] = useState(false);
-  const [quickTitle, setQuickTitle] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
-  const isAddingRef = React.useRef(false);
-
-  // Expand "Xem thêm / Thu gọn" per item
-  const [expandedItemIds, setExpandedItemIds] = useState<Record<string, boolean>>({});
-
-  // Inline Edit state
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingTitle, setEditingTitle] = useState('');
-
-  // Item Action Loading states (prevent double-clicks & show loading spinner)
-  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
-  const [togglingItemId, setTogglingItemId] = useState<string | null>(null);
-
-  // Popover states for Deadline & Assignee
-  const [openDeadlineItemId, setOpenDeadlineItemId] = useState<string | null>(null);
-  const [openAssigneeItemId, setOpenAssigneeItemId] = useState<string | null>(null);
-  const [staffSearch, setStaffSearch] = useState('');
-
-  // AI Extraction state
-  const [isAiExtracting, setIsAiExtracting] = useState(false);
-  const [aiModalOpen, setAiModalOpen] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState<
-    Array<{
-      title: string;
-      deadline?: string | null;
-      assigneeName?: string;
-      sourceReplyId?: string;
-      selected: boolean;
-    }>
-  >([]);
-
-  // Activity Log Modal state
-  const [historyModalOpen, setHistoryModalOpen] = useState(false);
-
-  const checklist = useMemo(() => task.checklist || [], [task.checklist]);
-  const activityLog = useMemo(() => task.activityLog || [], [task.activityLog]);
-
-  const totalCount = checklist.length;
-  const doneCount = useMemo(() => checklist.filter((c) => c.done).length, [checklist]);
-  const percent = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
-
-  const quickDeadlines = useMemo(() => buildQuickDeadlineOptions(), []);
-
-  const availableStaff = useMemo(() => {
-    const map = new Map<
-      string,
-      { id: number | string; displayName: string; role?: string; avatarUrl?: string | null }
-    >();
-    for (const s of staffList) {
-      if (s && s.displayName) {
-        map.set(s.displayName.trim().toLowerCase(), {
-          id: s.id,
-          displayName: s.displayName,
-          role: s.role,
-          avatarUrl: s.avatarUrl,
-        });
-      }
-    }
-    const fallbacks = [
-      { id: task.assigneeId || 'assignee', displayName: task.assigneeName || 'Bảo Hân', role: 'Phụ trách Task' },
-      { id: task.assignerId || 'creator', displayName: task.creatorName || 'Danny Do', role: 'Người giao' },
-      { id: 'bao-han', displayName: 'Bảo Hân', role: 'Admin' },
-      { id: 'danny-do', displayName: 'Danny Do', role: 'CEO / Founder' },
-    ];
-    for (const f of fallbacks) {
-      const key = f.displayName.trim().toLowerCase();
-      if (key && !map.has(key)) {
-        map.set(key, f);
-      }
-    }
-    const list = Array.from(map.values());
-    const q = staffSearch.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((s) => s.displayName.toLowerCase().includes(q) || (s.role && s.role.toLowerCase().includes(q)));
-  }, [staffList, task.assigneeId, task.assigneeName, task.assignerId, task.creatorName, staffSearch]);
-
-  const handleQuickAdd = async () => {
-    const trimmed = quickTitle.trim();
-    if (!trimmed || isAdding || isAddingRef.current) return;
-    isAddingRef.current = true;
-    setIsAdding(true);
-    setQuickTitle('');
-    try {
-      await onAddChecklistItem(trimmed, null);
-    } catch (err: any) {
-      setQuickTitle(trimmed);
-      message.error(err?.message || 'Không thể thêm mục checklist');
-    } finally {
-      isAddingRef.current = false;
-      setIsAdding(false);
-    }
-  };
-
-  const handleDeleteItem = async (itemId: string) => {
-    if (deletingItemId) return;
-    setDeletingItemId(itemId);
-    try {
-      await onDeleteChecklistItem(itemId);
-    } catch (err: any) {
-      message.error(err?.message || 'Không thể xóa mục việc, vui lòng thử lại');
-    } finally {
-      setDeletingItemId(null);
-    }
-  };
-
-  const handleToggleItem = async (itemId: string) => {
-    if (togglingItemId) return;
-    setTogglingItemId(itemId);
-    try {
-      await onToggleChecklistItem(itemId);
-    } catch (err: any) {
-      message.error(err?.message || 'Không thể cập nhật trạng thái mục việc');
-    } finally {
-      setTogglingItemId(null);
-    }
-  };
-
-  const handleEditChecklistItem = async (itemId: string, checklistItemPatch: Partial<MosChatTaskChecklistItem>) => {
-    try {
-      if (onUpdateTask) {
-        await onUpdateTask(task.id, {
-          checklistAction: 'edit',
-          checklistItemId: itemId,
-          checklistItem: checklistItemPatch,
-        });
-      } else {
-        await apiClient.chat.updateTask(task.id, {
-          checklistAction: 'edit',
-          checklistItemId: itemId,
-          checklistItem: checklistItemPatch,
-        });
-      }
-    } catch (err: any) {
-      message.error(err?.message || 'Không thể cập nhật mục checklist');
-    }
-  };
-
-  const handleStartEdit = (item: MosChatTaskChecklistItem) => {
-    setEditingItemId(item.id);
-    setEditingTitle(item.title);
-  };
-
-  const handleSaveEdit = async (itemId: string) => {
-    const trimmed = editingTitle.trim();
-    if (!trimmed) {
-      setEditingItemId(null);
-      return;
-    }
-    await handleEditChecklistItem(itemId, { title: trimmed });
-    setEditingItemId(null);
-  };
-
-  const handleSetDeadline = async (itemId: string, deadlineIso: string | null) => {
-    setOpenDeadlineItemId(null);
-    await handleEditChecklistItem(itemId, { deadline: deadlineIso });
-  };
-
-  const handleSetAssignee = async (
-    itemId: string,
-    staff: { id: number | string; displayName: string; avatarUrl?: string | null } | null
-  ) => {
-    setOpenAssigneeItemId(null);
-    setStaffSearch('');
-    await handleEditChecklistItem(
-      itemId,
-      staff
-        ? {
-            assigneeId: staff.id,
-            assigneeName: staff.displayName,
-            assigneeAvatar: staff.avatarUrl || null,
-          }
-        : {
-            assigneeId: null,
-            assigneeName: null,
-            assigneeAvatar: null,
-          }
-    );
-  };
-
-  const handleOpenAiExtract = async () => {
-    setIsAiExtracting(true);
-    try {
-      const res = await apiClient.chat.extractChecklist(activeThreadMessage.id, {
-        conversationId: activeThreadMessage.conversationId,
-        taskId: task.id,
-      });
-      if (res?.suggestions && res.suggestions.length > 0) {
-        setAiSuggestions(
-          res.suggestions.map((s) => ({
-            title: s.title,
-            deadline: s.deadline || null,
-            assigneeName: s.assigneeName || task.assigneeName || undefined,
-            sourceReplyId: s.sourceReplyId || undefined,
-            selected: true,
-          }))
-        );
-        setAiModalOpen(true);
-      } else {
-        message.info('Không tìm thấy đầu việc mới nào cần trích xuất từ cuộc thảo luận.');
-      }
-    } catch (err: any) {
-      message.error('Không thể trích xuất checklist từ AI: ' + (err?.message || 'Lỗi kết nối'));
-    } finally {
-      setIsAiExtracting(false);
-    }
-  };
-
-  const handleApplyAiSuggestions = async () => {
-    const selected = aiSuggestions.filter((s) => s.selected && s.title.trim());
-    if (selected.length === 0) {
-      setAiModalOpen(false);
-      return;
-    }
-    if (onUpdateTask) {
-      await onUpdateTask(task.id, {
-        checklistAction: 'auto_summarize',
-      });
-    } else {
-      for (const item of selected) {
-        await onAddChecklistItem(item.title, item.sourceReplyId || null);
-      }
-    }
-    message.success(`Đã thêm ${selected.length} mục vào checklist!`);
-    setAiModalOpen(false);
-  };
+  const {
+    collapsed,
+    toggleCollapsed,
+    quickTitle,
+    setQuickTitle,
+    isAdding,
+    expandedItemIds,
+    toggleItemExpanded,
+    editingItemId,
+    editingTitle,
+    setEditingTitle,
+    deletingItemId,
+    togglingItemId,
+    openDeadlineItemId,
+    setOpenDeadlineItemId,
+    openAssigneeItemId,
+    setOpenAssigneeItemId,
+    staffSearch,
+    setStaffSearch,
+    isAiExtracting,
+    aiModalOpen,
+    setAiModalOpen,
+    aiSuggestions,
+    historyModalOpen,
+    setHistoryModalOpen,
+    checklist,
+    activityLog,
+    totalCount,
+    doneCount,
+    percent,
+    quickDeadlines,
+    allStaffOptions,
+    availableStaff,
+    handleQuickAdd,
+    handleDeleteItem,
+    handleToggleItem,
+    handleStartEdit,
+    handleCancelEdit,
+    handleSaveEdit,
+    handleSetDeadline,
+    handleSetAssignee,
+    handleOpenAiExtract,
+    handleApplyAiSuggestions,
+    handleToggleSuggestionSelected,
+    handleUpdateSuggestionTitle,
+    handleAutoSummarize,
+  } = useMosChatThreadChecklist({
+    task,
+    activeThreadMessage,
+    onToggleChecklistItem,
+    onAddChecklistItem,
+    onDeleteChecklistItem,
+    onUpdateTask,
+    staffList,
+  });
 
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="rounded-xl border transition-all overflow-hidden mb-3"
-      style={{
-        background: isDark ? 'rgba(30, 41, 59, 0.45)' : 'rgba(248, 250, 252, 0.95)',
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-      }}
+      className={`rounded-xl border transition-all overflow-hidden mb-3 ${
+        isDark ? 'bg-slate-800/45 border-white/[0.08]' : 'bg-slate-50/95 border-black/[0.08]'
+      }`}
     >
-      {/* Header bar */}
-      <div className="px-3 py-2 flex items-center justify-between gap-2 border-b border-black/5 dark:border-white/5 bg-slate-500/5">
-        <div
-          className="flex items-center gap-2 cursor-pointer select-none flex-1 min-w-0"
-          onClick={() => setCollapsed(!collapsed)}
-        >
-          <ListTodo size={14} className="text-amber-500 shrink-0" />
-          <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">Checklist công việc</span>
-          <span className="text-[11px] font-semibold tabular-nums text-slate-500 dark:text-slate-400">
-            {doneCount}/{totalCount} ({percent}%)
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1 shrink-0">
-          {onUpdateTask && (
-            <Tooltip title="Tóm tắt & chuẩn hóa Checklist từ báo cáo công việc">
-              <button
-                type="button"
-                aria-label="Tóm tắt & Chuẩn hóa"
-                onClick={() => onUpdateTask(task.id, { checklistAction: 'auto_summarize' })}
-                className="w-6 h-6 rounded-md inline-flex items-center justify-center transition-all cursor-pointer bg-amber-500/15 hover:bg-amber-500/25 text-amber-500 border border-amber-500/30"
-              >
-                <Sparkles size={12} />
-              </button>
-            </Tooltip>
-          )}
-
-          <Tooltip title="✨ AI trích xuất checklist từ thảo luận subthread">
-            <button
-              type="button"
-              disabled={isAiExtracting}
-              aria-label="AI trích xuất"
-              onClick={handleOpenAiExtract}
-              className="w-6 h-6 rounded-md inline-flex items-center justify-center transition-all cursor-pointer bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/25"
-            >
-              <Wand2 size={12} className={isAiExtracting ? 'animate-spin' : ''} />
-            </button>
-          </Tooltip>
-
-          {activityLog.length > 0 && (
-            <Tooltip title="Lịch sử thao tác checklist">
-              <button
-                type="button"
-                onClick={() => setHistoryModalOpen(true)}
-                className="w-6 h-6 rounded-md inline-flex items-center justify-center transition-all cursor-pointer text-slate-400 hover:text-slate-200 hover:bg-white/10"
-              >
-                <History size={13} />
-              </button>
-            </Tooltip>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setCollapsed(!collapsed)}
-            className="w-6 h-6 rounded-md inline-flex items-center justify-center transition-all cursor-pointer text-slate-400 hover:text-slate-200 hover:bg-white/10"
-          >
-            {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-          </button>
-        </div>
-      </div>
-
-      {/* Executive Summary Banner */}
-      {task.summary && !collapsed && (
-        <div
-          className="mx-3 mt-2 px-2.5 py-1.5 rounded-lg text-[11px] leading-relaxed flex items-start gap-1.5"
-          style={{
-            background: isDark ? 'rgba(139, 92, 246, 0.12)' : 'rgba(139, 92, 246, 0.08)',
-            border: isDark ? '1px solid rgba(139, 92, 246, 0.28)' : '1px solid rgba(139, 92, 246, 0.2)',
-            color: isDark ? '#e2e8f0' : '#334155',
-          }}
-        >
-          <Sparkles size={12} className="text-purple-500 dark:text-purple-400 shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <span className="font-bold text-purple-600 dark:text-purple-300 mr-1">Tóm tắt:</span>
-            <span>{task.summary}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Progress Bar */}
-      {totalCount > 0 && (
-        <div className="px-3 pt-1.5 pb-1">
-          <Progress
-            percent={percent}
-            size="small"
-            showInfo={false}
-            strokeColor={percent === 100 ? '#10b981' : '#f59e0b'}
-            trailColor={isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}
-          />
-        </div>
-      )}
+      <ThreadChecklistHeader
+        isDark={isDark}
+        collapsed={collapsed}
+        onToggleCollapsed={toggleCollapsed}
+        summary={task.summary}
+        totalCount={totalCount}
+        doneCount={doneCount}
+        percent={percent}
+        activityLogCount={activityLog.length}
+        isAiExtracting={isAiExtracting}
+        onAutoSummarize={handleAutoSummarize}
+        onOpenAiExtract={() => void handleOpenAiExtract()}
+        onOpenHistory={() => setHistoryModalOpen(true)}
+      />
 
       {/* Checklist items list */}
       {!collapsed && (
@@ -398,559 +108,73 @@ export const MosChatThreadChecklist: React.FC<MosChatThreadChecklistProps> = ({
               Chưa có mục checklist nào. Bấm &quot;+ Checklist&quot; từ phản hồi bên dưới hoặc nhập đầu việc mới.
             </div>
           ) : (
-            checklist.map((item) => {
-              const isEditing = editingItemId === item.id;
-              const isExpanded = Boolean(expandedItemIds[item.id]);
-              const parsed = parseChecklistTitleBadges(item.title);
-              const displayBody = parsed.cleanTitle || item.title;
-              const isLongText = displayBody.length > 52 || item.title.length > 68;
-              const deadlineMeta = formatShortDeadlineLabel(item.deadline);
-              const effectiveAssigneeName = item.assigneeName || task.assigneeName || null;
-              const matchedStaff = effectiveAssigneeName
-                ? availableStaff.find(
-                    (s) => s.displayName.trim().toLowerCase() === effectiveAssigneeName.trim().toLowerCase()
-                  )
-                : null;
-              const avatarUrl = item.assigneeAvatar || matchedStaff?.avatarUrl || null;
-              const isDeleting = deletingItemId === item.id;
-              const isToggling = togglingItemId === item.id;
-              const isItemBusy = isDeleting || isToggling;
-
-              return (
-                <div
-                  key={item.id}
-                  className={`group/item flex items-start justify-between gap-2 px-2.5 py-1.5 rounded-lg transition-all text-xs ${
-                    item.done
-                      ? 'bg-emerald-500/5 text-slate-400 dark:text-slate-500'
-                      : 'bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 text-slate-800 dark:text-slate-200'
-                  } ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
-                  style={{
-                    border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.04)',
-                  }}
-                >
-                  <div className="flex items-start gap-2 flex-1 min-w-0">
-                    {/* Circular Checkbox */}
-                    <button
-                      type="button"
-                      disabled={isItemBusy || Boolean(deletingItemId)}
-                      onClick={() => handleToggleItem(item.id)}
-                      aria-label={isToggling ? `Đang cập nhật ${item.title}` : `Đánh dấu ${item.title}`}
-                      className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                        item.done
-                          ? 'bg-emerald-500 text-white'
-                          : 'border border-slate-400 dark:border-slate-500 hover:border-emerald-500 text-transparent hover:text-emerald-500'
-                      } ${isToggling ? 'opacity-80 cursor-wait' : ''} disabled:opacity-40 disabled:cursor-not-allowed`}
-                    >
-                      {isToggling ? (
-                        <Loader2 size={10} className="animate-spin text-amber-500" />
-                      ) : (
-                        <Check size={10} strokeWidth={item.done ? 3 : 2} />
-                      )}
-                    </button>
-
-                    {isEditing ? (
-                      <div className="flex-1 min-w-0 flex items-start gap-1">
-                        <Input.TextArea
-                          autoFocus
-                          autoSize={{ minRows: 1, maxRows: 4 }}
-                          value={editingTitle}
-                          onChange={(e) => setEditingTitle(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Escape') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              e.nativeEvent.stopImmediatePropagation?.();
-                              setEditingItemId(null);
-                            } else if (e.key === 'Enter' && !e.shiftKey) {
-                              if (e.nativeEvent.isComposing || (e as any).keyCode === 229) return;
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleSaveEdit(item.id);
-                            }
-                          }}
-                          className="text-xs flex-1"
-                          style={{
-                            borderRadius: '6px',
-                            background: isDark ? 'rgba(15, 23, 42, 0.9)' : '#ffffff',
-                          }}
-                        />
-                        <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                          <Tooltip title="Lưu (Enter)">
-                            <button
-                              type="button"
-                              aria-label="Lưu (Enter)"
-                              onClick={() => handleSaveEdit(item.id)}
-                              className="w-6 h-6 rounded inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer transition-colors"
-                            >
-                              <Check size={12} />
-                            </button>
-                          </Tooltip>
-                          <Tooltip title="Huỷ (Esc)">
-                            <button
-                              type="button"
-                              aria-label="Huỷ (Esc)"
-                              onClick={() => setEditingItemId(null)}
-                              className="w-6 h-6 rounded inline-flex items-center justify-center bg-slate-500/15 hover:bg-slate-500/25 text-slate-400 cursor-pointer transition-colors"
-                            >
-                              <X size={12} />
-                            </button>
-                          </Tooltip>
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        className={`flex-1 min-w-0 select-text ${isLongText ? 'cursor-pointer' : 'cursor-text'}`}
-                        onClick={() => {
-                          if (isLongText) {
-                            setExpandedItemIds((prev) => ({
-                              ...prev,
-                              [item.id]: !prev[item.id],
-                            }));
-                          }
-                        }}
-                        onDoubleClick={(e) => {
-                          e.stopPropagation();
-                          handleStartEdit(item);
-                        }}
-                        title={
-                          isLongText
-                            ? isExpanded
-                              ? 'Bấm để thu gọn 1 dòng · Nhấp đúp để sửa'
-                              : `${displayBody} (Bấm để mở rộng · Nhấp đúp để sửa)`
-                            : 'Nhấp đúp để chỉnh sửa nội dung'
-                        }
-                      >
-                        <div
-                          className={`font-medium leading-snug ${
-                            !isExpanded ? 'truncate' : 'whitespace-normal break-words'
-                          } ${item.done ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}
-                        >
-                          {parsed.domainBadge && (
-                            <span
-                              className="inline-flex items-center justify-center px-1.5 py-0.5 mr-1.5 rounded text-[9.5px] font-extrabold leading-none align-middle"
-                              style={getDomainBadgeStyle(parsed.domainBadge, isDark)}
-                            >
-                              {parsed.domainBadge}
-                            </span>
-                          )}
-                          {parsed.timeframeBadge && (
-                            <span className="inline-flex items-center justify-center px-1.5 py-0.5 mr-1.5 rounded text-[9.5px] font-semibold leading-none align-middle bg-slate-500/15 text-slate-500 dark:text-slate-300 border border-slate-500/20">
-                              {parsed.timeframeBadge}
-                            </span>
-                          )}
-                          <span>{displayBody}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {!isEditing && (
-                    <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                      {isLongText && (
-                        <Tooltip title={isExpanded ? 'Thu gọn 1 dòng' : 'Xem toàn bộ nội dung'}>
-                          <button
-                            type="button"
-                            aria-label={isExpanded ? 'Thu gọn' : 'Xem thêm'}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedItemIds((prev) => ({
-                                ...prev,
-                                [item.id]: !prev[item.id],
-                              }));
-                            }}
-                            className={`p-1 rounded cursor-pointer transition-colors shrink-0 ${
-                              isExpanded
-                                ? 'text-amber-500 bg-amber-500/15 hover:bg-amber-500/25'
-                                : 'text-amber-500/80 hover:text-amber-500 hover:bg-amber-500/10'
-                            }`}
-                          >
-                            {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                          </button>
-                        </Tooltip>
-                      )}
-                      {/* Per-Item Deadline Picker Popover */}
-                      <Popover
-                        trigger="click"
-                        placement="bottomRight"
-                        open={openDeadlineItemId === item.id}
-                        onOpenChange={(open) => setOpenDeadlineItemId(open ? item.id : null)}
-                        content={
-                          <div className="w-52 p-1 space-y-1.5 text-xs">
-                            <div className="font-bold text-slate-700 dark:text-slate-200 px-1 py-0.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                              <span>Đặt hạn mục việc</span>
-                              {item.deadline && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleSetDeadline(item.id, null)}
-                                  className="text-[10px] text-rose-500 hover:underline cursor-pointer font-semibold"
-                                >
-                                  Xoá hạn
-                                </button>
-                              )}
-                            </div>
-                            <div className="space-y-1">
-                              {quickDeadlines.map((opt) => (
-                                <button
-                                  key={opt.label}
-                                  type="button"
-                                  onClick={() => handleSetDeadline(item.id, opt.value)}
-                                  className="w-full text-left px-2 py-1 rounded hover:bg-amber-500/15 hover:text-amber-500 transition-colors cursor-pointer text-[11px] font-medium"
-                                >
-                                  📅 {opt.label}
-                                </button>
-                              ))}
-                            </div>
-                            <div className="pt-1 border-t border-slate-200 dark:border-slate-700">
-                              <div className="text-[10px] text-slate-400 mb-1 px-1">Hoặc chọn ngày cụ thể:</div>
-                              <input
-                                type="date"
-                                aria-label="Chọn ngày hạn cụ thể"
-                                defaultValue={item.deadline ? new Date(item.deadline).toISOString().slice(0, 10) : ''}
-                                onChange={(e) => {
-                                  if (e.target.value) {
-                                    const d = new Date(`${e.target.value}T18:00:00`);
-                                    if (!isNaN(d.getTime())) {
-                                      handleSetDeadline(item.id, d.toISOString());
-                                    }
-                                  }
-                                }}
-                                className="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-transparent text-[11px]"
-                              />
-                            </div>
-                          </div>
-                        }
-                      >
-                        {deadlineMeta ? (
-                          <Tooltip title={`Hạn mục việc: ${deadlineMeta.fullLabel} (Bấm để đổi hạn)`}>
-                            <button
-                              type="button"
-                              aria-label={`Đặt hạn cho mục ${item.title}`}
-                              className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold tabular-nums inline-flex items-center gap-0.5 cursor-pointer transition-all border ${
-                                item.done
-                                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                                  : deadlineMeta.isOverdue
-                                    ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
-                                    : deadlineMeta.isDueSoon
-                                      ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                                      : 'bg-violet-500/12 text-violet-400 border-violet-500/25'
-                              }`}
-                            >
-                              <Calendar size={9} className="shrink-0" />
-                              <span>{deadlineMeta.label}</span>
-                            </button>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip title="Đặt hạn chót cho mục này">
-                            <button
-                              type="button"
-                              aria-label={`Đặt hạn cho mục ${item.title}`}
-                              className="opacity-75 hover:opacity-100 p-1 rounded text-slate-400 hover:text-violet-400 hover:bg-violet-500/10 cursor-pointer transition-all"
-                            >
-                              <Calendar size={11} />
-                            </button>
-                          </Tooltip>
-                        )}
-                      </Popover>
-
-                      {/* Avatar-Only Assignee Picker (20px circular avatar) */}
-                      <Popover
-                        trigger="click"
-                        placement="bottomRight"
-                        open={openAssigneeItemId === item.id}
-                        onOpenChange={(open) => {
-                          setOpenAssigneeItemId(open ? item.id : null);
-                          if (!open) setStaffSearch('');
-                        }}
-                        content={
-                          <div className="w-52 p-1 space-y-1.5 text-xs">
-                            <div className="font-bold text-slate-700 dark:text-slate-200 px-1 py-0.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                              <span>Giao mục việc cho</span>
-                              {effectiveAssigneeName && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleSetAssignee(item.id, null)}
-                                  className="text-[10px] text-rose-500 hover:underline cursor-pointer font-semibold"
-                                >
-                                  Bỏ gán
-                                </button>
-                              )}
-                            </div>
-                            <Input
-                              size="small"
-                              placeholder="Tìm nhân sự..."
-                              value={staffSearch}
-                              onChange={(e) => setStaffSearch(e.target.value)}
-                              className="text-[11px]"
-                            />
-                            <div className="max-h-44 overflow-y-auto space-y-0.5">
-                              {availableStaff.map((st) => {
-                                const isSelected =
-                                  effectiveAssigneeName &&
-                                  st.displayName.trim().toLowerCase() === effectiveAssigneeName.trim().toLowerCase();
-                                return (
-                                  <button
-                                    key={`${st.id}-${st.displayName}`}
-                                    type="button"
-                                    onClick={() => handleSetAssignee(item.id, st)}
-                                    className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left cursor-pointer transition-colors ${
-                                      isSelected ? 'bg-amber-500/15 text-amber-500 font-bold' : 'hover:bg-slate-500/10'
-                                    }`}
-                                  >
-                                    {st.avatarUrl ? (
-                                      <img
-                                        src={st.avatarUrl}
-                                        alt={st.displayName}
-                                        className="w-5 h-5 rounded-full object-cover shrink-0"
-                                      />
-                                    ) : (
-                                      <span
-                                        className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[9px] font-bold text-white shrink-0"
-                                        style={{ background: getStaffAvatarColor(st.displayName) }}
-                                      >
-                                        {getStaffInitials(st.displayName)}
-                                      </span>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                      <div className="truncate text-[11px]">{st.displayName}</div>
-                                      {st.role && <div className="truncate text-[9.5px] text-slate-400">{st.role}</div>}
-                                    </div>
-                                    {isSelected && <Check size={11} className="text-amber-500 shrink-0" />}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        }
-                      >
-                        {effectiveAssigneeName ? (
-                          <Tooltip title={`Phụ trách: ${effectiveAssigneeName} · Bấm để đổi người`}>
-                            <button
-                              type="button"
-                              aria-label={`Giao người phụ trách mục ${item.title}`}
-                              className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[8.5px] font-extrabold text-white shrink-0 cursor-pointer ring-1 ring-white/20 hover:ring-amber-400 transition-all overflow-hidden"
-                              style={{ background: getStaffAvatarColor(effectiveAssigneeName) }}
-                            >
-                              {avatarUrl ? (
-                                <img
-                                  src={avatarUrl}
-                                  alt={effectiveAssigneeName}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                getStaffInitials(effectiveAssigneeName)
-                              )}
-                            </button>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip title="Gán người phụ trách">
-                            <button
-                              type="button"
-                              aria-label={`Giao người phụ trách mục ${item.title}`}
-                              className="w-5 h-5 rounded-full border border-dashed border-slate-400/60 hover:border-amber-400 inline-flex items-center justify-center text-slate-400 hover:text-amber-400 cursor-pointer transition-all shrink-0"
-                            >
-                              <UserPlus size={9} />
-                            </button>
-                          </Tooltip>
-                        )}
-                      </Popover>
-
-                      {/* Source reply jump button */}
-                      {item.sourceReplyId && (
-                        <Tooltip title="Cuộn tới tin nhắn thảo luận gốc trong luồng">
-                          <button
-                            type="button"
-                            aria-label="Cuộn tới tin nhắn thảo luận gốc"
-                            onClick={() => onScrollToReply && onScrollToReply(item.sourceReplyId!)}
-                            className="p-1 rounded text-amber-500 hover:bg-amber-500/15 cursor-pointer transition-colors"
-                          >
-                            <MessageSquare size={11} />
-                          </button>
-                        </Tooltip>
-                      )}
-
-                      {/* Edit button */}
-                      <Tooltip title="Sửa nội dung mục này">
-                        <button
-                          type="button"
-                          disabled={Boolean(isItemBusy || deletingItemId || togglingItemId)}
-                          onClick={() => handleStartEdit(item)}
-                          aria-label={`Sửa mục ${item.title}`}
-                          className="opacity-75 hover:opacity-100 p-1 rounded text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          <Pencil size={11} />
-                        </button>
-                      </Tooltip>
-
-                      {/* Delete button */}
-                      <Tooltip title={isDeleting ? 'Đang xóa...' : 'Xóa mục việc này'}>
-                        <button
-                          type="button"
-                          disabled={Boolean(isItemBusy || deletingItemId || togglingItemId || isAdding || editingItemId)}
-                          onClick={() => handleDeleteItem(item.id)}
-                          aria-label={isDeleting ? `Đang xóa ${item.title}` : `Xóa mục ${item.title}`}
-                          className={`p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors ${
-                            isDeleting ? 'text-rose-500 cursor-wait' : ''
-                          } disabled:opacity-40 disabled:cursor-not-allowed`}
-                        >
-                          {isDeleting ? (
-                            <Loader2 size={11} className="animate-spin text-rose-500" />
-                          ) : (
-                            <Trash2 size={11} />
-                          )}
-                        </button>
-                      </Tooltip>
-                    </div>
-                  )}
-                </div>
-              );
-            })
+            checklist.map((item) => (
+              <ThreadChecklistItemRow
+                key={item.id}
+                item={item}
+                taskAssigneeName={task.assigneeName}
+                isDark={isDark}
+                isEditing={editingItemId === item.id}
+                isExpanded={Boolean(expandedItemIds[item.id])}
+                isDeleting={deletingItemId === item.id}
+                isToggling={togglingItemId === item.id}
+                hasDeletingItem={Boolean(deletingItemId)}
+                hasTogglingItem={Boolean(togglingItemId)}
+                isAdding={isAdding}
+                hasEditingItem={Boolean(editingItemId)}
+                editingTitle={editingTitle}
+                onChangeEditingTitle={setEditingTitle}
+                onToggleDone={() => void handleToggleItem(item.id)}
+                onToggleExpand={() => toggleItemExpanded(item.id)}
+                onStartEdit={() => handleStartEdit(item)}
+                onCancelEdit={handleCancelEdit}
+                onSaveEdit={() => void handleSaveEdit(item.id)}
+                onDelete={() => void handleDeleteItem(item.id)}
+                quickDeadlines={quickDeadlines}
+                isDeadlineOpen={openDeadlineItemId === item.id}
+                onDeadlineOpenChange={(open) => setOpenDeadlineItemId(open ? item.id : null)}
+                onSetDeadline={(deadlineIso) => void handleSetDeadline(item.id, deadlineIso)}
+                allStaffOptions={allStaffOptions}
+                availableStaff={availableStaff}
+                staffSearch={staffSearch}
+                onChangeStaffSearch={setStaffSearch}
+                isAssigneeOpen={openAssigneeItemId === item.id}
+                onAssigneeOpenChange={(open) => {
+                  setOpenAssigneeItemId(open ? item.id : null);
+                  if (!open) setStaffSearch('');
+                }}
+                onSetAssignee={(staff) => void handleSetAssignee(item.id, staff)}
+                onScrollToReply={onScrollToReply}
+              />
+            ))
           )}
 
-          {/* Inline Quick Add Input */}
-          <div
-            className="pt-1 flex items-center gap-1.5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Input
-              size="small"
-              placeholder="Thêm việc cần làm... (Enter để lưu)"
-              value={quickTitle}
-              onClick={(e) => e.stopPropagation()}
-              onFocus={(e) => e.stopPropagation()}
-              onChange={(e) => setQuickTitle(e.target.value)}
-              onPressEnter={(e) => {
-                if (e.nativeEvent.isComposing || (e as any).keyCode === 229) return;
-                e.preventDefault();
-                e.stopPropagation();
-                handleQuickAdd();
-              }}
-              disabled={isAdding}
-              className="text-xs"
-              style={{
-                borderRadius: '8px',
-                background: isDark ? 'rgba(15, 23, 42, 0.6)' : '#ffffff',
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.12)',
-              }}
-            />
-            <Tooltip title="Thêm mục việc (Enter)">
-              <button
-                type="button"
-                aria-label="Thêm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleQuickAdd();
-                }}
-                disabled={isAdding || !quickTitle.trim()}
-                className="w-7 h-7 rounded-lg inline-flex items-center justify-center bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white cursor-pointer transition-all shrink-0"
-              >
-                <Plus size={13} />
-              </button>
-            </Tooltip>
-          </div>
+          <ThreadChecklistQuickAddRow
+            isDark={isDark}
+            quickTitle={quickTitle}
+            isAdding={isAdding}
+            onChangeQuickTitle={setQuickTitle}
+            onAdd={() => void handleQuickAdd()}
+          />
         </div>
       )}
 
-      {/* AI Extraction Preview Modal */}
-      <Modal
-        title={
-          <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
-            <Sparkles size={16} />
-            <span>AI Trích xuất Checklist từ Luồng Thảo Luận</span>
-          </div>
-        }
+      <ThreadChecklistAiExtractModal
         open={aiModalOpen}
-        onCancel={() => setAiModalOpen(false)}
-        onOk={handleApplyAiSuggestions}
-        okText={`Áp dụng vào Checklist (${aiSuggestions.filter((s) => s.selected).length} việc)`}
-        cancelText="Hủy"
-        width={520}
-        destroyOnHidden
-      >
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-          AI đã phân tích báo cáo công việc và luồng thảo luận (tự động lọc bỏ các câu chat trao đổi thường), gắn nhãn
-          mảng và hạn chót:
-        </p>
+        isDark={isDark}
+        suggestions={aiSuggestions}
+        onClose={() => setAiModalOpen(false)}
+        onApply={() => void handleApplyAiSuggestions()}
+        onToggleSuggestion={handleToggleSuggestionSelected}
+        onUpdateSuggestionTitle={handleUpdateSuggestionTitle}
+      />
 
-        <div className="max-h-[340px] overflow-y-auto space-y-2 pr-1">
-          {aiSuggestions.map((sug, idx) => (
-            <div
-              key={idx}
-              className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60"
-            >
-              <input
-                type="checkbox"
-                checked={sug.selected}
-                onChange={(e) => {
-                  const updated = [...aiSuggestions];
-                  updated[idx].selected = e.target.checked;
-                  setAiSuggestions(updated);
-                }}
-                className="w-4 h-4 rounded cursor-pointer accent-amber-500"
-              />
-              <Input
-                size="small"
-                value={sug.title}
-                onChange={(e) => {
-                  const updated = [...aiSuggestions];
-                  updated[idx].title = e.target.value;
-                  setAiSuggestions(updated);
-                }}
-                className="text-xs flex-1"
-              />
-              {sug.assigneeName && (
-                <span
-                  className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[8.5px] font-bold text-white shrink-0"
-                  style={{ background: getStaffAvatarColor(sug.assigneeName) }}
-                  title={sug.assigneeName}
-                >
-                  {getStaffInitials(sug.assigneeName)}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      {/* Activity Log Modal */}
-      <Modal
-        title={
-          <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
-            <History size={16} />
-            <span>Lịch sử thao tác Task & Checklist</span>
-          </div>
-        }
+      <ThreadChecklistHistoryModal
         open={historyModalOpen}
-        onCancel={() => setHistoryModalOpen(false)}
-        footer={null}
-        width={480}
-      >
-        <div className="max-h-[380px] overflow-y-auto space-y-2 pt-2">
-          {activityLog.length === 0 ? (
-            <p className="text-xs text-slate-400 italic text-center py-4">Chưa có lịch sử thao tác.</p>
-          ) : (
-            activityLog
-              .slice()
-              .reverse()
-              .map((log) => (
-                <div
-                  key={log.id}
-                  className="flex items-start gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/60 text-xs"
-                >
-                  <Clock size={13} className="text-slate-400 mt-0.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="font-bold text-slate-700 dark:text-slate-200 truncate">{log.actorName}</span>
-                      <span className="text-[10px] tabular-nums text-slate-400 shrink-0">
-                        {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    <p className="text-slate-600 dark:text-slate-300 mt-0.5 mb-0 text-[11.5px]">{log.description}</p>
-                  </div>
-                </div>
-              ))
-          )}
-        </div>
-      </Modal>
+        isDark={isDark}
+        activityLog={activityLog}
+        onClose={() => setHistoryModalOpen(false)}
+      />
     </div>
   );
 };

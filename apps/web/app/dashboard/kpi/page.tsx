@@ -1,54 +1,31 @@
 'use client';
 
 import '../../suppress-warnings';
-import React, { useEffect } from 'react';
-import {
-  Typography,
-  Card,
-  theme,
-  Select,
-  Radio,
-  Space,
-  Row,
-  Col,
-  Table,
-  Progress,
-  Badge,
-  Spin,
-  Divider,
-  Button,
-  Tooltip,
-  message,
-  Tabs,
-} from 'antd';
-import {
-  PhoneOutlined,
-  PieChartOutlined,
-  TrophyOutlined,
-  UserOutlined,
-  DollarOutlined,
-  SettingOutlined,
-  SafetyOutlined,
-  HistoryOutlined,
-  ThunderboltOutlined,
-} from '@ant-design/icons';
+import React from 'react';
+import { message, Tabs, theme } from 'antd';
+import { History, PieChart, ShieldCheck } from 'lucide-react';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
-import { useTheme } from '../../../context/ThemeContext';
+import { AppIcon, PageHeader, PageToolbar, ReportPeriodNavigator, StatePanel } from '~/components/ui';
+import { useTheme } from '~/context/ThemeContext';
+import { getPercent } from '~/lib/format-utils';
+import { getLeaderboardColumns } from './components/KpiColumns';
 import { useKpiData } from './hooks/useKpiData';
+import { KpiOverviewTabContent } from './kpi-page-modules/KpiOverviewTabContent';
+import { KpiToolbarActions } from './kpi-page-modules/KpiToolbarActions';
 
-// Modular Sub-components
-const KpiTrendsChart = dynamic(() => import('./components/KpiTrendsChart'), { ssr: false, loading: () => <Spin /> });
+const KpiTrendsChart = dynamic(() => import('./components/KpiTrendsChart'), {
+  ssr: false,
+  loading: () => <StatePanel kind="loading" surface={false} minHeight={240} />,
+});
 const SalaryConfigDrawer = dynamic(() => import('./components/SalaryConfigDrawer'), { ssr: false });
 const AppointmentsAuditDrawer = dynamic(() => import('./components/AppointmentsAuditDrawer'), { ssr: false });
-import { getLeaderboardColumns } from './components/KpiColumns';
-import { LeaderboardSummary } from './components/LeaderboardSummary';
 const PackageAuditTab = dynamic(() => import('./components/PackageAuditTab').then((m) => m.PackageAuditTab), {
   ssr: false,
   loading: () => (
     <div className="p-8 text-center">
-      <Spin />
+      <StatePanel kind="loading" surface={false} minHeight={160} />
     </div>
   ),
 });
@@ -57,14 +34,7 @@ const BookingAuditLogReportTab = dynamic(
   { ssr: false }
 );
 
-import { PageHeader, PageToolbar, ReportPeriodNavigator } from '../../../components/ui';
-
 dayjs.extend(isoWeek);
-
-const { Text } = Typography;
-
-import { BookerSalary, LeaderboardEntry } from '@mos-lab/shared';
-import { getPercent } from '../../../lib/format-utils';
 
 export default function KPIPage() {
   const { themeMode } = useTheme();
@@ -75,7 +45,6 @@ export default function KPIPage() {
     viewMode,
     setViewMode,
     referenceDate,
-    setReferenceDate,
     dateRange,
     setDateRange,
     selectedBookerId,
@@ -118,7 +87,6 @@ export default function KPIPage() {
 
   return (
     <div className="responsive-page responsive-workspace kpi-page">
-      {/* HEADER SECTION */}
       <PageHeader
         title="KPI & Báo Cáo Hiệu Suất"
         subtitle="Giám sát tỷ lệ chuyển đổi cuộc gọi thành lịch hẹn và doanh thu thưởng commission"
@@ -140,50 +108,21 @@ export default function KPIPage() {
         }
         actions={
           isAdmin ? (
-            <>
-              <Radio.Group
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                optionType="button"
-                buttonStyle="solid"
-              >
-                <Radio.Button value="telesales">Online Consultant</Radio.Button>
-                <Radio.Button value="oc">Client Consultant</Radio.Button>
-              </Radio.Group>
-              <Select
-                value={selectedStaffId}
-                onChange={setSelectedStaffId}
-                style={{ width: 170 }}
-                options={[
-                  {
-                    value: 'ALL',
-                    label: selectedRole === 'oc' ? 'Tất cả Client Consultant' : 'Tất cả Online Consultant',
-                  },
-                  ...leaderboard.map((s) => ({ value: s.staffId.toString(), label: s.displayName })),
-                ]}
-                placeholder="Chọn nhân viên"
-              />
-              {selectedRole === 'telesales' && (
-                <Tooltip title="Cấu hình lương Booker">
-                  <Button
-                    aria-label="Cấu hình lương Booker"
-                    icon={<SettingOutlined />}
-                    onClick={() => setConfigDrawerOpen(true)}
-                    className="table-toolbar-settings-trigger !border-amber-500 !text-amber-500 hover:!border-amber-400 hover:!text-amber-400"
-                  />
-                </Tooltip>
-              )}
-            </>
+            <KpiToolbarActions
+              selectedRole={selectedRole}
+              onRoleChange={setSelectedRole}
+              selectedStaffId={selectedStaffId}
+              onStaffChange={setSelectedStaffId}
+              leaderboard={leaderboard}
+              onOpenConfig={() => setConfigDrawerOpen(true)}
+            />
           ) : undefined
         }
       />
 
       {loading ? (
-        <div className="flex justify-center items-center py-24" style={{ height: '300px' }}>
-          <Space direction="vertical" align="center">
-            <Spin size="large" />
-            <Text type="secondary">Đang tải dữ liệu báo cáo...</Text>
-          </Space>
+        <div className="py-12">
+          <StatePanel kind="loading" title="Đang tải dữ liệu báo cáo..." minHeight={300} surface={false} />
         </div>
       ) : (
         <Tabs
@@ -192,508 +131,30 @@ export default function KPIPage() {
             {
               key: 'kpi',
               label: (
-                <span>
-                  <PieChartOutlined /> Báo cáo KPI & Leaderboard
+                <span className="inline-flex items-center gap-1.5">
+                  <AppIcon icon={PieChart} size="sm" />
+                  Báo cáo KPI &amp; Leaderboard
                 </span>
               ),
               children: (
-                <div className="flex flex-col gap-6">
-                  {/* STATS OVERVIEW CARDS */}
-                  <Row gutter={[16, 16]} className="mb-6">
-                    <Col xs={24} sm={12} md={8} lg={4} xl={4}>
-                      <Card
-                        variant="outlined"
-                        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-                      >
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          ∑ KẾ HOẠCH
-                        </Text>
-                        <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: token.colorText }}>
-                          {summary?.totalPlanned}
-                        </div>
-                        <Progress
-                          percent={100}
-                          showInfo={false}
-                          strokeColor={token.colorTextDescription}
-                          size="small"
-                        />
-                        <Text type="secondary" style={{ fontSize: '11px' }}>
-                          Kế hoạch đã lên
-                        </Text>
-                      </Card>
-                    </Col>
-
-                    <Col xs={24} sm={12} md={8} lg={4} xl={4}>
-                      <Card
-                        variant="outlined"
-                        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-                      >
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          ĐÃ THỰC HIỆN
-                        </Text>
-                        <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: '#1890FF' }}>
-                          {summary?.totalCalled}
-                        </div>
-                        <Progress
-                          percent={getPercent(summary?.totalCalled || 0, summary?.totalPlanned || 0)}
-                          showInfo={false}
-                          strokeColor="#1890FF"
-                          size="small"
-                        />
-                        <Text type="secondary" style={{ fontSize: '11px' }}>
-                          Đạt: {getPercent(summary?.totalCalled || 0, summary?.totalPlanned || 0)}% kế hoạch
-                        </Text>
-                      </Card>
-                    </Col>
-
-                    <Col xs={24} sm={12} md={8} lg={4} xl={4}>
-                      <Card
-                        variant="outlined"
-                        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-                      >
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          BẮT MÁY
-                        </Text>
-                        <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: '#52C41A' }}>
-                          {getPercent(summary?.totalAnswered || 0, summary?.totalCalled || 0)}%
-                        </div>
-                        <Progress
-                          percent={getPercent(summary?.totalAnswered || 0, summary?.totalCalled || 0)}
-                          showInfo={false}
-                          strokeColor="#52C41A"
-                          size="small"
-                        />
-                        <Text type="secondary" style={{ fontSize: '11px' }}>
-                          {summary?.totalAnswered} cuộc bắt máy
-                        </Text>
-                      </Card>
-                    </Col>
-
-                    <Col xs={24} sm={12} md={8} lg={4} xl={4}>
-                      <Card
-                        variant="outlined"
-                        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-                      >
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          ĐẶT LỊCH (BOOKED)
-                        </Text>
-                        <div
-                          style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: token.colorPrimary }}
-                        >
-                          {getPercent(summary?.totalBooked || 0, summary?.totalAnswered || 0)}%
-                        </div>
-                        <Progress
-                          percent={getPercent(summary?.totalBooked || 0, summary?.totalAnswered || 0)}
-                          showInfo={false}
-                          strokeColor={token.colorPrimary}
-                          size="small"
-                        />
-                        <Text type="secondary" style={{ fontSize: '11px' }}>
-                          {summary?.totalBooked} lịch hẹn thành công
-                        </Text>
-                      </Card>
-                    </Col>
-
-                    <Col xs={24} sm={12} md={8} lg={4} xl={4}>
-                      <Card
-                        variant="outlined"
-                        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-                      >
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          ĐẾN TIỆM (CHECKIN)
-                        </Text>
-                        <div style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: '#722ED1' }}>
-                          {getPercent(summary?.totalCheckin || 0, summary?.totalBooked || 0)}%
-                        </div>
-                        <Progress
-                          percent={getPercent(summary?.totalCheckin || 0, summary?.totalBooked || 0)}
-                          showInfo={false}
-                          strokeColor="#722ED1"
-                          size="small"
-                        />
-                        <Text type="secondary" style={{ fontSize: '11px' }}>
-                          {summary?.totalCheckin} khách ghé tiệm
-                        </Text>
-                      </Card>
-                    </Col>
-
-                    <Col xs={24} sm={12} md={8} lg={4} xl={4}>
-                      <Card
-                        variant="outlined"
-                        style={{ background: token.colorBgContainer, borderColor: token.colorPrimary }}
-                      >
-                        <Space>
-                          <DollarOutlined style={{ color: token.colorPrimary, fontSize: '15px' }} />
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            THU NHẬP LIVE
-                          </Text>
-                        </Space>
-                        <div
-                          style={{ fontSize: '26px', fontWeight: 'bold', margin: '8px 0', color: token.colorPrimary }}
-                          className="tabular-nums"
-                        >
-                          {(summary?.totalEarnings || 0).toLocaleString('vi-VN')} đ
-                        </div>
-                        <Progress percent={100} showInfo={false} strokeColor={token.colorPrimary} size="small" />
-                        <Text type="secondary" style={{ fontSize: '11px' }}>
-                          ∑ Thu nhập
-                        </Text>
-                      </Card>
-                    </Col>
-                  </Row>
-
-                  {/* SALARY BREAKDOWN CARD (LIVE PAYSTUB) */}
-                  {summary?.salary && (
-                    <Card
-                      title={
-                        <span style={{ color: token.colorText }}>
-                          <DollarOutlined style={{ color: token.colorPrimary }} />{' '}
-                          {summary.salary.role === 'oc'
-                            ? 'Chi Tiết Lương & Thưởng Client Consultant (Live Paystub)'
-                            : 'Chi Tiết Lương & Hoa Hồng Online Consultant (Live Paystub)'}
-                        </span>
-                      }
-                      variant="outlined"
-                      className="mb-6"
-                      style={{ background: token.colorBgContainer, borderColor: token.colorPrimary }}
-                    >
-                      {summary.salary.role === 'oc' ? (
-                        <Row gutter={[16, 16]}>
-                          <Col xs={24} md={8}>
-                            <div
-                              style={{ padding: '12px', borderRight: `1px solid ${token.colorBorderSecondary}` }}
-                              className="md:border-r"
-                            >
-                              <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>
-                                LƯƠNG CƠ BẢN & CHIẾN DỊCH
-                              </Text>
-                              <div className="flex justify-between items-center mt-3">
-                                <Text style={{ color: token.colorText }}>Lương cứng (Wage):</Text>
-                                <Text style={{ fontWeight: '600', color: token.colorText }}>
-                                  {(summary.salary.baseSalary || 0).toLocaleString('vi-VN')} đ
-                                </Text>
-                              </div>
-                              <div className="flex justify-between items-center mt-2">
-                                <Text style={{ color: token.colorText }}>Tổng số check-in:</Text>
-                                <Text style={{ fontWeight: '600', color: token.colorText }}>
-                                  {summary.salary.checkins || 0} khách
-                                </Text>
-                              </div>
-                            </div>
-                          </Col>
-
-                          <Col xs={24} md={8}>
-                            <div
-                              style={{ padding: '12px', borderRight: `1px solid ${token.colorBorderSecondary}` }}
-                              className="md:border-r"
-                            >
-                              <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>
-                                THƯỞNG DOANH SỐ & PHỤC VỤ
-                              </Text>
-                              <div className="flex justify-between items-center mt-3">
-                                <Text style={{ color: token.colorText }}>Thưởng doanh số (Sales KPI):</Text>
-                                <Text style={{ fontWeight: '600', color: '#52C41A' }}>
-                                  +{(summary.salary.salesReward || 0).toLocaleString('vi-VN')} đ
-                                </Text>
-                              </div>
-                              <div className="flex justify-between items-center mt-2">
-                                <Text style={{ color: token.colorText }}>Thưởng phục vụ (Servicing KPI):</Text>
-                                <Text style={{ fontWeight: '600', color: '#52C41A' }}>
-                                  +{(summary.salary.servicingReward || 0).toLocaleString('vi-VN')} đ
-                                </Text>
-                              </div>
-                            </div>
-                          </Col>
-
-                          <Col xs={24} md={8}>
-                            <div style={{ padding: '12px' }}>
-                              <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>
-                                THƯỞNG TĂNG TRƯỞNG & CỬA HÀNG
-                              </Text>
-                              <div className="flex justify-between items-center mt-3">
-                                <Text style={{ color: token.colorText }}>Thưởng tăng trưởng (Growth):</Text>
-                                <Text style={{ fontWeight: '600', color: '#52C41A' }}>
-                                  +{(summary.salary.growthReward || 0).toLocaleString('vi-VN')} đ
-                                </Text>
-                              </div>
-                              <div className="flex justify-between items-center mt-2">
-                                <Text style={{ color: token.colorText }}>Thưởng phục vụ tiệm (Store):</Text>
-                                <Text style={{ fontWeight: '600', color: '#52C41A' }}>
-                                  +{(summary.salary.storeServicingReward || 0).toLocaleString('vi-VN')} đ
-                                </Text>
-                              </div>
-                            </div>
-                          </Col>
-                        </Row>
-                      ) : (
-                        <Row gutter={[16, 16]}>
-                          <Col xs={24} md={8}>
-                            <div
-                              style={{
-                                padding: '12px',
-                                borderRight: `1px solid ${token.colorBorderSecondary}`,
-                              }}
-                              className="md:border-r"
-                            >
-                              <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>
-                                LƯƠNG CỨNG & HOA HỒNG GỌI
-                              </Text>
-                              <div className="flex justify-between items-center mt-3">
-                                <Text style={{ color: token.colorText }}>Lương cứng cơ bản (Based):</Text>
-                                <Text style={{ fontWeight: '600', color: token.colorText }}>
-                                  {summary.salary.baseSalary.toLocaleString('vi-VN')} đ
-                                </Text>
-                              </div>
-                              <div className="flex justify-between items-center mt-2">
-                                <Text style={{ color: token.colorText }}>Thưởng check-in (Client):</Text>
-                                <Text style={{ fontWeight: '600', color: token.colorText }}>
-                                  {(summary.salary.clientBonus || 0).toLocaleString('vi-VN')} đ
-                                </Text>
-                              </div>
-                            </div>
-                          </Col>
-
-                          <Col xs={24} md={8}>
-                            <div
-                              style={{
-                                padding: '12px',
-                                borderRight: `1px solid ${token.colorBorderSecondary}`,
-                              }}
-                              className="md:border-r"
-                            >
-                              <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>
-                                THƯỞNG HIỆU SUẤT ĐẠT MỐC
-                              </Text>
-                              <div className="flex justify-between items-center mt-3">
-                                <Text style={{ color: token.colorText }}>
-                                  Thưởng mốc check-in ({summary.salary.doneCount || 0} khách):
-                                </Text>
-                                <Text style={{ fontWeight: '600', color: '#52C41A' }}>
-                                  +{(summary.salary.doneBonus || 0).toLocaleString('vi-VN')} đ
-                                </Text>
-                              </div>
-                              <div className="flex justify-between items-center mt-2">
-                                <Text style={{ color: token.colorText }}>
-                                  Thưởng tỷ lệ lỡ ({Math.round((summary.salary.missedRate || 0) * 100)}%):
-                                </Text>
-                                <Text
-                                  style={{
-                                    fontWeight: '600',
-                                    color: (summary.salary.missedBonus || 0) >= 0 ? '#52C41A' : '#FF4D4F',
-                                  }}
-                                >
-                                  {(summary.salary.missedBonus || 0) >= 0 ? '+' : ''}
-                                  {(summary.salary.missedBonus || 0).toLocaleString('vi-VN')} đ
-                                </Text>
-                              </div>
-                            </div>
-                          </Col>
-
-                          <Col xs={24} md={8}>
-                            <div style={{ padding: '12px' }}>
-                              <Text type="secondary" style={{ fontSize: '12px', fontWeight: '600' }}>
-                                HOA HỒNG TIPS & DOANH THU
-                              </Text>
-                              <div className="flex justify-between items-center mt-3">
-                                <Text style={{ color: token.colorText }}>
-                                  Thưởng Tips (7% trên {(summary.salary.totalTips || 0).toLocaleString('vi-VN')} đ):
-                                </Text>
-                                <Text style={{ fontWeight: '600', color: token.colorText }}>
-                                  {(summary.salary.tipBonus || 0).toLocaleString('vi-VN')} đ
-                                </Text>
-                              </div>
-                              <div className="flex justify-between items-center mt-2">
-                                <Text style={{ color: token.colorText }}>
-                                  Thưởng doanh thu net (trên {(summary.salary.totalNetRev || 0).toLocaleString('vi-VN')}{' '}
-                                  đ):
-                                </Text>
-                                <Text style={{ fontWeight: '600', color: token.colorText }}>
-                                  {(summary.salary.revBonus || 0).toLocaleString('vi-VN')} đ
-                                </Text>
-                              </div>
-                            </div>
-                          </Col>
-                        </Row>
-                      )}
-
-                      <Divider style={{ margin: '16px 0' }} />
-
-                      <div className="flex justify-between items-center px-3 flex-wrap gap-2">
-                        <Text style={{ fontSize: '15px', fontWeight: 'bold', color: token.colorText }}>
-                          ∑ THU NHẬP TẠM TÍNH (LIVE SALARY):
-                        </Text>
-                        <Text
-                          className="tabular-nums"
-                          style={{ fontSize: '22px', fontWeight: 'bold', color: token.colorPrimary }}
-                        >
-                          {summary.salary.totalSalary.toLocaleString('vi-VN')} đ
-                        </Text>
-                      </div>
-                    </Card>
-                  )}
-
-                  {/* CHARTS SECTION */}
-                  <Row gutter={[16, 16]} className="mb-6">
-                    <Col xs={24} lg={16}>
-                      <KpiTrendsChart trends={trends} />
-                    </Col>
-
-                    <Col xs={24} lg={8}>
-                      <Card
-                        title={
-                          <span style={{ color: token.colorText }}>
-                            <PieChartOutlined /> Phân bổ kết quả cuộc gọi
-                          </span>
-                        }
-                        variant="outlined"
-                        style={{
-                          background: token.colorBgContainer,
-                          borderColor: token.colorBorderSecondary,
-                          height: '400px',
-                        }}
-                      >
-                        {!breakdown || Object.values(breakdown).reduce((a, b) => a + b, 0) === 0 ? (
-                          <div className="flex justify-center items-center h-64 text-secondary">
-                            Chưa có cuộc gọi được thực hiện
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-4 mt-2">
-                            {(() => {
-                              const totalLogs = Object.values(breakdown).reduce((a, b) => a + b, 0);
-                              const items = [
-                                {
-                                  key: 'BOOKED',
-                                  label: 'Đặt Lịch (Booked)',
-                                  value: breakdown.BOOKED,
-                                  color: '#52C41A',
-                                },
-                                {
-                                  key: 'CALL_BACK',
-                                  label: 'Hẹn Gọi Lại',
-                                  value: breakdown.CALL_BACK,
-                                  color: '#FAAD14',
-                                },
-                                {
-                                  key: 'NO_ANSWER',
-                                  label: 'Không Nhấc Máy',
-                                  value: breakdown.NO_ANSWER,
-                                  color: '#FF4D4F',
-                                },
-                                { key: 'BUSY', label: 'Máy Bận', value: breakdown.BUSY, color: '#13C2C2' },
-                                {
-                                  key: 'WRONG_NUMBER',
-                                  label: 'Sai Số',
-                                  value: breakdown.WRONG_NUMBER,
-                                  color: '#F5222D',
-                                },
-                                { key: 'OTHERS', label: 'Khác', value: breakdown.OTHERS, color: '#8C8C8C' },
-                              ];
-
-                              return (
-                                <>
-                                  <div className="w-full flex h-5 rounded-full overflow-hidden mb-4">
-                                    {items
-                                      .filter((i) => i.value > 0)
-                                      .map((item) => (
-                                        <Tooltip
-                                          key={item.key}
-                                          title={`${item.label}: ${item.value} (${getPercent(item.value, totalLogs)}%)`}
-                                        >
-                                          <div
-                                            style={{
-                                              width: `${(item.value / totalLogs) * 100}%`,
-                                              background: item.color,
-                                            }}
-                                            className="h-full cursor-pointer hover:opacity-80 transition-opacity"
-                                          />
-                                        </Tooltip>
-                                      ))}
-                                  </div>
-
-                                  <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                                    {items.map((item) => (
-                                      <div key={item.key} className="flex justify-between items-center">
-                                        <Space>
-                                          <Badge color={item.color} />
-                                          <span style={{ fontSize: '13px', color: token.colorText }}>{item.label}</span>
-                                        </Space>
-                                        <span style={{ fontSize: '13px', fontWeight: '600', color: token.colorText }}>
-                                          {item.value} cuộc{' '}
-                                          <Text type="secondary" style={{ fontSize: '11px' }}>
-                                            ({getPercent(item.value, totalLogs)}%)
-                                          </Text>
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-
-                                  <Divider style={{ margin: '10px 0' }} />
-                                  <div
-                                    className="text-center"
-                                    style={{ fontSize: '12px', color: token.colorTextDescription }}
-                                  >
-                                    Tổng số cuộc gọi đã kết nối: <strong>{totalLogs}</strong>
-                                  </div>
-                                </>
-                              );
-                            })()}
-                          </div>
-                        )}
-                      </Card>
-                    </Col>
-                  </Row>
-
-                  {/* ADMIN LEADERBOARD SECTION */}
-                  {isAdmin && (
-                    <Card
-                      title={
-                        <span style={{ color: token.colorText }}>
-                          <TrophyOutlined style={{ color: selectedRole === 'oc' ? '#722ED1' : token.colorPrimary }} />{' '}
-                          Bảng Xếp Hạng Doanh Thu Thưởng (
-                          {selectedRole === 'oc' ? 'Online Consultant Leaderboard' : 'Booker Leaderboard'})
-                        </span>
-                      }
-                      variant="outlined"
-                      style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-                    >
-                      <div
-                        className="responsive-data-region"
-                        tabIndex={0}
-                        aria-label="Bảng xếp hạng doanh thu thưởng, có thể cuộn ngang bằng phím mũi tên trái hoặc phải"
-                        onKeyDown={(event) => {
-                          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-                          const scrollSurface = event.currentTarget.querySelector<HTMLElement>(
-                            '.ant-table-content, .ant-table-body'
-                          );
-                          if (!scrollSurface || scrollSurface.scrollWidth <= scrollSurface.clientWidth + 1) return;
-                          event.preventDefault();
-                          scrollSurface.scrollBy({ left: event.key === 'ArrowRight' ? 160 : -160, behavior: 'smooth' });
-                        }}
-                      >
-                        <Table
-                          dataSource={leaderboard}
-                          columns={leaderboardColumns}
-                          rowKey="staffId"
-                          pagination={false}
-                          bordered
-                          scroll={{ x: 'max-content' }}
-                          className="antd-custom-table"
-                          locale={{ emptyText: 'Chưa có dữ liệu thống kê nhân viên' }}
-                          summary={(pageData) => (
-                            <LeaderboardSummary pageData={pageData} selectedRole={selectedRole} token={token} />
-                          )}
-                        />
-                      </div>
-                    </Card>
-                  )}
-                </div>
+                <KpiOverviewTabContent
+                  summary={summary}
+                  breakdown={breakdown}
+                  trendsSlot={<KpiTrendsChart trends={trends} />}
+                  isAdmin={isAdmin}
+                  leaderboard={leaderboard}
+                  leaderboardColumns={leaderboardColumns}
+                  selectedRole={selectedRole}
+                  token={token}
+                />
               ),
             },
             {
               key: 'package-audit',
               label: (
-                <span>
-                  <SafetyOutlined /> Kiểm toán Gói Thủ công
+                <span className="inline-flex items-center gap-1.5">
+                  <AppIcon icon={ShieldCheck} size="sm" />
+                  Kiểm toán Gói Thủ công
                 </span>
               ),
               children: <PackageAuditTab />,
@@ -701,8 +162,9 @@ export default function KPIPage() {
             {
               key: 'booking-audit',
               label: (
-                <span>
-                  <HistoryOutlined /> Nhật Ký Hủy & Dời Lịch
+                <span className="inline-flex items-center gap-1.5">
+                  <AppIcon icon={History} size="sm" />
+                  Nhật Ký Hủy &amp; Dời Lịch
                 </span>
               ),
               children: <BookingAuditLogReportTab />,
@@ -711,7 +173,6 @@ export default function KPIPage() {
         />
       )}
 
-      {/* MODULAR CONFIG AND AUDIT DRAWERS */}
       <SalaryConfigDrawer
         open={configDrawerOpen}
         onClose={() => setConfigDrawerOpen(false)}

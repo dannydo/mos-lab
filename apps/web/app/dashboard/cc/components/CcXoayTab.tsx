@@ -1,85 +1,18 @@
-import React, { useState, useMemo } from 'react';
-import {
-  Card,
-  Table,
-  Tag,
-  Input,
-  Space,
-  Button,
-  Typography,
-  theme,
-  Tooltip,
-  Progress,
-  Alert,
-  Row,
-  Col,
-  Statistic,
-} from 'antd';
-import dayjs from 'dayjs';
-import {
-  SearchOutlined,
-  ReloadOutlined,
-  SettingOutlined,
-  CompressOutlined,
-  ExpandOutlined,
-  WarningOutlined,
-  FireOutlined,
-  SafetyCertificateOutlined,
-} from '@ant-design/icons';
-import {
-  CcXoayRecord,
-  CcXoayReportResponse,
-  removeVietnameseTones,
-  calculateWheelBonusCap,
-  calculateFractionToday,
-} from '@mos-lab/shared';
-import { useTableConfig } from '../../../../hooks/useTableConfig';
-import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
-import { formatCompactVND, formatStoreCode } from '../../../../lib/format-utils';
-import CcAvatar from './CcAvatar';
-import CcPeriodComparison from './CcPeriodComparison';
+'use client';
 
-interface CcXoayTabProps {
-  data: CcXoayRecord[];
-  loading?: boolean;
-  total?: number;
-  summary?: CcXoayReportResponse['summary'];
-  onRefresh?: () => void;
-  dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
-  comparisonMode?: 'month' | 'week' | 'day';
-}
+import React, { useMemo } from 'react';
+import type { CcXoayRecord } from '@mos-lab/shared';
+import { DataTable, SectionCard } from '~/components/ui';
+import { TableConfigDrawer } from '~/components/TableConfigDrawer';
+import { useTableConfig } from '~/hooks/useTableConfig';
+import { CcXoayCapBanner } from './cc-xoay-tab/CcXoayCapBanner';
+import { CcXoaySummaryCards } from './cc-xoay-tab/CcXoaySummaryCards';
+import { CcXoayTableHeader } from './cc-xoay-tab/CcXoayTableHeader';
+import { type CcXoayTabProps, getCcXoayRowKey } from './cc-xoay-tab/cc-xoay-utils';
+import { buildCcXoayColumns } from './cc-xoay-tab/ccXoayColumns';
+import { useCcXoayState } from './cc-xoay-tab/useCcXoayState';
 
-function calculateProjectedCcXoay(
-  checkinCount: number,
-  currentBonus: number,
-  ratio: number,
-  monthlyDailyBonus?: number
-): number {
-  if (ratio <= 0) return currentBonus;
-  const safeRatio = Math.max(0.001, Math.min(1.0, ratio));
-  if (checkinCount <= 0 && currentBonus <= 0) return 0;
-
-  const nHat = checkinCount > 0 ? Math.round(checkinCount / safeRatio) : 0;
-  if (nHat <= 0) return currentBonus;
-
-  let c = 3.65;
-  if (checkinCount >= 4 && currentBonus > 0) {
-    const rawC = (currentBonus - 45 * checkinCount) / (checkinCount * (checkinCount - 1));
-    if (!isNaN(rawC) && rawC >= 1.5 && rawC <= 8.0) {
-      c = rawC;
-    }
-  }
-
-  const rawProjected = Math.max(currentBonus, Math.round(c * nHat * (nHat - 1) + 45 * nHat));
-
-  if (monthlyDailyBonus && monthlyDailyBonus > 0) {
-    const projectedDailyBonus = Math.round(monthlyDailyBonus / safeRatio);
-    const maxAllowed = Math.round(projectedDailyBonus * 1.5);
-    return Math.min(rawProjected, maxAllowed);
-  }
-
-  return rawProjected;
-}
+export type { CcXoayTabProps };
 
 function CcXoayTabComponent({
   data,
@@ -89,493 +22,30 @@ function CcXoayTabComponent({
   dateRange,
   comparisonMode = 'month',
 }: CcXoayTabProps) {
-  const { token } = theme.useToken();
-  const [searchText, setSearchText] = useState('');
-  const [isCompact, setIsCompact] = useState(false);
+  const {
+    searchText,
+    setSearchText,
+    isCompact,
+    toggleCompact,
+    isMonthMode,
+    isDayMode,
+    periodNoun,
+    elapsedRatioPercent,
+    isPastPeriod,
+    projectedCheckins,
+    projectedPoints,
+    projectedBonus,
+    staffCapMap,
+    capSummary,
+    filteredData,
+  } = useCcXoayState({
+    data,
+    summary,
+    dateRange,
+    comparisonMode,
+  });
 
-  const isMonthMode = comparisonMode === 'month';
-  const isDayMode = comparisonMode === 'day';
-  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
-
-  const elapsedRatioPercent = useMemo(() => {
-    const now = dayjs();
-    const currentHour = now.hour();
-    const fractionToday = calculateFractionToday(currentHour);
-
-    const start = dateRange?.[0]
-      ? dayjs(dateRange[0])
-      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
-    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
-
-    if (now.isBefore(start, 'day')) return 0.1;
-    if (now.isAfter(end, 'day')) return 100;
-
-    const totalDays = end.diff(start, 'day') + 1;
-    const daysPassed = now.diff(start, 'day');
-    const elapsedDays = daysPassed + fractionToday;
-    const r = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
-    return Math.round(r * 1000) / 10;
-  }, [dateRange, comparisonMode]);
-
-  const isPastPeriod = elapsedRatioPercent >= 100;
-  const ratio = (elapsedRatioPercent || 100) / 100;
-
-  const projectedCheckins = Math.round((summary?.totalCheckins || 0) / (ratio || 1));
-  const projectedPoints = Math.round((summary?.totalPoints || 0) / (ratio || 1));
-
-  const consultantAggregates = useMemo(() => {
-    const map = new Map<string, { checkins: number; bonus: number; dailyBonus: number }>();
-    data.forEach((item) => {
-      const name = item.consultantName || 'Unknown';
-      const existing = map.get(name) || { checkins: 0, bonus: 0, dailyBonus: item.monthlyDailyBonus || 0 };
-      existing.checkins += 1;
-      existing.bonus += item.consultantBonus || 0;
-      if (item.monthlyDailyBonus && item.monthlyDailyBonus > existing.dailyBonus) {
-        existing.dailyBonus = item.monthlyDailyBonus;
-      }
-      map.set(name, existing);
-    });
-    return Array.from(map.values());
-  }, [data]);
-
-  const projectedBonus = useMemo(() => {
-    if (!isMonthMode) return 0;
-    if (consultantAggregates.length > 0) {
-      return consultantAggregates.reduce(
-        (acc, r) => acc + calculateProjectedCcXoay(r.checkins, r.bonus, ratio, r.dailyBonus),
-        0
-      );
-    }
-    return Math.round((summary?.totalBonus || 0) / (ratio || 1));
-  }, [isMonthMode, consultantAggregates, ratio, summary?.totalBonus]);
-
-  const renderForecastSubtext = (projectedVal: number, unit = '') => {
-    if (isDayMode || !projectedVal) return null;
-
-    if (isPastPeriod) {
-      return (
-        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
-          <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
-            <span>Thực tế chốt {periodNoun}:</span>
-            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
-              {unit === 'đ' ? formatCompactVND(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
-            </span>
-          </div>
-        </Tooltip>
-      );
-    }
-
-    return (
-      <Tooltip
-        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00 + 2h buffer checkout)`}
-      >
-        <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
-          <span className="shrink-0 flex items-center gap-1 text-slate-400">
-            <span role="img" aria-label={`Dự kiến cuối ${periodNoun}`} className="text-sm leading-none">
-              🔮
-            </span>
-            <span>Dự kiến:</span>
-          </span>
-          <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
-            ~{unit === 'đ' ? formatCompactVND(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
-          </span>
-        </div>
-      </Tooltip>
-    );
-  };
-
-  // Compute staff-level Wheel Bonus Cap map
-  const staffCapMap = useMemo(() => {
-    const map = new Map<string, { dailyBonus: number; wheelBonus: number }>();
-    data.forEach((item) => {
-      const name = item.consultantName || 'Unknown';
-      if (!map.has(name)) {
-        map.set(name, { dailyBonus: item.monthlyDailyBonus || 0, wheelBonus: item.monthlyWheelBonus || 0 });
-      } else {
-        const cur = map.get(name)!;
-        if (item.monthlyDailyBonus && item.monthlyDailyBonus > cur.dailyBonus) {
-          cur.dailyBonus = item.monthlyDailyBonus;
-        }
-        if (item.monthlyWheelBonus && item.monthlyWheelBonus > cur.wheelBonus) {
-          cur.wheelBonus = item.monthlyWheelBonus;
-        }
-      }
-    });
-
-    const resultMap = new Map<
-      string,
-      {
-        capStatus: 'NORMAL' | 'WARNING' | 'HARDCAPPED';
-        wheelCapPercent: number;
-        maxWheelBonusAllowed: number;
-        effectiveWheelBonus: number;
-      }
-    >();
-
-    map.forEach((val, name) => {
-      // Fallback demo values if backend data not fully populated
-      const dBonus = val.dailyBonus || 1000000;
-      const wBonus = val.wheelBonus || 0;
-      const res = calculateWheelBonusCap(dBonus, wBonus);
-      resultMap.set(name, {
-        capStatus: res.capStatus,
-        wheelCapPercent: res.wheelCapPercent,
-        maxWheelBonusAllowed: res.maxWheelBonusAllowed,
-        effectiveWheelBonus: res.effectiveWheelBonus,
-      });
-    });
-
-    return resultMap;
-  }, [data]);
-
-  // Capped & Warning Summary Stats for Header Banner
-  const capSummary = useMemo(() => {
-    let cappedCount = 0;
-    let warningCount = 0;
-    const cappedNames: string[] = [];
-    const warningNames: string[] = [];
-
-    staffCapMap.forEach((val, name) => {
-      if (val.capStatus === 'HARDCAPPED') {
-        cappedCount++;
-        cappedNames.push(name);
-      } else if (val.capStatus === 'WARNING') {
-        warningCount++;
-        warningNames.push(name);
-      }
-    });
-
-    return { cappedCount, warningCount, cappedNames, warningNames };
-  }, [staffCapMap]);
-
-  const filteredData = useMemo(() => {
-    if (!searchText) return data;
-    const q = removeVietnameseTones(searchText);
-    return data.filter((item) => {
-      return (
-        (item.clientName && removeVietnameseTones(item.clientName).includes(q)) ||
-        (item.serviceName && removeVietnameseTones(item.serviceName).includes(q)) ||
-        (item.consultantName && removeVietnameseTones(item.consultantName).includes(q)) ||
-        (item.store && removeVietnameseTones(item.store).includes(q))
-      );
-    });
-  }, [data, searchText]);
-
-  const staticColumns = useMemo(
-    () => [
-      {
-        title: 'Check-in',
-        dataIndex: 'checkin',
-        key: 'checkin',
-        width: 108,
-        render: (val: string) => {
-          const checkin = dayjs(val);
-
-          if (!checkin.isValid()) {
-            return <span className="tabular-nums text-xs text-slate-400 font-medium">{val || '-'}</span>;
-          }
-
-          return (
-            <span className="flex flex-col tabular-nums text-xs font-medium leading-5 text-slate-400 whitespace-nowrap">
-              <span>{checkin.format('DD/MM/YYYY')}</span>
-              <span>{checkin.format('HH:mm')}</span>
-            </span>
-          );
-        },
-      },
-      {
-        title: 'Khách Hàng',
-        dataIndex: 'clientName',
-        key: 'clientName',
-        width: 150,
-        render: (val: string, record: CcXoayRecord) => (
-          <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="truncate font-semibold text-xs text-sky-400">{val || 'Khách Vãng Lai'}</span>
-            <span className="text-[11px] font-medium leading-4 text-slate-400">{formatStoreCode(record.store)}</span>
-          </span>
-        ),
-      },
-      {
-        title: 'Tên Dịch Vụ / Bộ Mi',
-        dataIndex: 'serviceName',
-        key: 'serviceName',
-        width: 220,
-        render: (val: string) => <span className="font-medium text-amber-800 dark:text-amber-400">{val}</span>,
-      },
-      {
-        title: 'CC In/Out',
-        key: 'ccInOut',
-        width: 176,
-        render: (_: unknown, record: CcXoayRecord) => {
-          const ccInName = record.ccInName?.trim();
-          const ccOutName = record.ccOutName?.trim();
-          const isSameConsultant = Boolean(ccInName && ccOutName && ccInName === ccOutName);
-          const renderConsultant = (name: string, avatar: string | null | undefined, variant: 'in' | 'out') => (
-            <div className={`cc-in-out-row cc-in-out-row-${variant}`}>
-              <CcAvatar
-                name={name}
-                src={avatar}
-                size={20}
-                className={variant === 'out' ? 'cc-in-out-avatar-out' : ''}
-              />
-              <span className="truncate">{name}</span>
-            </div>
-          );
-
-          if (isSameConsultant) {
-            return (
-              <div className="cc-in-out-cell" title="CC In và CC Out là cùng một người">
-                {renderConsultant(ccInName!, record.ccInAvatar, 'in')}
-              </div>
-            );
-          }
-
-          if (!ccInName && !ccOutName) return <span className="text-slate-500 text-xs">-</span>;
-
-          return (
-            <div className="cc-in-out-cell">
-              {ccInName && renderConsultant(ccInName, record.ccInAvatar, 'in')}
-              {ccOutName && renderConsultant(ccOutName, record.ccOutAvatar, 'out')}
-            </div>
-          );
-        },
-      },
-      {
-        title: 'Level CC',
-        dataIndex: 'consultantLevel',
-        key: 'consultantLevel',
-        width: 80,
-        align: 'right' as const,
-        render: (val: number) => (
-          <span className="tabular-nums font-semibold text-xs text-slate-600 dark:text-slate-300">{val}</span>
-        ),
-      },
-      {
-        title: 'CC Bonus (đ)',
-        dataIndex: 'consultantBonus',
-        key: 'consultantBonus',
-        width: 165,
-        align: 'right' as const,
-        render: (val: number, record: CcXoayRecord) => {
-          const capInfo = staffCapMap.get(record.consultantName || '') || {
-            capStatus: record.capStatus || 'NORMAL',
-            wheelCapPercent: record.wheelCapPercent || 0,
-            maxWheelBonusAllowed: record.maxWheelBonusAllowed || 0,
-            effectiveWheelBonus: val,
-          };
-
-          const isHardcapped = capInfo.capStatus === 'HARDCAPPED';
-          const isWarning = capInfo.capStatus === 'WARNING';
-          const percent = capInfo.wheelCapPercent || 0;
-          const maxAllowed = capInfo.maxWheelBonusAllowed || 0;
-
-          if (isHardcapped) {
-            return (
-              <Tooltip
-                title={
-                  <div>
-                    <div className="font-bold text-rose-300">⛔ ĐÃ ĐẠT TRẦN THƯỞNG VÒNG XOAY (1.5X)</div>
-                    <div className="text-xs mt-1">
-                      Tổng thưởng Vòng xoay đã đạt trần tối đa:{' '}
-                      <strong className="text-emerald-300">{maxAllowed.toLocaleString('vi-VN')} đ</strong> (1.5x CC
-                      Daily Bonus). Phần tiền vượt quá bị khống chế theo quy định.
-                    </div>
-                  </div>
-                }
-              >
-                <div className="w-full text-right cursor-help">
-                  <div className="tabular-nums font-bold text-rose-500 text-xs">
-                    +{Math.round(val || 0).toLocaleString('vi-VN')} đ
-                  </div>
-                  <div className="flex items-center justify-end gap-1 mt-0.5">
-                    <Tag color="error" className="m-0 text-[10px] font-bold py-0 px-1 border-rose-500/40 animate-pulse">
-                      ⛔ HARDCAP 1.5X
-                    </Tag>
-                  </div>
-                  <Progress percent={100} size="small" strokeColor="#ff4d4f" showInfo={false} className="m-0 mt-0.5" />
-                </div>
-              </Tooltip>
-            );
-          }
-
-          if (isWarning) {
-            return (
-              <Tooltip
-                title={
-                  <div>
-                    <div className="font-bold text-amber-300">⚠️ CẢNH BÁO: SẮP CHẠM TRẦN THƯỞNG (1.5X)</div>
-                    <div className="text-xs mt-1">
-                      Đã sử dụng <strong className="text-amber-300">{percent}%</strong> hạn mức thưởng Vòng xoay tháng
-                      (Tối đa: <strong>{maxAllowed.toLocaleString('vi-VN')} đ</strong>). Hãy nâng cao CC Daily Bonus để
-                      mở rộng trần!
-                    </div>
-                  </div>
-                }
-              >
-                <div className="w-full text-right cursor-help">
-                  <div className="tabular-nums font-bold text-amber-400 text-xs">
-                    +{Math.round(val || 0).toLocaleString('vi-VN')} đ
-                  </div>
-                  <div className="flex items-center justify-end gap-1 mt-0.5">
-                    <Tag color="warning" className="m-0 text-[10px] font-bold py-0 px-1 border-amber-500/40">
-                      ⚠️ SẮP CHẠM TRẦN ({percent}%)
-                    </Tag>
-                  </div>
-                  <Progress
-                    percent={percent}
-                    size="small"
-                    strokeColor="#faad14"
-                    showInfo={false}
-                    className="m-0 mt-0.5"
-                  />
-                </div>
-              </Tooltip>
-            );
-          }
-
-          return (
-            <Tooltip title={`Tiến độ sử dụng hạn mức Vòng xoay tháng: ${percent}% (Trần 1.5x Daily Bonus)`}>
-              <div className="w-full text-right">
-                <span className="tabular-nums font-bold text-emerald-400 text-xs">
-                  +{Math.round(val || 0).toLocaleString('vi-VN')} đ
-                </span>
-                {percent > 0 && (
-                  <Progress
-                    percent={percent}
-                    size="small"
-                    strokeColor="#52c41a"
-                    showInfo={false}
-                    className="m-0 mt-0.5"
-                  />
-                )}
-              </div>
-            </Tooltip>
-          );
-        },
-      },
-      {
-        title: '∑ Điểm CC',
-        dataIndex: 'pointsAccu',
-        key: 'pointsAccu',
-        width: 110,
-        align: 'right' as const,
-        render: (val: number) => (
-          <span className="tabular-nums font-semibold text-blue-400 text-xs">{val.toLocaleString('vi-VN')}</span>
-        ),
-      },
-      {
-        title: 'Điểm CC',
-        dataIndex: 'consultantPoints',
-        key: 'consultantPoints',
-        width: 90,
-        align: 'right' as const,
-        render: (val: number) => <span className="tabular-nums font-bold text-cyan-400 text-xs">+{val} pts</span>,
-      },
-      {
-        title: 'Class',
-        dataIndex: 'class',
-        key: 'class',
-        width: 130,
-        render: (val: string, r: CcXoayRecord) => (
-          <span className="text-xs text-slate-600 dark:text-slate-300">
-            {val} <span className="text-slate-500 text-[10px]">({r.classPts}p)</span>
-          </span>
-        ),
-      },
-      {
-        title: 'Fan',
-        dataIndex: 'fan',
-        key: 'fan',
-        width: 80,
-        render: (val: string, r: CcXoayRecord) => (
-          <span className="tabular-nums text-xs text-slate-400">
-            {val} <span className="text-slate-500 text-[10px]">({r.fanPts}p)</span>
-          </span>
-        ),
-      },
-      {
-        title: 'Type',
-        dataIndex: 'type',
-        key: 'type',
-        width: 90,
-        render: (val: string, r: CcXoayRecord) => (
-          <span className="text-xs text-slate-400">
-            {val} <span className="text-slate-500 text-[10px]">({r.typePts}p)</span>
-          </span>
-        ),
-      },
-      {
-        title: 'Số Sợi',
-        dataIndex: 'lashCount',
-        key: 'lashCount',
-        width: 95,
-        align: 'right' as const,
-        render: (val: number, r: CcXoayRecord) => (
-          <span className="tabular-nums text-xs text-slate-600 dark:text-slate-300">
-            {val}s <span className="text-slate-500 text-[10px]">({r.lashPts}p)</span>
-          </span>
-        ),
-      },
-      {
-        title: 'Dáng Mi',
-        dataIndex: 'design',
-        key: 'design',
-        width: 100,
-        render: (val: string, r: CcXoayRecord) => (
-          <span className="text-xs text-slate-400">
-            {val} <span className="text-slate-500 text-[10px]">({r.designPts}p)</span>
-          </span>
-        ),
-      },
-      {
-        title: 'Màu Mi',
-        dataIndex: 'color',
-        key: 'color',
-        width: 90,
-        render: (val: string, r: CcXoayRecord) => (
-          <span className="text-xs text-slate-400">
-            {val} <span className="text-slate-500 text-[10px]">({r.colorPts}p)</span>
-          </span>
-        ),
-      },
-      {
-        title: 'FAL Rule',
-        dataIndex: 'falRule',
-        key: 'falRule',
-        width: 80,
-        render: (val?: string, record?: CcXoayRecord) => {
-          if (!val) return <span className="text-xs text-slate-500">-</span>;
-          const fal = record?.fal;
-          return (
-            <Tooltip
-              title={
-                fal
-                  ? `${fal.caseRole === 'ORIGIN' ? 'Ca gốc' : 'Ca xử lý'} · ${fal.totalMinutes ?? '?'} phút · ${fal.compensationMode}${fal.decisionStatus ? ` · ${fal.decisionStatus}` : ''}`
-                  : val
-              }
-            >
-              <Tag
-                color={
-                  fal?.compensationMode === 'BLOCKED'
-                    ? 'default'
-                    : val === 'Fix'
-                      ? 'error'
-                      : val === 'Adjust'
-                        ? 'warning'
-                        : 'blue'
-                }
-                className="font-semibold text-[10px] m-0 py-0 px-1"
-              >
-                {val}
-                {fal?.compensationMode === 'BLOCKED' ? ' · Chờ' : ''}
-              </Tag>
-            </Tooltip>
-          );
-        },
-      },
-    ],
-    []
-  );
+  const staticColumns = useMemo(() => buildCcXoayColumns(staffCapMap), [staffCapMap]);
 
   const {
     loading: configLoading,
@@ -586,135 +56,42 @@ function CcXoayTabComponent({
     closeConfig,
     saveConfig,
     resetConfig,
-  } = useTableConfig('cc_xoay_table', staticColumns);
+  } = useTableConfig<CcXoayRecord>('cc_xoay_table', staticColumns);
 
   return (
     <div className="flex flex-col gap-4">
-      <Row gutter={[12, 12]} className="cc-xoay-summary-row">
-        <Col xs={24} sm={8}>
-          <Card
-            size="small"
-            variant="outlined"
-            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-          >
-            <Statistic title="∑ Lượt CC Xoay" value={summary?.totalCheckins || 0} suffix="lượt" />
-            <CcPeriodComparison
-              comparison={summary?.comparison}
-              currentValue={summary?.totalCheckins || 0}
-              previousValue={summary?.comparison?.totalCheckins || 0}
-              formatter={(value) => `${value.toLocaleString('vi-VN')} lượt`}
-            />
-            {renderForecastSubtext(projectedCheckins, 'lượt')}
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card
-            size="small"
-            variant="outlined"
-            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-          >
-            <Statistic title="∑ Điểm CC" value={summary?.totalPoints || 0} />
-            <CcPeriodComparison
-              comparison={summary?.comparison}
-              currentValue={summary?.totalPoints || 0}
-              previousValue={summary?.comparison?.totalPoints || 0}
-              formatter={(value) => value.toLocaleString('vi-VN')}
-            />
-            {renderForecastSubtext(projectedPoints, 'pts')}
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card
-            size="small"
-            variant="outlined"
-            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-          >
-            <Statistic
-              title="∑ Thưởng CC Xoay"
-              value={summary?.totalBonus || 0}
-              formatter={(value) => formatCompactVND(Number(value || 0))}
-            />
-            <CcPeriodComparison
-              comparison={summary?.comparison}
-              currentValue={summary?.totalBonus || 0}
-              previousValue={summary?.comparison?.totalBonus || 0}
-              formatter={formatCompactVND}
-            />
-            {isMonthMode && renderForecastSubtext(projectedBonus, 'đ')}
-          </Card>
-        </Col>
-      </Row>
-      <Card
-        title={
-          <div className="flex flex-wrap justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-base m-0" style={{ color: token.colorText }}>
-                Bảng Dữ Liệu Báo Cáo CC Xoay
-              </h3>
-            </div>
+      <CcXoaySummaryCards
+        summary={summary}
+        projectedCheckins={projectedCheckins}
+        projectedPoints={projectedPoints}
+        projectedBonus={projectedBonus}
+        isMonthMode={isMonthMode}
+        isDayMode={isDayMode}
+        isPastPeriod={isPastPeriod}
+        periodNoun={periodNoun}
+        elapsedRatioPercent={elapsedRatioPercent}
+      />
 
-            <Space wrap>
-              <Input
-                aria-label="Tìm kiếm khách hàng, dịch vụ, CC"
-                prefix={<SearchOutlined />}
-                placeholder="Tìm khách hàng, dịch vụ, CC..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                style={{ width: 220 }}
-                allowClear
-              />
-              <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
-                <Button
-                  aria-label={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn'}
-                  icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
-                  onClick={() => setIsCompact(!isCompact)}
-                  className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
-                />
-              </Tooltip>
-              {onRefresh && (
-                <Tooltip title="Làm mới dữ liệu">
-                  <Button aria-label="Làm mới dữ liệu" icon={<ReloadOutlined />} onClick={onRefresh} />
-                </Tooltip>
-              )}
-              <Tooltip title="Cấu hình cột">
-                <Button aria-label="Cấu hình cột" icon={<SettingOutlined />} onClick={openConfig} />
-              </Tooltip>
-            </Space>
-          </div>
+      <SectionCard
+        title={
+          <CcXoayTableHeader
+            searchText={searchText}
+            onSearchChange={setSearchText}
+            isCompact={isCompact}
+            onToggleCompact={toggleCompact}
+            onRefresh={onRefresh}
+            onOpenConfig={openConfig}
+          />
         }
-        variant="outlined"
-        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-        styles={{ body: { padding: 0 } }}
+        bodyPadding={0}
         className="full-bleed-card shadow-sm rounded-xl"
       >
-        {capSummary.cappedCount > 0 || capSummary.warningCount > 0 ? (
-          <div className="p-3 border-b border-amber-500/20 bg-amber-500/10 flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2">
-              <FireOutlined className="text-amber-500 text-sm" />
-              <span className="font-semibold text-amber-800 dark:text-amber-300">
-                ⚠️ Quản Lý Hạn Mức Vòng Xoay (Trần 1.5x CC Daily Bonus Tháng):
-              </span>
-              {capSummary.cappedCount > 0 && (
-                <Tag color="error" className="m-0 font-bold">
-                  ⛔ {capSummary.cappedCount} CC ĐẠT TRẦN ({capSummary.cappedNames.join(', ')})
-                </Tag>
-              )}
-              {capSummary.warningCount > 0 && (
-                <Tag color="warning" className="m-0 font-bold">
-                  ⚠️ {capSummary.warningCount} CC SẮP CHẠM TRẦN ({capSummary.warningNames.join(', ')})
-                </Tag>
-              )}
-            </div>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 italic">
-              *Thưởng Vòng xoay tối đa = 1.5 × CC Daily Bonus tháng
-            </span>
-          </div>
-        ) : null}
+        <CcXoayCapBanner capSummary={capSummary} />
 
-        <Table
+        <DataTable<CcXoayRecord>
           dataSource={filteredData}
           columns={configuredColumns}
-          rowKey={(record) => `${record.serviceId}-${record.consultantId || ''}-${record.checkin}`}
+          rowKey={getCcXoayRowKey}
           loading={loading || configLoading}
           size="small"
           bordered
@@ -725,7 +102,7 @@ function CcXoayTabComponent({
             showSizeChanger: true,
             showTotal: (totalCount) => `Tổng cộng ${totalCount} bản ghi lượt dịch vụ`,
           }}
-          className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
+          className={isCompact ? 'compact-table' : ''}
           locale={{ emptyText: 'Không có dữ liệu CC Xoay trong khoảng thời gian này' }}
         />
 
@@ -737,7 +114,7 @@ function CcXoayTabComponent({
           onSave={saveConfig}
           onReset={resetConfig}
         />
-      </Card>
+      </SectionCard>
     </div>
   );
 }

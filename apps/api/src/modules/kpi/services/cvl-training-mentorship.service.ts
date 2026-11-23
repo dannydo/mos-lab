@@ -1,325 +1,68 @@
 import { FastifyInstance } from 'fastify';
 import type mysql from 'mysql2/promise';
 import {
-  CVL_TRAINING_MENTORSHIP_CONFIG_KEY,
   CvlTrainingMentorshipConfig,
   CvlTrainingMentorshipConfigResponse,
   CvlTrainingMentorshipPair,
-  CvlTrainingMentorshipStaffOption,
-  DEFAULT_CVL_TRAINING_MENTORSHIP_CONFIG,
-  SafeAny,
-  intersectDateRanges,
   isDateRangeOverlapping,
 } from '@mos-lab/shared';
-import { TeamService } from '../../teams/team.service.js';
+import {
+  clearMentorshipCaches,
+  normalizeCvlTrainingMentorshipConfig,
+  sanitizeCvlTrainingMentorshipPair,
+} from './cvl-training-mentorship/cvl-training-mentorship.helpers.js';
+import {
+  buildCvTipStaffMatchSql,
+  buildExcludeOtherMenteeTrainingOrderSql,
+  buildExcludeTrainingCvlOrderSql,
+  buildIsMenteeTrainingWindowSql,
+  findMatchingTrainingPairForOrderImpl,
+  queryTransferredCcTipsByMenteeImpl,
+} from './cvl-training-mentorship/cvl-training-mentorship.sql.js';
+import {
+  getActivePairsFromCrmPoolImpl,
+  getConfigWithStaffOptionsImpl,
+  getMentorshipConfig,
+  saveMentorshipConfig,
+} from './cvl-training-mentorship/cvl-training-mentorship.config.js';
+import {
+  type LegacyTipSqlExecutor,
+  createFastifyLegacyTipExecutor,
+  createMysqlPoolTipExecutor,
+  reconcileTrainingCvlStaffTipsImpl,
+} from './cvl-training-mentorship/cvl-training-mentorship.reconcile.js';
 
-const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const CACHE_TTL_MS = 30_000;
-const RECONCILE_COOLDOWN_MS = 60_000;
-
-let cachedConfig: CvlTrainingMentorshipConfig | null = null;
-let cacheTimestamp = 0;
-const lastReconciledAtByKey = new Map<string, number>();
-
-export interface LegacyTipSqlExecutor {
-  queryRows<T = SafeAny>(sql: string, params?: unknown[]): Promise<T[]>;
-  execute(sql: string, params?: unknown[]): Promise<void>;
-}
-
-export function createMysqlPoolTipExecutor(pool: mysql.Pool): LegacyTipSqlExecutor {
-  return {
-    async queryRows<T = SafeAny>(sql: string, params: unknown[] = []): Promise<T[]> {
-      const [rows] = await pool.query<mysql.RowDataPacket[]>(sql, params);
-      return rows as unknown as T[];
-    },
-    async execute(sql: string, params: unknown[] = []): Promise<void> {
-      await pool.query(sql, params);
-    },
-  };
-}
-
-export function createFastifyLegacyTipExecutor(fastify: FastifyInstance): LegacyTipSqlExecutor {
-  return {
-    async queryRows<T = SafeAny>(sql: string, params: unknown[] = []): Promise<T[]> {
-      return fastify.prisma.legacy.$queryRawUnsafe<T[]>(sql, ...params);
-    },
-    async execute(sql: string, params: unknown[] = []): Promise<void> {
-      if (typeof fastify.prisma.legacy.$executeRawUnsafe === 'function') {
-        await fastify.prisma.legacy.$executeRawUnsafe(sql, ...params);
-      } else {
-        await fastify.prisma.legacy.$queryRawUnsafe(sql, ...params);
-      }
-    },
-  };
-}
-
-function sanitizeStoreCode(raw?: string | null): string {
-  const upper = String(raw || 'DT')
-    .trim()
-    .toUpperCase();
-  if (upper.includes('ESTELLA') || upper === 'EP') return 'EP';
-  if (upper.includes('PXL') || upper.includes('PHAN')) return 'PXL';
-  return 'DT';
-}
-
-export function sanitizeCvlTrainingMentorshipPair(
-  raw: Partial<CvlTrainingMentorshipPair>,
-  index: number
-): CvlTrainingMentorshipPair | null {
-  const menteeId = Math.floor(Number(raw.menteeLegacyStaffId || 0));
-  const mentorId = Math.floor(Number(raw.mentorLegacyStaffId || 0));
-  if (!Number.isInteger(menteeId) || menteeId <= 0) return null;
-  if (!Number.isInteger(mentorId) || mentorId <= 0) return null;
-
-  const startDate = String(raw.startDate || '').slice(0, 10);
-  const endDate = String(raw.endDate || '').slice(0, 10);
-  if (!ISO_DATE_RE.test(startDate) || !ISO_DATE_RE.test(endDate) || startDate > endDate) {
-    return null;
-  }
-
-  const fixedAllowanceVnd = Math.max(0, Math.round(Number(raw.fixedAllowanceVnd ?? 1_000_000)));
-  const rawShare = Number(raw.menteeBonusShareRate ?? 0.5);
-  const menteeBonusShareRate = Number.isFinite(rawShare) ? Math.min(2, Math.max(0, rawShare)) : 0.5;
-  const rawThreshold = Number(raw.minComboRateThreshold ?? 0.2);
-  const minComboRateThreshold = Number.isFinite(rawThreshold) ? Math.min(1, Math.max(0, rawThreshold)) : 0.2;
-
-  const id =
-    String(raw.id || '')
-      .trim()
-      .replace(/[^a-zA-Z0-9_-]/g, '-') || `pair-${menteeId}-${mentorId}-${startDate}-${index}`;
-
-  return {
-    id,
-    menteeLegacyStaffId: menteeId,
-    menteeDisplayName: String(raw.menteeDisplayName || `CVL #${menteeId}`).trim(),
-    mentorLegacyStaffId: mentorId,
-    mentorDisplayName: String(raw.mentorDisplayName || `CC #${mentorId}`).trim(),
-    storeCode: sanitizeStoreCode(raw.storeCode),
-    startDate,
-    endDate,
-    fixedAllowanceVnd,
-    menteeBonusShareRate,
-    minComboRateThreshold,
-    isActive: raw.isActive !== false,
-    note: raw.note ? String(raw.note).trim() : undefined,
-  };
-}
-
-export function normalizeCvlTrainingMentorshipConfig(raw: unknown): CvlTrainingMentorshipConfig {
-  if (!raw || typeof raw !== 'object') {
-    return structuredClone(DEFAULT_CVL_TRAINING_MENTORSHIP_CONFIG);
-  }
-  const obj = raw as Record<string, unknown>;
-  if (!Array.isArray(obj.pairs)) {
-    return structuredClone(DEFAULT_CVL_TRAINING_MENTORSHIP_CONFIG);
-  }
-  const pairs: CvlTrainingMentorshipPair[] = [];
-  obj.pairs.forEach((item, idx) => {
-    const cleaned = sanitizeCvlTrainingMentorshipPair(item as Partial<CvlTrainingMentorshipPair>, idx);
-    if (cleaned) pairs.push(cleaned);
-  });
-  return {
-    pairs,
-    updatedAt: typeof obj.updatedAt === 'string' ? obj.updatedAt : undefined,
-    updatedBy: typeof obj.updatedBy === 'string' ? obj.updatedBy : undefined,
-  };
-}
-
-/**
- * Xây dựng mệnh đề SQL loại trừ mọi đơn hàng thuộc về Mentee CVL đang trong kỳ Training.
- * Dùng cho tất cả báo cáo của CC (CC Xoay, CC Daily Sales Bonus, CC Tip, CC Paystub)
- * theo Điều răn CC-006: "Tất cả CC check-in/out giúp CVL không nhận được gì hết từ CVL, kể cả bonus vòng xoay."
- */
-export function buildExcludeTrainingCvlOrderSql(
-  pairs: CvlTrainingMentorshipPair[],
-  orderIdExpr: string,
-  orderDateExpr: string
-): string {
-  const active = (pairs || []).filter(
-    (p) =>
-      p.isActive &&
-      Number.isInteger(p.menteeLegacyStaffId) &&
-      p.menteeLegacyStaffId > 0 &&
-      ISO_DATE_RE.test(p.startDate) &&
-      ISO_DATE_RE.test(p.endDate)
-  );
-  if (active.length === 0) return '';
-
-  const clauses = active.map(
-    (p) =>
-      `(os_tr.assigned_staff_id = ${p.menteeLegacyStaffId} AND DATE(${orderDateExpr}) BETWEEN '${p.startDate}' AND '${p.endDate}')`
-  );
-
-  return ` AND NOT EXISTS (SELECT 1 FROM \`order_service\` os_tr WHERE os_tr.order_id = ${orderIdExpr} AND (${clauses.join(' OR ')}))`;
-}
-
-/**
- * Xây dựng mệnh đề SQL kiểm tra một đơn hàng có thuộc kỳ Training của đúng 1 Mentee CVL cụ thể hay không.
- */
-export function buildIsMenteeTrainingWindowSql(
-  menteePairs: CvlTrainingMentorshipPair[],
-  orderDateExpr: string
-): string {
-  const active = (menteePairs || []).filter(
-    (p) => p.isActive && ISO_DATE_RE.test(p.startDate) && ISO_DATE_RE.test(p.endDate)
-  );
-  if (active.length === 0) return '1 = 0';
-  return `(${active.map((p) => `(DATE(${orderDateExpr}) BETWEEN '${p.startDate}' AND '${p.endDate}')`).join(' OR ')})`;
-}
-
-/**
- * Ngăn không cho nhân sự khác (kể cả CVL khác) nhận trùng thưởng gói/dưỡng mi trên đơn của một Mentee CVL đang Training.
- */
-export function buildExcludeOtherMenteeTrainingOrderSql(
-  pairs: CvlTrainingMentorshipPair[],
-  currentStaffId: number,
-  orderIdExpr: string,
-  orderDateExpr: string
-): string {
-  const safeCurrentId = Math.floor(Number(currentStaffId || 0));
-  const others = (pairs || []).filter(
-    (p) =>
-      p.isActive &&
-      Number.isInteger(p.menteeLegacyStaffId) &&
-      p.menteeLegacyStaffId > 0 &&
-      p.menteeLegacyStaffId !== safeCurrentId &&
-      ISO_DATE_RE.test(p.startDate) &&
-      ISO_DATE_RE.test(p.endDate)
-  );
-  if (others.length === 0) return '';
-  const clauses = others.map(
-    (p) =>
-      `(os_oth_tr.assigned_staff_id = ${p.menteeLegacyStaffId} AND DATE(${orderDateExpr}) BETWEEN '${p.startDate}' AND '${p.endDate}')`
-  );
-  return ` AND NOT EXISTS (SELECT 1 FROM \`order_service\` os_oth_tr WHERE os_oth_tr.order_id = ${orderIdExpr} AND (${clauses.join(' OR ')}))`;
-}
-
-/**
- * Biểu thức SQL khớp dòng staff_tip thuộc về Chuyên Viên thực hiện dịch vụ,
- * bao gồm phần Tip Check-in/Check-out (<= 20%) mà CC bấm giùm cho Mentee CVL trong kỳ Training.
- */
-export function buildCvTipStaffMatchSql(
-  pairs: CvlTrainingMentorshipPair[],
-  tipAlias: string,
-  assignedStaffExpr: string,
-  orderDateExpr: string
-): string {
-  const active = (pairs || []).filter(
-    (p) =>
-      p.isActive &&
-      Number.isInteger(p.menteeLegacyStaffId) &&
-      p.menteeLegacyStaffId > 0 &&
-      ISO_DATE_RE.test(p.startDate) &&
-      ISO_DATE_RE.test(p.endDate)
-  );
-  if (active.length === 0) {
-    return `${tipAlias}.user_id = ${assignedStaffExpr}`;
-  }
-  const trainingClauses = active.map(
-    (p) =>
-      `(${assignedStaffExpr} = ${p.menteeLegacyStaffId} AND DATE(${orderDateExpr}) BETWEEN '${p.startDate}' AND '${p.endDate}')`
-  );
-  return `(
-    ${tipAlias}.user_id = ${assignedStaffExpr}
-    OR (
-      ${tipAlias}.user_id <> ${assignedStaffExpr}
-      AND COALESCE(${tipAlias}.tip_percentage, 0) > 0
-      AND COALESCE(${tipAlias}.tip_percentage, 0) <= 20
-      AND COALESCE(${tipAlias}.is_academy, 0) = 0
-      AND (${trainingClauses.join(' OR ')})
-    )
-  )`;
-}
+export type { LegacyTipSqlExecutor };
+export {
+  buildCvTipStaffMatchSql,
+  buildExcludeOtherMenteeTrainingOrderSql,
+  buildExcludeTrainingCvlOrderSql,
+  buildIsMenteeTrainingWindowSql,
+  createFastifyLegacyTipExecutor,
+  createMysqlPoolTipExecutor,
+  normalizeCvlTrainingMentorshipConfig,
+  sanitizeCvlTrainingMentorshipPair,
+};
 
 export class CvlTrainingMentorshipService {
   static clearCache(): void {
-    cachedConfig = null;
-    cacheTimestamp = 0;
-    lastReconciledAtByKey.clear();
+    clearMentorshipCaches();
   }
 
-  static async getConfig(fastify: FastifyInstance): Promise<CvlTrainingMentorshipConfig> {
-    const now = Date.now();
-    if (cachedConfig && now - cacheTimestamp < CACHE_TTL_MS) {
-      return cachedConfig;
-    }
-
-    try {
-      const record = await fastify.prisma.crm.crmConfig.findUnique({
-        where: { key: CVL_TRAINING_MENTORSHIP_CONFIG_KEY },
-      });
-
-      if (record?.value) {
-        const parsed = JSON.parse(record.value);
-        cachedConfig = normalizeCvlTrainingMentorshipConfig(parsed);
-        cacheTimestamp = now;
-        return cachedConfig;
-      }
-    } catch (err) {
-      fastify.log.warn({ err }, 'Failed to read CVL_TRAINING_MENTORSHIP_CONFIG, using default');
-    }
-
-    cachedConfig = structuredClone(DEFAULT_CVL_TRAINING_MENTORSHIP_CONFIG);
-    cacheTimestamp = now;
-    return cachedConfig;
+  static getConfig(fastify: FastifyInstance): Promise<CvlTrainingMentorshipConfig> {
+    return getMentorshipConfig(fastify);
   }
 
-  static async saveConfig(
+  static saveConfig(
     fastify: FastifyInstance,
     payload: Partial<CvlTrainingMentorshipConfig>,
     updatedBy?: string
   ): Promise<CvlTrainingMentorshipConfig> {
-    const rawPairs = Array.isArray(payload?.pairs) ? payload.pairs : [];
-    const pairs: CvlTrainingMentorshipPair[] = [];
-    rawPairs.forEach((item, idx) => {
-      const cleaned = sanitizeCvlTrainingMentorshipPair(item, idx);
-      if (cleaned) pairs.push(cleaned);
-    });
-
-    const nextConfig: CvlTrainingMentorshipConfig = {
-      pairs,
-      updatedAt: new Date().toISOString(),
-      updatedBy: updatedBy || 'admin',
-    };
-
-    await fastify.prisma.crm.crmConfig.upsert({
-      where: { key: CVL_TRAINING_MENTORSHIP_CONFIG_KEY },
-      create: {
-        key: CVL_TRAINING_MENTORSHIP_CONFIG_KEY,
-        value: JSON.stringify(nextConfig),
-      },
-      update: {
-        value: JSON.stringify(nextConfig),
-      },
-    });
-
-    cachedConfig = nextConfig;
-    cacheTimestamp = Date.now();
-    lastReconciledAtByKey.clear();
-    return nextConfig;
+    return saveMentorshipConfig(fastify, payload, updatedBy);
   }
 
-  static async getActivePairsFromCrmPool(
-    crmPool: mysql.Pool,
-    targetDate?: string
-  ): Promise<CvlTrainingMentorshipPair[]> {
-    try {
-      const [rows] = await crmPool.query<mysql.RowDataPacket[]>(
-        'SELECT `value` FROM crm_config WHERE `key` = ? LIMIT 1',
-        [CVL_TRAINING_MENTORSHIP_CONFIG_KEY]
-      );
-      const raw = rows?.[0]?.value;
-      const cfg = raw
-        ? normalizeCvlTrainingMentorshipConfig(JSON.parse(String(raw)))
-        : structuredClone(DEFAULT_CVL_TRAINING_MENTORSHIP_CONFIG);
-      const d = targetDate ? targetDate.slice(0, 10) : '';
-      return cfg.pairs.filter((p) => p.isActive && (!d || (d >= p.startDate && d <= p.endDate)));
-    } catch {
-      const d = targetDate ? targetDate.slice(0, 10) : '';
-      return DEFAULT_CVL_TRAINING_MENTORSHIP_CONFIG.pairs.filter(
-        (p) => p.isActive && (!d || (d >= p.startDate && d <= p.endDate))
-      );
-    }
+  static getActivePairsFromCrmPool(crmPool: mysql.Pool, targetDate?: string): Promise<CvlTrainingMentorshipPair[]> {
+    return getActivePairsFromCrmPoolImpl(crmPool, targetDate);
   }
 
   /**
@@ -327,181 +70,12 @@ export class CvlTrainingMentorshipService {
    * thành 1 dòng thống nhất 90% cho Mentee CVL (và 0đ cho Mentor/CC), bảo đảm App Wings lẫn mOS hiển thị
    * đồng nhất 90% từ đầu kỳ tới hiện tại (idempotent, có cooldown 60s khi quét diện rộng).
    */
-  static async reconcileTrainingCvlStaffTips(
+  static reconcileTrainingCvlStaffTips(
     executor: LegacyTipSqlExecutor,
     pairs: CvlTrainingMentorshipPair[],
     options?: { orderIds?: number[]; force?: boolean }
   ): Promise<{ updatedOrders: number; consolidatedRows: number }> {
-    const activePairs = (pairs || []).filter(
-      (p) =>
-        p.isActive &&
-        Number.isInteger(p.menteeLegacyStaffId) &&
-        p.menteeLegacyStaffId > 0 &&
-        ISO_DATE_RE.test(p.startDate) &&
-        ISO_DATE_RE.test(p.endDate)
-    );
-    if (activePairs.length === 0) {
-      return { updatedOrders: 0, consolidatedRows: 0 };
-    }
-
-    const scopedOrderIds = Array.from(
-      new Set((options?.orderIds || []).map((id) => Math.floor(Number(id))).filter((id) => id > 0))
-    );
-    const cooldownKey = activePairs
-      .map((p) => `${p.menteeLegacyStaffId}:${p.startDate}:${p.endDate}`)
-      .sort()
-      .join('|');
-    if (scopedOrderIds.length === 0 && !options?.force) {
-      const lastRun = lastReconciledAtByKey.get(cooldownKey) || 0;
-      if (Date.now() - lastRun < RECONCILE_COOLDOWN_MS) {
-        return { updatedOrders: 0, consolidatedRows: 0 };
-      }
-      lastReconciledAtByKey.set(cooldownKey, Date.now());
-    }
-
-    try {
-      const pairClauses = activePairs.map(
-        (p) =>
-          `(os.assigned_staff_id = ${p.menteeLegacyStaffId} AND COALESCE(ro.date, DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start))) BETWEEN '${p.startDate}' AND '${p.endDate}')`
-      );
-      const orderFilterSql =
-        scopedOrderIds.length > 0 ? `AND o.id IN (${scopedOrderIds.join(',')})` : '';
-
-      const candidateRows = await executor.queryRows<{ order_id: number; mentee_id: number }>(
-        `SELECT DISTINCT
-           o.id AS order_id,
-           os.assigned_staff_id AS mentee_id
-         FROM \`order\` o
-         JOIN \`order_service\` os ON os.order_id = o.id
-         LEFT JOIN \`report_order\` ro ON ro.order_id = o.id
-         JOIN \`staff_tip\` st ON st.order_id = o.id
-         WHERE o.order_state = 'Completed'
-           ${orderFilterSql}
-           AND (${pairClauses.join(' OR ')})
-           AND (st.user_id IS NULL OR st.user_id <> os.assigned_staff_id)
-           AND COALESCE(st.tip_percentage, 0) > 0
-           AND COALESCE(st.tip_percentage, 0) <= 20
-           AND COALESCE(st.is_academy, 0) = 0`
-      );
-
-      if (!candidateRows || candidateRows.length === 0) {
-        return { updatedOrders: 0, consolidatedRows: 0 };
-      }
-
-      const candidateOrderIds = Array.from(
-        new Set(candidateRows.map((r) => Number(r.order_id)).filter((id) => id > 0))
-      );
-      if (candidateOrderIds.length === 0) {
-        return { updatedOrders: 0, consolidatedRows: 0 };
-      }
-
-      const menteeByOrderId = new Map<number, number>();
-      for (const r of candidateRows) {
-        const oid = Number(r.order_id);
-        const mid = Number(r.mentee_id);
-        if (oid > 0 && mid > 0 && !menteeByOrderId.has(oid)) {
-          menteeByOrderId.set(oid, mid);
-        }
-      }
-
-      const [serviceRows, tipRows] = await Promise.all([
-        executor.queryRows<{ id: number; order_id: number; assigned_staff_id: number | null }>(
-          `SELECT id, order_id, assigned_staff_id
-           FROM \`order_service\`
-           WHERE order_id IN (${candidateOrderIds.join(',')})
-             AND assigned_staff_id IS NOT NULL
-             AND assigned_staff_id > 0`
-        ),
-        executor.queryRows<{
-          id: number;
-          order_id: number;
-          order_service_id: number | null;
-          user_id: number | null;
-          tip_amount: number | string | null;
-          tip_percentage: number | string | null;
-          is_academy: number | null;
-        }>(
-          `SELECT id, order_id, order_service_id, user_id, tip_amount, tip_percentage, is_academy
-           FROM \`staff_tip\`
-           WHERE order_id IN (${candidateOrderIds.join(',')})
-             AND COALESCE(is_academy, 0) = 0
-           ORDER BY id ASC`
-        ),
-      ]);
-
-      const serviceStaffMap = new Map<number, number>();
-      for (const sr of serviceRows || []) {
-        const osId = Number(sr.id || 0);
-        const staffId = Number(sr.assigned_staff_id || 0);
-        if (osId > 0 && staffId > 0) {
-          serviceStaffMap.set(osId, staffId);
-        }
-      }
-
-      const tipsByBucket = new Map<
-        string,
-        {
-          orderId: number;
-          menteeId: number;
-          rows: Array<{ id: number; userId: number; tipAmount: number; tipPercentage: number }>;
-        }
-      >();
-
-      for (const tr of tipRows || []) {
-        const oid = Number(tr.order_id || 0);
-        const osId = Number(tr.order_service_id || 0);
-        const menteeId =
-          (osId > 0 ? serviceStaffMap.get(osId) : undefined) ?? menteeByOrderId.get(oid) ?? 0;
-        if (oid <= 0 || menteeId <= 0) continue;
-
-        const bucketKey = `${oid}:${osId}:${menteeId}`;
-        const bucket = tipsByBucket.get(bucketKey) || { orderId: oid, menteeId, rows: [] };
-        bucket.rows.push({
-          id: Number(tr.id),
-          userId: Number(tr.user_id || 0),
-          tipAmount: Math.round(Number(tr.tip_amount || 0)),
-          tipPercentage: Number(tr.tip_percentage || 0),
-        });
-        tipsByBucket.set(bucketKey, bucket);
-      }
-
-      const touchedOrderIds = new Set<number>();
-      let consolidatedRows = 0;
-
-      for (const bucket of tipsByBucket.values()) {
-        const menteeRows = bucket.rows.filter((r) => r.userId === bucket.menteeId);
-        const transferableCcRows = bucket.rows.filter(
-          (r) => r.userId !== bucket.menteeId && r.tipPercentage > 0 && r.tipPercentage <= 20
-        );
-        if (transferableCcRows.length === 0) continue;
-
-        const sourceRows = [...menteeRows, ...transferableCcRows];
-        const combinedAmount = sourceRows.reduce((sum, r) => sum + r.tipAmount, 0);
-        const combinedPct = Math.min(
-          90,
-          Math.round(sourceRows.reduce((sum, r) => sum + r.tipPercentage, 0))
-        );
-        const keepRow = menteeRows[0] || transferableCcRows[0];
-        const deleteIds = sourceRows.filter((r) => r.id !== keepRow.id).map((r) => r.id);
-
-        await executor.execute(
-          `UPDATE \`staff_tip\` SET user_id = ?, tip_amount = ?, tip_percentage = ? WHERE id = ?`,
-          [bucket.menteeId, combinedAmount, combinedPct, keepRow.id]
-        );
-        if (deleteIds.length > 0) {
-          await executor.execute(
-            `DELETE FROM \`staff_tip\` WHERE id IN (${deleteIds.join(',')})`,
-            []
-          );
-        }
-        touchedOrderIds.add(bucket.orderId);
-        consolidatedRows += 1;
-      }
-
-      return { updatedOrders: touchedOrderIds.size, consolidatedRows };
-    } catch {
-      return { updatedOrders: 0, consolidatedRows: 0 };
-    }
+    return reconcileTrainingCvlStaffTipsImpl(executor, pairs, options);
   }
 
   /**
@@ -551,192 +125,26 @@ export class CvlTrainingMentorshipService {
     assignedStaffId: number | undefined | null,
     orderDate: string
   ): CvlTrainingMentorshipPair | null {
-    const staffId = Number(assignedStaffId || 0);
-    if (!staffId) return null;
-    const d = String(orderDate || '').slice(0, 10);
-    if (!ISO_DATE_RE.test(d)) return null;
-    return (
-      pairs.find((p) => p.isActive && p.menteeLegacyStaffId === staffId && d >= p.startDate && d <= p.endDate) || null
-    );
+    return findMatchingTrainingPairForOrderImpl(pairs, assignedStaffId, orderDate);
   }
 
   /**
    * Tính phần Tip tư vấn/checkout (+10% / +20%) mà CC đứng tên bấm giùm trên đơn của Mentee CVL
    * trong kỳ Training để cộng hoàn trả vào consultDeltaTip của Mentee CVL (không ghi đè bảng staff_tip gốc).
    */
-  static async queryTransferredCcTipsByMentee(
+  static queryTransferredCcTipsByMentee(
     fastify: FastifyInstance,
     pairs: CvlTrainingMentorshipPair[],
     rangeStartDate: string,
     rangeEndDate: string
   ): Promise<Map<number, number>> {
-    const result = new Map<number, number>();
-    if (!pairs || pairs.length === 0) return result;
-
-    const effectiveWindows: Array<{ menteeId: number; startDate: string; endDate: string }> = [];
-    for (const pair of pairs) {
-      if (!pair.isActive) continue;
-      const window = intersectDateRanges(pair.startDate, pair.endDate, rangeStartDate, rangeEndDate);
-      if (window) {
-        effectiveWindows.push({
-          menteeId: pair.menteeLegacyStaffId,
-          startDate: window.startDate,
-          endDate: window.endDate,
-        });
-      }
-    }
-    if (effectiveWindows.length === 0) return result;
-
-    const menteeIds = Array.from(new Set(effectiveWindows.map((w) => w.menteeId)));
-    const clauses = effectiveWindows.map(
-      (w) =>
-        `(os_p.assigned_staff_id = ${w.menteeId} AND COALESCE(ro.date, DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start))) BETWEEN '${w.startDate}' AND '${w.endDate}')`
-    );
-
-    const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-      SELECT
-        os_p.assigned_staff_id AS mentee_id,
-        COALESCE(SUM(st.tip_amount), 0) AS transferred_tip
-      FROM (
-        SELECT DISTINCT os.order_id, os.assigned_staff_id
-        FROM \`order_service\` os
-        WHERE os.assigned_staff_id IN (${menteeIds.join(',')})
-          AND NOT EXISTS (
-            SELECT 1 FROM \`order_service\` os2
-            WHERE os2.order_id = os.order_id
-              AND os2.assigned_staff_id IS NOT NULL
-              AND os2.assigned_staff_id > 0
-              AND os2.assigned_staff_id < os.assigned_staff_id
-          )
-      ) os_p
-      JOIN \`order\` o ON o.id = os_p.order_id
-      LEFT JOIN \`report_order\` ro ON ro.order_id = o.id
-      JOIN \`staff_tip\` st ON st.order_id = o.id
-      WHERE o.order_state = 'Completed'
-        AND st.user_id <> os_p.assigned_staff_id
-        AND COALESCE(st.tip_percentage, 0) > 0
-        AND COALESCE(st.tip_percentage, 0) <= 20
-        AND COALESCE(st.is_academy, 0) = 0
-        AND (${clauses.join(' OR ')})
-      GROUP BY os_p.assigned_staff_id
-    `);
-
-    for (const row of rows) {
-      const id = Number(row.mentee_id || 0);
-      const amt = Math.round(Number(row.transferred_tip || 0));
-      if (id > 0 && amt > 0) {
-        result.set(id, (result.get(id) || 0) + amt);
-      }
-    }
-    return result;
+    return queryTransferredCcTipsByMenteeImpl(fastify, pairs, rangeStartDate, rangeEndDate);
   }
 
   /**
    * Trả về danh sách ứng viên CC Mentor & CVL Mentee đang hoạt động để Admin chọn trong Modal cấu hình.
    */
-  static async getConfigWithStaffOptions(fastify: FastifyInstance): Promise<CvlTrainingMentorshipConfigResponse> {
-    const [config, activeCcIds, activeCvIds, crmCvlRows] = await Promise.all([
-      this.getConfig(fastify),
-      TeamService.getActiveStaffIdsWithFallback(fastify, 'CC', 'ACTIVE_CC_STAFF_CONFIG').catch(() => []),
-      TeamService.getActiveStaffIdsWithFallback(fastify, 'CV', 'ACTIVE_CV_STAFF_CONFIG').catch(() => []),
-      fastify.prisma.crm.crmStaff
-        .findMany({
-          where: {
-            isActive: true,
-            legacyStaffId: { not: null },
-            OR: [
-              { role: { in: ['cv_plus', 'cv_plus_plus', 'cc'] } },
-              { careerProgression: { is: { currentRole: { in: ['CV_PLUS', 'CV_PLUS_PLUS'] } } } },
-            ],
-          },
-          select: {
-            legacyStaffId: true,
-            displayName: true,
-            role: true,
-            careerProgression: { select: { currentRole: true } },
-          },
-        })
-        .catch(() => []),
-    ]);
-
-    const candidateIds = new Set<number>([
-      ...activeCcIds,
-      ...activeCvIds,
-      ...config.pairs.flatMap((p) => [p.mentorLegacyStaffId, p.menteeLegacyStaffId]),
-    ]);
-    for (const s of crmCvlRows) {
-      if (s.legacyStaffId) candidateIds.add(s.legacyStaffId);
-    }
-
-    const idList = Array.from(candidateIds).filter((id) => Number.isInteger(id) && id > 0);
-    const legacyProfiles = idList.length
-      ? await fastify.prisma.legacy
-          .$queryRawUnsafe<SafeAny[]>(
-            `SELECT u.id AS user_id, u.user_group_id, up.full_name, cs.client_store_key
-             FROM \`user\` u
-             JOIN \`user_profile\` up ON up.user_id = u.id
-             LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
-             WHERE u.id IN (${idList.join(',')})`
-          )
-          .catch(() => [])
-      : [];
-
-    const profileMap = new Map<number, { name: string; storeCode: string; groupId: number }>();
-    for (const p of legacyProfiles) {
-      profileMap.set(Number(p.user_id), {
-        name: String(p.full_name || '').trim(),
-        storeCode: sanitizeStoreCode(p.client_store_key),
-        groupId: Number(p.user_group_id || 0),
-      });
-    }
-
-    const ccSet = new Set<number>(activeCcIds);
-    const cvlSet = new Set<number>();
-    for (const s of crmCvlRows) {
-      if (!s.legacyStaffId) continue;
-      if (s.role === 'cc') ccSet.add(s.legacyStaffId);
-      else cvlSet.add(s.legacyStaffId);
-    }
-    for (const p of config.pairs) {
-      ccSet.add(p.mentorLegacyStaffId);
-      cvlSet.add(p.menteeLegacyStaffId);
-    }
-    // Also allow selecting any active CV from Legacy if Admin wants to assign a newly-promoted CVL
-    for (const id of activeCvIds) {
-      cvlSet.add(id);
-    }
-
-    const ccMentors: CvlTrainingMentorshipStaffOption[] = Array.from(ccSet)
-      .map((id) => {
-        const prof = profileMap.get(id);
-        return {
-          legacyStaffId: id,
-          displayName: prof?.name || `CC #${id}`,
-          storeCode: prof?.storeCode || 'DT',
-          roleGroup: 'CC' as const,
-        };
-      })
-      .sort((a, b) => a.displayName.localeCompare(b.displayName, 'vi'));
-
-    const cvlMentees: CvlTrainingMentorshipStaffOption[] = Array.from(cvlSet)
-      .filter((id) => !ccSet.has(id) || config.pairs.some((p) => p.menteeLegacyStaffId === id))
-      .map((id) => {
-        const prof = profileMap.get(id);
-        return {
-          legacyStaffId: id,
-          displayName: prof?.name || `CVL #${id}`,
-          storeCode: prof?.storeCode || 'DT',
-          roleGroup: 'CVL' as const,
-        };
-      })
-      .sort((a, b) => a.displayName.localeCompare(b.displayName, 'vi'));
-
-    return {
-      config,
-      staffOptions: {
-        ccMentors,
-        cvlMentees,
-      },
-    };
+  static getConfigWithStaffOptions(fastify: FastifyInstance): Promise<CvlTrainingMentorshipConfigResponse> {
+    return getConfigWithStaffOptionsImpl(fastify, () => this.getConfig(fastify));
   }
 }

@@ -152,9 +152,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
       if (lightboxPayload || isAddNoteOpen || e.touches.length !== 1) return;
       const touch = e.touches[0];
       const scrollBodyEl = scrollBodyRef.current;
-      const startedInScrollBody = Boolean(
-        scrollBodyEl && e.target instanceof Node && scrollBodyEl.contains(e.target)
-      );
+      const startedInScrollBody = Boolean(scrollBodyEl && e.target instanceof Node && scrollBodyEl.contains(e.target));
       if (startedInScrollBody && (scrollBodyEl?.scrollTop ?? 0) > 0) {
         swipeStateRef.current.active = false;
         return;
@@ -270,9 +268,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
         style={dragOffsetY > 0 ? { transform: `translateY(${dragOffsetY}px)` } : undefined}
         className={`relative flex max-h-[88dvh] sm:max-h-[86dvh] w-full max-w-[430px] flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl border shadow-2xl pb-[env(safe-area-inset-bottom,0px)] ${
           isPullingSheet ? '' : 'transition-transform duration-150 ease-out'
-        } ${
-          isDark ? 'border-slate-700/80 bg-slate-950 text-white' : 'border-slate-200 bg-slate-50 text-slate-900'
-        }`}
+        } ${isDark ? 'border-slate-700/80 bg-slate-950 text-white' : 'border-slate-200 bg-slate-50 text-slate-900'}`}
       >
         {/* iOS Drag Handle Pill for Swipe-Down-to-Dismiss */}
         <div
@@ -315,11 +311,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                         <span
                           data-testid="customer-history-birthday"
                           className={`inline-flex items-center gap-1 font-semibold ${
-                            birthdayStatus.isBirthdayThisMonth
-                              ? isDark
-                                ? 'text-amber-300'
-                                : 'text-amber-700'
-                              : ''
+                            birthdayStatus.isBirthdayThisMonth ? (isDark ? 'text-amber-300' : 'text-amber-700') : ''
                           }`}
                         >
                           <Cake className="h-3 w-3 shrink-0" />

@@ -6,11 +6,11 @@ This document is the authoritative developer contract for AI Agents working insi
 
 ## 1. Non-Negotiable Module Invariants (Enforced by `pnpm check:ui-contract`)
 
-1. **Context-Window File Size Ceiling (`<= 700 lines/file`)**:
-   - Every `.ts` and `.tsx` file under `apps/web/app/ios-app/` MUST stay **<= 700 lines** so any AI Agent can read an entire file in a single `read_file` call (800-line limit).
-   - Never add hundreds of lines directly into an orchestrator file (`ScreenXX*.tsx` or `useIosAppState.ts`). Extract focused sub-components/hooks into the screen's feature folder (`screens/consultation/`, `screens/checkin/`, `screens/incoming/`, `screens/servicing/`, `screens/upsell/`, `screens/checkout/`, `ui-kit/combo-card/`).
+1. **Context-Window File Size Ceiling (`<= 650 lines/file`)**:
+   - Every `.ts` and `.tsx` file under `apps/web/app/ios-app/` MUST stay **<= 650 lines** (repo code-health cap, stricter than the 700-line UI-contract ceiling) so any AI Agent can read an entire file in a single `read_file` call.
+   - Never bloat an orchestrator file (`page.tsx`, `ScreenXX*.tsx`, or `useIosAppState.ts`). Extract focused sub-components/hooks into the screen's feature folder (`screens/consultation/`, `screens/checkin/`, `screens/incoming/`, `screens/servicing/`, `screens/upsell/`, `screens/checkout/`, `screens/post-checkout/`, `components/simulation/`, `ui-kit/combo-card/`).
 2. **Single Source of Truth (`@mos-lab/shared` + `apiClient.ios`)**:
-   - Shared types, 7/7 natural lash validation, bonus/tip/billing math, and `CVL` privacy scope live in [`packages/shared/src/types/ios-app.ts`](../../../../packages/shared/src/types/ios-app.ts) and are exported from `@mos-lab/shared`.
+   - Shared types, 7/7 natural lash validation, bonus/tip/billing math, and `CVL` privacy scope live in the barrel [`packages/shared/src/types/ios-app.ts`](../../../../packages/shared/src/types/ios-app.ts) backed by modular domain slices under `packages/shared/src/types/ios-app/` and are exported from `@mos-lab/shared`.
    - All HTTP calls to `/api/ios/*` MUST go through `apiClient.ios` ([`apps/web/lib/api/ios.api.ts`](../../lib/api/ios.api.ts)). Raw `fetch('/api/ios/...')` or `${apiBase}/ios/...` inside `/ios-app` is strictly forbidden and blocked by `check:ui-contract`.
 3. **UI Vector Feather & Respectful Language Invariant (Rule 8)**:
    - NEVER use raw Unicode feather emoji (`U+1FAB6`) anywhere in `.ts` or `.tsx` files under `app/ios-app/` (macOS/iOS renders it like a brown baguette at 10–14px). Always render vector components `<CvFeather1Badge />`, `<CvFeather2Badge />`, or `<FeatherSvg />` from [`components/ui-kit/CvFeatherLabels.tsx`](./components/ui-kit/CvFeatherLabels.tsx), and use tier codes `'CVL'` / `'CVLL'` in plain strings.
@@ -29,7 +29,7 @@ This document is the authoritative developer contract for AI Agents working insi
 
 ## 2. Step-Index Routing Map (`state.currentStep` <-> Component)
 
-> **Critical Note for AI Agents:** Because `Step 8` was inserted for `Screen07bLashProgressCleaned`, `currentStep` numbers `8..15` are offset by `+1` from `Screen08..Screen14` filenames! Always check this table when calling `setCurrentStep(n)`:
+> **Critical Note for AI Agents:** Because `Step 8` was inserted for `Screen07bLashProgressCleaned`, `currentStep` numbers `8..15` are offset by `+1` from `Screen08..Screen14` filenames! Always import named `IOS_STEPS.*` constants from [`state/iosStepRegistry.ts`](./state/iosStepRegistry.ts) rather than hardcoding magic step numbers:
 
 | `currentStep` | Screen Component                   | Business Stage                                                              | Primary Next Transition                                              |
 | :-----------: | :--------------------------------- | :-------------------------------------------------------------------------- | :------------------------------------------------------------------- |
@@ -66,17 +66,23 @@ apps/web/app/ios-app/
 ├── state/
 │   ├── useIosAppState.ts             # Public orchestrator facade hook (re-exports domain helpers)
 │   ├── useIosBookingList.ts          # Standalone booking list hook via apiClient.ios
-│   ├── useIosBillingCheckout.ts      # Upsell, checkout, tip & bonus hook (uses @mos-lab/shared math)
+│   ├── useIosBillingCheckout.ts      # Upsell, checkout, tip & bonus hook (+ iosBillingCheckoutBuilders.ts)
+│   ├── iosBillingCheckoutBuilders.ts # Pure booking/billing transition builders for GoToBilling & Payment
+│   ├── iosStepRegistry.ts            # Canonical named IOS_STEPS (1..15) & resolveIosStepId helper
 │   ├── offlineSync.ts                # LocalStorage + IndexedDB progress snapshot & offline action replay
 │   └── mockData.ts                   # Shared type re-exports + demo dataset (?demo=1 only)
 ├── components/
-│   ├── screens/                      # Entry Screen01..Screen14 + feature sub-folders:
+│   ├── IosAppDynamicScreens.tsx      # Dynamic screen imports + ScreenSkeleton loader
+│   ├── IosAppGlobalOverlays.tsx      # Simulation bar, profile menu, create-booking & history sheets
+│   ├── simulation/                   # Simulation bar, history sheet & SimulationComboSelectionSection
+│   ├── screens/                      # Entry Screen01..Screen14 + feature sub-folders (all <= 650 LOC):
 │   │   ├── incoming/                 # Sub-components & helpers for Screen01
 │   │   ├── checkin/                  # Sub-components & helpers for Screen02
-│   │   ├── consultation/             # Sub-components, hooks & constraint matrix for Screen03
-│   │   ├── servicing/                # Sub-components for Screen06 & Screen07b
-│   │   ├── upsell/                   # Sub-components for Screen11
-│   │   └── checkout/                 # Sub-components for Screen12
+│   │   ├── consultation/             # Screen03 hooks, pricing/override helpers, UnderMink & ComboUpgrade UI
+│   │   ├── servicing/                # Sub-components for Screen06, Screen07b & Screen09 (AfterTimeReportCard)
+│   │   ├── upsell/                   # Screen11 state hook (useUpsellScreenState), sections & accounting
+│   │   ├── checkout/                 # Screen12 state hook (useCheckoutBillingState) & Screen14 footer/rewards
+│   │   └── post-checkout/            # PostCheckoutComboSheet + usePostCheckoutComboSheetState hook & audit UI
 │   └── ui-kit/                       # Reusable iOS primitives (<CvFeather1Badge />, ComboSessionBadge, etc.)
 └── services/
     └── thermalPrinterService.ts      # WebBluetooth / RawBT / LAN ESC/POS via apiClient.ios.printReceipt
@@ -88,9 +94,9 @@ apps/web/app/ios-app/
 
 ### Recipe A — Add a New Field to Consultation or Booking
 
-1. Add the field to `IosBookingAttributes` (or `IosBookingItem`) in [`packages/shared/src/types/ios-app.ts`](../../../../packages/shared/src/types/ios-app.ts) and run `pnpm --filter @mos-lab/shared build`.
+1. Add the field to `IosBookingAttributes` (or `IosBookingItem`) inside the corresponding domain module under `packages/shared/src/types/ios-app/` (re-exported by [`packages/shared/src/types/ios-app.ts`](../../../../packages/shared/src/types/ios-app.ts)) and run `pnpm --filter @mos-lab/shared build`.
 2. Map/persist the field in `apps/api/src/modules/ios/services/ios-actions.service.ts` and `ios-bookings-query.service.ts`.
-3. Render/update the field inside the dedicated sub-component under `components/screens/consultation/` (keeping every file `<= 700` lines).
+3. Render/update the field inside the dedicated sub-component under `components/screens/consultation/` (keeping every file `<= 650` lines).
 4. Add a unit test in `components/screens/__tests__/` or `apps/api/src/modules/ios/routes.test.ts`.
 
 ### Recipe B — Add a New Backend Action (`POST /api/ios/bookings`)

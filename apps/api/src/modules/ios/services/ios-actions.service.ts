@@ -1,23 +1,14 @@
 import {
   hasCompleteNaturalLashAttributes,
-  IosPromotionOption,
-  isPromotionEligibleForCustomer,
   isSelfChallengeSlowerThanAverage,
   SafeAny,
   validateNaturalLashConsultationSave,
   validateSelfChallengeSlowerReason,
 } from '@mos-lab/shared';
 import { INITIAL_BOOKINGS } from '../mock-data.js';
-import { getLegacyPool } from './db-pools.js';
 import { IosAuthContext } from './ios-auth.service.js';
 import { BookingOverrideRecord, createOverrideRepository, defaultIosOverrideRepo } from './ios-overrides.service.js';
-import { SettleLegacyOrderBridgeDeps } from './ios-legacy-bridge.service.js';
-import { executeCompleteOrderOverride } from './ios-complete-order.helper.js';
-import {
-  applyStepSyncResultToOverride,
-  STEP_SYNC_ELIGIBLE_ACTIONS,
-  syncIosStepWithLegacyPhp,
-} from './ios-legacy-step-sync.service.js';
+import { type SettleLegacyOrderBridgeDeps } from './ios-legacy-bridge.service.js';
 import { persistProgressPhotoToCloud } from './ios-photos.service.js';
 import {
   MUTATIVE_ACTIONS_AFTER_SETTLE,
@@ -25,16 +16,16 @@ import {
   buildSelectComboWalletOverride,
 } from './ios-action-wallet.helper.js';
 import { persistIncomingRoundPhotosToCloud, persistRetainCountsByServiceIndex } from './ios-progress-sync.helper.js';
-import {
-  applyTargetedPromotionToOverride,
-  fetchPromotionsByIds,
-} from './ios-promotions.service.js';
 import { executePostCheckoutAdjustmentAction } from './ios-post-checkout-adjustment.service.js';
-import { invalidateStaffStatsCache } from './ios-staff-stats.service.js';
+import {
+  executeCompleteOrderTransition,
+  resolveSavePromotionOverride,
+  runPostSaveLegacyStepSync,
+} from './ios-actions-completion.helper.js';
 import { buildPreCheckoutPaymentOverride } from './ios-pre-checkout-payment.helper.js';
+import { ExecuteIosActionResult, ExecuteIosActionOptions } from './ios-actions.types.js';
 
 export type IosOverrideRepository = ReturnType<typeof createOverrideRepository>;
-import { ExecuteIosActionResult, ExecuteIosActionOptions } from './ios-actions.types.js';
 export type { ExecuteIosActionResult, ExecuteIosActionOptions };
 
 export async function executeIosBookingAction(
@@ -160,7 +151,7 @@ export async function executeIosBookingAction(
     }
 
     const walletSelectionPatch = extractComboWalletSelectionPatch(body, current);
-    let nextOverride: BookingOverrideRecord | null = null;
+    let nextOverride: BookingOverrideRecord | null;
 
     if (action === 'CHECK_IN') {
       const shouldAutoAssignToSelf = actorStaffTier === 'CVL';
@@ -437,7 +428,6 @@ export async function executeIosBookingAction(
         ...current,
         customerAvatar: avatarUrl || undefined,
       };
-      const effectiveCustomerId = Number(body.customerId || current.customerId || 0);
       if (effectiveCustomerId > 0) {
         await repo.saveCustomerAvatar(effectiveCustomerId, avatarUrl);
       }
@@ -464,50 +454,11 @@ export async function executeIosBookingAction(
         checkedOutAt: new Date().toISOString(),
       };
     } else if (action === 'SAVE_PROMOTION') {
-      const targetScopeRaw = String(body.targetScope || '')
-        .trim()
-        .toLowerCase();
-      const requestedPromotionId =
-        body.promotionId !== undefined && body.promotionId !== null && Number(body.promotionId) > 0
-          ? Number(body.promotionId)
-          : null;
-      if ((targetScopeRaw === 'combo' || targetScopeRaw === 'under_combo') && requestedPromotionId) {
-        return {
-          statusCode: 400,
-          payload: {
-            success: false,
-            error: 'Không áp dụng chương trình khuyến mãi giảm giá cho gói Combo nối mi.',
-          },
-        };
+      const promoOutcome = await resolveSavePromotionOverride({ current, body });
+      if (promoOutcome.errorResult) {
+        return promoOutcome.errorResult;
       }
-      let resolvedPromotion: IosPromotionOption | null =
-        requestedPromotionId &&
-        body.appliedPromotion &&
-        Number(body.appliedPromotion?.promotionId) === requestedPromotionId
-          ? (body.appliedPromotion as IosPromotionOption)
-          : null;
-
-      if (requestedPromotionId && !resolvedPromotion) {
-        try {
-          const map = await fetchPromotionsByIds(getLegacyPool(), [requestedPromotionId]);
-          resolvedPromotion = map.get(requestedPromotionId) ?? null;
-        } catch {
-          resolvedPromotion = null;
-        }
-      }
-
-      const customerVisits = Number(body.customerVisits ?? current.customerVisits ?? 1);
-      if (resolvedPromotion && !isPromotionEligibleForCustomer(resolvedPromotion, customerVisits)) {
-        return {
-          statusCode: 400,
-          payload: {
-            success: false,
-            error: 'Chương trình khuyến mãi này chỉ áp dụng cho khách hàng mới (lần đầu).',
-          },
-        };
-      }
-
-      nextOverride = applyTargetedPromotionToOverride(current, body, requestedPromotionId, resolvedPromotion);
+      nextOverride = promoOutcome.nextOverride ?? null;
     } else if (action === 'SAVE_PRE_CHECKOUT_PAYMENT') {
       nextOverride = await buildPreCheckoutPaymentOverride({
         bookingId,
@@ -518,16 +469,16 @@ export async function executeIosBookingAction(
         isSimulationMode,
       });
     } else if (action === 'COMPLETE_ORDER' || action === 'COMPLETE_CHECKOUT') {
-      nextOverride = await executeCompleteOrderOverride({
-        bookingId,
-        current,
-        body,
-        walletSelectionPatch,
+      nextOverride = await executeCompleteOrderTransition({
         authUser,
+        bookingId,
+        body,
+        current,
+        walletSelectionPatch,
+        effectiveCustomerId,
         actorStaffId,
         actorStaffName,
         actorStaffTier,
-        effectiveCustomerId,
         isSimulationMode,
         repo,
         bridgeDepsOverride,
@@ -550,49 +501,19 @@ export async function executeIosBookingAction(
 
     if (action !== 'RESET_DEMO' && nextOverride) {
       await repo.saveBookingOverride(bookingId, nextOverride);
-
-      const canRunStepSync =
-        !isSimulationMode &&
-        !body?.demoMode &&
-        STEP_SYNC_ELIGIBLE_ACTIONS.has(action) &&
-        (repo === defaultIosOverrideRepo || Boolean(bridgeDepsOverride) || Boolean(options?.enableLegacyStepSync));
-
-      if (canRunStepSync) {
-        const stepCheckInStaffId = Number(nextOverride.checkInStaffId || current.checkInStaffId || actorStaffId);
-        const stepAssignedStaffId = Number(
-          nextOverride.assignedStaffId ?? current.assignedStaffId ?? (actorStaffId > 0 ? actorStaffId : 0)
-        );
-        const stepCheckOutStaffId = Number(nextOverride.checkOutStaffId || current.checkOutStaffId || actorStaffId);
-
-        const stepSync = await syncIosStepWithLegacyPhp(
-          {
-            bookingId,
-            action,
-            mergedOverride: nextOverride,
-            actorStaffId,
-            checkInStaffId: stepCheckInStaffId,
-            assignedStaffId: stepAssignedStaffId,
-            checkOutStaffId: stepCheckOutStaffId,
-            isSimulationMode,
-            isDemoRequest: Boolean(body?.demoMode),
-            previousLastLegacyProgressState: current.progress?.lastLegacyProgressState,
-            previousLastLegacyUpperState: current.progress?.lastLegacyUpperState,
-            previousLastLegacyUnderState: current.progress?.lastLegacyUnderState,
-            previousLastLegacyUpperPhotoSigs: current.progress?.lastLegacyUpperPhotoSigs,
-            previousLastLegacyUnderPhotoSigs: current.progress?.lastLegacyUnderPhotoSigs,
-          },
-          bridgeDepsOverride
-        );
-
-        nextOverride = applyStepSyncResultToOverride(nextOverride, stepSync);
-        await repo.saveBookingOverride(bookingId, nextOverride);
-
-        if (stepSync.synced) {
-          invalidateStaffStatsCache(
-            [actorStaffId, stepAssignedStaffId, stepCheckInStaffId, stepCheckOutStaffId].filter((id) => id > 0)
-          );
-        }
-      }
+      nextOverride = await runPostSaveLegacyStepSync({
+        bookingId,
+        action,
+        current,
+        nextOverride,
+        actorStaffId,
+        isSimulationMode,
+        isDemoRequest: Boolean(body?.demoMode),
+        isDefaultRepo: repo === defaultIosOverrideRepo,
+        bridgeDepsOverride,
+        enableLegacyStepSync: options?.enableLegacyStepSync,
+        repo,
+      });
     }
 
     const nowIso = new Date().toISOString();

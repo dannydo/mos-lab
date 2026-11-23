@@ -4,7 +4,13 @@ import { TableIndexHeader } from '~/components/ui';
 
 import React from 'react';
 import { Row, Col, Table, Space, Tag, Badge, Typography, Button } from 'antd';
-import { TeamOutlined, UserOutlined, CheckCircleOutlined, ClockCircleOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  TeamOutlined,
+  UserOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
 import { ShopCCData, ShopCVData } from '../hooks/useTodayData';
 import { SectionCard, StatusTag } from '../../../../components/ui';
 import { useTodaySandbox } from '../context/SandboxModeContext';
@@ -234,9 +240,7 @@ const TodayStaffAttendance = React.memo(
                           size="small"
                           className="border-amber-500 text-amber-600 dark:text-amber-400 hover:text-amber-700"
                           icon={<ClockCircleOutlined />}
-                          onClick={() =>
-                            sandbox.simulateStaffStartTimer(rec.name, 'Nối Mi Classic Thiết Kế (60p)', 60)
-                          }
+                          onClick={() => sandbox.simulateStaffStartTimer(rec.name, 'Nối Mi Classic Thiết Kế (60p)', 60)}
                           aria-label={`Bấm giờ phục vụ cho ${rec.name}`}
                         >
                           Bấm giờ

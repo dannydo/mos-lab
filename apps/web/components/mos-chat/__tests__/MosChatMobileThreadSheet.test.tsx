@@ -927,7 +927,10 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
     };
 
     render(
-      <MosChatProvider currentUser={{ id: 6, username: 'thaoly', displayName: 'Thảo Ly', role: 'staff' }} initialConvId="dm-pair-1-6">
+      <MosChatProvider
+        currentUser={{ id: 6, username: 'thaoly', displayName: 'Thảo Ly', role: 'staff' }}
+        initialConvId="dm-pair-1-6"
+      >
         <TestHost />
       </MosChatProvider>
     );

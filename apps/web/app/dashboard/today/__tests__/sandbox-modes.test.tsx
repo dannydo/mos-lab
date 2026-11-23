@@ -1,10 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, renderHook, act } from '@testing-library/react';
-import {
-  TodaySandboxProvider,
-  useTodaySandbox,
-} from '../context/SandboxModeContext';
+import { TodaySandboxProvider, useTodaySandbox } from '../context/SandboxModeContext';
 import {
   getTrainingMockBranchesData,
   getTrainingMockBookings,
@@ -287,14 +284,7 @@ describe('mOS Dashboard Today — Sandbox Modes (MOS-FEAT-236)', () => {
         React.useEffect(() => {
           sandbox.setMode('training');
         }, []);
-        return (
-          <TodayStaffAttendance
-            themeMode="light"
-            token={mockToken}
-            cvList={cvList}
-            ccList={ccList}
-          />
-        );
+        return <TodayStaffAttendance themeMode="light" token={mockToken} cvList={cvList} ccList={ccList} />;
       };
 
       render(

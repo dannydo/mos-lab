@@ -49,18 +49,12 @@ export function IosSimulationModeModal({
       aria-modal="true"
       aria-label="Chọn mode giả lập Sandbox"
     >
-      <div
-        className="fixed inset-0 bg-black/55 backdrop-blur-xs"
-        onClick={onClose}
-        data-testid="sim-mode-backdrop"
-      />
+      <div className="fixed inset-0 bg-black/55 backdrop-blur-xs" onClick={onClose} data-testid="sim-mode-backdrop" />
       <div className="relative w-full max-w-[430px] h-full pointer-events-none">
         <div
           onClick={(e) => e.stopPropagation()}
           className={`pointer-events-auto absolute top-9 left-2.5 right-2.5 rounded-2xl border p-3 shadow-2xl z-10 space-y-3 max-h-[75dvh] overflow-y-auto ${
-            isDark
-              ? 'bg-neutral-900 border-pink-400/35 text-white'
-              : 'bg-white border-pink-300 text-neutral-900'
+            isDark ? 'bg-neutral-900 border-pink-400/35 text-white' : 'bg-white border-pink-300 text-neutral-900'
           }`}
         >
           <div className="px-1 flex items-center justify-between">

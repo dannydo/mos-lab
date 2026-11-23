@@ -128,12 +128,7 @@ export const RevenueDetailModal: React.FC<RevenueDetailModalProps> = ({
           orderState: 'Completed',
         }));
 
-        const combinedTransactions = [
-          ...simComboRows,
-          ...simProdRows,
-          ...simGiftRows,
-          ...baseTransactions,
-        ];
+        const combinedTransactions = [...simComboRows, ...simProdRows, ...simGiftRows, ...baseTransactions];
 
         const comboRevenue = combinedTransactions
           .filter((t) => t.serviceType === 'combo')

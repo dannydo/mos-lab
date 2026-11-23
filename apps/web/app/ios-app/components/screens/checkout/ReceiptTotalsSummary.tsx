@@ -120,14 +120,14 @@ export function ReceiptTotalsSummary({
         ) : currentDiamondBalance > 0 ? (
           <div
             className={`flex items-center justify-between font-medium px-2.5 py-1.5 rounded-xl border text-[11.5px] ${
-              isDark ? 'text-cyan-300/90 bg-cyan-950/20 border-cyan-900/50' : 'text-cyan-900 bg-cyan-50/60 border-cyan-200/80'
+              isDark
+                ? 'text-cyan-300/90 bg-cyan-950/20 border-cyan-900/50'
+                : 'text-cyan-900 bg-cyan-50/60 border-cyan-200/80'
             }`}
           >
             <div className="flex items-center gap-1.5">
               <span>💎 Ví Kim Cương khách có:</span>
-              <span className="font-bold tabular-nums">
-                {currentDiamondBalance.toLocaleString('vi-VN')} 💎
-              </span>
+              <span className="font-bold tabular-nums">{currentDiamondBalance.toLocaleString('vi-VN')} 💎</span>
               <span className="opacity-75 text-[10.5px]">
                 (= {(currentDiamondBalance * 1000).toLocaleString('vi-VN')}đ)
               </span>

@@ -206,9 +206,7 @@ export function CheckoutPaymentMethodSection({
                     key={m.id}
                     onClick={() => !isSettled && onSelectMethod(m.id)}
                     className={`p-3.5 flex items-center justify-between transition-colors ${
-                      isSettled
-                        ? 'cursor-not-allowed'
-                        : 'cursor-pointer'
+                      isSettled ? 'cursor-not-allowed' : 'cursor-pointer'
                     } ${
                       active
                         ? isDark

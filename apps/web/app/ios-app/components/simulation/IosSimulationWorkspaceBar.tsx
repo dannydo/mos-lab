@@ -279,7 +279,9 @@ export function IosSimulationWorkspaceBar({
             >
               <SlidersHorizontal className="w-2.5 h-2.5 shrink-0" />
               <span>{activePresetMeta.shortLabel}</span>
-              <ChevronDown className={`w-2.5 h-2.5 shrink-0 transition-transform ${isModeMenuOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`w-2.5 h-2.5 shrink-0 transition-transform ${isModeMenuOpen ? 'rotate-180' : ''}`}
+              />
             </button>
 
             {isReadOnlyMentorView && (

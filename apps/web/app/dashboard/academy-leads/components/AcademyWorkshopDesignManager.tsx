@@ -1,93 +1,34 @@
 'use client';
 
 import React from 'react';
-import { Alert, Button, Checkbox, Form, Input, InputNumber, Popconfirm, Select, Space, message, theme } from 'antd';
-import { LibraryBig, PencilLine, Plus, Save, Sparkles, Trash2, WandSparkles, Eye } from 'lucide-react';
-import {
-  type AcademyWorkshopDetail,
-  type AcademyWorkshopDesignItem,
-  type AcademyWorkshopDesignItemImage,
-  type AcademyWorkshopParticipant,
-  type CreateAcademyWorkshopDesignItemRequest,
-  type CreateAcademyWorkshopDesignItemImageRequest,
-  type AcademyWorkshopDesignDifficultyLevel,
+import { Button, Form, Space, message } from 'antd';
+import { Eye, LibraryBig, Plus, Sparkles } from 'lucide-react';
+import type {
+  AcademyWorkshopDesignItem,
+  AcademyWorkshopDesignItemImage,
+  AcademyWorkshopDetail,
+  AcademyWorkshopParticipant,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
-import AcademyWorkshopServerImageUpload from './AcademyWorkshopServerImageUpload';
-import AcademyWorkshopDesignTemplateLibrary from './AcademyWorkshopDesignTemplateLibrary';
+import { AppIcon, DataSection, IconText, StatePanel, StatusTag } from '../../../../components/ui';
 import AcademyWorkshopDesignPrepModal from './AcademyWorkshopDesignPrepModal';
-import AcademyWorkshopSelectionDeadline from './AcademyWorkshopSelectionDeadline';
+import AcademyWorkshopDesignTemplateLibrary from './AcademyWorkshopDesignTemplateLibrary';
 import AcademyWorkshopSectionTitle from './AcademyWorkshopSectionTitle';
+import AcademyWorkshopSelectionDeadline from './AcademyWorkshopSelectionDeadline';
 import AcademyWorkshopTemplateBar from './AcademyWorkshopTemplateBar';
-import { WorkshopImage, WorkshopImageGallery } from './AcademyWorkshopImageGallery';
 import { useAcademyWorkshopDesignTemplates } from './useAcademyWorkshopDesignTemplates';
+import { WorkshopDesignEditorDrawers } from './workshop-design/WorkshopDesignEditorDrawers';
+import { WorkshopDesignItemCard } from './workshop-design/WorkshopDesignItemCard';
 import {
-  AppIcon,
-  DataSection,
-  EntityForm,
-  EntityFormDrawer,
-  EntityFormField,
-  IconButton,
-  IconText,
-  StatePanel,
-  StatusTag,
-} from '../../../../components/ui';
-
-type DesignFormValues = CreateAcademyWorkshopDesignItemRequest;
-type ImageFormValues = CreateAcademyWorkshopDesignItemImageRequest;
-
-function difficultyMeta(level: AcademyWorkshopDesignDifficultyLevel) {
-  switch (level) {
-    case 'BASIC':
-      return { label: 'Cơ bản', stars: 1, className: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
-    case 'ADVANCED':
-      return { label: 'Nâng cao', stars: 2, className: 'text-sky-600 bg-sky-50 border-sky-200' };
-    case 'MASTER':
-      return { label: 'Chuyên sâu', stars: 3, className: 'text-purple-600 bg-purple-50 border-purple-200' };
-    default:
-      return { label: 'Cơ bản', stars: 1, className: 'text-gray-600 bg-gray-50 border-gray-200' };
-  }
-}
-
-function designFormValues(item?: AcademyWorkshopDesignItem): DesignFormValues {
-  return {
-    name: item?.name || '',
-    description: item?.description || null,
-    difficultyLevel: item?.difficultyLevel || 'BASIC',
-    priceVnd: item?.priceVnd ?? 0,
-    isAvailable: item?.isAvailable ?? true,
-  };
-}
-
-function designRequest(values: DesignFormValues): CreateAcademyWorkshopDesignItemRequest {
-  return {
-    name: values.name.trim(),
-    description: values.description?.trim() || null,
-    difficultyLevel: values.difficultyLevel || 'BASIC',
-    priceVnd: Math.max(0, Math.round(Number(values.priceVnd) || 0)),
-    isAvailable: Boolean(values.isAvailable),
-  };
-}
-
-function sortDesigns(items: AcademyWorkshopDesignItem[]) {
-  return [...items].sort((left, right) => left.sortOrder - right.sortOrder || left.id - right.id);
-}
-
-function formatVnd(value: number) {
-  return `${Math.max(0, Math.round(Number(value) || 0)).toLocaleString('vi-VN')} đ`;
-}
-
-function imageFormValues(item?: AcademyWorkshopDesignItemImage): ImageFormValues {
-  return { imageUrl: item?.imageUrl || '', altText: item?.altText || null };
-}
-
-function imageRequest(values: ImageFormValues): CreateAcademyWorkshopDesignItemImageRequest {
-  return { imageUrl: values.imageUrl.trim(), altText: values.altText?.trim() || null };
-}
-
-function sortImages(images: AcademyWorkshopDesignItemImage[]) {
-  return [...images].sort((left, right) => left.sortOrder - right.sortOrder || left.id - right.id);
-}
+  designFormValues,
+  designRequest,
+  imageFormValues,
+  imageRequest,
+  sortDesigns,
+  sortImages,
+  type DesignFormValues,
+  type ImageFormValues,
+} from './workshop-design/workshop-design-utils';
 
 export default function AcademyWorkshopDesignManager({
   workshop,
@@ -100,7 +41,6 @@ export default function AcademyWorkshopDesignManager({
   canEdit: boolean;
   onUpdated: (workshop: AcademyWorkshopDetail) => void;
 }) {
-  const { token } = theme.useToken();
   const [form] = Form.useForm<DesignFormValues>();
   const [imageForm] = Form.useForm<ImageFormValues>();
   const [editingItem, setEditingItem] = React.useState<AcademyWorkshopDesignItem | null>(null);
@@ -424,242 +364,36 @@ export default function AcademyWorkshopDesignManager({
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {workshop.designs.map((design) => {
-              const meta = difficultyMeta(design.difficultyLevel);
-              return (
-                <div
-                  key={design.id}
-                  className="flex flex-col justify-between rounded-2xl border bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-bold text-base text-gray-900 dark:text-gray-100 m-0">{design.name}</h4>
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${meta.className}`}
-                          >
-                            {'⭐'.repeat(meta.stars)} {meta.label}
-                          </span>
-                        </div>
-                        <div className="mt-1 flex items-center gap-2">
-                          {design.priceVnd > 0 ? (
-                            <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold tabular-nums text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-                              Phụ thu: +{formatVnd(design.priceVnd)}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-                              Miễn phí / Đã bao gồm
-                            </span>
-                          )}
-                          <StatusTag
-                            status={design.isAvailable ? 'success' : 'default'}
-                            label={design.isAvailable ? 'Khả dụng' : 'Tạm ngưng'}
-                          />
-                        </div>
-                      </div>
-
-                      {canEdit ? (
-                        <div className="flex items-center gap-1 shrink-0">
-                          <IconButton icon={PencilLine} label="Sửa thông tin" onClick={() => openEdit(design)} />
-                          <Popconfirm
-                            title="Xóa mẫu thiết kế mi này?"
-                            description="Lựa chọn của học viên đã chọn mẫu này vẫn được giữ lại để đối soát."
-                            onConfirm={() => deleteItem(design)}
-                            okText="Xóa"
-                            cancelText="Hủy"
-                            okButtonProps={{ danger: true }}
-                          >
-                            <IconButton icon={Trash2} label="Xóa mẫu" tone="danger" />
-                          </Popconfirm>
-                        </div>
-                      ) : null}
-                    </div>
-
-                    {design.description ? (
-                      <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed m-0">
-                        {design.description}
-                      </p>
-                    ) : null}
-
-                    {/* Image gallery */}
-                    <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-                      <div className="flex items-center justify-between text-xs text-gray-400">
-                        <span>Hình ảnh mẫu dáng ({design.images.length})</span>
-                        {canEdit ? (
-                          <Button
-                            type="link"
-                            size="small"
-                            className="p-0 h-auto text-xs"
-                            icon={<AppIcon icon={Plus} className="h-3 w-3" />}
-                            onClick={() => openCreateImage(design)}
-                          >
-                            Thêm ảnh
-                          </Button>
-                        ) : null}
-                      </div>
-
-                      {design.images.length > 0 ? (
-                        <WorkshopImageGallery>
-                          <div className="flex flex-wrap gap-2">
-                            {design.images.map((img) => (
-                              <div
-                                key={img.id}
-                                className="group relative h-16 w-20 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
-                              >
-                                <WorkshopImage
-                                  src={img.imageUrl}
-                                  alt={img.altText || design.name}
-                                  className="h-full w-full object-cover"
-                                  wrapperClassName="!h-full !w-full"
-                                />
-                                {canEdit ? (
-                                  <div
-                                    className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <div className="pointer-events-auto flex items-center gap-1">
-                                      <IconButton
-                                        icon={PencilLine}
-                                        label="Chỉnh sửa ảnh"
-                                        className="text-white hover:text-white"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openEditImage(design, img);
-                                        }}
-                                      />
-                                      <Popconfirm
-                                        title="Xóa ảnh này?"
-                                        onConfirm={() => deleteImage(design, img)}
-                                        okText="Xóa"
-                                        cancelText="Hủy"
-                                      >
-                                        <IconButton
-                                          icon={Trash2}
-                                          label="Xóa ảnh"
-                                          tone="danger"
-                                          className="text-red-400"
-                                          onClick={(e) => e.stopPropagation()}
-                                        />
-                                      </Popconfirm>
-                                    </div>
-                                  </div>
-                                ) : null}
-                              </div>
-                            ))}
-                          </div>
-                        </WorkshopImageGallery>
-                      ) : (
-                        <div className="text-xs italic text-gray-400">Chưa có ảnh minh họa cho mẫu này</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {workshop.designs.map((design) => (
+              <WorkshopDesignItemCard
+                key={design.id}
+                design={design}
+                canEdit={canEdit}
+                onEditDesign={openEdit}
+                onDeleteDesign={deleteItem}
+                onCreateImage={openCreateImage}
+                onEditImage={openEditImage}
+                onDeleteImage={deleteImage}
+              />
+            ))}
           </div>
         )}
       </DataSection>
 
-      {/* Create / Edit Design Item Drawer */}
-      <EntityFormDrawer
-        open={editorOpen}
-        title={editingItem ? 'Chỉnh sửa Mẫu thiết kế mi' : 'Thêm Mẫu thiết kế mi mới'}
-        onClose={closeEditor}
-      >
-        <EntityForm form={form} onFinish={saveItem} layout="vertical">
-          <EntityFormField
-            name="name"
-            label="Tên mẫu thiết kế mi"
-            rules={[{ required: true, message: 'Vui lòng nhập tên mẫu mi' }]}
-          >
-            <Input placeholder="Ví dụ: Katun Fox Đuôi Cáo" maxLength={180} />
-          </EntityFormField>
-
-          <EntityFormField
-            name="difficultyLevel"
-            label="Mức độ khó của mẫu"
-            rules={[{ required: true, message: 'Vui lòng chọn mức độ khó' }]}
-          >
-            <Select
-              options={[
-                { value: 'BASIC', label: '⭐ BASIC - Cơ bản (Dễ luyện tập, phân tách mi chuẩn)' },
-                { value: 'ADVANCED', label: '⭐⭐ ADVANCED - Nâng cao (Đòi hỏi form dáng, gom ngọn/tạo trụ)' },
-                { value: 'MASTER', label: '⭐⭐⭐ MASTER - Chuyên sâu (Thiết kế gai anime, mix tầng mi đỉnh cao)' },
-              ]}
-            />
-          </EntityFormField>
-
-          <EntityFormField
-            name="priceVnd"
-            label="Phụ thu học phí (VNĐ)"
-            rules={[{ required: true, message: 'Vui lòng nhập phụ thu (0 nếu miễn phí)' }]}
-          >
-            <InputNumber<number>
-              min={0}
-              step={10000}
-              className="w-full"
-              formatter={(val) => `${val || 0}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={(val) => (val ? Number(val.replace(/\$\s?|(,*)/g, '')) : 0)}
-              addonAfter="đ"
-            />
-          </EntityFormField>
-
-          <EntityFormField name="isAvailable" valuePropName="checked">
-            <Checkbox>Cho phép học viên chọn mẫu thiết kế này</Checkbox>
-          </EntityFormField>
-
-          <EntityFormField name="description" label="Mô tả kỹ thuật & phong cách">
-            <Input.TextArea
-              rows={4}
-              placeholder="Mô tả đặc điểm form dáng, kỹ thuật nối mi, số sợi/chùm hoặc loại keo phù hợp..."
-              maxLength={2000}
-            />
-          </EntityFormField>
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button onClick={closeEditor}>Hủy</Button>
-            <Button type="primary" htmlType="submit" loading={saving}>
-              {editingItem ? 'Cập nhật' : 'Thêm mẫu'}
-            </Button>
-          </div>
-        </EntityForm>
-      </EntityFormDrawer>
-
-      {/* Image Upload / Edit Drawer */}
-      <EntityFormDrawer
-        open={imageEditorOpen}
-        title={imageTarget?.image ? 'Chỉnh sửa ảnh mẫu mi' : 'Thêm ảnh mẫu mi'}
-        onClose={closeImageEditor}
-      >
-        <EntityForm form={imageForm} onFinish={saveImage} layout="vertical">
-          <AcademyWorkshopServerImageUpload
-            workshopId={workshop.id}
-            area="design"
-            value={imageForm.getFieldValue('imageUrl')}
-            onChange={(url) => imageForm.setFieldValue('imageUrl', url)}
-          />
-
-          <EntityFormField
-            name="imageUrl"
-            label="Đường dẫn ảnh"
-            rules={[{ required: true, message: 'Vui lòng tải lên ảnh hoặc nhập URL' }]}
-          >
-            <Input placeholder="https://..." maxLength={512} />
-          </EntityFormField>
-
-          <EntityFormField name="altText" label="Mô tả ảnh / Chú thích">
-            <Input placeholder="Ví dụ: Góc chụp cận cảnh mi Katun đuôi cáo" maxLength={180} />
-          </EntityFormField>
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button onClick={closeImageEditor}>Hủy</Button>
-            <Button type="primary" htmlType="submit" loading={saving}>
-              {imageTarget?.image ? 'Lưu thay đổi' : 'Thêm ảnh'}
-            </Button>
-          </div>
-        </EntityForm>
-      </EntityFormDrawer>
+      <WorkshopDesignEditorDrawers
+        workshopId={workshop.id}
+        form={form}
+        imageForm={imageForm}
+        editorOpen={editorOpen}
+        editingItem={editingItem}
+        imageEditorOpen={imageEditorOpen}
+        imageTarget={imageTarget}
+        saving={saving}
+        onSaveItem={saveItem}
+        onCloseEditor={closeEditor}
+        onSaveImage={saveImage}
+        onCloseImageEditor={closeImageEditor}
+      />
 
       {/* Modals & Library */}
       <AcademyWorkshopDesignTemplateLibrary

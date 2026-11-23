@@ -99,3 +99,17 @@
     width: 100%;
   }
 }
+
+.retailPrice {
+  color: #d4a84b;
+}
+
+.comboPrice {
+  color: #52c41a;
+  font-weight: 700;
+}
+
+.comboPackageReadonly {
+  color: #d4b106;
+  font-weight: 600;
+}

@@ -130,9 +130,7 @@ export const ComboHistoryModal: React.FC<ComboHistoryModalProps> = ({
       styles={{
         body: { padding: '12px 0 0 0' },
       }}
-      modalRender={
-        isMobile ? undefined : (modal) => renderDesktopResizableModal(modal, isMobile, handleModalDragStart)
-      }
+      modalRender={isMobile ? undefined : (modal) => renderDesktopResizableModal(modal, isMobile, handleModalDragStart)}
     >
       <Table
         dataSource={comboBalances}

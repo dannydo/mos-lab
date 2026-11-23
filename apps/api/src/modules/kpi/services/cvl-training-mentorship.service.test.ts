@@ -197,19 +197,99 @@ test('reconcileTrainingCvlStaffTips consolidates 70+20, 80+10, NULL user_id, and
     is_academy: number;
   }> = [
     // Order 339200: Mentor checkin & checkout -> 70% Ly + 20% Hương
-    { id: 101, order_id: 339200, order_service_id: 5001, user_id: 46272, tip_amount: 70000, tip_percentage: 70, is_academy: 0 },
-    { id: 102, order_id: 339200, order_service_id: 5001, user_id: 37790, tip_amount: 20000, tip_percentage: 20, is_academy: 0 },
+    {
+      id: 101,
+      order_id: 339200,
+      order_service_id: 5001,
+      user_id: 46272,
+      tip_amount: 70000,
+      tip_percentage: 70,
+      is_academy: 0,
+    },
+    {
+      id: 102,
+      order_id: 339200,
+      order_service_id: 5001,
+      user_id: 37790,
+      tip_amount: 20000,
+      tip_percentage: 20,
+      is_academy: 0,
+    },
     // Order 339761: Mentor checkin + Ly checkout -> 80% Ly + 10% Hương
-    { id: 103, order_id: 339761, order_service_id: 5002, user_id: 46272, tip_amount: 80000, tip_percentage: 80, is_academy: 0 },
-    { id: 104, order_id: 339761, order_service_id: 5002, user_id: 37790, tip_amount: 10000, tip_percentage: 10, is_academy: 0 },
+    {
+      id: 103,
+      order_id: 339761,
+      order_service_id: 5002,
+      user_id: 46272,
+      tip_amount: 80000,
+      tip_percentage: 80,
+      is_academy: 0,
+    },
+    {
+      id: 104,
+      order_id: 339761,
+      order_service_id: 5002,
+      user_id: 37790,
+      tip_amount: 10000,
+      tip_percentage: 10,
+      is_academy: 0,
+    },
     // Order 339363: Multi-service -> two distinct order_service_id buckets
-    { id: 105, order_id: 339363, order_service_id: 5003, user_id: 46272, tip_amount: 70000, tip_percentage: 70, is_academy: 0 },
-    { id: 106, order_id: 339363, order_service_id: 5003, user_id: 37790, tip_amount: 20000, tip_percentage: 20, is_academy: 0 },
-    { id: 107, order_id: 339363, order_service_id: 5004, user_id: 46272, tip_amount: 80000, tip_percentage: 80, is_academy: 0 },
-    { id: 108, order_id: 339363, order_service_id: 5004, user_id: 37790, tip_amount: 10000, tip_percentage: 10, is_academy: 0 },
+    {
+      id: 105,
+      order_id: 339363,
+      order_service_id: 5003,
+      user_id: 46272,
+      tip_amount: 70000,
+      tip_percentage: 70,
+      is_academy: 0,
+    },
+    {
+      id: 106,
+      order_id: 339363,
+      order_service_id: 5003,
+      user_id: 37790,
+      tip_amount: 20000,
+      tip_percentage: 20,
+      is_academy: 0,
+    },
+    {
+      id: 107,
+      order_id: 339363,
+      order_service_id: 5004,
+      user_id: 46272,
+      tip_amount: 80000,
+      tip_percentage: 80,
+      is_academy: 0,
+    },
+    {
+      id: 108,
+      order_id: 339363,
+      order_service_id: 5004,
+      user_id: 37790,
+      tip_amount: 10000,
+      tip_percentage: 10,
+      is_academy: 0,
+    },
     // Order 339400: NULL user_id on CC tip row
-    { id: 109, order_id: 339400, order_service_id: 5005, user_id: 46272, tip_amount: 70000, tip_percentage: 70, is_academy: 0 },
-    { id: 110, order_id: 339400, order_service_id: 5005, user_id: null, tip_amount: 20000, tip_percentage: 20, is_academy: 0 },
+    {
+      id: 109,
+      order_id: 339400,
+      order_service_id: 5005,
+      user_id: 46272,
+      tip_amount: 70000,
+      tip_percentage: 70,
+      is_academy: 0,
+    },
+    {
+      id: 110,
+      order_id: 339400,
+      order_service_id: 5005,
+      user_id: null,
+      tip_amount: 20000,
+      tip_percentage: 20,
+      is_academy: 0,
+    },
   ];
 
   let queryCount = 0;
@@ -219,10 +299,15 @@ test('reconcileTrainingCvlStaffTips consolidates 70+20, 80+10, NULL user_id, and
       if (sql.includes('SELECT DISTINCT') && sql.includes('o.id AS order_id')) {
         const candidates: Array<{ order_id: number; mentee_id: number }> = [];
         for (const t of tipRows) {
-          const svc = serviceRows.find((s) => s.order_id === t.order_id && s.id === t.order_service_id)
-            || serviceRows.find((s) => s.order_id === t.order_id);
+          const svc =
+            serviceRows.find((s) => s.order_id === t.order_id && s.id === t.order_service_id) ||
+            serviceRows.find((s) => s.order_id === t.order_id);
           if (!svc) continue;
-          if ((t.user_id === null || t.user_id !== svc.assigned_staff_id) && t.tip_percentage > 0 && t.tip_percentage <= 20) {
+          if (
+            (t.user_id === null || t.user_id !== svc.assigned_staff_id) &&
+            t.tip_percentage > 0 &&
+            t.tip_percentage <= 20
+          ) {
             candidates.push({ order_id: t.order_id, mentee_id: svc.assigned_staff_id });
           }
         }
@@ -274,7 +359,9 @@ test('reconcileTrainingCvlStaffTips consolidates 70+20, 80+10, NULL user_id, and
   assert.equal(queryCount, queriesAfterFirstRun);
 
   // Forced idempotent repeat finds nothing left to consolidate
-  const forcedSecondRun = await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(executor, [pair], { force: true });
+  const forcedSecondRun = await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(executor, [pair], {
+    force: true,
+  });
   assert.equal(forcedSecondRun.updatedOrders, 0);
   assert.equal(forcedSecondRun.consolidatedRows, 0);
   assert.equal(tipRows.length, 5);

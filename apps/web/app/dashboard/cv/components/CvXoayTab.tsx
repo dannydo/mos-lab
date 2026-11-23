@@ -1,99 +1,17 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Card, Table, Tag, theme, Row, Col, Statistic, Input, Space, Button, Tooltip } from 'antd';
-import {
-  TrophyOutlined,
-  DollarOutlined,
-  SearchOutlined,
-  ReloadOutlined,
-  AppstoreOutlined,
-  SafetyCertificateOutlined,
-  FilterOutlined,
-  SettingOutlined,
-  CompressOutlined,
-  ExpandOutlined,
-} from '@ant-design/icons';
-import dayjs from 'dayjs';
-import {
-  CvXoayRecord,
-  removeVietnameseTones,
-  type ReportComparisonMode,
-  calculateFractionToday,
-} from '@mos-lab/shared';
-import { apiClient } from '../../../../lib/api-client';
-import { useTableConfig } from '../../../../hooks/useTableConfig';
-import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
-import { formatCompactVND } from '../../../../lib/format-utils';
-import CcAvatar from '../../cc/components/CcAvatar';
-import { MobileRecordList } from '~/components/ui';
-import { useResponsiveTier } from '~/hooks/useResponsiveTier';
-import { usePreviousReportPeriod } from '../../../../hooks/usePreviousReportPeriod';
-import PeriodComparison from '../../../../components/ui/PeriodComparison';
+import { useMemo } from 'react';
+import type { CvXoayRecord } from '@mos-lab/shared';
+import { useTableConfig } from '~/hooks/useTableConfig';
+import { CvXoayDetailTableCard } from './cv-xoay-tab/CvXoayDetailTableCard';
+import { CvXoayLeaderboardCard } from './cv-xoay-tab/CvXoayLeaderboardCard';
+import { CvXoaySummaryCards } from './cv-xoay-tab/CvXoaySummaryCards';
+import { buildCvXoayDetailColumns } from './cv-xoay-tab/cvXoayColumns';
+import { formatStoreCode, type CvLeaderboardRow, type CvXoayTabProps } from './cv-xoay-tab/cvXoayUtils';
+import { useCvXoayData } from './cv-xoay-tab/useCvXoayData';
 
-export const formatStoreCode = (store?: string | null): string => {
-  if (!store) return 'DT';
-  const s = String(store).toUpperCase().trim();
-  if (s.includes('ESTELLA') || s.includes('EP')) return 'EP';
-  if (s.includes('THAM') || s.includes('DE') || s.includes('DT')) return 'DT';
-  if (s.includes('PXL') || s.includes('PHAN')) return 'PXL';
-  return s;
-};
-
-const isCvPlusStaff = (nameOrId?: string | number | null): boolean => {
-  if (!nameOrId) return false;
-  const s = String(nameOrId).toLowerCase();
-  return (
-    s.includes('khanh cao') ||
-    s.includes('thảo ly') ||
-    s.includes('thao ly') ||
-    s === '13783' ||
-    s === '46272' ||
-    s === '37' ||
-    s === '55'
-  );
-};
-
-interface CvXoayTabProps {
-  loading?: boolean;
-  dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
-  selectedStore?: string;
-  selectedConsultant?: string;
-  comparisonMode: ReportComparisonMode;
-}
-
-interface CvLeaderboardRow {
-  rank: number;
-  techName: string;
-  avatar?: string | null;
-  store: string;
-  techLevel: number;
-  totalServices: number;
-  totalPoints: number;
-  totalBonus: number;
-  maxPointsAccu: number;
-}
-
-function calculateProjectedCvXoay(serviceCount: number, currentBonus: number, ratio: number): number {
-  if (ratio <= 0) return currentBonus;
-  const safeRatio = Math.max(0.001, Math.min(1.0, ratio));
-  if (serviceCount <= 0 && currentBonus <= 0) return 0;
-
-  const nHat = serviceCount > 0 ? Math.round(serviceCount / safeRatio) : 0;
-  if (nHat <= 0) return currentBonus;
-
-  let pBar = 35;
-  if (serviceCount >= 3 && currentBonus > 0) {
-    const rawP = (200 * (currentBonus / 1000 - serviceCount)) / (serviceCount * (serviceCount - 1));
-    if (!isNaN(rawP) && rawP > 5 && rawP < 80) {
-      pBar = rawP;
-    }
-  }
-
-  const factor = pBar / 200;
-  const projected = 1000 * (factor * nHat * nHat + (1 - factor) * nHat);
-  return Math.max(currentBonus, Math.round(projected));
-}
+export { formatStoreCode };
+export type { CvLeaderboardRow, CvXoayTabProps };
 
 export default function CvXoayTab({
   loading: parentLoading,
@@ -102,475 +20,33 @@ export default function CvXoayTab({
   selectedConsultant = 'ALL',
   comparisonMode,
 }: CvXoayTabProps) {
-  const { token } = theme.useToken();
-  const tier = useResponsiveTier();
-  const isMobile = tier === 'mobile';
-  const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
-
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<CvXoayRecord[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [isCompact, setIsCompact] = useState(false);
-  const [summary, setSummary] = useState({
-    totalServices: 0,
-    totalBonus: 0,
-    totalPoints: 0,
+  const {
+    loading,
+    isMobile,
+    previousPeriod,
+    summary,
+    previousSummary,
+    leaderboard,
+    forecast,
+    filteredData,
+    searchText,
+    setSearchText,
+    isCompact,
+    toggleCompact,
+    pageSize,
+    handlePageSizeChange,
+    selectedCvName,
+    toggleSelectedCvName,
+    clearSelectedCvName,
+    fetchData,
+  } = useCvXoayData({
+    dateRange,
+    selectedStore,
+    selectedConsultant,
+    comparisonMode,
   });
-  const [previousSummary, setPreviousSummary] = useState<{
-    totalServices: number;
-    totalBonus: number;
-    totalPoints: number;
-  } | null>(null);
-  const [pageSize, setPageSize] = useState<number>(50);
-  const [selectedCvName, setSelectedCvName] = useState<string | null>(null);
 
-  const isMonthMode = comparisonMode === 'month';
-  const isDayMode = comparisonMode === 'day';
-  const periodNoun = comparisonMode === 'week' ? 'tuần' : 'tháng';
-
-  const elapsedRatioPercent = React.useMemo(() => {
-    const now = dayjs();
-    const currentHour = now.hour();
-    const fractionToday = calculateFractionToday(currentHour);
-
-    const start = dateRange?.[0]
-      ? dayjs(dateRange[0])
-      : dayjs().startOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
-    const end = dateRange?.[1] ? dayjs(dateRange[1]) : dayjs().endOf(comparisonMode === 'week' ? 'isoWeek' : 'month');
-
-    if (now.isBefore(start, 'day')) return 0.1;
-    if (now.isAfter(end, 'day')) return 100;
-
-    const totalDays = end.diff(start, 'day') + 1;
-    const daysPassed = now.diff(start, 'day');
-    const elapsedDays = daysPassed + fractionToday;
-    const r = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
-    return Math.round(r * 1000) / 10;
-  }, [dateRange, comparisonMode]);
-
-  const isPastPeriod = elapsedRatioPercent >= 100;
-  const ratio = (elapsedRatioPercent || 100) / 100;
-
-  const projectedServices = Math.round((summary.totalServices || 0) / (ratio || 1));
-  const projectedPoints = Math.round((summary.totalPoints || 0) / (ratio || 1));
-
-  const renderForecastSubtext = (projectedVal: number, unit = '') => {
-    if (isDayMode || !projectedVal) return null;
-
-    if (isPastPeriod) {
-      return (
-        <Tooltip title={`Dữ liệu ${periodNoun} đã chốt (100% thời gian)`}>
-          <div className="text-xs font-medium text-slate-500 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5 cursor-help opacity-70">
-            <span>Thực tế chốt {periodNoun}:</span>
-            <span className="tabular-nums font-medium text-slate-400 whitespace-nowrap">
-              {unit === 'đ' ? formatCompactVND(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
-            </span>
-          </div>
-        </Tooltip>
-      );
-    }
-
-    return (
-      <Tooltip
-        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 09:00 - 21:00 + 2h buffer checkout)`}
-      >
-        <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/30 pt-1.5 cursor-help">
-          <span className="shrink-0 flex items-center gap-1 text-slate-400">
-            <span role="img" aria-label={`Dự kiến cuối ${periodNoun}`} className="text-sm leading-none">
-              🔮
-            </span>
-            <span>Dự kiến:</span>
-          </span>
-          <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
-            ~{unit === 'đ' ? formatCompactVND(projectedVal) : `${projectedVal.toLocaleString('vi-VN')} ${unit}`}
-          </span>
-        </div>
-      </Tooltip>
-    );
-  };
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cv_xoay_page_size');
-      if (saved) {
-        setPageSize(parseInt(saved, 10));
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    setSelectedCvName(null);
-  }, [selectedConsultant]);
-
-  const fetchData = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const dateFrom = dateRange ? dateRange[0].format('YYYY-MM-DD') : dayjs().startOf('month').format('YYYY-MM-DD');
-      const dateTo = dateRange ? dateRange[1].format('YYYY-MM-DD') : dayjs().endOf('month').format('YYYY-MM-DD');
-
-      const query = {
-        storeId: selectedStore,
-        consultantId: selectedConsultant,
-        limit: 10000,
-      };
-      const [res, previousRes] = await Promise.all([
-        apiClient.kpi.getCvXoayReport({ dateFrom, dateTo, ...query }),
-        previousPeriod ? apiClient.kpi.getCvXoayReport({ ...previousPeriod.params, ...query }) : Promise.resolve(null),
-      ]);
-
-      if (res) {
-        setData(res.data || []);
-        setSummary(res.summary || { totalServices: 0, totalBonus: 0, totalPoints: 0 });
-        setPreviousSummary(previousRes?.summary || null);
-      }
-    } catch (err) {
-      console.error('Error fetching CV Xoay report:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [dateRange, previousPeriod, selectedStore, selectedConsultant]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Calculate Leaderboard entries grouped by Technician
-  const leaderboard = React.useMemo<CvLeaderboardRow[]>(() => {
-    const map = new Map<
-      string,
-      {
-        techName: string;
-        avatar?: string | null;
-        store: string;
-        techLevel: number;
-        totalServices: number;
-        totalPoints: number;
-        totalBonus: number;
-        maxPointsAccu: number;
-      }
-    >();
-
-    data.forEach((item) => {
-      const name = item.techName || 'Chưa phân công';
-      const existing = map.get(name) || {
-        techName: name,
-        avatar: item.avatar,
-        store: item.store || 'DT',
-        techLevel: item.techLevel || 1,
-        totalServices: 0,
-        totalPoints: 0,
-        totalBonus: 0,
-        maxPointsAccu: 0,
-      };
-
-      if (!existing.avatar && item.avatar) {
-        existing.avatar = item.avatar;
-      }
-      existing.totalServices += 1;
-      existing.totalPoints += item.techPoints;
-      existing.totalBonus += item.techBonus;
-      if (item.pointsAccu > existing.maxPointsAccu) {
-        existing.maxPointsAccu = item.pointsAccu;
-      }
-      if (item.techLevel > existing.techLevel) {
-        existing.techLevel = item.techLevel;
-      }
-      map.set(name, existing);
-    });
-
-    const list = Array.from(map.values());
-    list.sort((a, b) => b.totalBonus - a.totalBonus || b.totalPoints - a.totalPoints);
-
-    return list.map((item, index) => ({
-      rank: index + 1,
-      ...item,
-    }));
-  }, [data]);
-
-  const projectedBonus = React.useMemo(() => {
-    if (!isMonthMode) return 0;
-    if (leaderboard.length > 0) {
-      return leaderboard.reduce(
-        (acc, r) => acc + calculateProjectedCvXoay(r.totalServices || 0, r.totalBonus || 0, ratio),
-        0
-      );
-    }
-    return Math.round((summary.totalBonus || 0) / (ratio || 1));
-  }, [isMonthMode, leaderboard, ratio, summary.totalBonus]);
-
-  const filteredData = React.useMemo(() => {
-    let result = data;
-    if (selectedCvName) {
-      result = result.filter((item) => item.techName.toLowerCase() === selectedCvName.toLowerCase());
-    }
-    if (searchText) {
-      const q = removeVietnameseTones(searchText);
-      result = result.filter(
-        (item) =>
-          removeVietnameseTones(item.techName).includes(q) ||
-          removeVietnameseTones(item.clientName).includes(q) ||
-          removeVietnameseTones(item.serviceName).includes(q) ||
-          removeVietnameseTones(item.store).includes(q)
-      );
-    }
-    return result;
-  }, [data, selectedCvName, searchText]);
-
-  const leaderboardColumns = [
-    {
-      title: 'Hạng',
-      dataIndex: 'rank',
-      key: 'rank',
-      width: 60,
-      align: 'center' as const,
-      render: (rank: number) => {
-        if (rank === 1) return <span style={{ fontSize: '18px' }}>🥇</span>;
-        if (rank === 2) return <span style={{ fontSize: '18px' }}>🥈</span>;
-        if (rank === 3) return <span style={{ fontSize: '18px' }}>🥉</span>;
-        return <span className="tabular-nums font-semibold text-slate-500 text-xs">#{rank}</span>;
-      },
-    },
-    {
-      title: 'Chuyên Viên (CV)',
-      dataIndex: 'techName',
-      key: 'techName',
-      render: (name: string, record: CvLeaderboardRow) => {
-        const isSelected = searchText.toLowerCase() === name.toLowerCase();
-        return (
-          <Space className="cursor-pointer group whitespace-nowrap" size={8}>
-            <CcAvatar name={name} src={record.avatar} size={32} isSelected={isSelected} />
-            <div>
-              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                <span
-                  className={`font-semibold text-xs transition-colors whitespace-nowrap ${
-                    isSelected ? 'text-amber-400 underline underline-offset-2' : 'hover:text-amber-400'
-                  }`}
-                  style={{ color: isSelected ? undefined : token.colorText }}
-                >
-                  {name}
-                </span>
-                <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
-                  · {formatStoreCode(record.store)}
-                </span>
-                <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">L{record.techLevel}</span>
-                {isCvPlusStaff(name) && (
-                  <Tag color="gold" className="font-bold text-[10px] m-0 py-0 px-1 border-amber-400">
-                    CV🪶
-                  </Tag>
-                )}
-              </div>
-            </div>
-          </Space>
-        );
-      },
-    },
-    {
-      title: 'Bộ Mi',
-      dataIndex: 'totalServices',
-      key: 'totalServices',
-      align: 'right' as const,
-      render: (val: number) => {
-        const projected = Math.round((val || 0) / (ratio || 1));
-        return (
-          <div className="flex flex-col items-end">
-            <span className="tabular-nums font-semibold text-purple-400 text-xs">{val} Bộ</span>
-            {!isDayMode && !isPastPeriod && (
-              <span className="tabular-nums text-[10px] text-slate-400">🔮 ~{projected} Bộ</span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: '∑ Điểm Xoay',
-      dataIndex: 'totalPoints',
-      key: 'totalPoints',
-      align: 'right' as const,
-      render: (val: number) => {
-        const projected = Math.round((val || 0) / (ratio || 1));
-        return (
-          <div className="flex flex-col items-end">
-            <span className="tabular-nums font-semibold text-blue-400 text-xs">+{val.toLocaleString('vi-VN')} pts</span>
-            {!isDayMode && !isPastPeriod && (
-              <span className="tabular-nums text-[10px] text-emerald-600 dark:text-emerald-400/80">
-                🔮 ~{projected.toLocaleString('vi-VN')} pts
-              </span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Thưởng Xoay',
-      dataIndex: 'totalBonus',
-      key: 'totalBonus',
-      align: 'right' as const,
-      render: (val: number, record: CvLeaderboardRow) => {
-        const projected = isMonthMode ? calculateProjectedCvXoay(record.totalServices || 0, val || 0, ratio) : 0;
-        return (
-          <div className="flex flex-col items-end">
-            <span className="tabular-nums font-bold text-emerald-400 text-sm">{val.toLocaleString('vi-VN')}đ</span>
-            {!isDayMode && !isPastPeriod && isMonthMode && projected > 0 && (
-              <span className="tabular-nums text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">
-                🔮 ~{formatCompactVND(projected)}
-              </span>
-            )}
-          </div>
-        );
-      },
-    },
-  ];
-
-  const staticColumns = [
-    {
-      title: 'Thời Gian Check-in',
-      dataIndex: 'checkin',
-      key: 'checkin',
-      width: 140,
-      render: (text: string) => <span className="tabular-nums text-xs text-slate-400 font-medium">{text}</span>,
-    },
-    {
-      title: 'Chuyên Viên (CV)',
-      dataIndex: 'techName',
-      key: 'techName',
-      width: 160,
-      render: (text: string, record: CvXoayRecord) => (
-        <Space size={6} className="whitespace-nowrap">
-          <CcAvatar name={text} src={record.avatar} size={24} />
-          <div className="flex items-center gap-1 whitespace-nowrap">
-            <span className="font-semibold text-xs text-slate-700 dark:text-slate-200 whitespace-nowrap">
-              {text || 'N/A'}
-            </span>
-            <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">· L{record.techLevel}</span>
-            {isCvPlusStaff(text) && (
-              <Tag color="gold" className="font-bold text-[10px] m-0 py-0 px-1 border-amber-400">
-                CV🪶
-              </Tag>
-            )}
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: 'Khách Hàng',
-      dataIndex: 'clientName',
-      key: 'clientName',
-      width: 150,
-      render: (text: string, record: CvXoayRecord) => (
-        <div className="flex items-center gap-1 whitespace-nowrap">
-          <span className="font-semibold text-xs text-sky-400">{text || 'Khách Vãng Lai'}</span>
-          <span className="text-[11px] font-medium text-slate-500">· {formatStoreCode(record.store)}</span>
-        </div>
-      ),
-    },
-    {
-      title: 'Tên Dịch Vụ',
-      dataIndex: 'serviceName',
-      key: 'serviceName',
-      width: 170,
-      render: (text: string) => <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{text}</span>,
-    },
-    {
-      title: 'FAL Rule',
-      dataIndex: 'falRule',
-      key: 'falRule',
-      width: 80,
-      render: (rule?: string, record?: CvXoayRecord) => {
-        if (!rule) return <span className="text-slate-500 text-xs">-</span>;
-        const fal = record?.fal;
-        return (
-          <Tooltip
-            title={
-              fal
-                ? `${fal.caseRole === 'ORIGIN' ? 'Ca gốc' : 'Ca xử lý'} · ${fal.totalMinutes ?? '?'} phút · ${fal.compensationMode}${fal.decisionStatus ? ` · ${fal.decisionStatus}` : ''}`
-                : rule
-            }
-          >
-            <Tag
-              color={
-                fal?.compensationMode === 'BLOCKED'
-                  ? 'default'
-                  : rule === 'Fix'
-                    ? 'error'
-                    : rule === 'Adjust'
-                      ? 'warning'
-                      : 'blue'
-              }
-              className="font-semibold text-[10px] m-0 py-0 px-1"
-            >
-              {rule}
-              {fal?.compensationMode === 'BLOCKED' ? ' · Chờ' : ''}
-            </Tag>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: 'Bóc Tách Điểm (Class/Fan/Type/Lash/Design/Color)',
-      key: 'pointBreakdown',
-      width: 220,
-      render: (_: unknown, record: CvXoayRecord) => (
-        <div className="text-[10px] space-y-0.5 tabular-nums">
-          <div className="flex gap-1 flex-wrap">
-            {record.classPts > 0 && (
-              <span className="text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded font-mono">
-                Class +{record.classPts}
-              </span>
-            )}
-            {record.fanPts > 0 && (
-              <span className="text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded font-mono">Fan +{record.fanPts}</span>
-            )}
-            {record.typePts > 0 && (
-              <span className="text-sky-400 bg-sky-500/10 px-1 py-0.5 rounded font-mono">Type +{record.typePts}</span>
-            )}
-            {record.lashPts > 0 && (
-              <span className="text-rose-400 bg-rose-500/10 px-1 py-0.5 rounded font-mono">Lash +{record.lashPts}</span>
-            )}
-            {record.designPts > 0 && (
-              <span className="text-purple-400 bg-purple-500/10 px-1 py-0.5 rounded font-mono">
-                Design +{record.designPts}
-              </span>
-            )}
-            {record.colorPts > 0 && (
-              <span className="text-indigo-400 bg-indigo-500/10 px-1 py-0.5 rounded font-mono">
-                Color +{record.colorPts}
-              </span>
-            )}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Điểm Xoay',
-      dataIndex: 'techPoints',
-      key: 'techPoints',
-      width: 100,
-      align: 'right' as const,
-      render: (pts: number) => (
-        <span className="tabular-nums font-bold text-xs text-cyan-400">+{pts.toLocaleString('vi-VN')} pts</span>
-      ),
-    },
-    {
-      title: '∑ Điểm Xoay',
-      dataIndex: 'pointsAccu',
-      key: 'pointsAccu',
-      width: 110,
-      align: 'right' as const,
-      render: (accu: number) => (
-        <span className="tabular-nums font-semibold text-xs text-blue-400">{accu.toLocaleString('vi-VN')} pts</span>
-      ),
-    },
-    {
-      title: 'Thưởng Xoay',
-      dataIndex: 'techBonus',
-      key: 'techBonus',
-      width: 110,
-      align: 'right' as const,
-      render: (bonus: number) => (
-        <span className="tabular-nums font-bold text-xs text-emerald-400">{bonus.toLocaleString('vi-VN')}đ</span>
-      ),
-    },
-  ];
+  const staticColumns = useMemo(() => buildCvXoayDetailColumns(), []);
 
   const {
     loading: configLoading,
@@ -581,284 +57,47 @@ export default function CvXoayTab({
     closeConfig,
     saveConfig,
     resetConfig,
-  } = useTableConfig('cv_xoay_table', staticColumns);
+  } = useTableConfig<CvXoayRecord>('cv_xoay_table', staticColumns);
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 3 Top Summary Metrics */}
-      <Row gutter={[16, 16]} className="mb-4">
-        <Col xs={24} sm={8}>
-          <Card
-            variant="outlined"
-            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-            className="shadow-sm rounded-xl"
-          >
-            <Statistic
-              title="∑ Bộ Mi"
-              value={summary.totalServices}
-              suffix="Bộ Mi"
-              valueStyle={{ color: '#1890ff', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
-              prefix={<AppstoreOutlined />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.totalServices}
-              previousValue={previousSummary?.totalServices || 0}
-              formatter={(value) => `${value.toLocaleString('vi-VN')} Bộ Mi`}
-            />
-            {renderForecastSubtext(projectedServices, 'Bộ Mi')}
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card
-            variant="outlined"
-            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-            className="shadow-sm rounded-xl"
-          >
-            <Statistic
-              title="∑ Điểm Xoay"
-              value={summary.totalPoints}
-              suffix="pts"
-              valueStyle={{ color: '#52c41a', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
-              prefix={<TrophyOutlined />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.totalPoints}
-              previousValue={previousSummary?.totalPoints || 0}
-              formatter={(value) => `${value.toLocaleString('vi-VN')} pts`}
-            />
-            {renderForecastSubtext(projectedPoints, 'pts')}
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card
-            variant="outlined"
-            style={{ background: token.colorBgContainer, borderColor: '#d4a84b' }}
-            className="shadow-sm rounded-xl"
-          >
-            <Statistic
-              title="∑ Thưởng Xoay"
-              value={summary.totalBonus}
-              suffix="đ"
-              valueStyle={{ color: '#d4a84b', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}
-              prefix={<DollarOutlined />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.totalBonus}
-              previousValue={previousSummary?.totalBonus || 0}
-              formatter={(value) => `${value.toLocaleString('vi-VN')} đ`}
-            />
-            {isMonthMode && renderForecastSubtext(projectedBonus, 'đ')}
-          </Card>
-        </Col>
-      </Row>
+      <CvXoaySummaryCards
+        summary={summary}
+        previousSummary={previousSummary}
+        comparison={previousPeriod?.comparison}
+        forecast={forecast}
+      />
 
-      {/* Leaderboard Card */}
-      <Card
-        className="full-bleed-card shadow-sm mb-4 rounded-xl"
-        variant="outlined"
-        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary, marginBottom: '16px' }}
-        styles={{ body: { padding: 0 } }}
-        title={
-          <div className="flex flex-wrap justify-between items-center gap-2">
-            <div className="flex items-center gap-2">
-              <TrophyOutlined className="text-amber-500 text-lg" />
-              <span style={{ color: token.colorText }} className="font-bold text-base">
-                Bảng Xếp Hạng Báo Cáo Chuyên Viên (CV Leaderboard)
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <FilterOutlined className="text-blue-500" />
-              <span>Mẹo: Click vào dòng CV để lọc nhanh bảng chi tiết ca làm bên dưới</span>
-            </div>
-          </div>
-        }
-        extra={
-          selectedCvName && (
-            <Button type="dashed" size="small" onClick={() => setSelectedCvName(null)} className="text-xs font-medium">
-              Bỏ lọc: {selectedCvName}
-            </Button>
-          )
-        }
-      >
-        {isMobile ? (
-          <div className="p-3">
-            <MobileRecordList
-              records={leaderboard}
-              loading={loading || parentLoading}
-              getKey={(record) => record.techName}
-              emptyDescription="Chưa có dữ liệu xếp hạng Chuyên viên"
-              renderRecord={(record) => {
-                const isSelected = selectedCvName?.toLowerCase() === record.techName.toLowerCase();
-                return (
-                  <button
-                    type="button"
-                    className={`w-full min-w-0 text-left ${
-                      isSelected ? 'rounded-lg bg-amber-500/10 ring-1 ring-amber-400/60' : ''
-                    }`}
-                    aria-pressed={isSelected}
-                    onClick={() => setSelectedCvName(isSelected ? null : record.techName)}
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="w-6 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
-                        {record.rank === 1
-                          ? '🥇'
-                          : record.rank === 2
-                            ? '🥈'
-                            : record.rank === 3
-                              ? '🥉'
-                              : `#${record.rank}`}
-                      </span>
-                      <CcAvatar name={record.techName} src={record.avatar} size={32} isSelected={isSelected} />
-                      <div className="min-w-0 flex-1">
-                        <div
-                          className="truncate text-sm font-semibold flex items-center gap-1.5"
-                          style={{ color: token.colorText }}
-                        >
-                          <span>{record.techName}</span>
-                          {isCvPlusStaff(record.techName) && (
-                            <Tag color="gold" className="font-bold text-[10px] m-0 py-0 px-1 border-amber-400">
-                              CV🪶
-                            </Tag>
-                          )}
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          {formatStoreCode(record.store)} · L{record.techLevel}
-                        </div>
-                      </div>
-                      <span className="shrink-0 text-xs text-amber-400">{isSelected ? 'Đang lọc' : 'Xem'}</span>
-                    </div>
-                    <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
-                      <div className="min-w-0">
-                        <dt className="text-[10px] text-slate-500">Bộ Mi</dt>
-                        <dd className="truncate text-sm font-bold tabular-nums text-purple-400">
-                          {record.totalServices} Bộ
-                        </dd>
-                      </div>
-                      <div className="min-w-0">
-                        <dt className="text-[10px] text-slate-500">∑ Điểm Xoay</dt>
-                        <dd className="truncate text-sm font-bold tabular-nums text-sky-400">+{record.totalPoints}</dd>
-                      </div>
-                      <div className="min-w-0">
-                        <dt className="text-[10px] text-slate-500">Thưởng</dt>
-                        <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
-                          {Math.round(record.totalBonus || 0).toLocaleString('vi-VN')} đ
-                        </dd>
-                      </div>
-                    </dl>
-                  </button>
-                );
-              }}
-            />
-          </div>
-        ) : (
-          <Table
-            dataSource={leaderboard}
-            columns={leaderboardColumns}
-            rowKey="techName"
-            size="small"
-            pagination={false}
-            loading={loading || parentLoading}
-            scroll={{ x: 'max-content' }}
-            className="antd-custom-table"
-            locale={{ emptyText: 'Chưa có dữ liệu xếp hạng Chuyên viên' }}
-            onRow={(record) => ({
-              onClick: () => {
-                if (selectedCvName && selectedCvName.toLowerCase() === record.techName.toLowerCase()) {
-                  setSelectedCvName(null);
-                } else {
-                  setSelectedCvName(record.techName);
-                }
-              },
-            })}
-            rowClassName={(record) =>
-              selectedCvName && selectedCvName.toLowerCase() === record.techName.toLowerCase()
-                ? 'bg-amber-500/10 dark:bg-amber-500/20 border-l-4 border-amber-500 font-bold cursor-pointer'
-                : 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/60'
-            }
-          />
-        )}
-      </Card>
+      <CvXoayLeaderboardCard
+        leaderboard={leaderboard}
+        loading={Boolean(loading || parentLoading)}
+        isMobile={isMobile}
+        selectedCvName={selectedCvName}
+        searchText={searchText}
+        forecast={forecast}
+        onToggleSelectedCv={toggleSelectedCvName}
+        onClearSelectedCv={clearSelectedCvName}
+      />
 
-      {/* Main Detailed Service Table Card */}
-      <Card
-        className="full-bleed-card shadow-sm rounded-xl"
-        variant="outlined"
-        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-        styles={{ body: { padding: 0 } }}
-        title={
-          <div className="flex flex-wrap justify-between items-center gap-2 py-1">
-            <div className="flex items-center gap-2">
-              <SafetyCertificateOutlined className="text-blue-500 text-lg" />
-              <span className="font-bold text-base" style={{ color: token.colorText }}>
-                Bảng Báo Cáo Chi Tiết Ca Làm Chuyên Viên (CV Xoay)
-              </span>
-              {selectedCvName && (
-                <Tag color="gold" className="font-bold text-xs ml-2">
-                  Chuyên viên: {selectedCvName}
-                </Tag>
-              )}
-            </div>
-
-            <Space wrap>
-              <Input
-                id="cv-xoay-search-input"
-                name="cvXoaySearch"
-                placeholder="Tìm tên CV..."
-                prefix={<SearchOutlined />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                allowClear
-                style={{ width: 250 }}
-              />
-              <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
-                <Button
-                  icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
-                  onClick={() => setIsCompact(!isCompact)}
-                  className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
-                />
-              </Tooltip>
-              <Tooltip title="Làm mới dữ liệu">
-                <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading} />
-              </Tooltip>
-              <Tooltip title="Cấu hình cột">
-                <Button icon={<SettingOutlined />} onClick={openConfig} />
-              </Tooltip>
-            </Space>
-          </div>
-        }
-      >
-        <Table
-          dataSource={filteredData}
-          columns={configuredColumns}
-          rowKey="orderServiceId"
-          loading={loading || parentLoading || configLoading}
-          pagination={{
-            pageSize: pageSize,
-            showSizeChanger: true,
-            pageSizeOptions: ['20', '50', '100', '200'],
-            showTotal: (total) => `∑ ${total} Bộ Mi`,
-            onChange: (page, size) => {
-              setPageSize(size);
-              localStorage.setItem('cv_xoay_page_size', size.toString());
-            },
-          }}
-          scroll={{ x: 1300 }}
-          size="small"
-          bordered
-          className={isCompact ? 'antd-custom-table compact-table' : 'antd-custom-table'}
-        />
-      </Card>
-
-      <TableConfigDrawer
-        visible={configVisible}
-        onClose={closeConfig}
-        title="Cấu hình cột Báo Cáo CV Xoay"
-        columns={rawConfig}
-        onSave={saveConfig}
-        onReset={resetConfig}
+      <CvXoayDetailTableCard
+        records={filteredData}
+        columns={configuredColumns}
+        loading={Boolean(loading || parentLoading || configLoading)}
+        refreshLoading={loading}
+        selectedCvName={selectedCvName}
+        searchText={searchText}
+        isCompact={isCompact}
+        pageSize={pageSize}
+        configVisible={configVisible}
+        rawConfig={rawConfig}
+        onSearchChange={setSearchText}
+        onToggleCompact={toggleCompact}
+        onRefresh={fetchData}
+        onOpenConfig={openConfig}
+        onCloseConfig={closeConfig}
+        onSaveConfig={saveConfig}
+        onResetConfig={resetConfig}
+        onPageSizeChange={handlePageSizeChange}
       />
     </div>
   );

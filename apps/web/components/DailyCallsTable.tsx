@@ -1,756 +1,92 @@
 'use client';
 
-import { formatOrGenerateCustomerPhone } from './booking/constants';
-import { CopyPhoneButton } from './ui';
-
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import {
-  DatePicker,
-  Radio,
-  Button,
-  Space,
-  Card,
-  Tag,
-  Avatar,
-  Typography,
-  Tooltip,
-  theme,
-  Spin,
-  message,
-  Select,
-} from 'antd';
-import { PhoneOutlined, UserOutlined } from '@ant-design/icons';
-import { CalendarDays, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
-import dayjs from 'dayjs';
+import React, { useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { useTheme } from '../context/ThemeContext';
-import { useOmiCall } from '../context/OmiCallContext';
-import { useTableConfig } from '../hooks/useTableConfig';
+import type { DailyCallEntry } from '@mos-lab/shared';
 import { ResizableHeaderCell } from './ResizableHeaderCell';
-import { apiClient } from '../lib/api-client';
-import { formatVND, formatDuration } from '../lib/format-utils';
-import { DailyCallEntry, vietnameseSearchFilter } from '@mos-lab/shared';
-import { AppIcon, DataTable, TableSettingsTrigger } from './ui';
-import { useResponsiveTier } from '../hooks/useResponsiveTier';
+import { DataTable } from './ui';
+import { DailyCallsMobileCard } from './daily-calls-table/DailyCallsMobileCard';
+import { DailyCallsToolbar } from './daily-calls-table/DailyCallsToolbar';
+import {
+  DAILY_CALLS_COLUMN_PRIORITY,
+  DAILY_CALLS_PAGE_SIZE_OPTIONS,
+} from './daily-calls-table/dailyCallsTableConstants';
+import type { DailyCallsScope, DailyCallsTableProps } from './daily-calls-table/dailyCallsTableTypes';
+import { useDailyCallsTable } from './daily-calls-table/useDailyCallsTable';
+
+export type { DailyCallsScope, DailyCallsTableProps };
 
 const CustomerDetailDrawer = dynamic(() => import('./CustomerDetailDrawer'), { ssr: false });
 const TableConfigDrawer = dynamic(() => import('./TableConfigDrawer').then((m) => m.TableConfigDrawer), { ssr: false });
 const QAPlayerDrawer = dynamic(() => import('./QAPlayerDrawer').then((m) => m.QAPlayerDrawer), { ssr: false });
 
-const { Text, Title } = Typography;
-
-interface DailyCallsTableProps {
-  initialScope?: 'all' | 'me' | 'nyc';
-  isDrawerMode?: boolean;
-}
-
 export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = false }: DailyCallsTableProps) {
-  const { themeMode } = useTheme();
-  const { token } = theme.useToken();
-  const { makeCall } = useOmiCall();
-  const responsiveTier = useResponsiveTier();
-  const isMobile = responsiveTier === 'mobile';
-
-  // Filter & Navigation states
-  const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs>(dayjs());
-  const [scope, setScope] = useState<'all' | 'me' | 'nyc'>(initialScope);
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<DailyCallEntry[]>([]);
-
-  // Admin filter states
-  const [currentUser, setCurrentUser] = useState<SafeAny | null>(null);
-  const [staffList, setStaffList] = useState<SafeAny[]>([]);
-  const [selectedStaffId, setSelectedStaffId] = useState<string>('all');
-
-  // Pagination states
-  const [pageSize, setPageSize] = useState<number>(isDrawerMode ? 10 : 15);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [isReady, setIsReady] = useState(false);
-  const dailyCallsRequestIdRef = useRef(0);
-
-  useEffect(
-    () => () => {
-      dailyCallsRequestIdRef.current += 1;
-    },
-    []
-  );
-
-  // Drawer states
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
-  const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
-  const [qaDrawerOpen, setQaDrawerOpen] = useState(false);
-  const [selectedOmicallLogId, setSelectedOmicallLogId] = useState<number | null>(null);
-
-  const openQADrawer = useCallback((omicallLogId: number) => {
-    setSelectedOmicallLogId(omicallLogId);
-    setQaDrawerOpen(true);
-  }, []);
-
-  // Load current user and restore settings from localStorage on client mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('mos_user');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setCurrentUser(parsed);
-
-          if (parsed.role === 'admin') {
-            apiClient.staff
-              .list()
-              .then((list) => {
-                setStaffList(list);
-              })
-              .catch((err) => console.error('Fetch staff list error:', err));
-          }
-        } catch (e) {
-          console.error('Failed to parse user', e);
-        }
-      }
-
-      // Restore selections
-      const savedDate = localStorage.getItem('mos_daily_calls_selectedDate');
-      if (savedDate) {
-        setSelectedDate(dayjs(savedDate));
-      }
-
-      const savedScope = localStorage.getItem('mos_daily_calls_scope');
-      if (savedScope && ['all', 'me', 'nyc'].includes(savedScope)) {
-        setScope(savedScope as 'all' | 'me' | 'nyc');
-      }
-
-      const savedStaffId = localStorage.getItem('mos_daily_calls_selectedStaffId');
-      if (savedStaffId) {
-        setSelectedStaffId(savedStaffId);
-      }
-
-      const savedPageSize = localStorage.getItem('mos_daily_calls_pageSize');
-      if (savedPageSize) {
-        const parsedSize = parseInt(savedPageSize, 10);
-        if (!isNaN(parsedSize)) {
-          setPageSize(parsedSize);
-        }
-      }
-
-      const savedPage = localStorage.getItem('mos_daily_calls_currentPage');
-      if (savedPage) {
-        const parsedPage = parseInt(savedPage, 10);
-        if (!isNaN(parsedPage)) {
-          setCurrentPage(parsedPage);
-        }
-      }
-
-      setIsReady(true);
-    }
-  }, []);
-
-  // Sync initialScope if it changes (e.g. when route transitions)
-  useEffect(() => {
-    if (isReady) {
-      setScope(initialScope);
-      localStorage.setItem('mos_daily_calls_scope', initialScope);
-      setCurrentPage(1);
-      localStorage.setItem('mos_daily_calls_currentPage', '1');
-    }
-  }, [initialScope, isReady]);
-
-  // Fetch daily calls
-  const fetchDailyCalls = useCallback(
-    async (date: dayjs.Dayjs, currentScope: 'all' | 'me' | 'nyc', staffFilterId: string) => {
-      const requestId = ++dailyCallsRequestIdRef.current;
-      setLoading(true);
-      try {
-        const dateStr = date.format('YYYY-MM-DD');
-        const res = await apiClient.calls.listDaily({
-          date: dateStr,
-          scope: currentScope,
-          staffId: currentScope === 'me' ? undefined : staffFilterId,
-        });
-        if (requestId === dailyCallsRequestIdRef.current) {
-          setData(res);
-        }
-      } catch (err) {
-        if (requestId === dailyCallsRequestIdRef.current) {
-          console.error('Fetch daily calls error:', err);
-          message.error('Không thể tải danh sách cuộc gọi.');
-        }
-      } finally {
-        if (requestId === dailyCallsRequestIdRef.current) {
-          setLoading(false);
-        }
-      }
-    },
-    []
-  );
-
-  useEffect(() => {
-    if (isReady) {
-      fetchDailyCalls(selectedDate, scope, selectedStaffId);
-    }
-  }, [selectedDate, scope, selectedStaffId, fetchDailyCalls, isReady]);
-
-  // Instantly refresh calls table when popup/modal updates data
-  useEffect(() => {
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-    const handleDataChanged = () => {
-      if (!isReady) return;
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        fetchDailyCalls(selectedDate, scope, selectedStaffId);
-      }, 100);
-    };
-    window.addEventListener('mos-data-updated', handleDataChanged);
-    window.addEventListener('mos-call-log-saved', handleDataChanged);
-    window.addEventListener('mos-customer-updated', handleDataChanged);
-    window.addEventListener('mos-booking-updated', handleDataChanged);
-    return () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      window.removeEventListener('mos-data-updated', handleDataChanged);
-      window.removeEventListener('mos-call-log-saved', handleDataChanged);
-      window.removeEventListener('mos-customer-updated', handleDataChanged);
-      window.removeEventListener('mos-booking-updated', handleDataChanged);
-    };
-  }, [selectedDate, scope, selectedStaffId, fetchDailyCalls, isReady]);
-
-  const handlePrevDay = () => {
-    setSelectedDate((prev) => {
-      const next = prev.subtract(1, 'day');
-      localStorage.setItem('mos_daily_calls_selectedDate', next.format('YYYY-MM-DD'));
-      return next;
-    });
-    setCurrentPage(1);
-    localStorage.setItem('mos_daily_calls_currentPage', '1');
-  };
-
-  const handleNextDay = () => {
-    setSelectedDate((prev) => {
-      const next = prev.add(1, 'day');
-      localStorage.setItem('mos_daily_calls_selectedDate', next.format('YYYY-MM-DD'));
-      return next;
-    });
-    setCurrentPage(1);
-    localStorage.setItem('mos_daily_calls_currentPage', '1');
-  };
-
-  const handleToday = () => {
-    const today = dayjs();
-    setSelectedDate(today);
-    localStorage.setItem('mos_daily_calls_selectedDate', today.format('YYYY-MM-DD'));
-    setCurrentPage(1);
-    localStorage.setItem('mos_daily_calls_currentPage', '1');
-  };
-
-  const openCustomerDetail = (id: number) => {
-    setSelectedCustomerId(id);
-    setCustomerDrawerOpen(true);
-  };
-
-  // Define static columns for useTableConfig
-  const staticColumns = useMemo(() => {
-    return [
-      {
-        title: 'Mã KH',
-        dataIndex: ['customer', 'id'],
-        key: 'customerId',
-        width: 80,
-        render: (_: SafeAny, record: DailyCallEntry) => record.customer?.id || '-',
-      },
-      {
-        title: 'Khách Hàng',
-        dataIndex: ['customer', 'name'],
-        key: 'client',
-        render: (_: SafeAny, record: DailyCallEntry) => {
-          if (!record.customer) return '-';
-          return (
-            <Space
-              size="small"
-              style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-              onClick={() => openCustomerDetail(record.customer!.id)}
-            >
-              <Avatar
-                size="small"
-                src={record.customer.avatar || undefined}
-                icon={<UserOutlined />}
-                style={{
-                  backgroundColor: 'var(--avatar-bg)',
-                  color: '#D4A84B',
-                  border: '1px solid var(--avatar-border)',
-                  flexShrink: 0,
-                }}
-              />
-              <div>
-                <span className="hover:underline font-semibold" style={{ color: 'var(--client-name-color)' }}>
-                  {record.customer.name}
-                </span>
-                <div
-                  style={{ fontSize: '11px', color: 'var(--client-phone-color)' }}
-                  className="flex items-center gap-1"
-                >
-                  <span>{formatOrGenerateCustomerPhone(record.customer)}</span>
-                  <CopyPhoneButton phone={formatOrGenerateCustomerPhone(record.customer)} size="xs" />
-                </div>
-              </div>
-            </Space>
-          );
-        },
-      },
-      {
-        title: 'Gọi Điện',
-        key: 'makeCall',
-        width: 130,
-        render: (_: SafeAny, record: DailyCallEntry) => {
-          const phone = record.customer?.phone;
-          if (!phone) return '-';
-          return (
-            <div className="flex items-center gap-1">
-              <Button
-                type="link"
-                size="small"
-                icon={<PhoneOutlined style={{ color: '#D4A84B' }} />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  makeCall(phone, record.customer!.name, record.customer!.id, record.customer?.avatar || undefined);
-                }}
-                style={{ padding: 0, fontWeight: '600', color: 'var(--client-name-color)' }}
-              >
-                {phone}
-              </Button>
-              <CopyPhoneButton phone={phone} size="xs" />
-            </div>
-          );
-        },
-      },
-      {
-        title: 'Last time in bed',
-        dataIndex: ['customer', 'daysSinceLastVisit'],
-        key: 'lastTimeInBed',
-        width: 180,
-        render: (_: SafeAny, record: DailyCallEntry) => {
-          if (!record.customer) return '-';
-          const days = record.customer.daysSinceLastVisit;
-          const lastBookingDate = record.customer.lastBookingDate;
-
-          const isBookingInFuture = lastBookingDate ? new Date(lastBookingDate) > new Date() : false;
-          if (isBookingInFuture) {
-            const bookingFormatted = dayjs(lastBookingDate).format('DD/MM/YYYY');
-            return (
-              <span style={{ color: themeMode === 'dark' ? '#95de64' : '#237804', fontWeight: 'bold' }}>
-                📅 Booked: {bookingFormatted}
-              </span>
-            );
-          }
-
-          return days !== null && days !== undefined ? (
-            <span className="tabular-nums">{days} ngày</span>
-          ) : (
-            <Text style={{ color: 'var(--client-desc-color)' }}>Chưa từng đến</Text>
-          );
-        },
-      },
-      {
-        title: 'Lifetime Value',
-        dataIndex: ['customer', 'totalSpent'],
-        key: 'lifetimeValue',
-        width: 140,
-        render: (spent: number) => <span className="tabular-nums">{formatVND(spent)}</span>,
-      },
-      {
-        title: 'Booker',
-        dataIndex: ['customer', 'assignedStaff'],
-        key: 'assignedStaff',
-        width: 140,
-        render: (staff: SafeAny) =>
-          staff ? (
-            <Tag color="cyan" style={{ fontWeight: '500' }}>
-              {staff.displayName}
-            </Tag>
-          ) : (
-            <span style={{ fontStyle: 'italic', color: 'var(--client-desc-color)' }}>Chưa phân bổ</span>
-          ),
-      },
-      {
-        title: 'Last call',
-        dataIndex: 'createdAt',
-        key: 'lastCall',
-        width: 90,
-        render: (dateStr: string) => <span className="tabular-nums">{dayjs(dateStr).format('HH:mm')}</span>,
-      },
-      {
-        title: 'SL Booker (Thời lượng)',
-        dataIndex: 'durationSec',
-        key: 'duration',
-        width: 110,
-        render: (sec: number | null) => {
-          const seconds = sec || 0;
-          const formatted = seconds === 0 ? '00:00' : formatDuration(seconds);
-
-          let tagStyles: React.CSSProperties = {
-            fontFamily: 'monospace',
-            fontWeight: '600',
-            borderRadius: '4px',
-            borderWidth: '1.5px',
-            borderStyle: 'solid',
-            padding: '2px 8px',
-            fontSize: '13px',
-            fontVariantNumeric: 'tabular-nums',
-          };
-
-          if (seconds === 0) {
-            tagStyles = {
-              ...tagStyles,
-              color: themeMode === 'dark' ? '#595959' : '#8c8c8c',
-              borderColor: themeMode === 'dark' ? '#303030' : '#d9d9d9',
-              background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
-              opacity: 0.5,
-              fontWeight: '400',
-            };
-          } else if (seconds < 30) {
-            tagStyles = {
-              ...tagStyles,
-              color: themeMode === 'dark' ? '#13c2c2' : '#08979c',
-              borderColor: themeMode === 'dark' ? '#00474f' : '#87e8de',
-              background: themeMode === 'dark' ? '#002329' : '#e6fffb',
-            };
-          } else if (seconds < 60) {
-            tagStyles = {
-              ...tagStyles,
-              color: themeMode === 'dark' ? '#1890ff' : '#096dd9',
-              borderColor: themeMode === 'dark' ? '#003a8c' : '#91d5ff',
-              background: themeMode === 'dark' ? '#001d66' : '#e6f7ff',
-            };
-          } else if (seconds < 180) {
-            tagStyles = {
-              ...tagStyles,
-              color: themeMode === 'dark' ? '#fa8c16' : '#d46b08',
-              borderColor: themeMode === 'dark' ? '#873800' : '#ffd591',
-              background: themeMode === 'dark' ? '#612500' : '#fff7e6',
-              fontWeight: '700',
-            };
-          } else {
-            tagStyles = {
-              ...tagStyles,
-              color: themeMode === 'dark' ? '#52c41a' : '#389e0d',
-              borderColor: themeMode === 'dark' ? '#237804' : '#b7eb8f',
-              background: themeMode === 'dark' ? '#135200' : '#f6ffed',
-              fontWeight: '800',
-              borderWidth: '2px',
-              boxShadow: '0 2px 0 rgba(0, 0, 0, 0.015)',
-            };
-          }
-
-          return <Tag style={tagStyles}>{formatted === '-' ? '00:00' : formatted}</Tag>;
-        },
-      },
-      {
-        title: 'Call Status',
-        dataIndex: 'callResult',
-        key: 'callStatus',
-        width: 160,
-        render: (result: string | null) => {
-          if (result === 'ANSWERED') {
-            return (
-              <Tag color="success" style={{ fontWeight: '600', borderRadius: '4px' }}>
-                Có bắt máy
-              </Tag>
-            );
-          }
-          if (result === 'NO_ANSWER') {
-            return (
-              <Tag color="warning" style={{ fontWeight: '600', borderRadius: '4px' }}>
-                Không trả lời [Gọi nhỡ]
-              </Tag>
-            );
-          }
-          if (result === 'WRONG_NUMBER') {
-            return (
-              <Tag color="error" style={{ fontWeight: '600', borderRadius: '4px' }}>
-                Sai số
-              </Tag>
-            );
-          }
-          if (result === 'BUSY') {
-            return (
-              <Tag color="error" style={{ fontWeight: '600', borderRadius: '4px' }}>
-                Máy bận
-              </Tag>
-            );
-          }
-          if (result === 'FAILED') {
-            return (
-              <Tag color="error" style={{ fontWeight: '600', borderRadius: '4px' }}>
-                Lỗi cuộc gọi
-              </Tag>
-            );
-          }
-          return <Tag color="default">{result || 'Chưa rõ'}</Tag>;
-        },
-      },
-      {
-        title: 'Call Notes',
-        dataIndex: 'note',
-        key: 'callNotes',
-        render: (text: string | null) => (
-          <Text
-            style={{ fontSize: '13px', color: 'var(--client-name-color)' }}
-            ellipsis={{ tooltip: text || undefined }}
-          >
-            {text || '-'}
-          </Text>
-        ),
-      },
-      {
-        title: 'Happy Call',
-        key: 'action',
-        width: 120,
-        fixed: 'right' as const,
-        render: (_: SafeAny, record: DailyCallEntry) => {
-          const logId = record.omicallLogId;
-          const status = record.happyCallStatus || 'NONE';
-          const isAnswered = record.callResult === 'ANSWERED';
-
-          if (!isAnswered) {
-            return <span style={{ fontSize: '12px', color: '#8c8c8c' }}>Không bắt máy</span>;
-          }
-
-          if (!logId) {
-            return <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#8c8c8c' }}>Không ghi âm</span>;
-          }
-
-          let btnText = 'Chưa xét';
-          let btnType: 'primary' | 'default' = 'primary';
-          const borderStyle: React.CSSProperties = {
-            fontWeight: '600',
-            borderRadius: '6px',
-            fontSize: '12px',
-          };
-
-          if (status === 'APPROVED') {
-            btnText = 'Đồng ý';
-            btnType = 'default';
-            borderStyle.borderColor = '#52c41a';
-            borderStyle.color = '#52c41a';
-          } else if (status === 'REJECTED') {
-            btnText = 'Từ chối';
-            btnType = 'default';
-            borderStyle.borderColor = '#ff4d4f';
-            borderStyle.color = '#ff4d4f';
-          } else if (status === 'PENDING_APPROVAL') {
-            btnText = 'Chờ duyệt';
-            btnType = 'default';
-            borderStyle.borderColor = '#faad14';
-            borderStyle.color = '#faad14';
-          } else {
-            // NONE -> Chưa xét
-            btnType = 'primary';
-            borderStyle.backgroundColor = token.colorPrimary;
-            borderStyle.borderColor = token.colorPrimary;
-            borderStyle.color = '#000';
-          }
-
-          return (
-            <Button
-              size="small"
-              type={btnType}
-              style={borderStyle}
-              onClick={(e) => {
-                e.stopPropagation();
-                openQADrawer(logId);
-              }}
-              className="hover:scale-105 active:scale-95 transition-all duration-150"
-            >
-              {btnText}
-            </Button>
-          );
-        },
-      },
-    ];
-  }, [themeMode, token, makeCall, openQADrawer]);
-
-  // Hook for column config customizations
   const {
-    loading: configLoading,
-    columns: configuredColumns,
+    selectedDate,
+    scope,
+    loading,
+    data,
+    visibleData,
+    isAdmin,
+    staffList,
+    selectedStaffId,
+    pageSize,
+    currentPage,
+    isReady,
+    configLoading,
+    configuredColumns,
     rawConfig,
     configVisible,
+    selectedCustomerId,
+    customerDrawerOpen,
+    qaDrawerOpen,
+    selectedOmicallLogId,
+    makeCall,
+    openCustomerDetail,
+    closeCustomerDrawer,
+    closeQADrawer,
     openConfig,
     closeConfig,
     saveConfig,
     resetConfig,
-  } = useTableConfig('daily_calls_table', staticColumns);
-
-  const visibleData = useMemo(() => {
-    if (!isMobile) return data;
-    const start = (currentPage - 1) * pageSize;
-    return data.slice(start, start + pageSize);
-  }, [currentPage, data, isMobile, pageSize]);
+    handlePrevDay,
+    handleNextDay,
+    handleToday,
+    handleDateChange,
+    handleScopeChange,
+    handleStaffChange,
+    handlePageChange,
+    refreshCurrentCalls,
+  } = useDailyCallsTable({ initialScope, isDrawerMode });
 
   const renderMobileCall = useCallback(
-    (record: DailyCallEntry) => {
-      const phone = record.customer?.phone;
-      const duration = record.durationSec ? formatDuration(record.durationSec) : '00:00';
-      const statusLabel =
-        record.callResult === 'ANSWERED'
-          ? 'Có bắt máy'
-          : record.callResult === 'NO_ANSWER'
-            ? 'Không trả lời'
-            : record.callResult === 'WRONG_NUMBER'
-              ? 'Sai số'
-              : record.callResult === 'BUSY'
-                ? 'Máy bận'
-                : record.callResult === 'FAILED'
-                  ? 'Lỗi cuộc gọi'
-                  : record.callResult || 'Chưa rõ';
-      const statusColor =
-        record.callResult === 'ANSWERED' ? 'success' : record.callResult === 'NO_ANSWER' ? 'warning' : 'default';
-
-      return (
-        <div className="daily-call-mobile-card">
-          <div className="daily-call-mobile-card-header">
-            <Button
-              type="link"
-              className="daily-call-mobile-customer"
-              onClick={() => record.customer && openCustomerDetail(record.customer.id)}
-            >
-              <Avatar size="small" src={record.customer?.avatar || undefined} icon={<UserOutlined />} />
-              <span>{record.customer?.name || 'Khách hàng chưa xác định'}</span>
-            </Button>
-            <span className="daily-call-mobile-time tabular-nums">{dayjs(record.createdAt).format('HH:mm')}</span>
-          </div>
-          <div className="daily-call-mobile-meta">
-            {phone ? (
-              <Button
-                type="link"
-                size="small"
-                icon={<PhoneOutlined />}
-                onClick={() =>
-                  makeCall(phone, record.customer?.name, record.customer?.id, record.customer?.avatar || undefined)
-                }
-              >
-                {phone}
-              </Button>
-            ) : (
-              <span>Chưa có số điện thoại</span>
-            )}
-            <Tag color={statusColor} className="tabular-nums">
-              {duration}
-            </Tag>
-            <Tag color={statusColor}>{statusLabel}</Tag>
-          </div>
-          {record.note && <p className="daily-call-mobile-note">{record.note}</p>}
-        </div>
-      );
-    },
-    [makeCall]
+    (record: DailyCallEntry) => (
+      <DailyCallsMobileCard record={record} onOpenCustomer={openCustomerDetail} onMakeCall={makeCall} />
+    ),
+    [openCustomerDetail, makeCall]
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-      {/* Table Headers Controls */}
-      <div
-        className="daily-calls-toolbar"
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '12px',
-          padding: '12px 16px',
-          background: themeMode === 'dark' ? '#111827' : '#fafafa',
-          borderRadius: '8px',
-          border: `1px solid ${token.colorBorderSecondary}`,
-        }}
-      >
-        <Space className="daily-calls-toolbar-controls" size="middle" style={{ flexWrap: 'wrap' }}>
-          {/* Date controls */}
-          <Space.Compact>
-            <Button
-              aria-label="Ngày trước"
-              icon={<AppIcon icon={ChevronLeft} size="action" />}
-              onClick={handlePrevDay}
-            />
-            <DatePicker
-              value={selectedDate}
-              onChange={(date) => {
-                if (date) {
-                  setSelectedDate(date);
-                  localStorage.setItem('mos_daily_calls_selectedDate', date.format('YYYY-MM-DD'));
-                  setCurrentPage(1);
-                  localStorage.setItem('mos_daily_calls_currentPage', '1');
-                }
-              }}
-              format="DD/MM/YYYY"
-              allowClear={false}
-              suffixIcon={<AppIcon icon={CalendarDays} size="disclosure" />}
-              style={{ width: '130px', textAlign: 'center' }}
-            />
-            <Button
-              aria-label="Ngày sau"
-              icon={<AppIcon icon={ChevronRight} size="action" />}
-              onClick={handleNextDay}
-            />
-          </Space.Compact>
-
-          <Button type="default" onClick={handleToday} disabled={selectedDate.isSame(dayjs(), 'day')}>
-            Hôm nay
-          </Button>
-
-          {/* Scope selection */}
-          <Radio.Group
-            value={scope}
-            onChange={(e) => {
-              const val = e.target.value;
-              setScope(val);
-              localStorage.setItem('mos_daily_calls_scope', val);
-              setCurrentPage(1);
-              localStorage.setItem('mos_daily_calls_currentPage', '1');
-            }}
-            optionType="button"
-            buttonStyle="solid"
-          >
-            <Radio.Button value="all">Tất cả cuộc gọi</Radio.Button>
-            <Radio.Button value="me">Khách của tôi</Radio.Button>
-            <Radio.Button value="nyc">Chiến dịch NYC</Radio.Button>
-          </Radio.Group>
-          {/* Lọc theo nhân viên cho Admin (chỉ hiển thị khi không ở tab 'Khách của tôi') */}
-          {currentUser?.role === 'admin' && scope !== 'me' && (
-            <Select
-              showSearch
-              filterOption={vietnameseSearchFilter}
-              value={selectedStaffId}
-              onChange={(val) => {
-                setSelectedStaffId(val);
-                localStorage.setItem('mos_daily_calls_selectedStaffId', val);
-                setCurrentPage(1);
-                localStorage.setItem('mos_daily_calls_currentPage', '1');
-              }}
-              style={{ width: '180px' }}
-              options={[
-                { value: 'all', label: 'Tất cả Booker/Staff' },
-                ...staffList.map((s) => ({ value: s.id.toString(), label: `Booker: ${s.displayName}` })),
-              ]}
-              popupMatchSelectWidth={false}
-              placeholder="Lọc theo Booker"
-            />
-          )}
-        </Space>
-
-        <Space className="daily-calls-toolbar-actions">
-          <TableSettingsTrigger onClick={openConfig} />
-          <Tooltip title="Tải lại dữ liệu">
-            <Button
-              type="primary"
-              aria-label="Tải lại dữ liệu"
-              icon={<AppIcon icon={RefreshCw} size="action" />}
-              onClick={() => fetchDailyCalls(selectedDate, scope, selectedStaffId)}
-              loading={loading}
-            />
-          </Tooltip>
-        </Space>
-      </div>
+    <div className="flex w-full flex-col gap-4">
+      <DailyCallsToolbar
+        selectedDate={selectedDate}
+        scope={scope}
+        isAdmin={isAdmin}
+        staffList={staffList}
+        selectedStaffId={selectedStaffId}
+        loading={loading}
+        onPrevDay={handlePrevDay}
+        onNextDay={handleNextDay}
+        onToday={handleToday}
+        onDateChange={handleDateChange}
+        onScopeChange={handleScopeChange}
+        onStaffChange={handleStaffChange}
+        onOpenConfig={openConfig}
+        onRefresh={refreshCurrentCalls}
+      />
 
       {/* Table Section */}
-      <div className="antd-custom-table" style={{ width: '100%' }}>
+      <div className="antd-custom-table w-full">
         <DataTable<DailyCallEntry>
           components={{
             header: {
@@ -766,35 +102,14 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
             pageSize: pageSize,
             total: data.length,
             showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50'],
-            onChange: (page, size) => {
-              setCurrentPage(page);
-              localStorage.setItem('mos_daily_calls_currentPage', page.toString());
-              if (size !== pageSize) {
-                setPageSize(size);
-                localStorage.setItem('mos_daily_calls_pageSize', size.toString());
-                setCurrentPage(1);
-                localStorage.setItem('mos_daily_calls_currentPage', '1');
-              }
-            },
+            pageSizeOptions: DAILY_CALLS_PAGE_SIZE_OPTIONS,
+            onChange: handlePageChange,
             showTotal: (total) => `Tổng cộng ${total} cuộc gọi`,
           }}
           bordered
           scroll={{ x: 'max-content' }}
           className="daily-calls-custom-table"
-          columnPriority={{
-            customerId: 'tertiary',
-            client: 'primary',
-            makeCall: 'primary',
-            lastTimeInBed: 'tertiary',
-            lifetimeValue: 'secondary',
-            assignedStaff: 'secondary',
-            lastCall: 'secondary',
-            duration: 'primary',
-            callStatus: 'primary',
-            callNotes: 'secondary',
-            action: 'secondary',
-          }}
+          columnPriority={DAILY_CALLS_COLUMN_PRIORITY}
           mobileRenderer={renderMobileCall}
           mobileRecordKey={(record) => record.id}
           mobileEmptyDescription="Chưa có cuộc gọi trong ngày được chọn"
@@ -811,20 +126,14 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
       />
 
       {/* Customer details drawer */}
-      <CustomerDetailDrawer
-        open={customerDrawerOpen}
-        customerId={selectedCustomerId}
-        onClose={() => setCustomerDrawerOpen(false)}
-      />
+      <CustomerDetailDrawer open={customerDrawerOpen} customerId={selectedCustomerId} onClose={closeCustomerDrawer} />
 
       {/* QA Player Drawer */}
       <QAPlayerDrawer
         open={qaDrawerOpen}
         omicallLogId={selectedOmicallLogId}
-        onClose={() => setQaDrawerOpen(false)}
-        onVerifySuccess={() => {
-          fetchDailyCalls(selectedDate, scope, selectedStaffId);
-        }}
+        onClose={closeQADrawer}
+        onVerifySuccess={refreshCurrentCalls}
       />
 
       <style jsx global>{`

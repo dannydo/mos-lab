@@ -1,42 +1,25 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React from 'react';
 import {
   canDirectlySettleCounterPayment,
-  combinePaymentBreakdowns,
-  computePreCheckoutPaymentSummary,
-  resolveActiveBookingComboWallets,
-  resolveNormalizedPaymentBreakdown,
   type IosPaymentBreakdown,
   type IosPaymentMethod,
   type IosPromotionOption,
-  type IosScannedProductCatalogMatch,
 } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
-import { BookingItem, isDoneBookingPendingCheckout } from '../../state/mockData';
-import { addScannedProductToCartProducts, removeScannedUnitFromCartProducts } from './upsell/upsellCheckoutHelpers';
+import { BookingItem } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
-import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { CheckoutComboWalletCard, type SelectComboWalletHandler } from './checkout/CheckoutComboWalletCard';
-import { useCheckoutModalControls, useCheckoutProofCapture } from '../../state/useCheckoutProofCapture';
-import {
-  calculateDualComboTierBonus,
-  resolveEffectiveServiceTotal,
-  resolveCheckoutTipBaseAmount,
-  buildPercentageTipSuggestions,
-  calculateActorTipBreakdown,
-} from '../../state/useIosBillingCheckout';
 import type { CvToCvPlusRequirements, SavePromotionTarget } from '../../state/useIosBillingCheckout';
-import { buildCheckoutVietQrInfo } from '../../state/iosBillingMath';
-import { useCheckoutItemizedPromotions } from '../../state/useCheckoutItemizedPromotions';
-import { resolveCheckoutBaseServicePrice, useCheckoutComboSelection } from '../../state/useCheckoutComboSelection';
 import { CheckoutReceiptSection } from './checkout/CheckoutReceiptSection';
 import { CheckoutTipAndDiamondSection } from './checkout/CheckoutTipAndDiamondSection';
 import { CheckoutPaymentMethodSection } from './checkout/CheckoutPaymentMethodSection';
 import { CheckoutBillingOverlays } from './checkout/CheckoutBillingOverlays';
 import { CheckoutStatusBanners } from './checkout/CheckoutStatusBanners';
+import { useCheckoutBillingState } from './checkout/useCheckoutBillingState';
 
 interface Screen12CheckoutBillingProps {
   booking?: BookingItem;
@@ -96,46 +79,33 @@ export function Screen12CheckoutBilling({
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
 
-  const initialRawMethod = booking?.billing?.paymentMethod;
-  const [selectedMethod, setSelectedMethod] = useState<'CASH' | 'POS' | 'VIETQR'>(
-    initialRawMethod === 'CASH' || initialRawMethod === 'POS' ? initialRawMethod : 'VIETQR'
-  );
-  const [isSplitPaymentMode, setIsSplitPaymentMode] = useState<boolean>(
-    initialRawMethod === 'MIXED' ||
-      [
-        booking?.billing?.paymentBreakdown?.vietqrAmount || 0,
-        booking?.billing?.paymentBreakdown?.posAmount || 0,
-        booking?.billing?.paymentBreakdown?.cashAmount || 0,
-      ].filter((v) => v > 0).length > 1
-  );
-  const [customPaymentSplit, setCustomPaymentSplit] = useState<IosPaymentBreakdown>(() => ({
-    vietqrAmount: Math.max(0, Math.round(booking?.billing?.paymentBreakdown?.vietqrAmount || 0)),
-    posAmount: Math.max(0, Math.round(booking?.billing?.paymentBreakdown?.posAmount || 0)),
-    cashAmount: Math.max(0, Math.round(booking?.billing?.paymentBreakdown?.cashAmount || 0)),
-  }));
-  const [tipAmount, setTipAmount] = useState<number>(booking?.billing?.tipAmount ?? 0);
-  const [activeTipPercent, setActiveTipPercent] = useState<number | null>(null);
-  const [isCustomTipOpen, setIsCustomTipOpen] = useState<boolean>(false);
-  const [customTipInput, setCustomTipInput] = useState<string>('');
-  const [diamondUsed, setDiamondUsed] = useState<number>(booking?.billing?.diamondUsed ?? 0);
-  const [showStaffRewards, setShowStaffRewards] = useState<boolean>(false);
-  const [localCartProducts, setLocalCartProducts] = useState<NonNullable<BookingItem['cartProducts']>>(
-    () => booking?.cartProducts || []
-  );
-
-  useEffect(() => {
-    setShowStaffRewards(false);
-  }, [booking?.id]);
-
-  useEffect(() => {
-    setLocalCartProducts(booking?.cartProducts || []);
-  }, [booking?.id, booking?.cartProducts]);
-
-  const handleForceResetDiamonds = useCallback(() => setDiamondUsed(0), []);
-  const [qrSplitMode, setQrSplitMode] = useState<'COMBINED' | 'SEPARATE'>(
-    booking?.billing?.qrSplitTipSeparate ? 'SEPARATE' : 'COMBINED'
-  );
   const {
+    selectedMethod,
+    setSelectedMethod,
+    isSplitPaymentMode,
+    setIsSplitPaymentMode,
+    setCustomPaymentSplit,
+    tipAmount,
+    setTipAmount,
+    activeTipPercent,
+    setActiveTipPercent,
+    isCustomTipOpen,
+    setIsCustomTipOpen,
+    customTipInput,
+    setCustomTipInput,
+    setDiamondUsed,
+    showStaffRewards,
+    setShowStaffRewards,
+    isProductQrScannerOpen,
+    setIsProductQrScannerOpen,
+    isQrModalOpen,
+    setIsQrModalOpen,
+    isZaloModalOpen,
+    zaloPhone,
+    setZaloPhone,
+    isSendingZalo,
+    isZaloSentSuccess,
+    copySuccess,
     transferProofPhoto,
     proofCloudSyncStatus,
     tipTransferProofPhoto,
@@ -144,73 +114,29 @@ export function Screen12CheckoutBilling({
     tipFileInputRef,
     handleCaptureProof,
     handleCaptureTipProof,
-  } = useCheckoutProofCapture(
-    booking?.billing?.transferProofPhoto || booking?.billing?.preCheckoutTransferProofPhoto,
-    booking?.billing?.tipTransferProofPhoto || booking?.billing?.preCheckoutTipTransferProofPhoto
-  );
-
-  const customerName = booking?.customerName || 'Chị Trúc';
-  const customerPhone = (booking?.customerPhone || '0933.779.207').replace(/\*+\s*/g, '').trim();
-  const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';
-  const checkInStaff = booking?.checkInStaffName || actor?.name || 'Thảo Ly';
-  const checkOutStaff = booking?.checkOutStaffName || actor?.name || 'Thảo Ly';
-  const serviceName = resolveDisplayServiceName(booking);
-  const servicePrice = useMemo(() => resolveCheckoutBaseServicePrice(booking, serviceName), [booking, serviceName]);
-  const upgradePrice = booking?.upgradePrice || 0;
-  const resolvedWallets = useMemo(() => resolveActiveBookingComboWallets(booking || {}), [booking]);
-  const comboSelection = useCheckoutComboSelection({
-    booking,
+    qrSplitMode,
+    setQrSplitMode,
+    customerName,
+    customerPhone,
+    assignedStaff,
+    checkInStaff,
+    checkOutStaff,
     serviceName,
     servicePrice,
-    cvPlusRules,
-    onUpdateCombos,
-  });
-  const selectedCombo = comboSelection.selectedCombo;
-  const selectedUnderCombo = comboSelection.selectedUnderCombo;
-  const comboRedemption = comboSelection.comboRedemption;
-  const bookingWithLocalSelections = useMemo(
-    () =>
-      booking
-        ? {
-            ...booking,
-            cartProducts: localCartProducts,
-            selectedCombo,
-            selectedUnderCombo,
-            comboRedemption,
-          }
-        : undefined,
-    [booking, localCartProducts, selectedCombo, selectedUnderCombo, comboRedemption]
-  );
-  const isComboLive = Boolean(
-    resolvedWallets.isRedeemingUpperToday &&
-    (!selectedCombo || !selectedCombo.todayUsageMode || selectedCombo.todayUsageMode === 'USE_OLD_COMBO')
-  );
-  const hasUnderMinkCombo = resolvedWallets.isRedeemingUnderToday;
-  const effectiveServiceCharge = resolveEffectiveServiceTotal({
-    servicePrice,
     upgradePrice,
-    serviceName: booking?.serviceName,
-    isComboLive,
-    hasUnderMink: booking?.attributes?.hasUnderMink,
-    underMinkServiceType: booking?.attributes?.underMinkServiceType,
-    hasUnderMinkCombo,
-    comboRedemption,
+    resolvedWallets,
+    comboSelection,
     selectedCombo,
     selectedUnderCombo,
-  });
-  const actorTipBreakdown = useMemo(
-    () => calculateActorTipBreakdown(booking, actor, tipAmount),
-    [booking, actor, tipAmount]
-  );
-  const upperComboPrice = selectedCombo ? selectedCombo.price : 0;
-  const underComboPrice = selectedUnderCombo ? selectedUnderCombo.price : 0;
-  const comboTotal = upperComboPrice + underComboPrice;
-  const vatRate = booking?.billing?.vatRate ?? 0.08;
-
-  const {
+    comboRedemption,
+    bookingWithLocalSelections,
+    isComboLive,
+    effectiveServiceCharge,
+    actorTipBreakdown,
+    comboTotal,
+    vatRate,
     servicePromo,
     rememberedServicePromo,
-    isSessionWaivedIntoNewCombo,
     cartProducts,
     promotions,
     isPromotionsLoading,
@@ -220,260 +146,54 @@ export function Screen12CheckoutBilling({
     applyPromoChange,
     handleOpenItemPromotionPicker,
     handleClearItemPromotion,
-    fallbackOrderPromo,
-    hasAnyPromoObj,
     promoBreakdown,
     appliedPromotionDisplayName,
-  } = useCheckoutItemizedPromotions({
-    booking: bookingWithLocalSelections,
-    actorTier: actor?.tier,
-    effectiveServiceCharge,
-    upgradePrice,
-    upperComboPrice,
-    underComboPrice,
-    vatRate,
-    onSavePromotion,
-    onForceResetDiamonds: handleForceResetDiamonds,
-  });
-
-  const handleScannedProduct = useCallback(
-    (scanned: IosScannedProductCatalogMatch) => {
-      setLocalCartProducts((prev) => {
-        const nextProducts = addScannedProductToCartProducts(prev, scanned);
-        onUpdateCartProducts?.(nextProducts);
-        return nextProducts;
-      });
-    },
-    [onUpdateCartProducts]
-  );
-
-  const handleRemoveScannedUnit = useCallback(
-    (productIndex: number, inventoryWarehouseItemId?: number) => {
-      setLocalCartProducts((prev) => {
-        const nextProducts = removeScannedUnitFromCartProducts(prev, productIndex, inventoryWarehouseItemId);
-        onUpdateCartProducts?.(nextProducts);
-        return nextProducts;
-      });
-    },
-    [onUpdateCartProducts]
-  );
-
-  const productTotal = cartProducts.reduce((s, p) => s + p.price * p.quantity, 0);
-  const subtotal = effectiveServiceCharge + comboTotal + productTotal;
-  const promotionDiscountAmount = hasAnyPromoObj
-    ? promoBreakdown.totalDiscount
-    : !isSessionWaivedIntoNewCombo && booking?.promotionId && booking?.billing?.promotionDiscountAmount
-      ? Math.max(0, Math.round(Number(booking.billing.promotionDiscountAmount) || 0))
-      : 0;
-  const subtotalAfterDiscount = Math.max(0, subtotal - promotionDiscountAmount);
-  const vatAmount = hasAnyPromoObj ? promoBreakdown.vatAmount : Math.round(subtotalAfterDiscount * vatRate);
-  const totalWithVat = subtotalAfterDiscount + vatAmount;
-
-  // CVL: NẾU MUA 2 COMBO CÙNG LÚC, CỘNG GỘP TỔNG TIỀN TRƯỚC RỒI TÍNH THƯỞNG THEO CÔNG THỨC CAREER_PROGRESSION_RULES (<2M = 50K, MỖI 1M KẾ TIP = 50K)
-  // Trong kỳ Training (isTrainingCvlOrder): nếu CVL tự mở xem đơn (dù CC bấm checkout giùm), CVL vẫn thấy 100% thưởng của mình
-  const isCheckoutStaffCc =
-    actor?.tier === 'CC' || (!booking?.isTrainingCvlOrder && booking?.checkOutStaffTier === 'CC');
-  const comboTotalRevenue = upperComboPrice + underComboPrice;
-  const dualComboBonus = calculateDualComboTierBonus(upperComboPrice, underComboPrice, cvPlusRules);
-  const totalComboBonus = isCheckoutStaffCc ? 0 : dualComboBonus.totalBonus;
-  const hasBothCombos = Boolean(selectedCombo && selectedUnderCombo && comboTotalRevenue > 0);
-
-  // TỶ GIÁ VÍ KIM CƯƠNG: 1 💎 = 1.000 VNĐ (Khớp 100% legacy database & iOS App cũ)
-  const DIAMOND_RATE = 1000;
-  const customerDiamondBalance = booking?.diamondBalance ?? 0;
-  const isSettled =
-    booking?.billing?.settlementStatus === 'SETTLED_COMPLETED' ||
-    booking?.orderState === 'Completed' ||
-    Boolean(booking?.status === 'DONE' && booking?.billing?.completedAt && !isDoneBookingPendingCheckout(booking));
-  const isCreditLockedByPromotion = promoBreakdown.isFullCreditLocked;
-  const hasPartialCreditRestriction = Boolean(
-    promoBreakdown.hasAnyCreditRestrictedItem && !promoBreakdown.isFullCreditLocked
-  );
-  const totalBeforeDiamond = totalWithVat + tipAmount;
-  const maxDiamondCanUse = isCreditLockedByPromotion
-    ? 0
-    : hasPartialCreditRestriction
-      ? Math.min(customerDiamondBalance, Math.floor(promoBreakdown.creditEligiblePayableWithVat / DIAMOND_RATE))
-      : Math.min(customerDiamondBalance, Math.floor(totalBeforeDiamond / DIAMOND_RATE));
-  const effectiveDiamondUsed = isCreditLockedByPromotion ? 0 : Math.min(diamondUsed, maxDiamondCanUse);
-  const diamondDiscountAmount = effectiveDiamondUsed * DIAMOND_RATE;
-  const finalGrandTotal = Math.max(0, totalBeforeDiamond - diamondDiscountAmount);
-
-  // GỢI Ý TIỀN TIP THEO % GIÁ TRỊ CA PHỤC VỤ (5% · 10% · 15% · 20%, LÀM TRÒN 10.000đ)
-  const { tipBaseAmount } = useMemo(
-    () =>
-      resolveCheckoutTipBaseAmount({
-        servicePrice,
-        effectiveServiceCharge,
-        serviceName: booking?.serviceName || serviceName,
-        hasUnderMink: booking?.attributes?.hasUnderMink,
-        underMinkServiceType: booking?.attributes?.underMinkServiceType,
-        hasUnderMinkCombo,
-        cartProducts,
-      }),
-    [
-      servicePrice,
-      effectiveServiceCharge,
-      booking?.serviceName,
-      serviceName,
-      booking?.attributes?.hasUnderMink,
-      booking?.attributes?.underMinkServiceType,
-      hasUnderMinkCombo,
-      cartProducts,
-    ]
-  );
-
-  const percentTipSuggestions = useMemo(() => buildPercentageTipSuggestions(tipBaseAmount), [tipBaseAmount]);
-
-  useEffect(() => {
-    if (activeTipPercent === null) return;
-    const matched = percentTipSuggestions.find((item) => item.percent === activeTipPercent);
-    if (matched && matched.tipAmount !== tipAmount) {
-      setTipAmount(matched.tipAmount);
-    }
-  }, [activeTipPercent, percentTipSuggestions, tipAmount]);
-
-  const preCheckoutSummary = useMemo(
-    () => computePreCheckoutPaymentSummary({ grandTotal: finalGrandTotal, billing: booking?.billing }),
-    [finalGrandTotal, booking?.billing]
-  );
-  const amountDueAtCheckout = preCheckoutSummary.hasPreCheckoutPayment
-    ? preCheckoutSummary.remainingDue
-    : finalGrandTotal;
-  const remainingUnpaidTip = Math.max(0, tipAmount - preCheckoutSummary.preCheckoutTipAmount);
-
-  // THÔNG TIN VIETQR CHUẨN GOOGLE SHEET WINGS (VCB 1024731897)
-  const effectivePaymentSplit: IosPaymentBreakdown = useMemo(
-    () =>
-      isSplitPaymentMode
-        ? customPaymentSplit
-        : {
-            vietqrAmount: selectedMethod === 'VIETQR' ? amountDueAtCheckout : 0,
-            posAmount: selectedMethod === 'POS' ? amountDueAtCheckout : 0,
-            cashAmount: selectedMethod === 'CASH' ? amountDueAtCheckout : 0,
-          },
-    [isSplitPaymentMode, customPaymentSplit, selectedMethod, amountDueAtCheckout]
-  );
-  const allocatedPaymentTotal =
-    effectivePaymentSplit.vietqrAmount + effectivePaymentSplit.posAmount + effectivePaymentSplit.cashAmount;
-  const isPaymentAllocationValid = amountDueAtCheckout === 0 || allocatedPaymentTotal === amountDueAtCheckout;
-  const normalizedRemainingPayment = useMemo(
-    () =>
-      resolveNormalizedPaymentBreakdown(
-        amountDueAtCheckout,
-        isSplitPaymentMode ? 'MIXED' : selectedMethod,
-        effectivePaymentSplit
-      ),
-    [amountDueAtCheckout, isSplitPaymentMode, selectedMethod, effectivePaymentSplit]
-  );
-  const normalizedEffectivePayment = useMemo(
-    () =>
-      preCheckoutSummary.hasPreCheckoutPayment
-        ? combinePaymentBreakdowns(
-            finalGrandTotal,
-            preCheckoutSummary.preCheckoutBreakdown,
-            normalizedRemainingPayment.breakdown
-          )
-        : normalizedRemainingPayment,
-    [finalGrandTotal, preCheckoutSummary, normalizedRemainingPayment]
-  );
-  const vietQrTransferAmount = amountDueAtCheckout === 0 ? 0 : effectivePaymentSplit.vietqrAmount;
-  const qrInfo = buildCheckoutVietQrInfo({
-    booking,
-    tipAmount: remainingUnpaidTip,
+    handleScannedProduct,
+    handleRemoveScannedUnit,
+    productTotal,
+    subtotal,
+    promotionDiscountAmount,
+    vatAmount,
+    isCheckoutStaffCc,
+    comboTotalRevenue,
+    dualComboBonus,
+    totalComboBonus,
+    hasBothCombos,
+    customerDiamondBalance,
+    isSettled,
+    isCreditLockedByPromotion,
+    hasPartialCreditRestriction,
+    maxDiamondCanUse,
+    effectiveDiamondUsed,
+    diamondDiscountAmount,
+    diamondRate,
+    finalGrandTotal,
+    preCheckoutSummary,
+    amountDueAtCheckout,
+    tipBaseAmount,
+    percentTipSuggestions,
+    effectivePaymentSplit,
+    normalizedRemainingPayment,
     vietQrTransferAmount,
-    tipTransferAmount: remainingUnpaidTip,
-  });
-  const { branchCode, qrTransferContent, vietQrUrl } = qrInfo;
-
-  const handleToggleSplitMode = (nextSplit: boolean) => {
-    if (nextSplit) {
-      setCustomPaymentSplit({
-        vietqrAmount: selectedMethod === 'VIETQR' ? amountDueAtCheckout : 0,
-        posAmount: selectedMethod === 'POS' ? amountDueAtCheckout : 0,
-        cashAmount: selectedMethod === 'CASH' ? amountDueAtCheckout : 0,
-      });
-      setIsSplitPaymentMode(true);
-      return;
-    }
-    const dominant: 'CASH' | 'POS' | 'VIETQR' =
-      customPaymentSplit.vietqrAmount > 0
-        ? 'VIETQR'
-        : customPaymentSplit.posAmount > 0
-          ? 'POS'
-          : customPaymentSplit.cashAmount > 0
-            ? 'CASH'
-            : selectedMethod;
-    setSelectedMethod(dominant);
-    setIsSplitPaymentMode(false);
-  };
-
-  const dispatchChoosePayment = (zaloConsentData: {
-    agreed: boolean;
-    phone: string;
-    sentAt?: string;
-    voucherCode?: string;
-  }) => {
-    onChoosePayment(
-      normalizedEffectivePayment.paymentMethod,
-      tipAmount,
-      effectiveDiamondUsed,
-      transferProofPhoto || undefined,
-      zaloConsentData,
-      {
-        promotionId:
-          promoBreakdown.unifiedOrderPromotionId ??
-          (isSessionWaivedIntoNewCombo ? null : fallbackOrderPromo?.promotionId) ??
-          null,
-        appliedPromotion: isSessionWaivedIntoNewCombo ? null : fallbackOrderPromo,
-        servicePromotionId: servicePromo?.promotionId ?? null,
-        servicePromotion: servicePromo,
-        comboPromotionId: null,
-        comboPromotion: null,
-        underComboPromotionId: null,
-        underComboPromotion: null,
-        cartProducts,
-        paymentBreakdown: normalizedEffectivePayment.breakdown,
-        tipTransferProofPhoto: tipTransferProofPhoto || undefined,
-        qrSplitTipSeparate: qrSplitMode === 'SEPARATE',
-      }
-    );
-  };
-
-  const {
-    isProductQrScannerOpen,
-    setIsProductQrScannerOpen,
-    isQrModalOpen,
-    setIsQrModalOpen,
-    isZaloModalOpen,
-    setIsZaloModalOpen,
-    zaloPhone,
-    setZaloPhone,
-    isSendingZalo,
-    isZaloSentSuccess,
-    copySuccess,
+    qrInfo,
+    branchCode,
+    qrTransferContent,
+    vietQrUrl,
     copyToClipboard,
+    handleToggleSplitMode,
+    handleProceed,
     handleConfirmQrPaid,
     handleConfirmZaloSend,
     handleSkipZalo,
-  } = useCheckoutModalControls(
-    booking?.billing?.zaloConsent?.phone || booking?.customerPhone || '0938.204.567',
-    dispatchChoosePayment
-  );
-
-  const handleProceed = () => {
-    if (
-      amountDueAtCheckout > 0 &&
-      (!isPaymentAllocationValid || (effectivePaymentSplit.posAmount > 0 && !transferProofPhoto))
-    ) {
-      return;
-    }
-    if (vietQrTransferAmount > 0) {
-      setIsQrModalOpen(true);
-      return;
-    }
-    setIsZaloModalOpen(true);
-  };
+  } = useCheckoutBillingState({
+    booking,
+    actor,
+    cvPlusRules,
+    onChoosePayment,
+    onSavePromotion,
+    onUpdateCartProducts,
+    onUpdateCombos,
+  });
 
   return (
     <div className={`flex-1 flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-y-auto select-none`}>
@@ -590,7 +310,7 @@ export function Screen12CheckoutBilling({
           maxDiamondCanUse={maxDiamondCanUse}
           effectiveDiamondUsed={effectiveDiamondUsed}
           diamondDiscountAmount={diamondDiscountAmount}
-          diamondRate={DIAMOND_RATE}
+          diamondRate={diamondRate}
           onSetDiamondUsed={setDiamondUsed}
           isCreditLockedByPromotion={isCreditLockedByPromotion}
           hasPartialCreditRestriction={hasPartialCreditRestriction}

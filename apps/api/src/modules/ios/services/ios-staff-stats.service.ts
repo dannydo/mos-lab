@@ -233,10 +233,7 @@ export async function fetchLiveStaffMonthlyStats(
       dayStr
     );
     if (menteePairs.length > 0) {
-      await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(
-        createMysqlPoolTipExecutor(pool),
-        menteePairs
-      );
+      await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(createMysqlPoolTipExecutor(pool), menteePairs);
     }
     const menteeWindowSql = buildIsMenteeTrainingWindowSql(menteePairs, 'o.booking_date_start');
     const excludeOtherMenteeOrderSql = buildExcludeOtherMenteeTrainingOrderSql(

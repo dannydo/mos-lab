@@ -1,83 +1,30 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import { apiClient } from '../../lib/api-client';
-import { message, notification } from 'antd';
-import { CallState, CurrentCall, OmiCallContextType } from './types';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
+import { message } from 'antd';
 import {
-  useAudioManager,
-  playRingtone,
-  stopRingtone,
-  playRingback,
-  stopRingback,
-  applyOmiCallAudioOutputToActiveMedia,
-} from './useAudioManager';
+  defaultOmiCallFallback,
+  getAdminOmiCallEnabledKey,
+  getCurrentStoredUser,
+  getFloatingLauncherVisibilityKey,
+  readAdminOmiCallEnabled,
+  readFloatingLauncherVisibility,
+} from './omicallStorage';
+import { CallState, CurrentCall, OmiCallContextType } from './types';
+import { useAudioManager } from './useAudioManager';
+import { useOmiCallActions } from './useOmiCallActions';
+import { useOmiCallSipRegistration } from './useOmiCallSipRegistration';
+import { useOmiCallWrapupPolling } from './useOmiCallWrapupPolling';
 import {
+  getMicrophoneConstraints,
   installOmiCallMediaConstraintPatch,
   installOmiCallPeerConnectionTracker,
-  getMicrophoneConstraints,
-  prepareMicrophoneForOmiCall,
-  installPreparedMicrophonePatch,
-  refreshOmiCallMediaDevices,
-  unlockAudioPlayback,
-  ensureOmiCallSwitchboardOnline,
-  getOmiCallSdkUid,
-  scheduleOmiCallMediaBridgeSync,
   recordOmiCallAudioDiagnostics,
   reinforceOmiCallMicrophoneSender,
-  auditActiveCallAudio,
-  triggerIncomingNotification,
-  clearIncomingNotification,
 } from './useSipConnection';
-import { cleanupOmiCallMediaBridge } from './mediaBridge';
 
 const OmiCallContext = createContext<OmiCallContextType | undefined>(undefined);
-
-const FLOATING_LAUNCHER_VISIBILITY_KEY = 'mos_omicall_floating_launcher_visible';
-
-function getCurrentStoredUser() {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('mos_user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function getFloatingLauncherVisibilityKey() {
-  if (typeof window === 'undefined') return FLOATING_LAUNCHER_VISIBILITY_KEY;
-
-  try {
-    const currentUser = getCurrentStoredUser();
-    const identity = currentUser?.id ?? currentUser?.username;
-    return identity ? `${FLOATING_LAUNCHER_VISIBILITY_KEY}:${identity}` : FLOATING_LAUNCHER_VISIBILITY_KEY;
-  } catch {
-    return FLOATING_LAUNCHER_VISIBILITY_KEY;
-  }
-}
-
-function readFloatingLauncherVisibility() {
-  if (typeof window === 'undefined') return true;
-  return localStorage.getItem(getFloatingLauncherVisibilityKey()) !== 'false';
-}
-
-function getAdminOmiCallEnabledKey(): string {
-  if (typeof window === 'undefined') return 'mos_admin_omicall_enabled';
-  try {
-    const currentUser = getCurrentStoredUser();
-    const identity = currentUser?.id ?? currentUser?.username;
-    return identity ? `mos_admin_omicall_enabled:${identity}` : 'mos_admin_omicall_enabled';
-  } catch {
-    return 'mos_admin_omicall_enabled';
-  }
-}
-
-function readAdminOmiCallEnabled(): boolean {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem(getAdminOmiCallEnabledKey()) === 'true';
-}
 
 export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<SafeAny>(() => getCurrentStoredUser());
@@ -116,7 +63,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   const [sdkError, setSdkErrors] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [sipConfig, setSipConfig] = useState<SafeAny>(null);
-  const [token, setToken] = useState<string | null>(() => {
+  const [token] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('mos_token');
     }
@@ -374,7 +321,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       setIsRegistered(true);
     };
     document.body.appendChild(script);
-  }, [shouldInit]);
+  }, [initOmiCallSdk, shouldInit]);
 
   // 3. Audio Recording Timer
   useEffect(() => {
@@ -391,844 +338,60 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     };
   }, [callState]);
 
-  // Polling AI analysis log during wrapup
-  useEffect(() => {
-    if (callState !== 'wrapup' || !currentCall) {
-      setResolvedLog(null);
-      return;
-    }
+  useOmiCallWrapupPolling({
+    callState,
+    currentCall,
+    isSimulated,
+    setResolvedLog,
+    setCurrentCall,
+  });
 
-    if (isSimulated) {
-      // Step 1: Initial state (processing)
-      setResolvedLog({
-        id: 0,
-        customerName: currentCall.name,
-        legacyUserId: currentCall.legacyUserId || 0,
-        callUuid: currentCall.callUuid || 'simulated-' + Date.now(),
-        analysisStatus: 'PROCESSING',
-      });
+  useOmiCallSipRegistration({
+    token,
+    shouldInit,
+    isSdkReadyRef,
+    pendingOutboundCallRef,
+    callStateRef,
+    currentCallRef,
+    initOmiCallSdk,
+    refreshAudioDevices,
+    setSipConfig,
+    setIsRegistered,
+    setIsSimulated,
+    setLastRegisterEvent,
+    setCallState,
+    setCurrentCall,
+    setCallLogCustomerInfo,
+    setIsCallLogModalOpen,
+  });
 
-      // Step 2: Transition to DONE after 2.5 seconds with mock AI insights
-      const simTimer = setTimeout(() => {
-        setResolvedLog({
-          id: 0,
-          customerName: currentCall.name,
-          legacyUserId: currentCall.legacyUserId || 0,
-          callUuid: currentCall.callUuid || 'simulated-' + Date.now(),
-          analysisStatus: 'DONE',
-          customerSatisfactionScore: 5,
-          customerSentiment: 'HAPPY',
-          satisfactionAnalysis:
-            'Khách hàng rất hài lòng với thái độ tư vấn nhẹ nhàng và thông tin rõ ràng của nhân viên.',
-          laughCount: 3,
-          laughCountAgent: 2,
-          laughCountCustomer: 1,
-          laughTimestamps: [
-            { start: 4, end: 6, speaker: 'agent', confidence: 0.95 },
-            { start: 12, end: 15, speaker: 'customer', confidence: 0.98 },
-            { start: 22, end: 24, speaker: 'agent', confidence: 0.93 },
-          ],
-          recordingUrl: 'https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.wav',
-        });
-      }, 2500);
-
-      return () => clearTimeout(simTimer);
-    }
-
-    let intervalId: SafeAny = null;
-    let attempts = 0;
-
-    const pollLog = async () => {
-      attempts++;
-      try {
-        const data = (await apiClient.omicall.getLatestLog({
-          phone: currentCall.phone,
-          direction: currentCall.direction,
-        })) as SafeAny;
-
-        if (data && data.id) {
-          setResolvedLog(data);
-
-          // Update current call with resolved customer name and ID
-          setCurrentCall((prev: SafeAny) =>
-            prev
-              ? {
-                  ...prev,
-                  legacyUserId: data.legacyUserId || prev.legacyUserId,
-                  name: data.customerName || prev.name,
-                  callUuid: data.callUuid || prev.callUuid,
-                }
-              : null
-          );
-
-          // Only stop polling when analysis is finalized or skipped
-          if (['DONE', 'FAILED', 'SKIPPED'].includes(data.analysisStatus)) {
-            if (intervalId) clearInterval(intervalId);
-            return;
-          }
-        }
-      } catch (err) {
-        // Log not ready yet
-      }
-
-      if (attempts >= 30) {
-        console.warn('[OmiCallWidget] AI analysis polling timed out');
-        if (intervalId) clearInterval(intervalId);
-      }
-    };
-
-    intervalId = setInterval(pollLog, 3000);
-    pollLog();
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [callState, currentCall, isSimulated, setCurrentCall]);
-
-  // 4. SDK Initialise and SIP Device registration
-  useEffect(() => {
-    if (typeof window === 'undefined' || !token || !shouldInit) return;
-
-    // Disable WebRTC connection in headless/test environments to prevent SIP single-registration lock conflicts
-    if (typeof window !== 'undefined' && localStorage.getItem('mos_testing_bot') === 'true') {
-      console.log('[OmiCallContext] Testing bot environment detected. Skipping real SIP connection.');
-      setLastRegisterEvent({ status: 'skipped', message: 'Môi trường test tự động' });
-      setIsSimulated(true);
-      setIsRegistered(true);
-      return;
-    }
-
-    let active = true;
-    let checkInterval: SafeAny = null;
-    let registrationTimeout: SafeAny = null;
-    let initStarted = false;
-    let isRegisteredLocal = false;
-
-    let retryCount = 0;
-    const MAX_RETRIES = 3;
-    let retryTimer: SafeAny = null;
-    let localSipConfig: SafeAny = null;
-
-    const triggerAutoRetry = () => {
-      if (!active || isRegisteredLocal) return;
-      if (retryCount >= MAX_RETRIES) {
-        console.warn('[OmiCallContext] Max registration retries reached. Falling back to Simulation Mode.');
-        setLastRegisterEvent({
-          status: 'failed',
-          message: 'Không thể đăng ký máy lẻ sau 3 lần thử (lỗi mạng hoặc mật khẩu sai)',
-        });
-        setIsSimulated(true);
-        setIsRegistered(true);
-        if (registrationTimeout) {
-          clearTimeout(registrationTimeout);
-          registrationTimeout = null;
-        }
-        return;
-      }
-
-      if (retryTimer) clearTimeout(retryTimer);
-      retryTimer = setTimeout(async () => {
-        if (!active || isRegisteredLocal) return;
-        retryCount++;
-        console.log(`[OmiCallContext] Retrying SIP registration (${retryCount}/${MAX_RETRIES})...`);
-        try {
-          const config = localSipConfig || (await apiClient.omicall.getSipConfig());
-          if (config) {
-            localSipConfig = config;
-            await window.OMICallSDK.register({
-              sipRealm: config.sipRealm,
-              sipUser: config.sipUser,
-              sipPassword: config.sipPassword,
-              wssUri: 'wss://sig.omicrm.com',
-            });
-          }
-        } catch (e) {
-          console.warn('[OmiCallContext] Auto-retry registration failed:', e);
-        }
-      }, 4000);
-    };
-
-    // Define listener callbacks first to capture all SDK events immediately
-    const handleRegister = (data: SafeAny) => {
-      console.log('[OmiCallContext] register event:', data);
-      setLastRegisterEvent(data);
-      if (data?.status === 'connected') {
-        isRegisteredLocal = true;
-        retryCount = 0;
-        if (retryTimer) {
-          clearTimeout(retryTimer);
-          retryTimer = null;
-        }
-        if (registrationTimeout) {
-          clearTimeout(registrationTimeout);
-          registrationTimeout = null;
-        }
-        setIsRegistered(true);
-        setIsSimulated(false);
-
-        // Drain queued outbound call if waiting for SDK connection
-        if (pendingOutboundCallRef.current) {
-          console.log('[OmiCallContext] SDK connected! Executing queued outbound call...');
-          const queuedCall = pendingOutboundCallRef.current;
-          pendingOutboundCallRef.current = null;
-          void queuedCall();
-        }
-      }
-      if (data?.status === 'disconnect') {
-        isRegisteredLocal = false;
-        setIsRegistered(false);
-        if (pendingOutboundCallRef.current) {
-          message.destroy('omicall_queue_msg');
-          pendingOutboundCallRef.current = null;
-          message.error('Mất kết nối tới tổng đài OmiCall.');
-        }
-        triggerAutoRetry();
-      }
-    };
-
-    const handleInvite = (data: SafeAny) => {
-      console.log('[OmiCallContext] invite event:', data);
-      if (callStateRef.current !== 'idle') return;
-      scheduleOmiCallMediaBridgeSync(data);
-
-      const phone = data.phoneNumber || data.callerNumber || 'Unknown';
-      setCallState('incoming');
-      setCurrentCall({
-        phone,
-        name: 'Khách hàng gọi đến',
-        direction: 'inbound',
-        callUuid: data.callUuid || data.call_uuid || data.uuid || null,
-        sdkUid: getOmiCallSdkUid(data),
-      });
-      playRingtone();
-      triggerIncomingNotification(phone);
-    };
-
-    const handleRinging = (data: SafeAny) => {
-      console.log('[OmiCallContext] ringing event:', data);
-      scheduleOmiCallMediaBridgeSync(data);
-      void recordOmiCallAudioDiagnostics(data, 'ringing');
-      setCallState('ringing');
-      if (currentCallRef.current?.direction === 'outbound') {
-        playRingback();
-      }
-      if (data.callUuid || data.call_uuid || data.uuid || getOmiCallSdkUid(data)) {
-        setCurrentCall((prev) =>
-          prev
-            ? {
-                ...prev,
-                callUuid: data.callUuid || data.call_uuid || data.uuid || prev.callUuid,
-                sdkUid: getOmiCallSdkUid(data) || prev.sdkUid,
-              }
-            : null
-        );
-      }
-    };
-
-    const handleAccepted = (data: SafeAny) => {
-      console.log('[OmiCallContext] accepted event:', data);
-      scheduleOmiCallMediaBridgeSync(data);
-      void reinforceOmiCallMicrophoneSender(data, 'accepted');
-      void recordOmiCallAudioDiagnostics(data, 'accepted');
-      setCallState('connected');
-      stopRingtone();
-      stopRingback();
-      clearIncomingNotification();
-      if (data.callUuid || data.call_uuid || data.uuid || getOmiCallSdkUid(data)) {
-        setCurrentCall((prev) =>
-          prev
-            ? {
-                ...prev,
-                callUuid: data.callUuid || data.call_uuid || data.uuid || prev.callUuid,
-                sdkUid: getOmiCallSdkUid(data) || prev.sdkUid,
-              }
-            : null
-        );
-      }
-      setTimeout(auditActiveCallAudio, 1000);
-      [3000, 8000].forEach((delay) => {
-        setTimeout(
-          () => void reinforceOmiCallMicrophoneSender((window as SafeAny).activeCall || data, `accepted+${delay}ms`),
-          delay
-        );
-        setTimeout(
-          () => void recordOmiCallAudioDiagnostics((window as SafeAny).activeCall || data, `accepted+${delay}ms`),
-          delay
-        );
-      });
-    };
-
-    const handleEnded = (data: SafeAny) => {
-      console.log('[OmiCallContext] ended event:', data);
-      setCallState('wrapup');
-      stopRingtone();
-      stopRingback();
-      clearIncomingNotification();
-      if (data.callUuid || data.call_uuid) {
-        setCurrentCall((prev) => (prev ? { ...prev, callUuid: data.callUuid || data.call_uuid } : null));
-      }
-
-      // Auto-open global CallLogModal
-      const activeCallDetail = currentCallRef.current;
-      if (activeCallDetail) {
-        setCallLogCustomerInfo({
-          legacyUserId: activeCallDetail.legacyUserId || 0,
-          customerName: activeCallDetail.name || 'Khách hàng',
-          planId: activeCallDetail.planId || null,
-        });
-        setIsCallLogModalOpen(true);
-      }
-
-      if (typeof cleanupOmiCallMediaBridge === 'function') {
-        cleanupOmiCallMediaBridge(data);
-      }
-    };
-
-    // Register event listeners immediately if SDK is available
-    if (window.OMICallSDK) {
-      try {
-        window.OMICallSDK.on('register', handleRegister);
-        window.OMICallSDK.on('invite', handleInvite);
-        window.OMICallSDK.on('ringing', handleRinging);
-        window.OMICallSDK.on('accepted', handleAccepted);
-        window.OMICallSDK.on('ended', handleEnded);
-      } catch (e) {
-        console.error('[OmiCallContext] Failed to attach listeners early:', e);
-      }
-    }
-
-    const initAndRegister = async () => {
-      try {
-        console.log('[OmiCallContext] Starting initAndRegister with token...');
-        setIsRegistered(false);
-        setIsSimulated(false);
-
-        const config = (await apiClient.omicall.getSipConfig()) as SafeAny;
-        setSipConfig(config);
-        localSipConfig = config;
-        setIsSimulated(false);
-
-        if (!active) return;
-
-        // Initialize SDK singleton only once
-        if (!(window as SafeAny).__omicall_initialized || !isSdkReadyRef.current) {
-          initOmiCallSdk();
-
-          // Re-attach listeners now that SDK init is finished to ensure registration events bind properly
-          try {
-            window.OMICallSDK.on('register', handleRegister);
-            window.OMICallSDK.on('invite', handleInvite);
-            window.OMICallSDK.on('ringing', handleRinging);
-            window.OMICallSDK.on('accepted', handleAccepted);
-            window.OMICallSDK.on('ended', handleEnded);
-          } catch (e) {}
-        } else {
-          console.log('[OmiCallContext] OmiCall SDK singleton already initialized. Skipping init.');
-        }
-
-        // Request Microphone permission before registering device
-        try {
-          if (!window.isSecureContext) {
-            message.error(
-              '⚠️ CẢNH BÁO: Trình duyệt đang chạy ở chế độ không bảo mật (Insecure Context). Hãy truy cập qua http://localhost:4000 hoặc HTTPS để sử dụng Microphone và cuộc gọi!',
-              15
-            );
-          }
-
-          let micState = 'prompt';
-          try {
-            const permissionStatus = await navigator.permissions.query({ name: 'microphone' as SafeAny });
-            micState = permissionStatus.state;
-          } catch (pe) {}
-
-          if (micState === 'denied') {
-            message.error(
-              '⚠️ QUAN TRỌNG: Quyền truy cập Microphone đang bị chặn trên trình duyệt! Hãy nhấp vào biểu tượng chiếc khóa 🔒 ở bên trái thanh địa chỉ và chọn "Cho phép" (Allow) Microphone.',
-              15
-            );
-          } else {
-            // Only call getUserMedia if permission is not already granted to avoid locking the audio hardware during SDK init
-            if (micState !== 'granted') {
-              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-              stream.getTracks().forEach((t) => t.stop());
-            }
-            await refreshAudioDevices();
-          }
-        } catch (e) {
-          console.warn('[OmiCallContext] Microphone permission request failed or denied:', e);
-          message.error(
-            '⚠️ Không thể kết nối cuộc gọi: Trình duyệt chưa được cấp quyền sử dụng Microphone. Vui lòng cấp quyền Microphone trên thanh địa chỉ!',
-            15
-          );
-        }
-
-        // Set connection timeout first to avoid race conditions: if not connected in 30s, auto fallback to Simulation mode
-        registrationTimeout = setTimeout(() => {
-          if (active && !isRegisteredLocal) {
-            console.warn('[OmiCallContext] SIP registration timed out after 30s. Falling back to Simulation Mode.');
-            setLastRegisterEvent({ status: 'timeout', message: 'Hết thời gian chờ phản hồi (30s) từ tổng đài' });
-            setIsSimulated(true);
-            setIsRegistered(true);
-            message.warning('Kết nối tổng đài OmiCall bị treo. Đã chuyển sang chế độ mô phỏng.');
-          }
-        }, 30000);
-
-        // Wait a brief moment for the SDK to check its cache and update its status
-        await new Promise((resolve) => setTimeout(resolve, 600));
-
-        const currentState = window.OMICallSDK.getSbState();
-        console.log('[OmiCallContext] OmiCall SDK Switchboard state after init:', currentState);
-
-        if (currentState === 'online') {
-          console.log('[OmiCallContext] Already online via auto-reconnect! Skipping manual register.');
-          isRegisteredLocal = true;
-          setIsRegistered(true);
-          setIsSimulated(false);
-          if (registrationTimeout) {
-            clearTimeout(registrationTimeout);
-            registrationTimeout = null;
-          }
-          return;
-        }
-
-        if (currentState === 'connecting') {
-          console.log('[OmiCallContext] Already connecting via auto-reconnect! Waiting for event callbacks.');
-          return;
-        }
-
-        // Only unregister if the current state is online or connecting
-        if (currentState === 'online' || currentState === 'connecting') {
-          if ((window as SafeAny).__omicall_initialized) {
-            try {
-              console.log('[OmiCallContext] Extension state is active/connecting. Unregistering first...');
-              window.OMICallSDK.unregister();
-              // Wait for SDK to release socket
-              await new Promise((resolve) => setTimeout(resolve, 1200));
-            } catch (e) {
-              console.warn('[OmiCallContext] unregister failed:', e);
-            }
-          }
-        }
-
-        if (!active) return;
-
-        // Register SIP extension manually
-        console.log('[OmiCallContext] Extension is offline. Registering SIP extension manually...');
-        const registerStatus = await window.OMICallSDK.register({
-          sipRealm: config.sipRealm,
-          sipUser: config.sipUser,
-          sipPassword: config.sipPassword,
-          wssUri: 'wss://sig.omicrm.com',
-        });
-
-        if (!active) return;
-
-        if (!registerStatus || registerStatus.status) {
-          console.log('[OmiCallContext] SIP device registration command sent successfully');
-        } else {
-          console.warn('[OmiCallContext] SIP registration request rejected.', registerStatus);
-          isRegisteredLocal = false;
-          setIsRegistered(false);
-          setIsSimulated(false);
-          if (registrationTimeout) {
-            clearTimeout(registrationTimeout);
-            registrationTimeout = null;
-          }
-        }
-      } catch (err) {
-        if ((err as SafeAny)?.response?.status === 404) {
-          console.log(
-            '[OmiCallContext] OmiCall WebRTC is not configured for this account. Call Simulation Mode enabled.'
-          );
-        } else {
-          console.error('[OmiCallContext] SIP config or init failure. Call Simulation Mode enabled:', err);
-        }
-        setLastRegisterEvent({ status: 'failed', message: (err as Error).message || 'Lỗi cấu hình SIP' });
-        setIsSimulated(true);
-        setIsRegistered(true);
-      }
-    };
-
-    const runInitOnce = () => {
-      if (!active || initStarted) return;
-      initStarted = true;
-      // Wait 4500ms on mount/bootstrap to let page fetches finish, layout hydrate, and SDK stabilize
-      setTimeout(() => {
-        if (active) {
-          void initAndRegister();
-        }
-      }, 4500);
-    };
-
-    const startCheck = () => {
-      let duration = 0;
-      if (window.OMICallSDK) {
-        initOmiCallSdk();
-        runInitOnce();
-      } else {
-        checkInterval = setInterval(() => {
-          duration += 100;
-          if (window.OMICallSDK) {
-            clearInterval(checkInterval);
-            initOmiCallSdk();
-            runInitOnce();
-          } else if (duration >= 4000) {
-            console.warn('[OmiCallContext] OmiCall SDK load timed out. Enabling Simulation Mode.');
-            clearInterval(checkInterval);
-            setIsSimulated(true);
-            setIsRegistered(true);
-          }
-        }, 100);
-      }
-    };
-
-    startCheck();
-
-    const handleUnload = () => {
-      if (window.OMICallSDK && (window as SafeAny).__omicall_initialized) {
-        try {
-          window.OMICallSDK.unregister();
-        } catch (e) {
-          console.warn('[OmiCallContext] Safely caught unregister on beforeunload:', e);
-        }
-      }
-    };
-    window.addEventListener('beforeunload', handleUnload);
-
-    return () => {
-      active = false;
-      if (checkInterval) clearInterval(checkInterval);
-      if (registrationTimeout) clearTimeout(registrationTimeout);
-      if (retryTimer) clearTimeout(retryTimer);
-      window.removeEventListener('beforeunload', handleUnload);
-      if (window.OMICallSDK) {
-        try {
-          window.OMICallSDK.off('register', handleRegister);
-          window.OMICallSDK.off('invite', handleInvite);
-          window.OMICallSDK.off('ringing', handleRinging);
-          window.OMICallSDK.off('accepted', handleAccepted);
-          window.OMICallSDK.off('ended', handleEnded);
-        } catch (e) {}
-        if ((window as SafeAny).__omicall_initialized) {
-          try {
-            window.OMICallSDK.unregister();
-          } catch (e) {
-            console.warn('[OmiCallContext] Safely caught unregister on cleanup:', e);
-          }
-        }
-      }
-    };
-  }, [token, shouldInit]);
-
-  // 5. Calling Actions
-  const makeCall = async (phone: string, name?: string, customerId?: number, avatar?: string, planId?: number) => {
-    if (!canAccessOmiCall) {
-      message.warning('Chỉ bộ phận Growth & Booking mới có quyền thực hiện cuộc gọi tổng đài.');
-      return;
-    }
-    if (isAdmin && !adminOmiCallEnabled) {
-      message.info('Vui lòng bật công cụ OmiCall trong menu cá nhân trước khi thực hiện cuộc gọi.');
-      return;
-    }
-    if (isTabMuted) {
-      message.warning('Có cuộc gọi đang diễn ra trên một tab khác.');
-      return;
-    }
-
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-
-    setCallState('confirming');
-    setOmicallReadyState(true);
-    setCurrentCall({
-      phone: cleanPhone,
-      name: name || 'Khách hàng',
-      direction: 'outbound',
-      legacyUserId: customerId,
-      avatar: avatar || null,
-      planId: planId || null,
+  const { makeCall, executeCall, cancelConfirm, answerCall, rejectCall, hangUp, toggleMute, toggleHold } =
+    useOmiCallActions({
+      canAccessOmiCall,
+      isAdmin,
+      adminOmiCallEnabled,
+      isTabMuted,
+      isSimulated,
+      isRegistered,
+      sipConfig,
+      currentCall,
+      isHeld,
+      isSdkReadyRef,
+      pendingOutboundCallRef,
+      simulatedTimerRef,
+      currentCallRef,
+      initOmiCallSdk,
+      refreshAudioDevices,
+      setOmicallReadyState,
+      setShouldInit,
+      setCallState,
+      setCurrentCall,
+      setIsSimulated,
+      setIsMuted,
+      setIsHeld,
+      setCallLogCustomerInfo,
+      setIsCallLogModalOpen,
     });
-    setShouldInit(true);
-  };
-
-  const executeCall = async () => {
-    if (!currentCall) return;
-    const { phone: cleanPhone, name, legacyUserId: customerId, avatar } = currentCall;
-
-    if (isSimulated) {
-      console.log(`[OmiCallContext] Simulating outbound call to ${cleanPhone}...`);
-      try {
-        setCallState('ringing');
-        playRingback();
-
-        if (simulatedTimerRef.current) clearTimeout(simulatedTimerRef.current);
-        simulatedTimerRef.current = setTimeout(() => {
-          stopRingback();
-          try {
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            if (AudioContextClass) {
-              const connectCtx = new AudioContextClass();
-              const osc = connectCtx.createOscillator();
-              const gain = connectCtx.createGain();
-              osc.connect(gain);
-              gain.connect(connectCtx.destination);
-              osc.type = 'sine';
-              osc.frequency.setValueAtTime(600, connectCtx.currentTime);
-              gain.gain.setValueAtTime(0.08, connectCtx.currentTime);
-              osc.start(connectCtx.currentTime);
-              osc.stop(connectCtx.currentTime + 0.15);
-            }
-          } catch (e) {}
-
-          setCallState('connected');
-          console.log('[OmiCallContext] Simulated call connected.');
-        }, 2500);
-      } catch (err) {
-        console.error('[OmiCallContext] Simulated makeCall failed:', err);
-        setCallState('idle');
-        setCurrentCall(null);
-      }
-      return;
-    }
-
-    const isReady = isSdkReadyRef.current && (window as SafeAny).__omicall_initialized;
-    const sbState = window.OMICallSDK?.getSbState?.();
-    const isConnecting = sbState === 'connecting';
-
-    if (!window.OMICallSDK || !isReady || !isRegistered || isConnecting) {
-      if (window.OMICallSDK && !isReady) {
-        initOmiCallSdk();
-      }
-      console.log('[OmiCallContext] SDK is initializing or connecting. Queueing outbound call...');
-      message.loading({
-        content: 'Đang kết nối tổng đài OmiCall, cuộc gọi sẽ tự động thực hiện ngay khi sẵn sàng...',
-        key: 'omicall_queue_msg',
-        duration: 8,
-      });
-
-      pendingOutboundCallRef.current = async () => {
-        message.destroy('omicall_queue_msg');
-        await executeCall();
-      };
-      return;
-    }
-
-    let preparedMicrophonePatch: ReturnType<typeof installPreparedMicrophonePatch> | null = null;
-    let preparedMicrophoneStream: MediaStream | null | undefined = null;
-
-    try {
-      preparedMicrophoneStream = await prepareMicrophoneForOmiCall();
-      if (!preparedMicrophoneStream) {
-        message.error('Không chuẩn bị được microphone để thực hiện cuộc gọi.', 12);
-        return;
-      }
-      preparedMicrophonePatch = installPreparedMicrophonePatch(preparedMicrophoneStream);
-      await refreshOmiCallMediaDevices();
-      await refreshAudioDevices();
-      await unlockAudioPlayback();
-    } catch (err) {
-      console.warn('[OmiCallContext] Microphone preflight failed:', err);
-      message.error((err as SafeAny)?.message || 'Vui lòng cấp quyền Microphone để thực hiện cuộc gọi.', 12);
-      preparedMicrophonePatch?.releaseIfUnused();
-      return;
-    }
-
-    try {
-      const isSwitchboardOnline = await ensureOmiCallSwitchboardOnline();
-      if (!isSwitchboardOnline) {
-        preparedMicrophonePatch?.releaseIfUnused();
-        message.error('Tổng đài OmiCall chưa trực tuyến. Vui lòng thử lại sau vài giây.');
-        return;
-      }
-
-      const hotlineNumber = sipConfig?.phoneNumber || '0328703439';
-      const omicallCall = await window.OMICallSDK.makeCall(cleanPhone, {
-        sipNumber: { number: hotlineNumber },
-        userData: JSON.stringify({
-          customerName: name || 'Khách hàng',
-        }),
-      });
-
-      if (!omicallCall) {
-        preparedMicrophonePatch?.release();
-        console.warn(
-          '[OmiCallContext] OmiCall SDK did not create an outbound call. Falling back to Simulation Mode...'
-        );
-        notification.warning({
-          message: 'Tổng đài OmiCall (SIP 480 / Bị ngắt)',
-          description:
-            'Tổng đài OmiCall chưa tạo được cuộc gọi thoại (lỗi cước tài khoản OmiCall hoặc Trunk Viettel). Hệ thống tự động chuyển sang Chế độ Mô phỏng (Simulation Mode) để test!',
-          duration: 5,
-        });
-        setIsSimulated(true);
-        setCallState('ringing');
-        playRingback();
-        if (simulatedTimerRef.current) clearTimeout(simulatedTimerRef.current);
-        simulatedTimerRef.current = setTimeout(() => {
-          stopRingback();
-          setCallState('connected');
-        }, 2500);
-        return;
-      }
-
-      omicallCall.__mosMicrophoneStream = preparedMicrophoneStream;
-      omicallCall.__mosPreparedMicrophonePatch = preparedMicrophonePatch;
-      scheduleOmiCallMediaBridgeSync(omicallCall);
-      void reinforceOmiCallMicrophoneSender(omicallCall, 'outbound-created');
-      void recordOmiCallAudioDiagnostics(omicallCall, 'outbound-created');
-      setCallState('ringing');
-      setIsMuted(false);
-      setIsHeld(false);
-      setCurrentCall({
-        phone: cleanPhone,
-        name: name || 'Khách hàng',
-        direction: 'outbound',
-        callUuid: omicallCall.uuid || null,
-        sdkUid: getOmiCallSdkUid(omicallCall),
-        legacyUserId: customerId,
-        avatar: avatar || null,
-      });
-      playRingback();
-    } catch (err) {
-      preparedMicrophonePatch?.release();
-      console.error('[OmiCallContext] makeCall failed:', err);
-      message.error('Lỗi khi thực hiện cuộc gọi: ' + (err as SafeAny).message);
-      setCallState('idle');
-      setCurrentCall(null);
-    }
-  };
-
-  const cancelConfirm = () => {
-    if (pendingOutboundCallRef.current) {
-      message.destroy('omicall_queue_msg');
-      pendingOutboundCallRef.current = null;
-    }
-    setCallState('idle');
-    setCurrentCall(null);
-  };
-
-  const answerCall = () => {
-    const activeCall = (window as SafeAny).activeCall;
-    scheduleOmiCallMediaBridgeSync(activeCall);
-    void reinforceOmiCallMicrophoneSender(activeCall, 'answer');
-    void recordOmiCallAudioDiagnostics(activeCall, 'answer');
-    if (activeCall && typeof activeCall.accept === 'function') {
-      activeCall.accept();
-    } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).answer === 'function') {
-      (window.OMICallSDK as SafeAny).answer();
-    } else {
-      console.warn('[OmiCallContext] answerCall method not found');
-    }
-    setCallState('connected');
-    stopRingtone();
-    stopRingback();
-    clearIncomingNotification();
-  };
-
-  const rejectCall = () => {
-    const activeCall = (window as SafeAny).activeCall;
-    const callForCleanup = activeCall || currentCallRef.current;
-    try {
-      if (activeCall && typeof activeCall.decline === 'function') {
-        activeCall.decline();
-      } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).decline === 'function') {
-        (window.OMICallSDK as SafeAny).decline();
-      } else {
-        console.warn('[OmiCallContext] rejectCall method not found');
-      }
-    } catch (err: any) {
-      console.warn('[OmiCallContext] Safely caught rejectCall PeerConnection exception:', err?.message || err);
-    }
-    setCallState('idle');
-    setCurrentCall(null);
-    stopRingtone();
-    stopRingback();
-    clearIncomingNotification();
-    if (typeof cleanupOmiCallMediaBridge === 'function') {
-      cleanupOmiCallMediaBridge(callForCleanup);
-    }
-  };
-
-  const hangUp = () => {
-    if (isSimulated) {
-      if (simulatedTimerRef.current) clearTimeout(simulatedTimerRef.current);
-      setCallState('wrapup');
-      stopRingback();
-
-      // Auto-open global CallLogModal for simulated calls
-      const activeCallDetail = currentCallRef.current;
-      if (activeCallDetail) {
-        setCallLogCustomerInfo({
-          legacyUserId: activeCallDetail.legacyUserId || 0,
-          customerName: activeCallDetail.name || 'Khách hàng',
-          planId: activeCallDetail.planId || null,
-        });
-        setIsCallLogModalOpen(true);
-      }
-      return;
-    }
-
-    const activeCall = (window as SafeAny).activeCall;
-    const callForCleanup = activeCall || currentCallRef.current;
-    try {
-      if (activeCall && typeof activeCall.end === 'function') {
-        activeCall.end();
-      } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).hangup === 'function') {
-        (window.OMICallSDK as SafeAny).hangup();
-      } else {
-        console.warn('[OmiCallContext] hangUp method not found');
-      }
-    } catch (err: any) {
-      console.warn('[OmiCallContext] Safely caught hangUp PeerConnection exception:', err?.message || err);
-    }
-    setCallState('wrapup');
-    stopRingback();
-    setTimeout(() => {
-      if (typeof cleanupOmiCallMediaBridge === 'function') {
-        cleanupOmiCallMediaBridge(callForCleanup);
-      }
-    }, 3000);
-  };
-
-  const toggleMute = () => {
-    const activeCall = (window as SafeAny).activeCall;
-    try {
-      if (activeCall && typeof activeCall.mute === 'function') {
-        activeCall.mute((audioEnabled: boolean) => {
-          const muted = !audioEnabled;
-          activeCall.__mosUserMuted = muted;
-          setIsMuted(muted);
-          void recordOmiCallAudioDiagnostics(activeCall, muted ? 'muted' : 'unmuted');
-        });
-      } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).mute === 'function') {
-        (window.OMICallSDK as SafeAny).mute((audioEnabled: boolean) => {
-          setIsMuted(!audioEnabled);
-        });
-      } else {
-        setIsMuted((prev) => !prev);
-      }
-    } catch (err: any) {
-      console.warn('[OmiCallContext] Safely caught toggleMute PeerConnection exception:', err?.message || err);
-      setIsMuted((prev) => !prev);
-    }
-  };
-
-  const toggleHold = () => {
-    const nextHold = !isHeld;
-    const activeCall = (window as SafeAny).activeCall;
-    try {
-      if (activeCall && typeof activeCall.hold === 'function') {
-        activeCall.hold(nextHold);
-        setIsHeld(nextHold);
-      } else if (window.OMICallSDK && typeof (window.OMICallSDK as SafeAny).hold === 'function') {
-        (window.OMICallSDK as SafeAny).hold(nextHold);
-        setIsHeld(nextHold);
-      } else {
-        setIsHeld(nextHold);
-      }
-    } catch (err: any) {
-      console.warn('[OmiCallContext] Safely caught toggleHold PeerConnection exception:', err?.message || err);
-      setIsHeld(nextHold);
-    }
-  };
 
   return (
     <OmiCallContext.Provider
@@ -1288,56 +451,6 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     </OmiCallContext.Provider>
   );
 }
-
-const defaultOmiCallFallback: OmiCallContextType = {
-  sdkLoaded: false,
-  isSdkReady: false,
-  sdkError: false,
-  isRegistered: false,
-  isTabMuted: false,
-  callState: 'idle',
-  callDuration: 0,
-  currentCall: null,
-  makeCall: async () => {},
-  executeCall: async () => {},
-  cancelConfirm: () => {},
-  answerCall: () => {},
-  rejectCall: () => {},
-  hangUp: () => {},
-  toggleMute: () => {},
-  toggleHold: () => {},
-  isMuted: false,
-  isHeld: false,
-  sipConfig: null,
-  setCallState: () => {},
-  setCurrentCall: () => {},
-  isSimulated: false,
-  setIsSimulated: () => {},
-  audioInputDevices: [],
-  audioOutputDevices: [],
-  selectedAudioInputId: '',
-  selectedAudioOutputId: '',
-  setSelectedAudioInputId: () => {},
-  setSelectedAudioOutputId: () => {},
-  refreshAudioDevices: async () => {},
-  omicallReady: false,
-  setOmicallReady: () => {},
-  floatingLauncherVisible: false,
-  setFloatingLauncherVisible: () => {},
-  isCallLogModalOpen: false,
-  callLogCustomerInfo: null,
-  openCallLogModal: () => {},
-  closeCallLogModal: () => {},
-  canAccessOmiCall: false,
-  isGrowthMember: false,
-  isAdmin: false,
-  adminOmiCallEnabled: false,
-  setAdminOmiCallEnabled: () => {},
-  resolvedLog: null,
-  setResolvedLog: () => {},
-  submittingWrapup: false,
-  setSubmittingWrapup: () => {},
-};
 
 export function useOmiCall() {
   const context = useContext(OmiCallContext);

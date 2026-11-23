@@ -176,7 +176,10 @@ export async function runCrawler() {
       console.warn(`[Crawler] ⚠️ Warm-up canvas chưa xong sau ${canvasWaitMs}ms; các route đo có thể bị treo oan.`);
     }
     await warmPage.waitForTimeout(3000);
-    await Promise.race([warmPage.close({ runBeforeUnload: false }).catch(() => {}), new Promise((r) => setTimeout(r, 3000))]);
+    await Promise.race([
+      warmPage.close({ runBeforeUnload: false }).catch(() => {}),
+      new Promise((r) => setTimeout(r, 3000)),
+    ]);
     console.log('[Crawler] Warm-up hoàn tất (không tính vào số đo).');
   } catch (warmErr) {
     console.warn(`[Crawler] Warm-up bỏ qua: ${warmErr.message}`);
@@ -514,7 +517,9 @@ export async function runCrawler() {
         return loads.length ? Math.round(loads.reduce((a, b) => a + b, 0) / loads.length) : null;
       })(),
       // Thời gian bot click tab/popup, tách riêng khỏi tải trang.
-      averageInteractionMs: Math.round(results.reduce((sum, r) => sum + (r.interactionMs || 0), 0) / (results.length || 1)),
+      averageInteractionMs: Math.round(
+        results.reduce((sum, r) => sum + (r.interactionMs || 0), 0) / (results.length || 1)
+      ),
       blockedInteractionRoutes: results.filter((r) => r.interactionBlocked).length,
       mainThreadBlockedRoutes: results.filter((r) => r.mainThreadBlocked).map((r) => r.path),
       totalTabClickFailures: results.reduce((sum, r) => sum + (r.tabClickFailures || 0), 0),

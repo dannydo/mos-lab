@@ -3,7 +3,7 @@ import { basename, join } from 'node:path';
 import axios from 'axios';
 import type { FastifyInstance } from 'fastify';
 import type { PilotAiAnalyzeRequest, PilotAiAssessment, PilotAiSuitability, SafeAny } from '@mos-lab/shared';
-import { pilotMediaDir } from './pilot.service.js';
+import { pilotMediaDir } from './service/pilot-core.js';
 
 export class PilotAiService {
   /**

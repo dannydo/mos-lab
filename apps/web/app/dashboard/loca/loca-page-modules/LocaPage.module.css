@@ -1,0 +1,65 @@
+/* Ant's reset removes pagination item margins. A flex gap keeps the
+   total, page buttons and page-size selector visually distinct. */
+.locaPage :global(.loca-customer-table .ant-pagination) {
+  column-gap: 6px;
+  row-gap: 8px;
+}
+
+.locaPage :global(.loca-customer-table .ant-pagination-total-text) {
+  margin-inline-end: 8px;
+}
+
+.touchpointChip {
+  background-color: var(--tp-bg, rgb(239 246 255));
+  border-color: var(--tp-border, rgb(191 219 254));
+  color: var(--tp-text, rgb(29 78 216));
+}
+
+.touchpointChipSelected {
+  background-color: rgb(255 251 235);
+  border-color: rgb(245 158 11);
+}
+
+:global(.dark-theme) .touchpointChipSelected {
+  background-color: rgb(212 168 75 / 15%);
+  border-color: rgb(245 158 11);
+}
+
+.touchpointChipLabel {
+  color: var(--tp-text, rgb(29 78 216));
+}
+
+.touchpointChipCount {
+  color: var(--tp-text, rgb(29 78 216));
+}
+
+.touchpointChipSelected .touchpointChipCount {
+  color: rgb(180 83 9);
+}
+
+:global(.dark-theme) .touchpointChipSelected .touchpointChipCount {
+  color: rgb(251 191 36);
+}
+
+.touchpointDot {
+  background-color: var(--tp-dot, rgb(59 130 246));
+  box-shadow: 0 0 4px color-mix(in srgb, var(--tp-dot, rgb(59 130 246)) 50%, transparent);
+}
+
+.customRangeInputs :global(.ant-input-number.ant-input-number-sm) {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  width: 24px;
+}
+
+.customRangeInputs :global(.ant-input-number.ant-input-number-sm .ant-input-number-input) {
+  background-color: transparent;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  height: auto;
+  line-height: 1.2;
+  padding: 0;
+  text-align: center;
+}

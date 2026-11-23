@@ -123,83 +123,91 @@ export function CheckoutBillingOverlays({
 }: CheckoutBillingOverlaysProps) {
   return (
     <>
-      <CheckoutVietQrModal
-        open={isQrModalOpen}
-        isDark={isDark}
-        branchCode={branchCode}
-        vietQrUrl={vietQrUrl}
-        qrTransferContent={qrTransferContent}
-        finalGrandTotal={vietQrTransferAmount}
-        totalBillGrandTotal={totalBillGrandTotal}
-        copySuccess={copySuccess}
-        onCopyToClipboard={onCopyToClipboard}
-        transferProofPhoto={transferProofPhoto}
-        proofCloudSyncStatus={proofCloudSyncStatus}
-        onTriggerFilePicker={onTriggerFilePicker}
-        serviceQrAmount={serviceQrAmount}
-        serviceQrUrl={serviceQrUrl}
-        serviceQrContent={serviceQrContent}
-        tipQrAmount={tipQrAmount}
-        tipQrUrl={tipQrUrl}
-        tipQrContent={tipQrContent}
-        qrSplitMode={qrSplitMode}
-        onChangeQrSplitMode={onChangeQrSplitMode}
-        tipTransferProofPhoto={tipTransferProofPhoto}
-        tipProofCloudSyncStatus={tipProofCloudSyncStatus}
-        onTriggerTipFilePicker={onTriggerTipFilePicker}
-        onConfirmQrPaid={onConfirmQrPaid}
-        onClose={onCloseQrModal}
-      />
+      {isQrModalOpen && (
+        <CheckoutVietQrModal
+          open={isQrModalOpen}
+          isDark={isDark}
+          branchCode={branchCode}
+          vietQrUrl={vietQrUrl}
+          qrTransferContent={qrTransferContent}
+          finalGrandTotal={vietQrTransferAmount}
+          totalBillGrandTotal={totalBillGrandTotal}
+          copySuccess={copySuccess}
+          onCopyToClipboard={onCopyToClipboard}
+          transferProofPhoto={transferProofPhoto}
+          proofCloudSyncStatus={proofCloudSyncStatus}
+          onTriggerFilePicker={onTriggerFilePicker}
+          serviceQrAmount={serviceQrAmount}
+          serviceQrUrl={serviceQrUrl}
+          serviceQrContent={serviceQrContent}
+          tipQrAmount={tipQrAmount}
+          tipQrUrl={tipQrUrl}
+          tipQrContent={tipQrContent}
+          qrSplitMode={qrSplitMode}
+          onChangeQrSplitMode={onChangeQrSplitMode}
+          tipTransferProofPhoto={tipTransferProofPhoto}
+          tipProofCloudSyncStatus={tipProofCloudSyncStatus}
+          onTriggerTipFilePicker={onTriggerTipFilePicker}
+          onConfirmQrPaid={onConfirmQrPaid}
+          onClose={onCloseQrModal}
+        />
+      )}
 
-      <CheckoutZaloConsentModal
-        open={isZaloModalOpen}
-        isDark={isDark}
-        customerName={customerName}
-        customerPhone={customerPhone}
-        zaloPhone={zaloPhone}
-        onSetZaloPhone={onSetZaloPhone}
-        isSendingZalo={isSendingZalo}
-        isZaloSentSuccess={isZaloSentSuccess}
-        onConfirmZaloSend={onConfirmZaloSend}
-        onSkipZalo={onSkipZalo}
-      />
+      {isZaloModalOpen && (
+        <CheckoutZaloConsentModal
+          open={isZaloModalOpen}
+          isDark={isDark}
+          customerName={customerName}
+          customerPhone={customerPhone}
+          zaloPhone={zaloPhone}
+          onSetZaloPhone={onSetZaloPhone}
+          isSendingZalo={isSendingZalo}
+          isZaloSentSuccess={isZaloSentSuccess}
+          onConfirmZaloSend={onConfirmZaloSend}
+          onSkipZalo={onSkipZalo}
+        />
+      )}
 
-      <CheckoutPromotionPickerModal
-        open={promoPickerTarget !== null}
-        isDark={isDark}
-        promotions={promotions}
-        isLoading={isPromotionsLoading}
-        error={promotionsError}
-        selectedPromotionId={promoPickerTarget?.currentPromo?.promotionId ?? null}
-        targetScope={promoPickerTarget?.scope}
-        targetLabel={promoPickerTarget?.label}
-        targetAmount={promoPickerTarget?.amount}
-        customerVisits={booking?.customerVisits ?? 1}
-        serviceAmount={effectiveServiceCharge}
-        upgradeAmount={upgradePrice}
-        comboAmount={comboTotal}
-        productAmount={productTotal}
-        vatRate={vatRate}
-        onSelectPromotion={(promo) => {
-          if (promoPickerTarget) {
-            onSelectPromotion(promo, promoPickerTarget);
-          }
-          onClosePromoPicker();
-        }}
-        onClose={onClosePromoPicker}
-      />
+      {promoPickerTarget !== null && (
+        <CheckoutPromotionPickerModal
+          open={promoPickerTarget !== null}
+          isDark={isDark}
+          promotions={promotions}
+          isLoading={isPromotionsLoading}
+          error={promotionsError}
+          selectedPromotionId={promoPickerTarget?.currentPromo?.promotionId ?? null}
+          targetScope={promoPickerTarget?.scope}
+          targetLabel={promoPickerTarget?.label}
+          targetAmount={promoPickerTarget?.amount}
+          customerVisits={booking?.customerVisits ?? 1}
+          serviceAmount={effectiveServiceCharge}
+          upgradeAmount={upgradePrice}
+          comboAmount={comboTotal}
+          productAmount={productTotal}
+          vatRate={vatRate}
+          onSelectPromotion={(promo) => {
+            if (promoPickerTarget) {
+              onSelectPromotion(promo, promoPickerTarget);
+            }
+            onClosePromoPicker();
+          }}
+          onClose={onClosePromoPicker}
+        />
+      )}
 
-      <ProductQrScannerModal
-        open={isProductQrScannerOpen}
-        isDark={isDark}
-        bookingId={Number(booking?.id || 0)}
-        cartProducts={cartProducts}
-        onScannedProduct={onScannedProduct}
-        onRemoveUnit={onRemoveScannedUnit}
-        onClose={onCloseProductQrScanner}
-      />
+      {isProductQrScannerOpen && (
+        <ProductQrScannerModal
+          open={isProductQrScannerOpen}
+          isDark={isDark}
+          bookingId={Number(booking?.id || 0)}
+          cartProducts={cartProducts}
+          onScannedProduct={onScannedProduct}
+          onRemoveUnit={onRemoveScannedUnit}
+          onClose={onCloseProductQrScanner}
+        />
+      )}
 
-      {comboSelection && (
+      {comboSelection && comboSelection.comboModalTarget !== null && (
         <ComboCatalogConsultModal
           open={comboSelection.comboModalTarget !== null}
           onClose={comboSelection.closeComboModal}

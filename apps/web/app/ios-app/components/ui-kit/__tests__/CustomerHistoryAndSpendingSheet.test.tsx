@@ -238,9 +238,7 @@ describe('CustomerHistoryAndSpendingSheet (MOS-FEAT-235)', () => {
 
   it('loads and displays summary KPIs and switches across ALL, PAYMENTS, FIX, and REWARDS tabs', async () => {
     const handleClose = vi.fn();
-    render(
-      <CustomerHistoryAndSpendingSheet isOpen={true} onClose={handleClose} booking={SAMPLE_BOOKING} />
-    );
+    render(<CustomerHistoryAndSpendingSheet isOpen={true} onClose={handleClose} booking={SAMPLE_BOOKING} />);
 
     await waitFor(() => {
       expect(screen.getByText(/1\.425\.600 đ/)).toBeDefined();
@@ -268,13 +266,7 @@ describe('CustomerHistoryAndSpendingSheet (MOS-FEAT-235)', () => {
   });
 
   it('opens customer history & spending sheet directly on ALL tab from Screen03ConsultationMatrix header button and visit badge', async () => {
-    render(
-      <Screen03ConsultationMatrix
-        booking={SAMPLE_BOOKING}
-        onBack={vi.fn()}
-        onSave={vi.fn()}
-      />
-    );
+    render(<Screen03ConsultationMatrix booking={SAMPLE_BOOKING} onBack={vi.fn()} onSave={vi.fn()} />);
 
     const openBtn = screen.getByTestId('open-customer-history-btn');
     fireEvent.click(openBtn);
@@ -306,12 +298,7 @@ describe('CustomerHistoryAndSpendingSheet (MOS-FEAT-235)', () => {
 
   it('opens customer history & spending sheet on ALL tab from Screen02CheckInProfile and forwards isSimulationMode', async () => {
     render(
-      <Screen02CheckInProfile
-        booking={SAMPLE_BOOKING}
-        isSimulationMode={true}
-        onBack={vi.fn()}
-        onCheckIn={vi.fn()}
-      />
+      <Screen02CheckInProfile booking={SAMPLE_BOOKING} isSimulationMode={true} onBack={vi.fn()} onCheckIn={vi.fn()} />
     );
 
     fireEvent.click(screen.getByTestId('checkin-header-history-btn'));

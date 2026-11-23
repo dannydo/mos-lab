@@ -462,7 +462,9 @@ export function CheckoutVietQrModal({
 
                 <div className={`flex items-center justify-between ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
                   <span className="text-[var(--mos-text-muted)] font-medium text-[11px]">Ngân Hàng:</span>
-                  <span className={`font-bold ${isDark ? 'text-neutral-100' : 'text-gray-900'}`}>Vietcombank (VCB)</span>
+                  <span className={`font-bold ${isDark ? 'text-neutral-100' : 'text-gray-900'}`}>
+                    Vietcombank (VCB)
+                  </span>
                 </div>
 
                 <div className={`flex items-center justify-between ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>

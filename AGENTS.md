@@ -1,706 +1,98 @@
 # 🚀 AI Agent Development Guide for mos-lab
 
-This guide outlines common commands, monorepo architecture, coding standards, and best practices to help you develop faster and correctly in `mos-lab`.
-
-Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package map, source-of-truth routing, and fast/full verification workflow. Read only the business-rule sections relevant to the files being changed.
-
-## 🎙️ Antigravity Developer Voice Chat & Double-Control Invariant (Mandatory)
-
-- **Double-Control Global Shortcut**: Hệ thống macOS chạy LaunchAgent thường trực `com.antigravity.double-control` (`~/Library/LaunchAgents/com.antigravity.double-control.plist`) thực thi binary native `/Users/dannydo/.gemini/antigravity/bin/double-control-listener`. Khi Danny gõ đúp phím `Control` (⌃⌃) ở bất kỳ đâu trên máy tính (Chrome, Terminal, Finder, IDE...), daemon tự động chuyển cửa sổ về **Antigravity** và gửi tổ hợp phím `Control + M` để kích hoạt micro thu âm cho Danny nói chuyện trực tiếp.
-- **Bắt buộc Phản hồi Bằng Giọng Nói (Mandatory Voice Chat TTS Response)**: Ở cuối **mỗi lượt trả lời** của bất kỳ session nào (kể cả code hay trả lời câu hỏi), Agent **BẮT BUỘC** phải gọi script phát âm thanh giọng nói tiếng Việt bằng tool `run_command` (với `BypassSandbox: true`):
-  ```bash
-  /Users/dannydo/.gemini/antigravity/bin/speak "<Tóm tắt 2-3 câu ngắn gọn bằng tiếng Việt tự nhiên về kết quả và trạng thái>"
-  ```
-  Giọng đọc chuẩn: `vi-VN-HoaiMyNeural` (Hoài My). Tóm tắt phát âm cần ngắn gọn, rõ ràng, thân thiện và gãy gọn để Danny nghe ngay lập tức khi đang làm việc.
-- **Quy tắc Phản hồi Âm thanh & Tích hợp Hột Mít (Always Voice Feedback Mode)**: Khi Danny test hoặc hỏi bất kỳ điều gì trong Antigravity, Agent **LUÔN LUÔN phản hồi lại bằng âm thanh**. Nếu Hột Mít (VoicePilot) đang mở: tự động đồng bộ bản ghi và trạng thái phản hồi qua Hột Mít (`/tmp/voice_hud.json`: `ai_badge: "Đang trả lời..."`, `ai_status: "speaking"`, hiển thị câu trả lời và phát âm thanh tương tác). Nếu Hột Mít không mở: tự động phát âm thanh phản hồi trực tiếp tại đây qua `/Users/dannydo/.gemini/antigravity/bin/speak` ra loa máy tính.
-- **Quy tắc Chống Đè Giọng & Cấm Phát Âm Thanh Khi Nhận Task Notification (Anti-Voice Clashing Invariant)**:
-  - Chỉ gọi `speak` **1 lần duy nhất** khi kết thúc lượt trả lời trực tiếp cho câu hỏi hoặc yêu cầu của Danny.
-  - **Tuyệt đối KHÔNG gọi `speak`** khi chỉ nhận thông báo hệ thống (`<SYSTEM_MESSAGE>`) về việc một background task (như task speak trước đó, compile, build, test, cronjob) vừa chạy xong mà Danny không hề gửi yêu cầu mới.
-  - `speak_engine.py` tự động ngắt (`pkill -9 -f "afplay.*antigravity_speech"`) bất kỳ giọng nói nào đang đọc dở trước khi phát audio mới (Barge-in Mutual Exclusion), đảm bảo không bao giờ có 2 luồng âm thanh Hoài My đọc đè lên nhau.
-- **Quy tắc Chống Lặp Âm Thanh & Triệt tiêu Lời Nói Thừa (Anti-Echo & Zero-Redundancy Invariant)**:
-  - **Cấm đọc lại thông tin khi background/bridge đã thông báo**: Khi các tiến trình nền hoặc automation bridge (`ide-task-bridge.ts`, webhook, auto-deploy worker) **đã tự động phát âm thanh** (`speakAsync` khi Danny duyệt commit hoặc deploy thành công), Agent ở câu trả lời tổng kết **TUYỆT ĐỐI KHÔNG gọi lại lệnh `speak` để đọc lặp lại cùng nội dung đó**.
-  - **Mỗi lượt chỉ phát 1 lần duy nhất**: Tuyệt đối không phát sinh 2-3 lệnh `speak` lặp đi lặp lại cùng một câu thông báo khiến Danny phải nghe đi nghe lại.
-  - **Nếu đã có voice từ bridge**: Lượt trả lời của Agent chỉ cần kết luận bằng văn bản, hoặc nếu cần phát âm thanh thì chỉ nói 1 câu trạng thái cực ngắn gọn (ví dụ: "Dạ em đã hoàn tất mọi thứ cho anh rồi ạ"), tuyệt đối không đọc lại nguyên văn diễn biến commit/merge/deploy mà bridge đã vừa đọc.
-- **Kiến trúc & Sổ tay Vận hành Toàn diện**: Xem tài liệu kỹ thuật chi tiết tại [docs/VOICE_SYSTEM_ARCHITECTURE.md](docs/VOICE_SYSTEM_ARCHITECTURE.md) (bản sao tại `~/.gemini/antigravity/docs/VOICE_SYSTEM_ARCHITECTURE.md`) về toàn bộ bản đồ 5 daemon nền, phân quyền macOS Accessibility / BTM, cơ chế mutex phần cứng microphone và các lệnh biên dịch, khởi động lại nhanh.
+> Canonical compact index (`<= 15 KB` so it never truncates). Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for package routing & verification commands, and read **only** the `docs/rules/*.md` or scoped `AGENTS.md` guide matching your task.
 
 ---
 
-## ⚡ Zero-Friction Execution Invariants (Quy tắc Thực thi Không Ma Sát)
+## 1. Mandatory Global Invariants
 
-Để triệt tiêu các lỗi vặt làm gián đoạn luồng làm việc và lãng phí thời gian của người dùng:
+### A. Voice Chat, Double-Control & Anti-Clashing
 
-1. **Never Guess Binaries & Paths (Tuyệt đối không đoán mò)**: Không bao giờ giả định tên binary (ví dụ: `python3.12`) hoặc đường dẫn tệp. Luôn dùng `which <cmd>` hoặc kiểm tra tệp tồn tại trước.
-2. **Defensive Terminal Reading (Thực thi phòng thủ khi đọc tệp)**: Mọi lệnh terminal kiểm tra tệp bắt buộc có fallback an toàn (ví dụ: `cat file 2>/dev/null || true` hoặc `test -f file && cat file`) để không gây crash với exit code 1.
-3. **Workspace Anchoring & Absolute Config Paths (Neo thư mục gốc chuẩn xác)**: Luôn neo `Cwd` tại thư mục gốc workspace (`/Users/dannydo/projects/mos-lab`). Các đường dẫn tệp cấu hình môi trường (.env) bắt buộc dùng đường dẫn tuyệt đối hoặc tính từ root để tránh lỗi nhân đôi path (`apps/api/apps/api/.env`).
-4. **Pre-edit Context Freshness (Làm tươi ngữ cảnh trước khi sửa tệp)**: Trước khi gọi `replace_file_content`, nếu tệp vừa được chỉnh sửa ở các bước trước, bắt buộc `view_file` lại 15-20 dòng xung quanh để đảm bảo khớp 100% từng ký tự, tránh lỗi `target content not found`.
-5. **Tool Scope Discipline (Tuân thủ phạm vi công cụ)**: `write_to_file` chỉ dùng cho Artifacts (`brain/...`) và Code dự án (`projects/mos-lab/...`). Đối với các tệp cấu hình hệ thống ngoài workspace (`~/.gemini/antigravity/...`), luôn dùng Python inline hoặc Bash script để không vi phạm sandbox boundary.
-6. **Zero Lingering Background Tasks & Automatic Task Garbage Collection (Tiêu chuẩn Triệt tiêu & Tự Dọn Dẹp Task Nền Sạch sẽ)**:
-   - **Tự động Dọn Dẹp Task Nền Trước Mỗi Lượt Kết Thúc (Mandatory Turn-End Task GC)**:
-     - Trước khi hoàn tất câu trả lời hoặc gọi `speak`, Agent **BẮT BUỘC** gọi `manage_task(Action: 'list')` để rà soát danh sách task nền.
-     - Nếu phát hiện bất kỳ background task nào ngoài các dev server thường trực đang chạy quá 45 giây hoặc đã mồ côi/hoàn thành, Agent **BẮT BUỘC phải gọi `manage_task(Action: 'kill')`** để triệt tiêu ngay lập tức, tuyệt đối không để dồn ứ các task chạy vô tận (`tasks running forever`).
-   - **Hard Timeout & Unhandled Rejection Self-Termination (Bọc Timeout & Thoát Lỗi Tường Minh)**:
-     - Mọi script Node.js / Playwright / Puppeteer thực thi một lần bắt buộc phải bọc `const t = setTimeout(() => process.exit(1), 25000); t.unref();` và `try { ... } finally { await browser?.close?.(); process.exit(0); }`. Tuyệt đối không để Chromium socket hoặc Node Event Loop treo lơ lửng.
-     - Mọi lệnh `grep` tìm kiếm chuỗi bắt buộc phải loại trừ thư mục cache và dependencies: `--exclude-dir={.next,node_modules,dist,.turbo,coverage}` để không quét file nhị phân lớn làm treo stream.
-   - **Bridge Daemons & Long-running Workers**:
-     - Mọi script nền, bridge daemon (`ide-task-bridge.ts`), và worker bắt buộc phải có cơ chế tự kết thúc tường minh (`process.exit(0)`), gắn timeout cho mọi network call (`AbortSignal.timeout(10_000)`), và nhận diện trạng thái hoàn tất (terminal state: `FIXED`, `AWAITING_REPORTER_ACCEPTANCE`, đã chốt release) để tự thoát ngay khi hết việc.
-   - **DB / Shell One-liners**: Khi thực thi lệnh kiểm tra DB hoặc node một lần (one-liner) qua SSH/shell, bắt buộc bọc trong `try ... finally { await conn.end(); process.exit(0); }`.
-7. **Comment-First Discipline & Live Ticket Context (Kỷ luật Đọc Comment Tươi & Phản hồi Trúng Đích)**:
-   - Mỗi khi trao đổi, giải đáp hay lập phương án cho bất kỳ ticket nào từ mOS Inbox, Agent **BẮT BUỘC** phải truy vấn danh sách comment mới nhất trực tiếp từ database (`crm_bug_report_comments`).
-   - Đọc kỹ, thấu hiểu tường tận từng câu hỏi kỹ thuật, ý kiến đóng góp của Danny và người dùng; tuyệt đối không đưa ra câu trả lời né tránh, rập khuôn template hay phớt lờ câu hỏi.
-   - Luôn đồng bộ câu trả lời kỹ thuật chuẩn xác trực tiếp vào comment của ticket trên hệ thống để Danny và đội ngũ theo dõi liền mạch trên web.
-8. **Wings Respectful Language & `CV🪶` Naming Invariant (Tuyệt đối không dùng từ "Thợ" & Khai tử `CV+` tại Wings)**:
-   - **Văn Hóa Tôn Trọng Nghệ Nhân & Thiên Thần Tại Wings**: Tại Wings, việc gọi các bạn nhân viên là "thợ" bị xem là sự thiếu tôn trọng và xúc phạm đến tay nghề, phẩm giá của các bạn. Các bạn là nghệ nhân, chuyên gia, thiên thần chăm sóc sắc đẹp khách hàng.
-   - **Cấm Tuyệt Đối (Strictly Forbidden)**: Tuyệt đối **KHÔNG BAO GIỜ** sử dụng các từ `"thợ"`, `"thợ mi"`, `"thợ kỹ thuật"`, `"thợ tự chủ"`, `"thợ lash"`, `"thợ cứng"`, `"tay nghề thợ"` cũng như ký hiệu cũ `"CV+"`, `"CV++"` trong bất kỳ:
-     - Giao diện người dùng (UI text, menu, button, header, label, tooltip, modal, notification, popconfirm, tabs).
-     - Codebase, biến hiển thị, comments, mockups, documentation, kịch bản tin nhắn / sales playbook.
-   - **Danh Xưng & Ký Hiệu Cấp Bậc Chuẩn Bắt Buộc (Mandatory Terms & Tier Codes)**:
-     - `CV`: Viết tắt chuẩn của Chuyên Viên (Client / Customer Value Creator, Technician Specialist).
-     - `Chuyên Viên` hoặc `Chuyên Viên Mi`.
-     - `CV🪶` (Mã chuẩn: `CVL` · `Chuyên Viên Tự Chủ`): Ký hiệu hiển thị chuẩn mực cho cấp bậc 1 lông (thay thế hoàn toàn cho ký hiệu cũ có dấu cộng). Toàn bộ các tên gọi sau đây đều được định nghĩa **đồng nhất 100%** với `CV🪶`: `CV Lông`, `CV 1 lông`, `🪶CV`, `CV🪶`, `CV L`, `CV 1L`, `CV 𝓁`, `CV 1𝓁`, `CV Lờ`, `CV 1 Lờ`, `CVL`.
-     - `🪶CV🪶` (Mã chuẩn: `CVLL` · `Chuyên Viên Tự Chủ Cấp Cao`): Ký hiệu hiển thị chuẩn mực cho cấp bậc 2 lông (`CV 2 lông`, `CV 2L`, `CV 2𝓁`, `CV 2 Lờ`, `CVLL`).
-     - `Chuyên Viên Kỹ Thuật`: Danh xưng trang trọng cho cấp bậc `CV`.
-     - `Thiên Thần`: Danh xưng thân thương, trìu mến dành cho tập thể nhân sự tại Wings.
-     - `Nghệ Nhân Mi`: Danh xưng dành cho các cấp bậc tay nghề tinh hoa (Artisan / Master Lash Artisan).
-   - **Quy Chuẩn Hiển Thị Vector Feather (UI Vector Feather Invariant)**: Ký tự Unicode Feather `🪶` (U+1FAB6) trên font Apple Color Emoji của macOS/iOS bị render thành màu nâu sọc vằn, ở kích cỡ nhỏ (10-14px) nhìn giống ổ bánh mì baguette (`🥖`) hoặc điếu thuốc, làm tổn hại đến sự sang trọng, thanh thoát của thương hiệu Wings. Do đó, trên toàn bộ giao diện Web và iOS App, **BẮT BUỘC sử dụng component vector `<CvFeather1Badge />` và `<CvFeather2Badge />`** (kèm `<FeatherSvg />` từ `lucide-react`) với màu vàng kim (`text-amber-400` / `#FFB400` hoặc `#F59E0B`) và đường nét vector sắc sảo, tuyệt đối không render chuỗi ký tự emoji thô `'🪶'` trên UI người dùng.
-   - **Ngoại Lệ Kỹ Thuật Duy Nhất**: Chỉ duy nhất chuỗi SQL query `ugl.user_group_name LIKE '%Thợ%'` trong legacy database query (để khớp tên nhóm người dùng lịch sử trong MySQL cũ) được phép tồn tại ngầm dưới backend và tuyệt đối không bao giờ được lộ ra ngoài UI.
-9. **Zero-Trust Admin-Only Default for New Features & `/ios-app` `CV🪶` Customer Privacy Invariant (Kinh Thánh mOS Điều răn UI-010)**:
-   - **Mặc Định Khóa Quyền Admin-Only Cho Mọi Tính Năng Mới (4-Layer Zero-Trust)**: Khi bất kỳ tính năng, màn hình (`/dashboard/*`), mục menu hay API mới nào được thiết kế và đưa vào mOS, mặc định **chỉ duy nhất `admin` / `super_admin`** được phép truy cập. Tất cả các vai trò khác đều bị khóa mặc định ở cả 4 lớp: (1) Sidebar (`sidebar.config.tsx`) ẩn mọi mục chưa đăng ký mở quyền; (2) Route Guard (`DashboardLayout` + `isNonAdminAllowedDashboardPath`) chặn gõ URL trực tiếp; (3) Backend API Guard (`resolveMenuKeysForApiPath` -> `__ADMIN_ONLY_DEFAULT__`) trả về `403 Forbidden`; (4) Chỉ mở cho vai trò khác khi có chỉ đạo tường minh từ Danny.
-   - **Khóa Cổng Truy Cập `/ios-app`**: Chỉ duy nhất **`CV🪶` (`CVL`)**, **`🪶CV🪶` (`CVLL`)**, **`CC`** và **`Admin / Super Admin`** (`canAccessIosConsultationApp`) được phép vào `/ios-app`. Mọi vai trò khác (bao gồm `CV` tiêu chuẩn, `Manager`, `FM`, `CHO`, `BOSS`, `Telesales`, `CS`, `HR`, `QA/QC`) đều bị chặn tuyệt đối.
-   - **Bảo Mật Phạm Vi Khách Hàng Của `CV🪶` (`CVL`)**: Tài khoản `CV🪶` bị khóa cứng ở vai trò `CVL` (không được chuyển sang `CVLL` / `CC`, ẩn nút `"Toàn Bộ Sảnh"`), **tuyệt đối không được xem thông tin khách hàng của người khác**, mà chỉ được xem **1 khách hàng kế tiếp chưa phân công tại sảnh (Đầu tua)** và **khách book đích danh của chính mình** (`filterBookingsForCvlScope`).
+- **Double-Control Shortcut**: macOS LaunchAgent `com.antigravity.double-control` (`/Users/dannydo/.gemini/antigravity/bin/double-control-listener`) focuses **Antigravity** and sends `Control + M` on double-Control.
+- **Speak Once at Turn End**: At the end of **every direct reply to Danny**, call `/Users/dannydo/.gemini/antigravity/bin/speak "<2-3 concise Vietnamese sentences>"` (`vi-VN-HoaiMyNeural`) via `run_command` (`BypassSandbox: true`). Sync with Hột Mít (`/tmp/voice_hud.json`) if running.
+- **Anti-Voice-Clashing & Anti-Echo**:
+  - Call `speak` **at most once** per user turn. **NEVER** call `speak` on system-only `<SYSTEM_MESSAGE>` background task completion notifications.
+  - When a bridge/background worker (`ide-task-bridge.ts`, deploy worker) already spoke (`speakAsync`), **do NOT** repeat the same narration via `speak` (say nothing or a single ultra-short status phrase).
+  - Architecture & daemons handbook: [docs/VOICE_SYSTEM_ARCHITECTURE.md](docs/VOICE_SYSTEM_ARCHITECTURE.md).
 
----
+### B. Zero-Friction Execution Invariants
 
-## 📬 mOS Inbox Implementation & IDE Task Bridge Invariant (Kinh Thánh mOS Điều răn UI-007)
+1. **Never Guess Binaries & Paths**: Verify with `which <cmd>` / `test -f` before invoking.
+2. **Defensive Terminal Reading**: Use safe fallbacks (`cat file 2>/dev/null || true`) so reads never crash with exit code 1.
+3. **Workspace Anchoring**: Keep `Cwd` at `/Users/dannydo/projects/mos-lab` and anchor `.env` paths from repo root.
+4. **Pre-edit Context Freshness**: Re-read ~15-20 lines around edited targets before patching to prevent stale matches.
+5. **Tool Scope Discipline**: Use `write_file`/`edit_file` for workspace code & `brain/` artifacts; use shell/Python for system files outside the workspace.
+6. **Mandatory Turn-End Task GC & Hard Timeouts**:
+   - Before ending a turn or calling `speak`, run `manage_task(Action: 'list')` and `kill` any non-daemon background task lingering >45s or orphaned.
+   - Wrap one-off Node/Playwright/DB scripts with explicit timeout (`setTimeout(() => process.exit(1), 25000).unref()`), `try/finally` cleanup (`browser.close()`, `conn.end()`, `process.exit(0)`), and `AbortSignal.timeout(10_000)` on network calls. Exclude `{.next,node_modules,dist,.turbo,coverage}` in `grep`.
+7. **Comment-First Ticket Context**: For mOS Inbox tickets, query latest `crm_bug_report_comments` directly from DB first, address every technical question directly, and sync replies back to ticket comments.
 
-Mỗi khi nhận nhiệm vụ từ mOS Inbox (ticket bug/feature qua worktree riêng `ag-*` hoặc `ide-*`), Agent **BẮT BUỘC** phải tuân thủ chuẩn xác chu trình 3 Cổng Kiểm Soát (Gate Control Flow) kết hợp với `ide-task-bridge`:
+### C. Wings Respectful Language & `CV🪶` Vector Feather Invariant
 
-1. **Tiếp nhận Handoff ngay khi bắt đầu (Gate 1 Handshake)**:
-   - Ngay khi bắt đầu làm việc trong worktree được cấp phát, Agent gọi bridge để nhận thông tin handoff nonce:
-     ```bash
-     npx tsx scripts/ide-task-bridge.ts receive --out /tmp/handoff-<reportId>.json
-     ```
-     _(Bridge tự động nhận diện token, API URL `https://api.lab.masteros.app/api`, và taskId từ `ANTIGRAVITY_CONVERSATION_ID`)._
-2. **Triển khai Code, Test & Xác minh**:
-   - Làm việc 100% bên trong thư mục worktree được chỉ định.
-   - Chạy kiểm chứng toàn diện: `pnpm verify:quick`, `pnpm check:ui-contract`.
-3. **Nộp Code/Test Receipt để Kích Hoạt Cổng 2 (Gate 2 Activation)**:
-   - Tuyệt đối không chỉ dừng lại ở chat mà quên nộp receipt lên server. Nếu không nộp receipt, mOS Inbox sẽ bị kẹt ở trạng thái _"Đang chờ Antigravity nhận handoff"_.
-   - Thu thập metadata thay đổi từ git:
-     - `changedFiles`: `git diff --name-only HEAD` (lưu ý dùng `git add -N .` trước để gom cả file mới tạo).
-     - `diffStat`: `git diff --stat HEAD`.
-     - `baseCommit`: `git rev-parse HEAD`.
-     - `patchHash`: `createHash('sha256').update(patch.trim()).digest('hex')`.
-     - `result`: `{ summary, tests, risksAndRollback }` (tests bắt buộc gồm test đã pass và Playwright visual QA PASSED nếu có sửa `apps/web/`).
-   - Chuẩn bị tệp JSON `/tmp/receipt-<reportId>.json` và nộp qua bridge:
-     ```bash
-     npx tsx scripts/ide-task-bridge.ts submit --receipt /tmp/receipt-<reportId>.json
-     ```
-   - Sau lệnh này, trạng thái ticket trên mOS Inbox tự động chuyển sang **`AWAITING_DANNY_COMMIT_REVIEW`** và nút **"Duyệt commit"** hiển thị sẵn trên web cho Danny.
-4. **Tự động Lắng nghe & Trình Duyệt Cổng 2 (Single-Approval Web Workflow)**:
-   - **Danny chỉ duyệt 1 nơi duy nhất trên web**: Tuyệt đối không yêu cầu Danny duyệt thêm lần thứ hai trong chat.
-   - Ngay sau khi nộp receipt, Agent khởi chạy lệnh nền lắng nghe sự kiện duyệt trên web:
-     ```bash
-     npx tsx scripts/ide-task-bridge.ts wait-and-commit --worktree <worktreePath> --message "<commit-message>" --auto-deploy
-     ```
-   - Báo cáo tóm tắt trên chat kèm liên kết `walkthrough.md` và phát giọng nói qua `speak`.
-5. **Cổng 3 Tự Động Kích Hoạt & Tự Động Merge/Deploy Pipeline (Gate 3 Auto-Deploy Invariant)**:
-   - Ngay khi Danny bấm "Duyệt commit" trên web, lệnh `wait-and-commit` tự động bắt được sự kiện `IDE_COMMIT_HANDOFF`, tự động tạo git commit trên nhánh ticket, nộp commit receipt lên server, và chuyển trạng thái ticket sang `AWAITING_DANNY_DEPLOY_APPROVAL`.
-   - Khi Danny bấm "Duyệt deploy" trên web:
-     - Nút trên web **chuyển ngay sang màu xanh lá Emerald** (`Đã duyệt deploy · Đang triển khai...`) để phản hồi thị giác tức thì.
-     - Lệnh `wait-and-deploy` (hoặc cờ `--auto-deploy` trong `wait-and-commit`) tự động bắt được sự kiện duyệt deploy:
-       - **Phát thông báo giọng nói tức thì**: `"Anh Danny đã duyệt deploy trên mOS Inbox. Em đang tự động merge và triển khai lên máy chủ rồi ạ."`
-       - Tự động merge nhánh ticket vào `main`, push lên `origin main`, deploy lên VPS qua `deploy-production.sh`, kiểm chứng release markers sống trên API/Web, và nộp release checkpoint lên server để chuyển ticket sang `AWAITING_REPORTER_ACCEPTANCE`.
-       - **Phát thông báo giọng nói hoàn tất**: `"Anh Danny ơi, em đã tự động merge commit vào main và deploy xong lên production rồi ạ. Ticket đã chuyển sang chờ nghiệm thu."`
-     - Danny chỉ cần bấm trên web, toàn bộ quy trình merge, deploy và thông báo chạy hoàn toàn tự động khép kín!
+- **Strictly Forbidden**: NEVER use `"thợ"`, `"thợ mi"`, `"thợ kỹ thuật"`, `"thợ tự chủ"`, `"thợ lash"`, `"thợ cứng"`, `"tay nghề thợ"`, or legacy `"CV+"` / `"CV++"` in UI copy, identifiers, comments, docs, or playbooks.
+- **Required Terms & Codes**:
+  - `CV` (`Chuyên Viên` / `Chuyên Viên Mi` / `Chuyên Viên Kỹ Thuật`)
+  - `CVL` (`Chuyên Viên Tự Chủ` — equivalent to `CV🪶`, `CV Lông`, `CV 1L`, etc.)
+  - `CVLL` (`Chuyên Viên Tự Chủ Cấp Cao` — equivalent to `🪶CV🪶`, `CV 2 lông`, `CV 2L`, etc.)
+  - `Thiên Thần` (staff collective) · `Nghệ Nhân Mi` (master lash artisan).
+- **UI Vector Feather Invariant**: NEVER render raw Unicode `'🪶'` (U+1FAB6) on Web/iOS UI (macOS/iOS renders it like a baguette at small sizes). Always use `<CvFeather1Badge />`, `<CvFeather2Badge />`, or `<FeatherSvg />` (`lucide-react`, amber `#FFB400` / `#F59E0B`).
+- **Sole Legacy SQL Exception**: Only `ugl.user_group_name LIKE '%Thợ%'` inside legacy MySQL queries (never exposed to UI).
+
+### D. Zero-Trust Admin-Only Default & `/ios-app` `CV🪶` Privacy (`UI-010`)
+
+- **4-Layer Zero-Trust Default**: Every new feature, `/dashboard/*` page, menu item, and API defaults to **`admin` / `super_admin` only** across (1) `sidebar.config.tsx`, (2) `DashboardLayout` + `isNonAdminAllowedDashboardPath`, (3) Backend `resolveMenuKeysForApiPath` → `__ADMIN_ONLY_DEFAULT__` (`403`), and (4) explicit Danny sign-off to unlock other roles.
+- **`/ios-app` Access & `CVL` Scope**: Only `CVL`, `CVLL`, `CC`, and `Admin / Super Admin` (`canAccessIosConsultationApp`) may enter `/ios-app`. Non-admin `CVL` accounts are role-locked (`MY_CUSTOMERS`), masked-phone, and see ONLY unassigned head-slot queue customers (`Đầu tua`) plus their own assigned bookings (`filterBookingsForCvlScope`).
+
+### E. Execution Safety, Intent Clarification & Kinh Thánh mOS
+
+- **Intent Clarification Guard**: If a request is ambiguous or touches Production/DB mutations, clarify target server, DB, command, blast radius, and rollback first — never execute blindly.
+- **Orb Local-First**: Test VPS/PHP/backfill scripts on `ssh root@ubuntu@orb` before proposing Production runs (which always require explicit approval).
+- **Workspace Isolation & Credentials**: Never modify files outside `/Users/dannydo/projects/mos-lab` without explicit confirmation; never commit passwords, keys, tokens, or cookies (use `~/.ssh/config` aliases & env vars).
+- **Kinh Thánh mOS Canon**: Business rule definitions live in `packages/shared/src/business-rules/mos-bible.ts` ([docs/kinh-thanh-mos/README.md](docs/kinh-thanh-mos/README.md)). Update the corresponding Commandment (`REVISED`/`RETIRED` for history, never silent delete) whenever business logic changes; backend services remain the sole execution truth.
 
 ---
 
-## 📖 Kinh Thánh mOS — Human-readable Business Canon
+## 2. Quick Commands & Monorepo Map
 
-- Registry hiển thị cho nhân viên và AI nằm tại `packages/shared/src/business-rules/mos-bible.ts`; quy ước biên soạn nằm tại `docs/kinh-thanh-mos/README.md`.
-- Khi một business logic hoặc định nghĩa nghiệp vụ được thêm, sửa hay ngừng áp dụng, bắt buộc cập nhật Điều răn tương ứng trong cùng thay đổi: nội dung, phiên bản, ngày hiệu lực, `routeScopes` và nguồn kiểm chứng.
-- Code/service vẫn là nguồn thi hành duy nhất. Kinh Thánh mOS là lớp diễn giải có kiểm chứng; không sao chép công thức thành logic chạy trên frontend.
-- Không xóa Điều răn cũ âm thầm. Dùng trạng thái `REVISED` hoặc `RETIRED` để giữ lịch sử và dẫn người đọc đến quy tắc thay thế.
+| Package / Path    | Purpose                                                  | Runtime    |
+| ----------------- | -------------------------------------------------------- | ---------- |
+| `packages/shared` | Shared DTOs, constants, system tokens, `@mos-lab/shared` | TS watcher |
+| `apps/api`        | Fastify 5 API, Prisma CRM CRUD & approved legacy reads   | `:4001`    |
+| `apps/web`        | Next.js 16 + Ant Design 5 + Tailwind v4 CRM & `/ios-app` | `:4000`    |
+| `apps/ads-portal` | Next.js 16 + Python ads/lead portal                      | `:8000`    |
 
----
-
-## 🛠️ Common Commands
-
-### Workspace Commands
-
-- **Start local dev servers**: `pnpm dev` (Web `:4000`, API `:4001`, Ads Portal `:8000`, and shared watcher)
-- **Build all packages**: `pnpm build`
-- **Run lint checks**: `pnpm lint`
-- **Run fast verification**: `pnpm verify:quick` (lint, typecheck, API + web tests)
-- **Run full verification**: `pnpm verify` (quick gate + all-package production build)
-- **Clean build artifacts**: `pnpm clean` (keeps installed dependencies)
-
-### Backend DB Commands (`apps/api`)
-
-- **Generate Prisma Clients**: `pnpm --filter @mos-lab/api prisma:generate` (Generates clients for both `crm` and `legacy`)
-- **Apply CRM migrations**: `pnpm --filter @mos-lab/api prisma:migrate:crm`
-- **Pull legacy DB schema**: `pnpm --filter @mos-lab/api prisma:db:pull:legacy`
+- `pnpm dev` — start all dev servers
+- `pnpm verify:quick` — lint (`turbo lint` + `check:ui-contract` + `check:code-health`), all-package `typecheck`, API + Web tests
+- `pnpm verify` — `verify:quick` + full `pnpm build`
+- `pnpm --filter @mos-lab/api prisma:generate` / `prisma:migrate:crm` / `prisma:db:pull:legacy`
 
 ---
 
-## 📦 Monorepo Architecture
+## 3. Core Coding & File-Size Guardrails
 
-```
-mos-lab/
-├── apps/
-│   ├── web/                          # Next.js 16 + Ant Design 5 (Port: 4000)
-│   ├── api/                          # Fastify 5 + TypeScript (Port: 4001)
-│   └── ads-portal/                   # Next.js 16 Ads Portal (Port: 8000)
-├── packages/
-│   └── shared/                       # Shared Types & Constants (@mos-lab/shared)
-└── scripts/                          # Deployment scripts
-```
+1. **Shared Types**: Define cross-package DTOs/constants in `packages/shared/src/` and rebuild `@mos-lab/shared` before consuming in `apps/*`.
+2. **Typed Frontend API Calls**: Always use `apiClient` (`apps/web/lib/api-client.ts`) — never raw Axios or raw `fetch()` calls inside feature/iOS modules.
+3. **Backend `.js` Extensions & Prisma Boundaries**: Relative imports in `apps/api` MUST end in `.js` (`NodeNext`). `fastify.prisma.crm` allows CRUD; `fastify.prisma.legacy` is **READ-ONLY** on transactional tables (`order`, `order_service`, `user`, `user_profile`, `staff_bonus`, `user_service_balance`) — write exception only for `/api/catalog/*` master metadata (`service*`, `product*`) protected by `requireRole(['admin'])` inside `$transaction`.
+4. **UI & Theme Parity**: Support `.light-theme` and `.dark-theme` equally, use `tabular-nums` for dynamic numbers/timers, and anchor Drawer `[✕]` close buttons top-right (`closable: { placement: 'end' }` via `AdaptiveDrawer`).
+5. **Code-Health Ratchet (`<= 650 LOC`)**: Keep new TS/TSX source modules `<= 650 LOC` (`pnpm check:code-health`) so AI agents can read & edit modules cleanly in a single pass. Never grow baseline legacy monoliths.
 
 ---
 
-## 🎯 Coding Guidelines & Best Practices
-
-### 1. Strongly-Typed Shared Packages
-
-- **Always use shared types**: Do not redefine model interfaces on the frontend. Use types from `@mos-lab/shared` (e.g. `Customer`, `DailyPlan`, `Staff`, etc.).
-- When adding API endpoints, define request/response parameters in `packages/shared/src/types/` and run `pnpm --filter @mos-lab/shared build` before using them.
-
-### 2. Frontend API Calls
-
-- **Never use raw Axios strings**: Do not call `api.get('/some-route')` directly.
-- **Use the SDK**: Always use `apiClient` located in `apps/web/lib/api-client.ts`. It provides autocomplete, parameter types, and return-type safety.
-  - _Example_: `const res = await apiClient.customers.list({ bucket: 'COMBO_LIVE' });`
-
-### 3. Backend Imports & Modules
-
-- **File Extensions**: Relative imports in `apps/api` **MUST** end with `.js` (e.g. `import prismaPlugin from './plugins/prisma.js'`). This is required by `NodeNext` TypeScript configuration.
-- **Prisma Clients**:
-  - `fastify.prisma.crm`: Database `mos_lab` for CRM data (CRUD allowed).
-  - `fastify.prisma.legacy`: Database `management` for Legacy CRM data (**READ-ONLY** đối với bảng giao dịch: `order`, `order_service`, `user`, `user_profile`, `staff_bonus`, `user_service_balance`).
-    - **Ngoại lệ Catalog (Catalog Exception)**: Ghi lên các bảng master metadata (`service`, `service_language`, `service_price`, `product`, `product_language`, `product_price`) được **PHÉP** duy nhất tại các endpoint Catalog Management (`/api/catalog/*`), bảo vệ bởi `requireRole(['admin'])` và bọc trong `$transaction`.
-
-### 4. Theme & Styling (Refer to `.agents/AGENTS.md`)
-
-- **Theme support**: Giao diện hỗ trợ cả Sáng (Light Theme) và Tối (Dark Theme).
-- **CSS Overrides**: Tuyệt đối không hardcode màu nền tối (`background: #141414 !important`). Phân vùng ghi đè rõ ràng:
-  ```css
-  .dark-theme .ant-table {
-    background: #141414 !important;
-  }
-  .light-theme .ant-table {
-    background: #ffffff !important;
-  }
-  ```
-- **Inline Styles**: Luôn sử dụng `themeMode === 'dark' ? ... : ...` hoặc `theme.useToken()` của Ant Design.
-- **Tabular Numbers**: Tất cả các số đếm ngược, thời gian chạy, đồng hồ, thời lượng, v.v. bắt buộc phải dùng `font-variant-numeric: tabular-nums` (hoặc class Tailwind `tabular-nums`) để không bị giật giao diện khi số thay đổi.
-- **Drawer Close Button Placement Invariant (Mandatory Right/End Placement)**: Toàn bộ nút đóng `[✕]` của tất cả Drawer trong hệ thống (`AdaptiveDrawer` hoặc Ant Design `Drawer`) **BẮT BUỘC nằm ở góc trên bên phải** (`closable: { placement: 'end' }`). Tiêu đề luôn neo ở góc trên bên trái. **Tuyệt đối KHÔNG BAO GIỜ** để nút đóng `[✕]` ở góc bên trái tiêu đề.
-
-### 5. Booker Salary API Configuration & Privacy (Refer to `.agents/AGENTS.md`)
-
-- **No Shared API**: Tuyệt đối không gọi đến endpoint Wingslashes ngoài.
-- Dùng API xuất dữ liệu nội bộ: `GET /api/kpi/export-booker-salary` đi kèm key tích hợp: `?key=FDC0D0A177694777A`.
-
-### 6. CC Gamification & Bonus Calculation Rules (Refer to `.agents/AGENTS.md`)
-
-- **Level CC**: $100\text{ pts} = 1\text{ Level}$ ($\text{Level} = \lfloor \text{prevPoints} / 100 \rfloor + 1$). Reset về 1 mỗi đầu tháng.
-- **CC Bonus (đ)**: $\text{CC Bonus} = \text{Level CC} \times 65\text{đ}$.
-- **CC In != CC Out**: Tự động chia **50/50** cho cả Điểm CC (+pts) và Tiền thưởng CC Bonus (đ).
-- **Leaderboard**: Tổng tiền thưởng `Thưởng CC Bonus` trên Leaderboard khớp 100% từng đồng với tổng từng ca làm trong Bảng Chi Tiết.
-
-### 7. CC Tip Bonus, Tỷ Lệ Tip & Ngưỡng 20K (Kinh Thánh mOS Điều Răn TIP-001)
-
-- **Ngưỡng Tính Lượt Tip (Điều răn TIP-001)**: Khách hàng phải đưa từ **20.000đ trở lên** trên hóa đơn mới được tính là 1 lượt có tip (`totalTippedVisits` + 1, tính vào `% Tip Rate`).
-- **Xử lý tiền lẻ < 20K (Small Change)**: Khoản tiền tip dưới 20.000đ được coi là tiền thừa khách làm biếng lấy. **Vẫn cộng đủ tiền vào bảng lương/thu nhập nhân viên** (CV 70%, CC 20%, CS 3%), nhưng **tuyệt đối KHÔNG tính là lượt tip** (không tăng `totalTippedVisits`, không tính vào `% Tip Rate`).
-- **Bộ lọc 4 trạng thái**: Bảng chi tiết hỗ trợ 4 chế độ lọc: Tất cả (`ALL`) | Có Tip $\ge$ 20K (`TIPPED`) | Tiền lẻ < 20K (`SMALL_CHANGE`) | Không Tip 0đ (`NO_TIP`).
-- **Công thức CC Tip (20%)**: CC nhận 20% tổng tiền tip khách cho (lưu trong `staff_tip` với `tip_percentage = 20`).
-- **Biểu tượng Chuẩn Của Tip Toàn Hệ Thống (Trái tim ♥)**: Toàn bộ hệ thống (danh sách ca làm, màn hình thanh toán, hóa đơn nhiệt, bảng kê chi tiết, mobile app, web dashboard) bắt buộc sử dụng ký hiệu trái tim **`♥`** (Heart) làm biểu tượng chính thức cho tiền tip, đại diện cho tình cảm tin yêu và lòng tri ấn của khách hàng gửi tới Chuyên Viên (ví dụ: `♥ 50K`, `♥ Tiền tip chuyên viên`).
-- **CC In != CC Out**: Khi nhân viên CC In khác CC Out, khoản Thưởng CC Tip (20%) bắt buộc chia **50/50** cho cả 2 CC (mỗi CC nhận 10% tip share, `tip_percentage = 10`).
-- **Chỉ đơn Completed**: Chỉ tính tiền tip từ các đơn hàng có trạng thái `order_state = 'Completed'`.
-- **Tránh SQL Duplication**: Tuyệt đối không `JOIN order_service` hoặc `JOIN staff_bonus` khi tính `SUM(st.tip_amount)`, hãy query trực tiếp từ `staff_tip` JOIN `order`.
-- **Active CC Config**: Tất cả các tab báo cáo CC bắt buộc phải lọc theo danh sách ID tư vấn viên đang hoạt động trong `crmConfig` với key `ACTIVE_CC_STAFF_CONFIG`.
-- **Tổng Thu Nhập Live Paystub**: `Tổng Thu Nhập Tạm Tính` = `Lương Giờ` + `Thưởng CC Xoay` + `Thưởng Combo & SP` + `Thưởng Minigame` + `Thưởng CC Tip (20%)`.
-
-### 8. Quy Chuẩn Thuế VAT 8% Tại Checkout (Kinh Thánh mOS Điều Răn VAT-001)
-
-- **Mọi khoản thu đều chịu 8% VAT (Trừ Tip)**: Toàn bộ dịch vụ lẻ (Single Service), phí phụ thu nâng cấp dịch vụ từ gói combo (Upgrade Price), gói combo mua mới và sản phẩm bán kèm (dưỡng mi, serum) đều bắt buộc chịu 8% thuế VAT chuẩn hóa đơn.
-- **Công thức Grand Total**: `Grand Total = Tạm tính (Subtotal) + 8% VAT (Math.round(subtotal * 0.08)) + Tiền Tip (♥) - Cấn trừ Kim Cương (💎)`.
-- **Miễn trừ VAT tuyệt đối cho Tiền Tip**: Tiền Tip của khách trao tặng nhân sự tuyệt đối không chịu thuế VAT, chuyển đủ 100% vào cơ cấu phân bổ thưởng nhân sự (CV 70%, In/Out 20%, Quỹ 10%).
-- **Hóa đơn nhiệt minh bạch**: Mọi hóa đơn in nhiệt xuất cho khách (Screen 14) bắt buộc in rõ dòng `Thuế VAT (8%)` ngay sau phần Tạm tính và trước Tiền Tip.
-
-### 9. External API References & `wingslashes` Source Code Inspection
-
-- Mỗi khi người dùng cung cấp đường dẫn API (ví dụ: `https://api.wingslashes.com/...` hoặc `https://api.orb/...`), **không gọi trực tiếp endpoint ngoài**.
-- **Chủ động tra cứu source code `wingslashes` nội bộ**: Truy cập và kiểm tra mã nguồn/repository `wingslashes` trên hệ thống local để đối chiếu câu lệnh SQL, công thức tính toán và logic dữ liệu chính xác của API đó.
-
-### 9. Proactive OmiCall SIP & Gateway Diagnostics
-
-- **Tự động Kiểm thử Trực tiếp OmiCall PBX**: Mỗi khi người dùng báo lỗi cuộc gọi không thành công, ngắt cuộc gọi ngay (`00:00 KHÔNG BẮT MÁY`) hoặc gặp sự cố tổng đài OmiCall, **không chỉ sửa code UI đơn thuần**.
-- **Chủ động chạy kịch bản SIP WebSocket Test**: Sử dụng Node.js gửi gói tin `REGISTER` và `INVITE` trực tiếp lên gateway OmiCall (`wss://sig.omicrm.com`) với thông tin máy lẻ CRM (ví dụ Ext `106` / `Hotline106` / realm `quangnguyen2`) để xác minh:
-  1. Trạng thái kết nối SIP Register (`200 OK`).
-  2. Trạng thái định tuyến gọi ra và cước thoại OmiCall Portal (`480 Temporarily Unavailable` / `Q.850 cause 16`).
-- **Thông báo & Tự động Dự phòng (Simulation Fallback)**: Nếu OmiCall PBX phản hồi lỗi 480 hoặc hết cước thoại thực tế, chủ động thông báo cho người dùng và tự động kích hoạt Chế độ Mô phỏng (Simulation Mode) để việc kiểm thử UI/Call Wrapup/AI Analysis không bị gián đoạn.
-
-### 10. Booker "Booked / Tạo Lịch" Metric & Productivity Definition Rule
-
-- **Định nghĩa Booked/Tạo lịch**: Tất cả các báo cáo, widget, modal KPI và Leaderboard của Booker/Telesales khi đếm số lượng **"Booked / Đặt lịch / Tạo lịch"** bắt buộc phải tính theo **ngày tạo đơn thực tế trong kỳ (`date_created` trong khoảng thời gian được lọc)**.
-- **Mục đích đo lường**: Đơn đếm `Booked` đại diện cho **hiệu suất lao động (năng suất công việc)** của Booker tạo ra trong ca/ngày/tuần/tháng đó.
-- **Không dùng OR với booking_date_start**: Tuyệt đối không dùng câu lệnh `OR` hợp nhất với `booking_date_start` (ngày khách hẹn đến) khi đếm số lượng đặt lịch của Booker.
-
-### 11. Unified Business Logic & Fastify Backend Model Rule (Single Source of Truth)
-
-- **Khi có từ 2 vị trí trở lên cần xử lý/tính toán cùng một loại thông tin/chỉ số (Business Logic)**:
-  - **Không duplicate logic**: Tuyệt đối không tính toán hay tự `reduce` rải rác ở Frontend hay viết nhiều câu SQL inline lệch nhau.
-  - **Tập trung tại Fastify Backend Model / Service**: Bắt buộc xây dựng Model/Service tập trung tại Fastify Backend (`apps/api`), định nghĩa kiểu dữ liệu chuẩn tại `@mos-lab/shared`.
-  - **Mục đích**: Đảm bảo tất cả các trang, tab báo cáo, Leaderboard và API xuất file nhận kết quả tính toán đồng bộ 100% từng đồng từ một Nguồn dữ liệu chuẩn duy nhất (Single Source of Truth).
-
-### 12. CC Bonus DB Synchronization & Order Regeneration Alignment Rule
-
-- **Primary Data Source**: Khi báo cáo thưởng CC (CC Leaderboard, CC Xoay, CC Thu nhập), luôn query số tiền thưởng thực tế `SUM(CASE WHEN sb.bonus_type = 'Cash' THEN sb.bonus_amount ELSE 0 END)` trực tiếp từ bảng `staff_bonus` trong legacy DB. Đây là dữ liệu đã được làm sạch và chốt kế toán bởi script `OrderRegenerationService.php` (`regenerate-order-batch.php`).
-- **Quy tắc Reset Level Đầu Tháng**: Điểm tích lũy để tính Level CC reset về 0 vào ngày 1 hàng tháng (`date_created >= YYYY-MM-01 00:00:00`). Level CC được đếm lũy tiến trong tháng: $\text{Level} = \lfloor \text{monthly\_pts} / 100 \rfloor + 1$.
-- **Cơ chế Tự động Dự phòng (Formula Fallback)**: Giữ hàm tính toán `calculateCcBonus(level, isSplit)` tại `CcKpiService` để tự động kích hoạt tính thưởng bù nếu cơ sở dữ liệu bị thiếu dòng thưởng `Cash` cho ca làm việc hợp lệ.
-
-### 13. FAL (Fix, Adjust, Log) Rules & Midnight Order Regeneration Invariant
-
-- **FAL (Fix / Adjust / Log) Definition & SQL Extraction**:
-  - **Adjust — nhận diện & trách nhiệm**: Ca Adjust được nhận diện từ liên kết `next_adjust_order_service_id` của ca gốc. Đây là lỗi tư vấn nên **CC check-in/check-out của ca gốc** bị thu hồi 100% điểm và thưởng ca gốc, bất kể thời lượng xử lý Adjust. **CV của ca gốc giữ nguyên 100% điểm và thưởng**, tuyệt đối không gánh trách nhiệm Adjust.
-  - **Adjust — trả công theo thời lượng**: Thời lượng chuẩn là `servicing_minute + cleaning_minute`. Với ca có thời lượng dương $\le 25$ phút, CV thực hiện Adjust nhận **15 Chuối** và CC thực hiện Adjust nhận tổng **5 Chuối** (CC IN/OUT khác nhau chia 50/50); cả hai được tính ở **tua đầu**. Với ca $> 25$ phút, không áp dụng Chuối FAL: toàn bộ điểm và thưởng của CV/CC thực hiện Adjust chạy **như ca Normal**, được tính ở **tua cuối** như bình thường. Thời lượng bằng 0 hoặc thiếu dữ liệu phải được rà soát, không tự động áp dụng thưởng FAL.
-  - **Tách ledger & cấm lẫn trách nhiệm**: Ledger phải tách riêng (1) khoản thu hồi của CC ca gốc và (2) khoản thưởng của CV/CC thực hiện Adjust, kể cả khi cùng một nhân sự xuất hiện ở cả hai vai trò. Không được zero hóa điểm/thưởng của CV ca gốc chỉ vì có Adjust phía sau. `staff_bonus` là ledger đã chốt duy nhất; MOS chỉ đọc/hiển thị ledger, không tự suy diễn tiền hoặc điểm từ nhãn Adjust.
-  - **Log — bản chất & ledger ca gốc**: Log là yêu cầu thay đổi ý định của khách (tháo mi/kiểm tra), không phải lỗi Fix hay Adjust. Nhận diện bằng `next_log_order_service_id` hoặc giá dịch vụ `Log`. Không phạt, thu hồi, zero hóa hay bù thưởng đối với CV/CC ca gốc; ledger Log gốc không bị thay đổi.
-  - **Log mới — duyệt giải trình là điều kiện chốt thưởng**: Trước khi tạo bất kỳ Cash, BonusPoint hoặc Credit/Chuối nào cho CV/CC thực hiện Log mới, Log phải được **Admin hoặc Quản lý/CHO** phê duyệt thủ công sau khi nhận giải trình từ CC hoặc CV. Giải trình có thể formal hoặc informal, nhưng quyết định duyệt phải lưu tối thiểu người giải trình, tóm tắt lý do khách đổi ý, kênh giải trình, người duyệt, thời điểm và trạng thái `Approved`/`Rejected`. Khi `Pending`, `Rejected`, thời lượng bằng 0 hoặc thiếu dữ liệu: không chốt ledger thưởng.
-  - **Log mới — trả công sau khi Approved**: Với thời lượng dương $\le 25$ phút (`servicing_minute + cleaning_minute`), CV thực hiện Log nhận **15 Chuối** và CC thực hiện Log nhận tổng **5 Chuối** (CC IN/OUT khác nhau chia 50/50); tính ở **tua đầu** và không cộng thêm thưởng Normal. Với thời lượng $> 25$ phút, không áp dụng Chuối FAL; toàn bộ Cash/điểm/thưởng của CV/CC thực hiện Log chạy **như ca Normal** ở **tua cuối**. Ledger của ca Log mới phải tách biệt hoàn toàn với ca gốc.
-  - **Fix — nhận diện, trách nhiệm & trả công**: Ca Fix được nhận diện từ `next_fix_order_service_id` hoặc giá dịch vụ `Fix`; đây là lỗi kỹ thuật nên **CV ca gốc** bị thu hồi 100% điểm/thưởng ca gốc bất kể thời lượng, còn **CC ca gốc giữ nguyên ledger** và không nhận thưởng bù riêng. Với ca Fix mới có thời lượng dương $\le 25$ phút, CV thực hiện Fix nhận **15 Chuối** và CC thực hiện Fix nhận tổng **5 Chuối** (CC IN/OUT khác nhau chia 50/50), tính ở **tua đầu**. Với ca Fix $> 25$ phút, không áp dụng Chuối FAL: Cash/điểm/thưởng của CV/CC thực hiện Fix chạy **như ca Normal** ở **tua cuối**. Thời lượng bằng 0 hoặc thiếu dữ liệu phải được rà soát, không tự động áp dụng thưởng FAL. Ledger thu hồi CV ca gốc và ledger trả công ca Fix mới phải tách biệt.
-  - Dịch vụ **Replace** (tháo nối mới 100% 0đ) được tính thưởng Full theo bộ mi mới; CV ca gốc bị thu hồi thưởng theo rule kỹ thuật riêng.
-  - Tất cả các API báo cáo ca làm (KTV Xoay và CC Xoay) bắt buộc phải bóc tách cột `falRule` (`Fix`, `Adjust`, `Log`, `Replace`) thông qua các trường `next_fix_order_service_id`, `next_adjust_order_service_id`, `service_type` và `tracking_key`.
-- **Lịch Cronjob Nửa đêm (02:00 AM ICT)**:
-  - Do 81,4% lỗi lạm phát Level phát sinh trong khung giờ chốt đơn tối (21h-23h), script `regenerate-order-batch.php` trên Prod bắt buộc chạy vào **02:00 AM, 02:10 AM, 02:20 AM (Giờ Việt Nam - Asia/Ho_Chi_Minh)** cho 3 ngày gần nhất (`1 day ago`, `2 days ago`, `3 days ago`) để chốt sổ sạch sẽ.
-
-### 14. End-of-Month (EOM) Run-rate Forecast & Shift Tracking Rules
-
-- **Operational Shift Window (09:00 - 21:00 + 2h Buffer)**:
-  - Khung giờ hoạt động đón khách thực tế là **09:00 AM – 21:00 PM** (12 tiếng).
-  - Do khách checkout và thanh toán trễ khoảng **2 tiếng**, khung giờ theo dõi dòng tiền thực tế được delay thành **11:00 AM – 23:00 PM**.
-- **Công thức Tiến độ Ngày (Real-time Fraction Today)**:
-  $$ \text{fractionToday} = \begin{cases}
-  0 & \text{khi giờ } < 11 \\
-  1 & \text{khi giờ } > 22 \\
-  \frac{\text{HOUR(NOW())} - 11 + 1}{12} & \text{khi } 11 \le \text{giờ } \le 22
-  \end{cases}$$
-  $$
-- **Công thức Tỷ lệ Trôi qua Tháng (Elapsed Ratio)**:
-  $$E = \min\left(1.0, \max\left(0.001, \frac{\text{Số ngày đã qua trước hôm nay} + \text{fractionToday}}{\text{Tổng số ngày trong kỳ}}\right)\right)$$
-- **Công thức Số liệu Dự báo Cuối tháng (Projected EOM Metric)**:
-  $$\text{Projected Metric} = \frac{\text{Actual Metric}}{E}$$
-- **Quy tắc Hiển thị Giao diện (Active Month vs. Past Month)**:
-  - **Tháng hiện tại đang chạy ($E < 1.0$)**:
-    - Nhãn: `Dự kiến cuối tháng:`
-    - Màu sắc: Xanh lá nổi bật (`text-emerald-400`), số tiền tiền tố `~` (ví dụ `~581.117.263 đ`).
-    - Tooltip: `Đã trôi qua X% thời gian tháng (Ca 09:00 - 21:00 + 2h buffer checkout)`
-  - **Tháng quá khứ đã chốt ($E \ge 1.0$)**:
-    - Nhãn: `Thực tế chốt tháng:`
-    - Màu sắc: Xám mờ (`text-slate-400`, `opacity-70`), không có dấu `~`.
-    - Tooltip: `Dữ liệu tháng đã chốt (100% thời gian)`
-
-### 15. Order Completion & Actual Check-in Recognition Rule (`actual_booking_date_start`)
-
-- **Thời điểm Check-in Thực tế (`actual_booking_date_start`)**: Khi truy vấn ngày/giờ khách hàng thực tế đến làm dịch vụ tại tiệm, **bắt buộc phải lấy từ cột `report_order.actual_booking_date_start`** (thông qua `LEFT JOIN report_order ro ON o.id = ro.order_id`). Chuỗi ưu tiên thời gian: `COALESCE(ro.actual_booking_date_start, o.booking_date_start)` (2 cấp, đồng bộ WingsLashes `StaffBonusLevelState.php`).
-- **Doanh thu & Combo bán được**: Tất cả các báo cáo tài chính, doanh số bán Combo (`$ Combo`), bán lẻ (`$ Single`), sản phẩm (`$ Product`), điểm thưởng CC và thu nhập CC **bắt buộc phải tính theo thời điểm check-in/hoàn thành thực tế và trạng thái đơn hàng đã hoàn tất (`order_state = 'Completed'`)**.
-- **Tuyệt đối không dùng date_created cho Doanh thu/Combo**: Tuyệt đối không sử dụng ngày tạo đơn (`order.date_created`) để công nhận hay ghi nhận doanh số / combo đã bán cho các báo cáo doanh thu và KPI của CC.
-- **Phân biệt rõ với Chỉ số Booker (Rule #10)**: Đếm "Tạo lịch" Booker dùng `date_created` (đo năng suất telesales tạo hẹn), còn "Doanh thu & Combo" dùng `actual_booking_date_start` + `order_state = 'Completed'` (đo thực thu & nghiệm thu dịch vụ tại cửa hàng).
-- **Đồng bộ cặp Query Listing & Stats (Dual-Query Alignment)**: Khi chỉnh sửa điều kiện lọc bucket/đơn hàng trong `apps/api/src/modules/customers/routes.ts`, **bắt buộc phải cập nhật đồng thời cả Listing Query (`bStr`) và Stats Query (`bStrStats`)** để đảm bảo số liệu trên bảng và số đếm trên thẻ tab khớp 100%, tránh lỗi syntax hoặc lệch data.
-
-### 16. Eyelash Touch-up Expiration Window Rules (Quy tắc Thời hạn Dặm mi)
-
-- **Dặm mi Khách Lẻ / Không dùng gói**: Thời hạn dặm mi tối đa là **21 ngày** tính từ ngày làm mi gần nhất (`COALESCE(ro.actual_booking_date_start, o.booking_date_start)`). Quá 21 ngày tính là dặm trễ, bắt buộc tư vấn nối mới.
-- **Dặm mi Khách Có Mua Gói Combo**: Thời hạn dặm mi tối đa là **25 ngày** tính từ ngày làm mi gần nhất (`COALESCE(ro.actual_booking_date_start, o.booking_date_start)`). Quá 25 ngày tính là dặm trễ, không được áp dụng dặm mi trong gói mà bắt buộc tư vấn làm mới.
-
-### 17. Telesales Leaderboard Productivity & Default Top Booker Selection Invariant
-
-- **Telesales Ranking Metric**: Mọi câu truy vấn API backend (`/api/kpi/leaderboard`) và logic sắp xếp mảng Leaderboard cho Telesales bắt buộc phải xếp theo **năng suất làm việc thực tế (`totalBooked` / `booked` count, hoặc `totalCheckin` / `done` count)**. Tuyệt đối không sắp xếp theo `totalEarnings` (tổng lương cứng và phụ cấp) vì những nhân sự 0 đơn không bị trừ phạt missed call sẽ bị đẩy lên Top #1 (như Đẫm Ti).
-- **Default Top Booker Fallback**: Khi mở Popup/Modal Telesales Dashboard mà không có nhân sự được chọn (hoặc nhân sự được chọn không có trong mảng kỳ được lọc), Frontend bắt buộc phải tự động chọn **Top 1 Booker có lượng đơn Booked cao nhất (như Ngọc Điệp)** thay vì chọn phần tử đầu tiên mặc định hay hardcode initials (`'TN'`) dễ gây trùng lặp username.
-
-### 19. Strict CC IN / CC OUT / CV Staff Recognition & Fallback Prohibition Rule
-
-- **Định nghĩa chuẩn**:
-  - `CC IN` = Tư vấn viên thực hiện Check-in cho khách tại cửa hàng.
-  - `CC OUT` = Tư vấn viên thực hiện Checkout / Thanh toán cho khách.
-  - `BK` = Nhân sự Booker / Telesales tạo đơn hẹn.
-  - `CV` = Chuyên viên / Kỹ thuật viên làm dịch vụ mi.
-- **Quy tắc hiển thị & API**:
-  - Đơn hàng chưa Check-in hoặc bị lỡ (`New`, `Pending`, `Missed`, `Cancelled`): `ccInName` và `ccOutName` bắt buộc phải trả về `null` (hiển thị `-` trên UI).
-  - Khách hàng không chọn trước KTV chỉ định (`assigned_staff_id = null`): `technicianName` bắt buộc phải trả về `null` (hiển thị `-` trên UI), **tuyệt đối KHÔNG** fallback hiển thị chuỗi mặc định `"Kỹ thuật viên"`.
-  - **Cấm giả lập fallback**: Tuyệt đối KHÔNG viết logic fallback gán tên Booker hay KTV làm CC IN/OUT (`rawCheckIn || rawBooker || firstCvStaffId`).
-
-### 20. Staff Dropdown Deduplication & Infinite Scroll Fetch Safety Rule
-
-- **De-duplicate Nhân Sự**: Tất cả các API trả về danh sách nhân viên (`/api/customers/staff`) bắt buộc phải lọc de-duplicate theo `displayName` (trimmed & case-insensitive) trước khi trả về cho Frontend, đảm bảo các ô chọn Select không bao giờ xuất hiện tên trùng lặp.
-- **An Toàn Cuộn Trang Infinite Scroll**: Tất cả các hook/component dùng `IntersectionObserver` để cuộn tải thêm dữ liệu bắt buộc phải duy trì cờ `hasMore` (đặt thành `false` khi số item < `pageSize` hoặc đã tải hết `total`) và ref `isFetchingRef` ngăn chặn vòng lặp gọi API vô hạn gây giật lắc giao diện.
-
-### 21. Unified Combo Recognition & Date Range Parsing Invariant (Single Source of Truth)
-
-- **Định nghĩa Đơn Bán Combo Chuẩn (Unified Combo Recognition)**: Một giao dịch được ghi nhận là Bán Combo thành công khi thỏa 3 điều kiện: (1) `order.order_state = 'Completed'`, (2) Tồn tại chi tiết gói combo trong `order_service_combo` (`total_price > 0`, package key không chứa từ khóa loại trừ `%single%`, `%refill%`, `%balance%`) HOẶC trong `order_service` có `user_service_type = 'combo'` hoặc `service_group = 'combo'`, (3) Khách hàng được cập nhật số dư trong `user_service_balance`.
-- **Quy tắc Chuẩn hóa Ngày Giờ Truy vấn (Date Range Parsing & Padding Rule)**: Khi nhận chuỗi ngày `dateFrom` và `dateTo` (dạng `YYYY-MM-DD` 10 ký tự), Fastify Backend bắt buộc dùng `parseComboDateBounds` chuẩn hóa `dateFrom` thành `YYYY-MM-DD 00:00:00` và `dateTo` thành `YYYY-MM-DD 23:59:59`. Tuyệt đối **CẤM** dùng `.slice(0, 19)` cắt thô làm rụng đuôi `23:59:59` gây lỗi SQL `<='YYYY-MM-DD 00:00:00'` làm bỏ sót 100% các đơn bán combo trong ngày.
-- **Nguồn Dữ Liệu Tập Trung (Single Source of Truth Service)**: Báo cáo CC, New LoCa, Báo cáo Booker và Filter Khách hàng bắt buộc dùng chung `ComboRecognitionService` (`apps/api/src/modules/customers/services/combo-recognition.service.ts`) để đồng bộ 100% số lượng đơn combo và doanh số combo trên toàn hệ thống.
-- **Pure Combo & Gift Count Separation**: Tab Gói Combo và Form tạo/sửa Combo chỉ chứa loại gói `service_price_type = 'Combo'` (không dính `Fix`, `Adjust`, `Log`). Phân tách 4 trường count: `normalCount` (mua), `bonusNormalCount` (tặng), `retainCount` (dặm mua), `bonusRetainCount` (dặm tặng). DTO tự động bóc tách tên dạng `X+Y` (`7+3`) cho các gói combo dữ liệu lịch sử.
-- **Combo Live Done Booker Bonus (1.000đ) & Telesale Done KPI**: Combo Live không phải đơn bán combo mới. Định nghĩa chuẩn xác: Vào thời điểm đặt lịch (`order.date_created`), khách hàng vẫn còn gói combo có số lần (lượt `normal + retain > 0`) và còn hạn sử dụng (dùng chung `checkHasLiveCombo` / `buildComboLiveAtBookingSql`). Khi đơn `Completed`, BK nhận cố định **1.000đ** thay cho tier thưởng giảm giá thường; UI phải hiện `Combo Live`, không hiện `Giảm: 0%`. Trong KPI Telesale/Booking, đơn Done của khách Combo Live được ghi nhận tracking tiến độ riêng biệt; chỉ đơn của khách lẻ (Not Combo Live) mới tính vào chỉ tiêu KPI Done chính thức.
-
-### 22. Monday-First Weekly Calendar Business Rule (Quy tắc Tuần Bắt Đầu Từ Thứ 2)
-
-- **Mốc Bắt Đầu Tuần**: Tất cả các bộ lọc thời gian theo Tuần (Week Preset) ở Frontend (`dayjs`), Backend API (Fastify) và các báo cáo KPI/Leaderboard bắt buộc phải xác định Tuần bắt đầu từ **Thứ 2 (Monday 00:00:00)** và kết thúc vào **Chủ Nhật (Sunday 23:59:59)**.
-- **Frontend Day.js / Moment**: Tuyệt đối không sử dụng `dayjs().startOf('week')` (mặc định coi Chủ Nhật là đầu tuần theo chuẩn US). Bắt buộc phải dùng `dayjs().startOf('isoWeek')` và `dayjs().endOf('isoWeek')` để đảm bảo Thứ 2 là ngày bắt đầu tuần.
-
-### 23. Catalog Product Stock & VND Price Integer Rounding Rule
-
-- **VND Whole Number Invariant (Toàn cục)**: Tiền VND không có đơn vị nhỏ hơn "đồng". Tất cả các số tiền VND trên toàn hệ thống (API response, UI display, báo cáo, export file, tính toán trung gian) bắt buộc phải là **số nguyên (`Math.round`)**, tuyệt đối không hiển thị phần thập phân (ví dụ: `750000` ✅, `750000.50` ❌, `681818.18` ❌).
-- **Đơn vị tiền tệ chuẩn (VND)**: Bảng `product_price` và `service_price` lưu trữ giá theo `currency_id = 2` (VND). Khi truy vấn giá sản phẩm/dịch vụ, luôn lọc theo `currency_id = 2`.
-- **Làm tròn số nguyên (`Math.round`)**: Do CSDL legacy lưu trữ giá dạng `float` chưa VAT (ví dụ `681818.181818`), tất cả các DTO và ô nhập liệu giá tiền **bắt buộc phải bọc trong `Math.round(price)`** để không bị xuất hiện chuỗi số thập phân rườm rà (như `.18181818`).
-- **Tra cứu Tồn kho Sản phẩm (`inventory_warehouse_item`)**: Số lượng tồn kho sẵn bán của sản phẩm được liên kết từ `product.inventory_item_id` đến `inventory_warehouse_item.inventory_item_id`. Số lượng `inStockCount` được đếm từ các dòng có `item_state = 'New'`.
-
-### 24. Controlled & Persistent Table Pagination Rule
-
-- **Cấu hình Table Pagination**: Tất cả các bảng dữ liệu Ant Design `<Table>` khi sử dụng phân trang phải dùng dạng kiểm soát (Controlled State) gồm: `current`, `pageSize`, `onChange`, `showSizeChanger`, `pageSizeOptions: ['10', '20', '50', '100']`, và `showTotal`.
-- **Lưu trạng thái (Persistence)**: Lưu `activeTab`, số trang (`page`) và kích thước trang (`pageSize`) vào `localStorage`. Khi người dùng tải lại trang hoặc chuyển đổi giữa các tab, giao diện phải giữ nguyên trang và tab làm việc hiện tại. Khi đổi bộ lọc/tìm kiếm, số trang tự động quay về 1.
-
-### 25. Exclusive Hidden Items Filter Rule
-
-- **Nghiệp vụ công tắc "Chỉ hiện mục đã ẩn"**:
-  - **Trạng thái OFF (Mặc định)**: Bảng chỉ hiển thị danh sách các mục đang hoạt động (`!record.isDisabled`).
-  - **Trạng thái ON**: Bảng chuyển sang chế độ lọc độc quyền **chỉ hiển thị các mục đã bị vô hiệu hóa/ẩn** (`record.isDisabled`), giúp Admin dễ dàng kiểm tra và bật lại trạng thái hoạt động khi cần.
-
-### 26. Auto-Suggested Combo Price Calculation Rule
-
-- **Công thức Giá Gợi Ý**: Giá trọn gói combo mặc định được tính theo số lượt mua và giá bán lẻ dịch vụ niêm yết: $\text{Suggested Combo Price} = (\text{Retail Price} \times \text{Purchased Count})$.
-- **Lượt Tặng 0đ**: Tất cả các lượt tặng (`bonusNormalCount`, `bonusRetainCount`) có giá bằng **0đ** và không được cộng vào giá trọn gói.
-- **Tính năng Auto-fill & Override**: Khi Admin chọn Dịch vụ hoặc đổi Số lượt mua trong Form Combo, CRM tự động điền Giá gợi ý vào ô _Giá trọn gói (VNĐ)_. Admin có thể nhập đè nếu gói có ưu đãi đặc biệt.
-
-### 27. Catalog Write Authorization & Language Entry Fallback Rule
-
-- **Phân quyền Backend Middleware (`requireCatalogAdmin`)**: Cho phép `user.role === 'admin'`, `user.username === 'admin'`, hoặc `user.username === 'danhdo@gmail.com'` / `user.email === 'danhdo@gmail.com'` thực hiện các thao tác thêm, sửa, xóa Catalog (`/catalog/*`) trên cả môi trường Local và Production.
-- **Truy vấn Ngôn ngữ Dịch vụ (`service_language`)**: Khi cập nhật dịch vụ (`PUT /catalog/services/:id`), tìm kiếm `service_language` theo `service_id` linh hoạt (không gán cứng `language_id = 1`) và tự động tạo `tx.service_language.create` fallback nếu dịch vụ chưa có dòng tên trong CSDL.
-
-### 28. Chạm 24h Yesterday-Only Definition Invariant
-
-- **Quy tắc tính số ngày**: `Chạm 24h` (`key: 'now'`) trong chiến dịch LoCa được định nghĩa nghiêm ngặt là **chỉ lọc khách hàng ghé tiệm làm mi vào HÔM QUA** (`daysMin: 1, daysMax: 1`, `DATEDIFF(NOW(), last_visit) = 1`).
-- **Loại trừ hôm nay**: Tuyệt đối **loại trừ** khách hàng ghé tiệm trong ngày hôm nay (`0 ngày`).
-
-### 29. Booker Selector Option Label & Value Invariant
-
-- **Chuẩn nhãn hiển thị**: Tất cả các ô chọn Select Booker / Telesales trên các trang chiến dịch (LoCa, NYC) bắt buộc phải sử dụng option value `'ALL'` và nhãn hiển thị **`All Bookers`** (thay vì `'all'`, raw `'ALL'`, hoặc `'Tất cả nhân sự'`).
-
-### 30. Synchronized Minimalist Square Button Toolbar Styling
-
-- **Kiểu dáng nút Icon**: Các icon bộ lọc dạng nút bấm đơn lẻ đặt cạnh ô tìm kiếm trên thanh toolbar (ví dụ: Bộ lọc trạng thái đặt lịch `Tất cả`, `Đã book`, `Chưa book`) bắt buộc phải được thiết kế dạng khối vuông `32x32px` (`w-8 h-8 rounded-lg`) đồng bộ hoàn toàn với kích thước, chiều cao (`h-8`), bo góc (`rounded-lg`) và viền của nút Cấu hình (Gear button).
-
-### 31. Staff Fixed Weekly Off Single Source of Truth Rule (`staff_day_off_schedule`)
-
-- **Nguồn Dữ Liệu Chuẩn (Source of Truth)**: Ngày OFF tuần cố định của tất cả các nhân sự (CV/Technician, CC/Client Consultant, BK/Booker/Telesales) **bắt buộc phải truy vấn từ bảng master `staff_day_off_schedule`** trong CSDL legacy `management` (với điều kiện `is_disabled = 0 AND user_id IS NOT NULL`).
-- **Giá trị đại diện**: Cột `weekday` (`1` = Thứ 2, `2` = Thứ 3, ..., `7` = Chủ Nhật).
-- **Thứ tự ưu tiên (Precedence Order)**:
-  1. Ưu tiên hàng đầu: Lấy từ `staff_day_off_schedule` (`is_disabled = 0`).
-  2. Dự phòng (Fallback): Chỉ khi nhân sự không có dòng cấu hình trong `staff_day_off_schedule` mới dùng số liệu đếm từ `staff_day_off` (lọc 90 ngày gần nhất) hoặc lịch ca làm `staff_working_shift_schedule`.
-- **Phân biệt với Ngày Nghỉ Phép**: Bảng `staff_day_off` đại diện cho các phiếu/ticket xin nghỉ phép ngày cụ thể (`approvedOffDates`), không được dùng làm căn cứ chính để xác định lịch off tuần cố định.
-
-### 32. System-wide Tone-Insensitive Vietnamese Search Invariant (Quy tắc Tìm kiếm Tiếng Việt Không Dấu)
-
-- **Mọi ô tìm kiếm trên toàn bộ hệ thống** (bao gồm `<Select showSearch>`, bộ lọc `<Table>`, ô tìm kiếm Khách hàng, Nhân sự HR, Booker, Catalog, Dịch vụ):
-  - **Bắt buộc hỗ trợ Tìm kiếm tiếng Việt không dấu** (Tone-insensitive & Case-insensitive matching).
-  - **Hàm Chuẩn hóa (Normalize Helper)**: Luôn loại bỏ dấu tiếng Việt khi so sánh chuỗi:
-    ```typescript
-    export const removeVietnameseTones = (str: string): string => {
-      return (str || '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/đ/g, 'd')
-        .replace(/Đ/g, 'D')
-        .toLowerCase()
-        .trim();
-    };
-    ```
-  - **Cấu hình Antd Select**: Đối với thành phần `<Select showSearch>`, truyền hàm `filterOption` chuẩn hóa không dấu:
-    ```typescript
-    filterOption={(input, option) =>
-      removeVietnameseTones(String(option?.label || '')).includes(removeVietnameseTones(input))
-    }
-    ```
-
-### 33. Custom Hook Dependency Stability & Infinite Loop Prevention Rule
-
-- **Tuyệt đối KHÔNG truyền object hook rác/tổng thể vào dependency array**: Khi gọi `useCallback` hoặc `useEffect`, không truyền nguyên object trả về từ custom hook (ví dụ `filtersHook`) vào mảng dependency `[currentUser, filtersHook]`. Do object này bị khởi tạo lại ở mỗi lượt render, việc này sẽ gây ra vòng lặp re-render vô tận và nút bấm bị treo trạng thái `loading` liên tục.
-- **Bóc tách primitive value**: Bắt buộc bóc tách các biến primitive/nguyên thủy (như `const activeTab = filtersHook.activeTab; const selectedBatchId = filtersHook.selectedBatchId;`) trước khi đưa vào dependency array.
-
-### 34. UI Tab vs. Database Bucket Query Alignment Rule
-
-- **Phân biệt Tab Giao diện (UI Tab) & Bucket CSDL (Database Bucket)**: Các Tab giao diện như `'ALLOCATION'` (Đợt phân bổ) chỉ đại diện cho chế độ hiển thị trên Frontend, không phải là phân loại bucket dữ liệu trong CSDL (như `COMBO_LIVE`, `NOT_COMBO_LIVE`, `SINGLE`).
-- **Bảo đảm truyền đúng parameter trong `useCustomerList.ts`**: Khi chuyển đổi `filterParams` sang tham số gọi API (`apiClient.customers.list` và `getStats`), tuyệt đối **KHÔNG** gán `params.bucket = 'ALLOCATION'`. Thay vào đó, kiểm tra `filterParams.activeTab !== 'ALL' && filterParams.activeTab !== 'ALLOCATION'` và bắt buộc gắn trực tiếp `params.allocationBatchId = filterParams.allocationBatchId` để Fastify Backend nhận diện và lọc chính xác 100% danh sách khách hàng trong đợt.
-
-### 35. Booker Allocation Batch Workflow & Productivity Invariants (Quy tắc Nghiệp vụ Đợt phân bổ Booker)
-
-- **Tự động chọn đợt mới nhất (Auto-Select Latest Batch)**: Khi Booker mở trang Danh sách Khách hàng (`/dashboard/customers?assignedStaffId=me`) và chuyển sang Tab `⚡ Đợt phân bổ`, hệ thống bắt buộc tự động chọn đợt phân bổ mới nhất (hoặc đợt trong ngày) để Booker có thể bắt đầu làm việc ngay mà không cần thao tác chọn thủ công.
-- **Tiến độ làm việc real-time (Real-time Call Progress Tracking)**:
-  - Tiến độ đợt phân bổ được tính theo công thức: $\text{Tỷ lệ \% hoàn thành} = \frac{\text{Số KH đã có tương tác/cuộc gọi}}{\text{Tổng số KH trong đợt}} \times 100\%$.
-  - Hiển thị rõ ràng: `Đã gọi: X KH | Còn lại: Y KH (Tổng Z KH)`. Cuộc gọi được tính cho các KH có log phát sinh từ thời điểm đợt được tiếp nhận (`acceptedAt`/`createdAt`).
-- **Lưu trạng thái trên URL (F5 Persistence Invariant)**: Trạng thái Tab làm việc và đợt phân bổ phải được đồng bộ 1:1 lên thanh địa chỉ URL dưới dạng `?tab=ALLOCATION&batchId=<ID>&assignedStaffId=me` bằng `window.history.replaceState`. Khi Booker nhấn F5 tải lại trang, giao diện phải khôi phục 100% chính xác đợt phân bổ đang làm việc.
-- **Hiển thị nhãn trạng thái cuộc gọi (Call Outcome Badging)**: Mỗi dòng khách hàng trong danh sách đợt phân bổ bắt buộc hiển thị nhãn trạng thái cuộc gọi gần nhất (`Chưa gọi`, `Đã nghe máy`, `Không nhấc máy` / `Máy bận`, `Hẹn gọi lại`) và cung cấp nút 1-click gọi nhanh OmiCall.
-
-### 36. LoCa Campaign Customer Care Touchpoint Schedule Rules (Quy tắc Mốc Chạm CSKH LoCa)
-
-- **Mục tiêu chiến dịch LoCa**: Chăm sóc đặc biệt dành cho khách hàng đã mua Combo Live để hỗ trợ họ sử dụng hết các lượt nối/dặm trong gói và tái sử dụng dịch vụ tại salon.
-- **Quy tắc 8 Mốc Chạm CSKH chuẩn**:
-  1. `Chạm 24h`: Đảm bảo khách hàng hài lòng 100% với bộ mi sau lần làm dịch vụ gần nhất.
-  2. `Chạm 17n`: Nhắc lịch dặm mi cho khách hàng (thời hạn dặm mi tối ưu là trong 21 ngày).
-  3. `Chạm 19n`: Nếu đến ngày 17 khách vẫn chưa đặt lịch dặm, chạm lần 2 để hỗ trợ đặt lịch trong chu kỳ 21 ngày.
-  4. `Chạm 21n`: Ngày cuối cùng để đặt lịch dặm 21 ngày (đối với khách lẻ, đây là ngày cuối cùng nhận giá dặm ưu đãi).
-  5. `Chạm 23n`: Khách hàng mua combo có tới 25 ngày để dặm mi và được trừ lượt dặm mi trong gói.
-  6. `Chạm 25n`: Ngày cuối cùng cho khách combo sử dụng lượt dặm mi đã mua trong gói.
-  7. `Chạm 30n`: Đã trễ 5 ngày so với hạn dặm 25 ngày, bắt buộc sử dụng lượt nối mi mới trong gói combo.
-  8. `Chạm 30n+`: Hỗ trợ khách hàng dùng hết các lượt nối mới còn lại trong gói trước khi HSD gói hết hạn.
-- **Tương tác 1-Click & Popover Ghi Chú (`LocaTouchpointCell.tsx`)**: Bấm vào ô Chạm tự động đánh dấu cờ và mở ngay `<Popover>` điền phản hồi của khách, thiết kế dạng nút High-Contrast (Vàng Gold `#D4A84B`, Emerald `#059669`, Red dashed `#EF4444`).
-
-### 37. Table Explicit Width & Responsive Tablet Layout Rules (Quy tắc Độ rộng Cột Bảng & Hiển thị trên iPad/Tablet)
-
-- **Bắt buộc khai báo numeric `width` cho 100% các cột**: Tất cả các định nghĩa cột trong `<Table>` Ant Design (đặc biệt khi sử dụng `scroll={{ x: 'max-content' }}`) bắt buộc phải có thuộc tính `width` số cụ thể (ví dụ: `width: 95` đến `width: 170`). Tuyệt đối không để `width: undefined`.
-- **Ngăn ngừa co chữ theo chiều dọc (`white-space: nowrap`)**: Tất cả các cell hiển thị văn bản, số tiền VND, số điện thoại, ngày giờ hoặc nhãn trạng thái bắt buộc sử dụng `white-space: nowrap` để tránh hiện tượng rớt dòng từng ký tự theo chiều dọc (`3 \n . \n 6 \n 6...`) trên các thiết bị iPad/Tablet (màn hình 1024px – 1366px).
-- **Cơ chế Dự phòng trong `useTableConfig.ts`**: Hook quản lý cấu hình bảng phải bọc `effectiveWidth` (`width >= 40 ? config.width : staticCol.width || 120`) để tự động khắc phục các dữ liệu cấu hình lưu trong CSDL bị thiếu `width`.
-
-### 38. Allocation Batch Query Intersecting Rule (Quy tắc Giao Tập Khách Hàng Đợt Phân Bổ)
-
-- **Đồng bộ Listing & Stats Query (`bStr` & `bStrStats`)**: Khi nhận `allocationBatchId`, Fastify Backend API (`GET /api/customers` và `/stats`) bắt buộc truy vấn danh sách `customerId` từ `crmAllocationBatchItem` (`where: { batchId }`) và thực hiện giao tập (Intersect) với `allowedUserIds` bằng `Set` (`bSet.has(id)`). Tuyệt đối không thay thế hay ghi đè hoàn toàn danh sách phân quyền `allowedUserIds` của Booker.
-
-### 39. Creation & Addition Action Button Standard (Quy tắc Nút Thao Tác Thêm Mới Bắt Buộc Có Dấu `+`)
-
-- **Required Plus Icon (`+`) for Creation Actions**: Tất cả các nút bấm, icon button hoặc menu action đại diện cho thao tác **Thêm mới / Tạo mới / Đặt lịch mới** (ví dụ: _Đặt lịch mới_, _Tạo chiến dịch_, _Thêm mốc chạm_, _Tạo phân bổ_) **bắt buộc phải có biểu tượng dấu cộng (`+` / `<PlusOutlined />`)** đi kèm để người dùng dễ dàng nhận biết tính năng khởi tạo tại mọi vị trí giao diện.
-- **Compact Icon Button Visual Standard**: Đối với các nút icon bấm nhanh compact (ví dụ: nút Vàng kim _Đặt lịch mới_ trên Toolbar LoCa/NYC/Tất cả KH), sử dụng icon `<PlusOutlined />` (hoặc kết hợp icon + nhãn Tooltip rõ ràng) để không bị nhầm lẫn với icon Lịch `[ 📅 ]` thông thường.
-- **Combined Icon Pattern for Text Buttons**: Đối với nút bấm có nhãn chữ (ví dụ `<Button icon={<PlusOutlined />}>Đặt lịch mới</Button>`), luôn đặt `<PlusOutlined />` làm icon mặc định.
-
-### 28. Centralized System Constants & AI Agent Lookup Protocol (Quy tắc Hằng Số Hệ Thống Tập Trung)
-
-- **Single Source of Truth**: Tất cả các con số số học, tỷ lệ %, mốc thời gian, ID CSDL trong toàn bộ dự án `mos-lab` bắt buộc phải được khai báo tập trung tại `@mos-lab/shared/src/constants/system-constants.ts` (export qua `@mos-lab/shared`).
-- **AI Agent Protocol**: Mọi AI Agent làm việc trên `mos-lab` bắt buộc tra cứu và sử dụng các đối tượng hằng số sau:
-  - `CC_GAMIFICATION_SYSTEM_CONFIG`: Points per level (`100`), bonus rate (`65`), tip percentage (`20%`/`10%`), staff bonus rule ID (`248`), daily sales tiers.
-  - `LASH_TOUCHUP_SYSTEM_CONFIG`: Touch-up max days Single (`21`) and Combo (`25`).
-  - `OPERATIONAL_SHIFT_SYSTEM_CONFIG`: Operational hours (`09:00 - 21:00`), cashflow tracking hours (`11:00 - 23:00`), duration (`12h`).
-  - `CATALOG_CURRENCY_SYSTEM_CONFIG`: Currency ID VND (`2`), Banana Points (`3`), Referral Template ID (`7`), Vietnamese Language ID (`1`).
-  - `UI_PAGINATION_SYSTEM_CONFIG`: Default page size options (`['10', '20', '50', '100']`), default page size (`20`).
-- **KTV Hourly Wage Invariant**: Tuyệt đối **KHÔNG** hardcode mức lương giờ KTV (CV) `21500` trên UI. Lương giờ KTV bắt buộc truy vấn 100% động từ CSDL `staff_payroll.working_hour_rate`.
-
-### 40. Dynamic `user_service_type` Recognition Rules
-
-- **Cơ chế tính toán**: Khi tạo mới lịch hẹn (`POST /customers/booking`) hoặc dời lịch hẹn (`PUT /customers/booking/:id/reschedule`), Fastify backend bắt buộc phải dùng `UserServiceTypeService.determineUserServiceType(fastify, customerId, bookingDateStart)` để tự động xác định trạng thái làm dịch vụ của khách hàng (`new`, `combo`, `combo_last`, `combo_expired`, `combo_over`, `lapser`, `long_time`).
-- **Nghiêm cấm hardcode**: Tuyệt đối **KHÔNG** hardcode chuỗi `'new'` hoặc bỏ qua việc tính toán lại `user_service_type` khi dời lịch, để ứng dụng iOS hiển thị đúng icon biểu tượng trước tên khách hàng.
-
-### 41. Legacy Customer Profile URL Parameter Rules
-
-- **Đường dẫn chuẩn**: Trang danh sách khách hàng trên hệ thống Legacy Angular có đường dẫn `/admin/online-consultant/user/customer`.
-- **Query Parameters được hỗ trợ**: Hệ thống Legacy tiếp nhận các tham số tìm kiếm bao gồm `phone`, `phone_number`, `keyword`, hoặc `search` (Ví dụ: `http://localhost/admin/online-consultant/user/customer?phone=0983960852`).
-
-### 43. Unified Icon & Emoji Picker Invariant (Single Source of Truth Component)
-
-- **Single Source of Truth Component**: Tất cả các ô chọn biểu tượng (icon picker / emoji picker) trên toàn hệ thống bắt buộc phải sử dụng component dùng chung `IconPickerModal` (`apps/web/components/IconPickerModal.tsx`) và `TouchpointIconPicker` (`apps/web/components/campaign/TouchpointIconPicker.tsx`).
-- **Kho Biểu Tượng Tập Trung**: Hỗ trợ đồng bộ 4 nhóm: Ant Design (447 icons), Lucide (1995 icons), Emoji (200+ emojis), và Custom SVG icons (4 icons).
-- **Hàm Render Chuẩn (`getIconComponent` / `renderIconHelper`)**: Sử dụng `renderIconHelper` / `getIconComponent` từ `IconSystem.tsx` để render sắc nét tất cả các định dạng icon (`Antd`, `lucide:*`, `custom:*`, `emoji`). Tuyệt đối không viết lại component chọn icon rời rạc hoặc hardcode danh sách icon nhỏ lẻ.
-
-### 42. Unified Touchpoint Callback & Daily Plan Synchronization Rule (Quy tắc Hẹn Gọi Lại & Đồng Bộ Daily Plan)
-
-- **Hợp nhất điều kiện nhận diện Tab Callback (Unified Callback Recognition)**: Một khách hàng được tính vào **Tab Callback (`has_callback = 1`)** khi thỏa mãn BẤT KỲ 1 trong 3 điều kiện:
-  1. Trạng thái điểm Chạm = `'CALLBACK'` (`crm_loca_touchpoints.status = 'CALLBACK'`).
-  2. Lịch hẹn Daily Plan >= Hôm nay (`crm_daily_plans.planned_date >= CURDATE()`).
-  3. Nhật ký cuộc gọi có lịch gọi lại >= Hôm nay (`crm_call_logs.callback_date >= CURDATE()`).
-- **Tự động đồng bộ Lịch Daily Plan khi chọn "Hẹn gọi lại"**: Khi chọn trạng thái `'CALLBACK'` từ Popover điểm Chạm (`LocaTouchpointCell` & `CampaignTouchpointCell`), hệ thống phải tự động gọi API `upsert` bản ghi vào `crm_daily_plans` với `plannedDate = callbackDate` dưới bucket `'LOCA_CALLBACK'` / `'CAMPAIGN_CALLBACK'`.
-- **Hiển thị giao diện & Populate `callbackDate`**: Hệ thống trả về `callbackDate` từ `crm_daily_plans` hoặc `crm_call_logs` giúp ô Chạm hiển thị màu tím phát sáng (`#a855f7`) kèm icon Đồng hồ 🕒 và tooltip ngày hẹn.
-- **Đồng bộ Dual-Query Alignment (Rule #15)**: Bắt buộc cập nhật đồng thời cả 3 vị trí trong `apps/api/src/modules/customers/routes.ts`: `bStr` (Listing Query), `bStrStats` (Stats Query) và `count_CALLBACK` (Count Subquery) để đếm đúng và khớp 100% từng khách hàng.
-
-### 44. Strict Ant Design Table Column `ColumnsType<T>` Explicit Type Annotation Rule
-
-- **Explicit Type Annotation**: Every Ant Design `<Table>` column definition array, `useMemo` column array, or column generator function (`getPendingColumns`, `getStaffColumns`, `getNycColumns`, `getLocaColumns`, etc.) **MUST** be explicitly typed with `ColumnsType<T>` imported from `'antd/es/table'` (or `TableProps<T>['columns']`).
-- **Literal Type Safety**: Never leave column definitions un-annotated when setting properties like `align: 'right'`, `align: 'center'`, or custom `sorter`/`render` functions, as TypeScript will infer `align` as standard `string` instead of `AlignType`, breaking Next.js production type checks (`pnpm --filter @mos-lab/web build`).
-- **Example**:
-  ```typescript
-  import { ColumnsType } from 'antd/es/table';
-
-  export const getColumns = (...): ColumnsType<MyDataType> => [
-    {
-      title: 'Số tiền',
-      dataIndex: 'amount',
-      key: 'amount',
-      align: 'right',
-      render: (val: number) => <span className="tabular-nums">{formatVND(val)}</span>,
-    },
-  ];
-  ```
-
-### 45. 4-Part CC Daily Sales Bonus Rule (Quy tắc Thưởng Doanh Số CC 4 Danh Mục)
-
-- **4 Danh Mục Doanh Số Tính Thưởng CC Daily Sales Bonus**:
-  1. **Doanh Số Combo Bán Mới**: Từ bảng `order_service_combo`.
-  2. **Doanh Số Sản Phẩm Bán Lẻ**: Từ bảng `order_product`.
-  3. **Doanh Số Thu Nợ**: Từ bảng `user_debt_payment`.
-  4. **Doanh Số Nâng Cấp Gói Combo (`upgrade_price`)**: Tiền nâng cấp gói combo từ bảng `order_service` có `upgrade_price > 0` (hoặc `user_service_type = 'combo'` kèm `upgrade_price > 0`).
-- **Quy tắc Tính Tiền & Chia 50/50**:
-  - Doanh số nâng cấp combo tính thưởng = `upgrade_price` (hoặc `total_price - tax_amount`).
-  - Áp dụng chuẩn quy tắc chia **50/50** cho CC IN và CC OUT khi `check_in_staff_id != check_out_staff_id` (mỗi CC nhận 50% doanh số nâng cấp, tuân thủ Rule #2 & Rule #7).
-
-### 46. Cash-Based Combo Sales & Debt Collection Bonus Recognition Invariant (Quy tắc Doanh số Combo Theo Thực Thu & Thu Nợ 50/50)
-
-- **Doanh Số Combo Bán Mới Theo Thực Thu (Cash-based Combo Sales)**: Khi bán gói Combo mới có phát sinh nợ (`user_debt` có `debt_amount > 0`), doanh số tính thưởng CC Daily Sales Bonus của ca/ngày bán **chỉ tính theo số tiền thực thu trong ca** ($\text{qualifying\_combo\_sales} = \text{total\_price\_pre\_tax} - \text{unpaid\_debt\_amount}$).
-- **Ghi Nhận Doanh Số Thu Nợ (Debt Collection Credit)**: Khi khách hàng quay lại làm dịch vụ và thanh toán khoản nợ (ghi nhận trong `user_debt_payment`), khoản tiền thu nợ này được cộng dồn vào danh mục **Doanh Số Thu Nợ (`debt_collected`)** cho **CC IN / CC OUT của ngày/ca thu nợ đó**, áp dụng đúng quy luật chia **50/50** (nếu CC IN != CC OUT) hoặc 100% (nếu 1 CC).
-
-### 47. Combo Package CC Staff Recognition Invariant (`order_service_combo` JOIN Rule)
-
-- **Cột NULL trên `order_service_combo`**: Bảng `order_service_combo` có chứa `check_in_staff_id` và `check_out_staff_id`, nhưng **99.3% các dòng dữ liệu trong DB legacy nhận giá trị `NULL`**.
-- **Quy tắc JOIN bắt buộc**: Tất cả các truy vấn SQL / Prisma tính toán doanh số Combo, chia thưởng CC 50/50 hay phân bổ KPI Combo **bắt buộc phải `JOIN order_service os ON os.id = osc.order_service_id`** và lấy `os.check_in_staff_id`, `os.check_out_staff_id` từ `order_service`.
-- **Tuyệt đối KHÔNG**: Tuyệt đối không đọc `osc.check_in_staff_id` hoặc `osc.check_out_staff_id` trực tiếp từ `order_service_combo`, tránh làm rụng logic chia 50/50 khi 2 CC khác nhau thực hiện Check-in / Check-out.
-
-### 48. MOS API vs. iOS App API Data Reconciliation & Presentation Invariant (Quy tắc Đối chiếu Dữ liệu MOS API và iOS App API)
-
-- **Phân biệt Dữ liệu CSDL Thô vs Giao diện iOS App UI**:
-  - Khi truy vấn CSDL legacy thô (`staff_bonus`), cột `date_created` chứa dấu thời gian rạng sáng/nửa đêm (`23:59:59` hoặc `02:00:00` ngày $D+1$) do script batch cronjob chốt sổ (`OrderRegenerationService.php`) tạo ra. Tuyệt đối không dùng `WHERE DATE(sb.date_created) = date` khi so sánh dữ liệu hiển thị trên giao diện iOS.
-  - **Giao diện iOS App UI** (màn hình `ClientConsultantHomeVC` / API `/staff/client-consultant/bonus`) hiển thị và gom nhóm ca làm việc theo ngày thực tế **`booking_date_start` (`ReportOrder.date`)** — chính là thời điểm dịch vụ ($D$).
-- **Quy trình Đối chiếu Chuẩn (Reconciliation Workflow)**:
-  - Khi so sánh kết quả giữa MOS API (`GET /api/gamification/daily-sales-bonus/consultant`) và iOS App API:
-    1. **Khớp mốc ngày hiển thị UI**: Luôn gom nhóm các bản ghi thưởng legacy theo ngày làm việc thực tế `DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start))`.
-    2. **Gộp bản ghi thưởng lẻ/chia 50/50**: Hệ thống legacy có thể sinh ra nhiều dòng `staff_bonus` lẻ cho cùng 1 ca/ngày do điều kiện chia 50/50 CC IN != CC OUT hoặc thưởng điều chỉnh. Cần `SUM(sb.bonus_amount)` theo `service_date` trước khi so sánh với `daily_bonus` của MOS API.
-    3. **Kiểm thử trực tiếp Localhost**: Truy vấn trực tiếp local PHP endpoints qua HTTP (`POST http://127.0.0.1:80/1/staff/client-consultant/report` & `/1/staff/client-consultant/bonus` kèm `login_token`) để verify dữ liệu phản hồi thực tế của iOS App.
-
-### 49. No Monthly Sales Bonus for CC Invariant (Quy tắc Không Có Thưởng Doanh Số Tháng Cho CC)
-
-- **Chỉ tính Thưởng Doanh Số Theo Ngày (CC Daily Bonus)**: Hệ thống **KHÔNG CÓ** thưởng doanh số chốt tháng (Monthly Sales Bonus / Monthly Commission) cho Client Consultant (CC).
-- **Phạm vi áp dụng**: Tất cả các báo cáo, API, và logic tính thưởng CC chỉ ghi nhận:
-  1. **Thưởng Ca Làm CC Xoay**: $\text{Level CC} \times 65\text{đ}$ (chia 50/50 nếu CC IN $\neq$ CC OUT).
-  2. **Thưởng Doanh Số Ngày (CC Daily Bonus)**: % thưởng tính theo từng ngày dựa trên 4 danh mục (Combo mới, Sản phẩm, Thu nợ, Nâng cấp combo).
-  3. **Thưởng CC Tip**: 20% tiền tip (chia 50/50 nếu CC IN $\neq$ CC OUT).
-- Tuyệt đối **KHÔNG** tự ý thêm các khoản cộng dồn hay nhân tỷ lệ % thưởng doanh số tổng kết chốt tháng cho CC.
-
-### 50. CC Xoay (Wheel Bonus) 1.5x Hardcap Invariant Rule
-
-- **Quy tắc Trần Thưởng Vòng Xoay**: Tổng tiền thưởng Vòng Xoay (CC Xoay Bonus / Minigame Bonus) của mỗi CC trong tháng **tuyệt đối không được vượt quá 1.5 lần** tổng CC Daily Bonus của cá nhân CC đó trong cùng tháng:
-  $$\text{maxWheelBonusAllowed} = 1.5 \times \text{monthlyDailyBonus}$$
-- **3 Trạng thái Hạn mức**:
-  - `NORMAL`: `wheelCapPercent < 80%` — Hoạt động bình thường.
-  - `WARNING`: `80% ≤ wheelCapPercent < 100%` — Cảnh báo sắp chạm trần, UI hiển thị tag vàng ⚠️.
-  - `HARDCAPPED`: `wheelCapPercent ≥ 100%` hoặc `monthlyDailyBonus = 0` mà `rawWheelBonus > 0` — UI hiển thị tag đỏ ⛔, phần tiền vượt quá bị khống chế.
-- **Single Source of Truth**: Hàm `calculateWheelBonusCap(monthlyDailyBonus, rawWheelBonus)` tại `packages/shared/src/utils/wheel-cap.ts` là nguồn tính toán duy nhất. Tất cả các tab (CC Xoay, CC Daily Bonus, CC Game, CC Thu Nhập) bắt buộc gọi hàm này.
-- **Mục đích**: Khuyến khích CC bán nhiều Combo/Sản phẩm hơn để nâng CC Daily Bonus (mở rộng trần), thay vì chỉ tập trung vào Vòng Xoay/Minigame.
-
-### 51. Order State Lifecycle & Department Ownership SOP (Quy trình Vòng Đời Đơn Hàng & Phân Quyền Bộ Phận)
-
-- **14 trạng thái chính** trong vòng đời đơn nối mi, phân bổ theo bộ phận:
-  - **BK/Telesales (2)**: `New` (tạo lịch), `Confirmed` (xác nhận).
-  - **Bảo vệ (1)**: `Parking` (đỗ xe).
-  - **CC — Client Consultant (5)**: `CheckIn` (đón khách), `Consultation` (tư vấn kiểu mi + chọn KTV), `Preparation` (CC nhấn bắt đầu đo thời gian KTV rước khách ⏱️), `ServiceStart` (CC nhấn khi KTV đã đón khách, mục tiêu < 3p), `CheckOut` (thanh toán).
-  - **CV/KTV — Kỹ thuật viên (4)**: 📷 `ServiceStart` (chụp ảnh TRƯỚC — `before_attribute_value`), `ServiceCleaned` (vệ sinh + 📷 chụp ảnh GIỮA — `cleaned_attribute_value`), `ServiceEnd` (xong nối + 📷 chụp ảnh SAU — `after_attribute_value`), `ServiceCompleted` (KTV bấm Hoàn thành → **CV trả về Queue ngay lập tức**).
-  - **Hệ thống Auto (2)**: `Completed` (hoàn tất đơn, trigger side-effects), `Missed` (khách vắng mặt).
-  - **BK/Admin (1)**: `Cancelled` (hủy đơn).
-- **Phân biệt `ServiceEnd` vs `ServiceCompleted`**: `ServiceEnd` = KTV hoàn tất nối mi + chụp ảnh After. `ServiceCompleted` = KTV nhấn "Hoàn thành" (`/order/service/done`) → gửi tín hiệu cho CC checkout và **CV được trả về hàng chờ tua (Queue)**.
-- **KPI Thời gian nối mi**: $\text{Service Duration} = \text{ServiceCompleted} - \text{Preparation}$.
-- **KPI Thời gian rước khách**: $\text{Pickup Time} = \text{ServiceStart} - \text{Preparation}$, mục tiêu dưới 3 phút.
-- **`ACTIVE_SERVICING_STATES`** dùng trong `cv-realtime-status`: `['ServiceStart', 'ServiceCleaned', 'Consultation', 'Preparation', 'CheckIn', 'ServiceCompleted', 'ServiceEnd']`.
-- **Source code gốc**: `WingsLashes/Server/src/api/1/app/models/Order.php` (`Order::STATE_*`), `OrderServiceProgress.php` (`serviceProgressOrder()`), `iOS/WingsBeauty/Model/Config.swift`.
-
-### 52. CV / KTV Servicing Speed Calculation & Dynamic 90-Day iPad Benchmark Rule
-
-- **Thời lượng thao tác thực tế từ iPad (`report_order_service`)**: Tốc độ thực hiện dịch vụ của Chuyên viên (KTV) không lấy theo thời lượng ước tính niêm yết mà **bắt buộc phải tính theo tổng số phút thao tác thực tế ghi nhận từ ứng dụng iPad** trong `report_order_service`:
-  $$\text{actual\_servicing\_minutes} = \text{preparation\_minute} + \text{pre\_servicing\_minute} + \text{cleaning\_minute} + \text{servicing\_minute}$$
-- **Khung thời gian 90 ngày động (Dynamic 90-Day Window)**: Tốc độ trung bình (`normalAvg` - Nối mới, `retainAvg` - Dặm mi, `removalAvg` - Tháo mi) được tính trung bình cộng từ các đơn hàng có trạng thái `o.order_state = 'Completed'`, nhóm dịch vụ `s.service_group IN ('Lashes', 'LashesTop', 'LashesUnder')`, thời lượng trong khoảng từ 15 đến 200 phút, và thời điểm check-in thực tế trong vòng **90 ngày gần nhất** (`actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)`).
-- **Phân loại chỉ số tốc độ theo từng loại dịch vụ (`service_type`)**:
-  - `service_type = 'Normal'` $\rightarrow$ `normalAvg` (Thời gian nối mi mới trung bình).
-  - `service_type = 'Retain'` $\rightarrow$ `retainAvg` (Thời gian dặm mi trung bình).
-  - `service_type IN ('Removal', 'Fix')` $\rightarrow$ `removalAvg` (Thời gian tháo mi trung bình).
-- **Đồng bộ Backend API & Giao diện Linh hoạt**: Cả 2 API `/api/customers/ktv-daily-capacities` và `/api/customers/cv-realtime-status` bắt buộc đính kèm `avgDurationMinutes` cho tất cả nhân viên CV đang hoạt động. Component Frontend (`CvWorkingStaffCard`) hiển thị Badge tốc độ linh hoạt nếu nhân sự có bất kỳ chỉ số nào trong 3 loại (`normalAvg`, `retainAvg`, hoặc `removalAvg`), tuyệt đối không hardcode tốc độ thủ công hoặc ẩn badge khi nhân sự chỉ làm dặm/tháo mi.
-
-### 53. Technician (CV) DatePicker Standardization & Off-Day / Warning Invariants
-
-- **Thành phần dùng chung bắt buộc (`<CvDatePicker>`)**: Tất cả các ô chọn ngày làm việc/đặt lịch liên quan đến Chuyên viên (CV/KTV) trên toàn bộ giao diện Frontend bắt buộc phải sử dụng component dùng chung `<CvDatePicker>` tại `apps/web/components/booking/CvDatePicker.tsx`.
-- **Nghiêm cấm dùng raw `<DatePicker>` cho CV**: Tuyệt đối **KHÔNG** sử dụng trực tiếp thẻ `<DatePicker>` mặc định của Ant Design cho CV mà thiếu logic gạch ngang ngày off (`isCVOff`) hoặc khóa ngày quá khứ.
-- **Các quy chuẩn bắt buộc của `<CvDatePicker>`**:
-  - **Khóa ngày quá khứ**: Tự động vô hiệu hóa tất cả các ngày trước hôm nay (`isBefore(dayjs().startOf('day'))`).
-  - **Gạch ngang ngày off của CV**: Tự động gạch ngang (`line-through`), mờ nền và chặn click đối với ngày nghỉ cố định tuần (`offDays`) và ngày nghỉ phép đã được duyệt (`approvedOffDates`).
-  - **Cảnh báo đơn xin nghỉ phép chưa duyệt (`New`)**: Hiển thị chấm màu cam (`#f59e0b`) trên ô ngày + Tooltip + Alert Banner cảnh báo: _"CV [Tên] có đơn xin nghỉ phép đang chờ duyệt vào ngày này!"_.
-  - **Cảnh báo đơn xin nghỉ phép bị từ chối (`Rejected`)**: Hiển thị chấm màu đỏ (`#ef4444`) trên ô ngày + Tooltip + Alert Banner cảnh báo: _"CV [Tên] có đơn xin nghỉ phép bị từ chối/không được duyệt vào ngày này!"_.
-  - **Tuần bắt đầu từ Thứ 2 (`Monday-First`)**: Đảm bảo tiêu đề bảng thứ hiển thị `T2 T3 T4 T5 T6 T7 CN` theo Rule #22.
-  - **Tự động chuyển ngày hợp lệ (`getNextAvailableDate`)**: Nếu ngày được chọn rơi vào ngày off, tự động nhảy sang ngày làm việc tiếp theo gần nhất của CV.
-
-### 54. Active Lash Salons Invariant & Operational Dropdowns Rule (Quy tắc Tiệm Nối Mi Hoạt Động & Bộ Lọc Vận Hành)
-
-- **Danh sách Tiệm Nối Mi Hoạt Động (`ACTIVE_LASH_SALONS`)**: Chỉ có 2 tiệm nối mi vật lý đang phục vụ khách hàng thực tế trên môi trường Local & Prod:
-  1. 🪷 **Đề Thám** (Store ID `#6` / Code `DT`)
-  2. 🪷 **Estella Place** (Store ID `#16` / Code `EP`)
-- **Phân biệt Chi nhánh Không phục vụ Nối mi**:
-  - `Academy - Đề Thám` (`storeType = 'ACADEMY'`, `is_academy = 1`): Trường đào tạo.
-  - `HQ` (`storeType = 'OFFICE'`, key `hq`): Trụ sở / Văn phòng.
-  - `Phan Xích Long` và các chi nhánh cũ: Đã ngắt hoạt động (`is_disabled = 1`).
-- **Phạm vi Áp dụng Bắt buộc (Strict Operational Scope)**:
-  - Mọi dropdown chọn tiệm trên các giao diện vận hành nối mi (Book lịch khách hàng `BookingWizardDrawer`, Đổi lịch `RescheduleBookingModal`, Cập nhật đơn `UpdateBookingModal`, Lịch hẹn `schedule-calendar`, Báo cáo Booker `bk/page`, Báo cáo CC `cc/page`, Báo cáo CV/KTV `cv/page`, Báo cáo Hôm nay `today/page`) **BẮT BUỘC CHỈ HIỂN THỊ 2 TIỆM NỐI MI ĐANG HOẠT ĐỘNG** (`Đề Thám` và `Estella Place`).
-  - Single Source of Truth: Lấy từ `ACTIVE_LASH_SALONS` trong `@mos-lab/shared` và mảng `STORES` trong `apps/web/components/booking/constants.ts`. Tuyệt đối không hardcode thêm các chi nhánh đã ẩn hay chi nhánh văn phòng/học viện vào dropdown chọn tiệm nối mi.
-
-### 42. Lash Style Domain Terminology & System Mapping Standard (Quy tắc Thuật ngữ Dòng Mi / Dáng Mi)
-
-- **Thuật ngữ Nghiệp vụ Salon (Domain Terms)**: Các tên gọi như `Classic`, `Mink`, `Volume` (3D, 4D, 5D), `Ultralight`, `Hyperlight`, `Flawless`, `Ivylight` (3L, 4L, 5L), `Under Mink` được gọi là **Dòng Mi** (hoặc **Dáng Mi** / **Kiểu Mi** / **Dòng Dịch Vụ Mi**).
-- **Thuật ngữ Kỹ thuật System (Codebase Mapping)**:
-  - Khai báo chuẩn tại `@mos-lab/shared` (`packages/shared/src/types/catalog.ts`): đối tượng `LASH_STYLES` và kiểu dữ liệu `LashStyle`.
-  - Service backend (`LashBenchmarkService.parseLashSpecs()`) phân tích `service_key` / `service_name` thành `{ lashStyle, lashCount }`.
-  - Không nhầm lẫn **Dòng Mi / Dáng Mi** (`lashStyle`: Classic, Mink, Volume, Ivylight...) với **Loại Dịch Vụ** (`serviceType`: Normal, Retain, Fix, Adjust, Removal) hay **Nhóm Dịch Vụ** (`serviceGroup`: LashesTop, LashesUnder, Sauna...).
-
-### 55. Orb Local-First VPS / Phalcon Verification Rule
-
-- **Orb là môi trường kiểm chứng mặc định**: Hầu hết thay đổi, script vận hành, regeneration và backfill dự định chạy trên VPS Production đều phải được chạy và đối soát trước trong Orb local qua `ssh root@ubuntu@orb`, nơi có stack PHP/Phalcon và dữ liệu mô phỏng tương thích.
-- **Trình tự bắt buộc**: backup source cục bộ trên Orb → lint/kiểm tra code → dry-run đọc dữ liệu → apply cục bộ khi được duyệt → chạy lại dry-run phải sạch → đối soát trực tiếp ledger/side-effect → mới đề xuất triển khai Production.
-- **Ranh giới Production**: Không được suy diễn kết quả Orb là quyền triển khai Production. Production chỉ được động tới sau khi có yêu cầu/duyệt riêng của người dùng; nêu rõ phạm vi, batch, bằng chứng Orb và phương án rollback trước khi chạy.
-
-### 56. Mandatory Intent Clarification & Verification Invariant (Quy tắc Bắt buộc Làm Rõ Ý Định Trước Khi Thi Hành)
-
-- **Nguyên tắc Bất Di Bất Dịch**: "Nếu không hiểu rõ hoặc có rủi ro, tuyệt đối không gửi lệnh, và kể cả AG, thấy không rõ thì phải clarify trước khi làm!"
-- **Hột Mít Voice Pilot (Frontline AI Gate)**:
-  - Khi người dùng đưa ra câu lệnh kỹ thuật mơ hồ, thiếu tham số (ví dụ: "kiểm tra slow queries log trên production", "xem log server", "kiểm tra database", "sửa lỗi thanh toán"), hoặc lệnh nhạy cảm đụng chạm Production/dữ liệu:
-    $\rightarrow$ Hột Mít **tuyệt đối KHÔNG ĐƯỢC tự ý gửi lệnh bừa bãi vào AG**.
-    $\rightarrow$ Bắt buộc phải **hỏi lại (Clarify)** bằng giọng nói 1 câu ngắn gọn, chuẩn xác để làm rõ:
-    1. Đối tượng cụ thể (hệ thống nào, database nào, VPS nào)?
-    2. Phạm vi hoặc khoảng thời gian cần kiểm tra?
-       $\rightarrow$ Chỉ khi người dùng xác nhận hoặc cung cấp đủ thông tin, Hột Mít mới chuyển lệnh đã được làm rõ có cấu trúc vào AG.
-- **Antigravity (AG) Agent (Execution Guard)**:
-  - Khi AG nhận bất kỳ chỉ thị nào liên quan đến Production, sửa đổi database, hoặc yêu cầu chưa đủ thông tin rõ ràng:
-    $\rightarrow$ AG **tuyệt đối KHÔNG được cắm đầu chạy lệnh bừa bãi**.
-    $\rightarrow$ AG bắt buộc phải **Clarify với Danny trước khi thực thi**: Nêu rõ server đích, database, câu lệnh dự kiến, phạm vi ảnh hưởng và rủi ro.
-    $\rightarrow$ Nếu là tác vụ phức tạp hoặc có rủi ro, bắt buộc lập Implementation Plan và yêu cầu Danny duyệt (Proceed) trước khi chạy.
-
-### 57. CV Leave Pay & Balance Invariant (Quy Chuẩn Tính Lương Nghỉ Phép Tháng & Quỹ Phép Năm Chuyên Viên)
-
-- **Quy chuẩn Tính Lương Nghỉ Phép Tháng Có Hưởng Lương (100% Lương Giờ)**:
-  - **Mức Giờ Tính Phép Theo Ca Làm Việc Thực Tế**: Ngày nghỉ phép tháng của Chuyên Viên (CV) được tính theo **Thời lượng ca làm việc thực tế được xếp lịch trong ngày nghỉ đó (`staff_working_shift`)**. Ca thường tính 9 tiếng (9h), ca full tính trọn vẹn 11 tiếng (11h) per chỉ đạo trực tiếp của Danny.
-    $$\text{Tiền Phép Tháng} = \sum (\text{Ngày phép} \times \text{Số giờ ca (9h hoặc 11h)} \times \text{hourlyRate})$$
-    - Nhân viên làm ca thường 9h (như Thiên Thiên, HânEmBé): ngày phép tính hưởng 9h $\times$ hourlyRate.
-    - Nhân viên làm ca full 11h (như Thảo Ly, Nhung tại Đề Thám): ngày phép tính hưởng trọn vẹn **11h** $\times$ hourlyRate.
-  - **Điều kiện công nhận ngày nghỉ phép có hưởng lương**:
-    - Phải có đơn nghỉ phép tháng hợp lệ (`staff_day_off`) với trạng thái `Approved` (`request_state = 1`).
-    - Ngày nghỉ đó nhân viên phải có `working_minute = 0` (nghỉ trọn ngày). Nếu đơn bị hủy (`Cancelled`) hoặc nhân viên vẫn check-in đi làm thực tế (như trường hợp Thiên Thiên ngày 07/09) thì tính lương theo giờ công đi làm thực tế, **tuyệt đối không tính đè tiền nghỉ phép**.
-- **Cách Tính & Khấu Trừ Quỹ Phép Năm Còn Lại (`day_off_available`)**:
-  - **Nhân viên làm đủ năm**: Quỹ phép năm tiêu chuẩn là **12 ngày/năm** (tương ứng mỗi tháng làm việc tích lũy 1 ngày).
-  - **Nhân viên vào làm giữa năm hoặc ký lại hợp đồng mới sau khi nghỉ việc**:
-    - Tính từ tháng bắt đầu hợp đồng mới (`payroll_date_start`) đến hết tháng tính lương: $\text{Quỹ tích lũy} = \text{Số tháng làm việc} \times 1\text{ ngày}$.
-    - **Tuyệt đối không cộng dồn số ngày phép của hợp đồng cũ trước khi nghỉ việc** (triệt tiêu lỗi legacy cộng dồn ảo 24 ngày cũ của Thiên Thiên).
-  - **Công thức tính số phép còn lại thực tế**:
-    $$\text{Phép năm còn lại} = \text{Quỹ phép tích lũy trong năm} - \text{Tổng số ngày phép tháng đã dùng trong năm}$$
-    - Nếu tổng số ngày đã nghỉ vượt quá quỹ tích lũy: Phép còn lại bằng **0 ngày** (hết quỹ phép).
-- **Cơ Chế Bảng Lương CV Chuẩn (Bỏ KPI Bậc Thang, Giữ Thưởng Ca Xoay)**:
-  - Bỏ hoàn toàn KPI bậc thang tháng cũ (0đ, xóa `tracking_key.level`).
-  - Giữ nguyên thưởng vòng xoay ca làm việc thực tế (`staff_bonus`).
-  - Phụ cấp lễ 2/9 tách riêng dòng độc lập (`+229.500đ`).
-  - Phụ cấp gửi xe cố định 200.000đ.
-  - Thưởng thâm niên tính % theo ca xoay (`seniority`).
-  - Khấu trừ BHXH 10.5% NLĐ.
-  - $\text{Lương Net} = \text{Gross} - \text{BHXH 10.5\%}$.
-
-### 58. Staff Branch & Schedule Database-First Invariant (Quy Tắc Kiểm Chứng Trực Tiếp Cơ Sở Dữ Liệu Nhân Sự, Chi Nhánh & Lịch Ca)
-
-- **Tuyệt đối không đoán mò chi nhánh và ca kíp**: Nghiêm cấm mọi hành vi suy diễn, nhớ mang máng, hoặc quy chụp chi nhánh/ca làm việc của nhân sự.
-- **Single Source of Truth cho Chi Nhánh**:
-  - Truy vấn trực tiếp từ MySQL: `user_profile.client_store_id` JOIN `client_store_language` (`csl.language_id = 1`).
-  - Danh mục chi nhánh chuẩn:
-    - `client_store_id = 1`: **CMT8** (755 Cách Mạng Tháng 8, Tân Bình).
-    - `client_store_id = 2`: **PXL** (309 Phan Xích Long, Phú Nhuận).
-    - `client_store_id = 6`: **Đề Thám** (159 - 159A Đề Thám, Quận 1).
-    - `client_store_id = 11`: **Kỳ Đồng** (Tầng 2, 5A Kỳ Đồng, Quận 3).
-    - `client_store_id = 15`: **Him Lam** (58 Nguyễn Thị Thập, KĐT Him Lam, Quận 7).
-    - `client_store_id = 16`: **Estella Place** (L5-08, 09 Estella Place, 88 Song Hành, Quận 2).
-- **Single Source of Truth cho Ca Làm Việc & Chấm Công**:
-  - Lịch ca đăng ký: `staff_working_shift` (`date`, `start_time`, `end_time`, `working_day_count`).
-  - Chấm công thực tế: `report_staff` (`date`, `check_in_date`, `check_out_date`, `working_minute`).
-  - Đơn nghỉ phép: `staff_day_off` (`from_date`, `to_date`, `request_state`, `attribute_option_id`).
+## 4. Domain Rules & Scoped `AGENTS.md` Routing Table
+
+Read **only** the guide(s) relevant to the files you are modifying:
+
+| Domain / Task                                                                                                    | Authoritative Guide                                                                      |
+| ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Quickstart, verification recipes, source-of-truth routes                                                         | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)                                               |
+| Light/Dark theme, Tailwind+Antd, `<Table>`, `ColumnsType`, `<CvDatePicker>`, SVG/Modal zIndex, icons             | [docs/rules/ui-theme-and-tables.md](docs/rules/ui-theme-and-tables.md)                   |
+| mOS Inbox 3-Gate Bridge (`UI-007`), Night Shift, Orb local-first, Safety & Credentials                           | [docs/rules/inbox-and-ide-bridge.md](docs/rules/inbox-and-ide-bridge.md)                 |
+| Booker salary/booked KPI, Telesales leaderboard, Allocation batches, LoCa 8 touchpoints, OmiCall SIP             | [docs/rules/sales-booker-and-telesales.md](docs/rules/sales-booker-and-telesales.md)     |
+| CC Bonus/Tip (`TIP-001`)/VAT 8% (`VAT-001`)/Daily Sales/1.5x Wheel, FAL, EOM, Order SOP, CV Speed/Leave/Branches | [docs/rules/salon-ops-and-cv-rules.md](docs/rules/salon-ops-and-cv-rules.md)             |
+| Combo recognition & bounds, VND rounding, Vietnamese tone-insensitive search, Hook deps, Constants               | [docs/rules/catalog-and-data-conventions.md](docs/rules/catalog-and-data-conventions.md) |
+| `/ios-app` Frontend (step map, `UI-010`, `OPS-003` 7/7 diagnostic, `OPS-004` simulation)                         | [apps/web/app/ios-app/AGENTS.md](apps/web/app/ios-app/AGENTS.md)                         |
+| `/api/ios` Backend (MySQL/CRM repo, batch SQL, simulation isolation, Legacy PHP step sync)                       | [apps/api/src/modules/ios/AGENTS.md](apps/api/src/modules/ios/AGENTS.md)                 |
+| `/api/chat` Backend (15 route plugins, relational write-through, locks, SSE & access guards)                     | [apps/api/src/modules/chat/AGENTS.md](apps/api/src/modules/chat/AGENTS.md)               |
+| mOS Chat Frontend (`MosGoogleChatPortal`, 21 hooks, `shared/` headless hooks, `mobile/` & Desktop UI slices)     | [apps/web/components/mos-chat/AGENTS.md](apps/web/components/mos-chat/AGENTS.md)         |
+| mOS Mission / Bug Inbox API & Workers (`bug-report.service`, `routes/`, timing, health, classifier)              | [apps/api/src/modules/bug-reports/AGENTS.md](apps/api/src/modules/bug-reports/AGENTS.md) |
+| Voice Chat, Hột Mít & 5 background daemons                                                                       | [docs/VOICE_SYSTEM_ARCHITECTURE.md](docs/VOICE_SYSTEM_ARCHITECTURE.md)                   |

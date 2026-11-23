@@ -63,11 +63,7 @@ describe('AdaptiveModal Safe Area & PWA Mobile Support', () => {
     vi.spyOn(responsiveHook, 'useResponsiveTier').mockReturnValue('mobile');
 
     const { baseElement } = render(
-      <AdaptiveModal
-        open={true}
-        intent="form"
-        title="Phản hồi mOS"
-      >
+      <AdaptiveModal open={true} intent="form" title="Phản hồi mOS">
         <div>Modal Body Content</div>
       </AdaptiveModal>
     );
@@ -83,12 +79,7 @@ describe('AdaptiveModal Safe Area & PWA Mobile Support', () => {
     const onCancel = vi.fn();
 
     const { baseElement } = render(
-      <AdaptiveModal
-        open={true}
-        intent="data"
-        title="Chi tiết Lịch sử"
-        onCancel={onCancel}
-      >
+      <AdaptiveModal open={true} intent="data" title="Chi tiết Lịch sử" onCancel={onCancel}>
         <div>Modal Body Content</div>
       </AdaptiveModal>
     );

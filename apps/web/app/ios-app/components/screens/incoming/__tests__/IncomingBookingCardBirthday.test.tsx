@@ -13,7 +13,16 @@ vi.mock('../../../../../../context/ThemeContext', () => ({
 vi.mock('~/lib/api-client', () => ({
   apiClient: {
     ios: {
-      getCustomerHistory: vi.fn().mockResolvedValue({ success: true, visits: [], payments: [], fixVisits: [], diamondTransactions: [], notes: [] }),
+      getCustomerHistory: vi
+        .fn()
+        .mockResolvedValue({
+          success: true,
+          visits: [],
+          payments: [],
+          fixVisits: [],
+          diamondTransactions: [],
+          notes: [],
+        }),
     },
   },
 }));

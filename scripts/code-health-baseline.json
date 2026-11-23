@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "maxSourceLines": 650,
+  "maxAgentsMdBytes": 15000,
+  "maxDotAgentsMdBytes": 1500,
+  "files": {
+    "apps/api/src/modules/bug-reports/inbox-implementation.service.ts": 4207
+  }
+}

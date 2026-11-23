@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  combinePaymentBreakdowns,
-  computePreCheckoutPaymentSummary,
-} from '@mos-lab/shared';
+import { combinePaymentBreakdowns, computePreCheckoutPaymentSummary } from '@mos-lab/shared';
 import type { IosAuthContext } from './services/ios-auth.service.js';
 import { executeIosBookingAction } from './services/ios-actions.service.js';
-import { createOverrideRepository, type BookingOverrideRecord, type CrmConfigStoreAdapter } from './services/ios-overrides.service.js';
+import {
+  createOverrideRepository,
+  type BookingOverrideRecord,
+  type CrmConfigStoreAdapter,
+} from './services/ios-overrides.service.js';
 
 function createMemoryStore(seed: Record<string, string> = {}): CrmConfigStoreAdapter {
   const map = new Map<string, string>(Object.entries(seed));
@@ -81,11 +82,11 @@ test('computePreCheckoutPaymentSummary and combinePaymentBreakdowns handle full,
   assert.equal(partial.isFullyPrepaid, false);
   assert.equal(partial.remainingDue, 100000);
 
-  const combined = combinePaymentBreakdowns(
-    1050400,
-    partial.preCheckoutBreakdown,
-    { vietqrAmount: 0, posAmount: 0, cashAmount: 100000 }
-  );
+  const combined = combinePaymentBreakdowns(1050400, partial.preCheckoutBreakdown, {
+    vietqrAmount: 0,
+    posAmount: 0,
+    cashAmount: 100000,
+  });
   assert.equal(combined.paymentMethod, 'MIXED');
   assert.deepEqual(combined.breakdown, { vietqrAmount: 950400, posAmount: 0, cashAmount: 100000 });
 });

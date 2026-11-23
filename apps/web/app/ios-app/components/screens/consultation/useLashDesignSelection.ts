@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef, type SetStateAction } from 'react';
-import { isSuperAdminRole, isCanonicalSuperAdminIdentity, resolveActiveBookingComboWallets } from '@mos-lab/shared';
+import { resolveActiveBookingComboWallets } from '@mos-lab/shared';
 import type { BookingItem } from '../../../state/mockData';
 import type { InfoModalType } from '../LashConsultationInfoModal';
 import {
@@ -21,6 +21,12 @@ import {
   type LashMaterialSpec,
 } from '../LashMaterialConstraintMatrix';
 import type { PendingOverrideState } from './ConsultationTypes';
+import {
+  buildMaterialOverridePrompt,
+  buildServiceTypeOverridePrompt,
+  detectIsSuperAdminFromBrowser,
+  parseLengthRangeList,
+} from './lashDesignOverrideHelpers';
 
 export function useLashDesignSelection(booking?: BookingItem) {
   const [materialCatalog, setMaterialCatalog] = useState<LashMaterialSpec[]>(() => loadMaterialCatalog());
@@ -165,13 +171,8 @@ export function useLashDesignSelection(booking?: BookingItem) {
   });
 
   const [selectedLengths, setSelectedLengths] = useState<number[]>(() => {
-    const init = booking?.attributes?.length || initialMat.defaultLength;
-    const matches = init.match(/\d+/g);
-    if (matches && matches.length > 0) {
-      const nums = Array.from(new Set(matches.map((n: string) => parseInt(n, 10)))).sort((a, b) => a - b);
-      return nums.slice(0, 5);
-    }
-    return [10, 11, 12];
+    const parsed = parseLengthRangeList(booking?.attributes?.length || initialMat.defaultLength);
+    return parsed.length > 0 ? parsed : [10, 11, 12];
   });
 
   const selectedLength = useMemo(() => {
@@ -307,13 +308,9 @@ export function useLashDesignSelection(booking?: BookingItem) {
       );
     }
     if (selectedLengths.length === 0) {
-      const matches = (currentMaterialSpec.defaultLength || '10-12 mm').match(/\d+/g);
-      if (matches && matches.length > 0) {
-        setSelectedLengths(
-          Array.from(new Set(matches.map((n) => parseInt(n, 10))))
-            .sort((a, b) => a - b)
-            .slice(0, 5)
-        );
+      const parsed = parseLengthRangeList(currentMaterialSpec.defaultLength || '10-12 mm');
+      if (parsed.length > 0) {
+        setSelectedLengths(parsed);
       }
     }
     if (!currentMaterialSpec.allowedVolumes.includes(selectedVolume)) {
@@ -334,13 +331,9 @@ export function useLashDesignSelection(booking?: BookingItem) {
       setSelectedThickness(mat.defaultThickness);
     }
     if (selectedLengths.length === 0) {
-      const matches = (mat.defaultLength || '10-12 mm').match(/\d+/g);
-      if (matches && matches.length > 0) {
-        setSelectedLengths(
-          Array.from(new Set(matches.map((n) => parseInt(n, 10))))
-            .sort((a, b) => a - b)
-            .slice(0, 5)
-        );
+      const parsed = parseLengthRangeList(mat.defaultLength || '10-12 mm');
+      if (parsed.length > 0) {
+        setSelectedLengths(parsed);
       }
     }
     if (!mat.allowedVolumes.includes(selectedVolume)) {
@@ -355,18 +348,11 @@ export function useLashDesignSelection(booking?: BookingItem) {
     if (mat.id === selectedMaterial) return;
 
     if (isComboLive && mat.id !== initialMat.id) {
-      const reasons = [
-        `Khách yêu cầu đổi sang ${mat.shortLabel} (bù chênh lệch nâng cấp)`,
-        'Khách mua lẻ buổi này, giữ nguyên số lượt gói Combo',
-        'Quản lý duyệt hỗ trợ đổi dòng mi tương đương',
-      ];
-      setSelectedOverrideReasonDraft(reasons[0]);
-      setPendingOverride({
-        type: 'COMBO_MATERIAL_OVERRIDE',
-        title: '⚠️ Cảnh Báo Đổi Khác Dịch Vụ Gói Combo',
-        message: `Khách hàng đang có gói "${comboName}" (còn ${comboRemainingSessions} lượt) tương ứng dòng mi "${initialMat.shortLabel}". Bạn đang chuyển sang "${mat.shortLabel}" trái với gói khách đã mua.`,
-        defaultReason: reasons[0],
-        reasons,
+      const prompt = buildMaterialOverridePrompt({
+        mat,
+        comboName,
+        comboRemainingSessions,
+        initialMatShortLabel: initialMat.shortLabel,
         onConfirm: (reason: string) => {
           applyMaterialSelectionDirect(mat);
           setIsOverridden(true);
@@ -374,6 +360,8 @@ export function useLashDesignSelection(booking?: BookingItem) {
           setPendingOverride(null);
         },
       });
+      setSelectedOverrideReasonDraft(prompt.defaultReason);
+      setPendingOverride(prompt);
       return;
     }
 
@@ -394,57 +382,6 @@ export function useLashDesignSelection(booking?: BookingItem) {
       return;
     }
 
-    if (targetType === 'Retain' && !isWithin25Days) {
-      const daysText =
-        daysSinceLastVisit !== null
-          ? `lần cuối ngày ${lastVisitDate} (${daysSinceLastVisit} ngày trước — quá hạn ${retainDaysLimit} ngày)`
-          : `chưa có lịch sử trong ${retainDaysLimit} ngày`;
-      const reasons = [
-        `Quản lý duyệt hỗ trợ trễ chu kỳ (≤ 30 ngày) do khách bận/công tác`,
-        `Khách VIP xin gia hạn tính dặm 1 lần duy nhất`,
-        `Bảo hành / Hỗ trợ đặc biệt theo duyệt Cửa hàng trưởng`,
-      ];
-      setSelectedOverrideReasonDraft(reasons[0]);
-      setPendingOverride({
-        type: 'CYCLE_OVERRIDE',
-        title: `⚠️ Cảnh Báo Override: Đã Quá ${retainDaysLimit} Ngày (${isComboLive ? 'Combo' : 'Khách Lẻ'})`,
-        message: isComboLive
-          ? `Khách Gói Combo ghé ${daysText}. Theo quy định khách mua Combo đi trong 25 ngày luôn được tính Dặm, sau 25 ngày bắt buộc tính NỐI MỚI, nhưng bạn đang chọn tính DẶM.`
-          : `Khách lẻ ghé ${daysText}. Theo quy định khách lẻ đi trong 21 ngày có Giá Dặm vô điều kiện, sau 21 ngày bắt buộc tính NỐI MỚI, nhưng bạn đang chọn tính GIÁ DẶM.`,
-        defaultReason: reasons[0],
-        reasons,
-        onConfirm: (reason: string) => {
-          setServiceType('Retain');
-          setIsOverridden(true);
-          setOverrideReason(reason);
-          setPendingOverride(null);
-        },
-      });
-      return;
-    }
-
-    if (targetType === 'Retain' && isComboLive && !isAlwaysFullSet && !hasComboRetainRemaining) {
-      const reasons = [
-        `Gói đã hết lần Dặm — khách thanh toán lẻ buổi Dặm này`,
-        `Quản lý duyệt quy đổi lượt trong gói cho khách VIP`,
-      ];
-      setSelectedOverrideReasonDraft(reasons[0]);
-      setPendingOverride({
-        type: 'CYCLE_OVERRIDE',
-        title: '⚠️ Gói Combo Đã Hết Lần Dặm (Còn 0 lần Dặm)',
-        message: `Khách hàng đang còn ${comboNormalRemaining} lần Nối Mới và 0 lần Dặm trong gói "${comboName}". Vui lòng xác nhận lý do nếu tính Dặm:`,
-        defaultReason: reasons[0],
-        reasons,
-        onConfirm: (reason: string) => {
-          setServiceType('Retain');
-          setIsOverridden(true);
-          setOverrideReason(reason);
-          setPendingOverride(null);
-        },
-      });
-      return;
-    }
-
     if (targetType === 'Normal' && isComboLive && !isAlwaysFullSet && hasComboNormalRemaining) {
       setServiceType('Normal');
       if (selectedMaterial === initialMat.id) {
@@ -454,50 +391,30 @@ export function useLashDesignSelection(booking?: BookingItem) {
       return;
     }
 
-    if (targetType === 'Normal' && isComboLive && !isAlwaysFullSet && !hasComboNormalRemaining) {
-      const reasons = [
-        `Khách hết lần Nối Mới trong gói — đồng ý mua thêm gói mới hoặc thanh toán lẻ buổi Nối Mới`,
-        `Quản lý duyệt hỗ trợ bù chênh lệch từ lần Dặm sang Nối Mới`,
-      ];
-      setSelectedOverrideReasonDraft(reasons[0]);
-      setPendingOverride({
-        type: 'CYCLE_OVERRIDE',
-        title: '⚠️ Gói Combo Đã Hết Lần Nối Mới (Còn 0 lần Mới)',
-        message: `Khách hàng chỉ còn ${comboRetainRemaining} lần Dặm (0 lần Nối Mới) trong gói "${comboName}". Vui lòng xác nhận phương án khi khách muốn Nối Mới:`,
-        defaultReason: reasons[0],
-        reasons,
-        onConfirm: (reason: string) => {
-          setServiceType('Normal');
-          setIsOverridden(true);
-          setOverrideReason(reason);
-          setPendingOverride(null);
-        },
-      });
-      return;
-    }
+    const overridePrompt = buildServiceTypeOverridePrompt({
+      targetType,
+      isWithin25Days,
+      daysSinceLastVisit,
+      lastVisitDate,
+      retainDaysLimit,
+      isComboLive,
+      isAlwaysFullSet,
+      hasComboRetainRemaining,
+      hasComboNormalRemaining,
+      comboName,
+      comboNormalRemaining,
+      comboRetainRemaining,
+      onConfirm: (reason: string) => {
+        setServiceType(targetType);
+        setIsOverridden(true);
+        setOverrideReason(reason);
+        setPendingOverride(null);
+      },
+    });
 
-    if (targetType === 'Normal' && isWithin25Days) {
-      const reasons = [
-        `Mi cũ rụng > 70% không đủ điều kiện dặm — khách đồng ý tính Nối Mới`,
-        `Khách yêu cầu tháo làm bộ mới hoàn toàn và tính suất Nối Mới`,
-        `Khách đổi sang form / dòng mi mới không áp dụng giá dặm`,
-      ];
-      setSelectedOverrideReasonDraft(reasons[0]);
-      setPendingOverride({
-        type: 'CYCLE_OVERRIDE',
-        title: `⚠️ Cảnh Báo Override: Đi Trong ${retainDaysLimit} Ngày (${isComboLive ? 'Combo' : 'Khách Lẻ'})`,
-        message: isComboLive
-          ? `Khách Gói Combo ghé lần cuối ngày ${lastVisitDate} (${daysSinceLastVisit} ngày trước ≤ 25 ngày). Theo quy định khách mua Combo đi trong 25 ngày luôn luôn được tính DẶM, nhưng bạn đang chuyển sang tính NỐI MỚI.`
-          : `Khách lẻ ghé lần cuối ngày ${lastVisitDate} (${daysSinceLastVisit} ngày trước ≤ 21 ngày). Theo quy định khách lẻ đi trong 21 ngày luôn có GIÁ DẶM VÔ ĐIỀU KIỆN, nhưng bạn đang chuyển sang tính GIÁ NỐI MỚI.`,
-        defaultReason: reasons[0],
-        reasons,
-        onConfirm: (reason: string) => {
-          setServiceType('Normal');
-          setIsOverridden(true);
-          setOverrideReason(reason);
-          setPendingOverride(null);
-        },
-      });
+    if (overridePrompt) {
+      setSelectedOverrideReasonDraft(overridePrompt.defaultReason);
+      setPendingOverride(overridePrompt);
       return;
     }
 
@@ -584,33 +501,7 @@ export function useLashDesignSelection(booking?: BookingItem) {
   const [isCompareDesignsOpen, setIsCompareDesignsOpen] = useState<boolean>(false);
   const [zoomDesignId, setZoomDesignId] = useState<string>(selectedStyle);
 
-  const isSuperAdmin = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      const rawUser = window.localStorage.getItem('mos_user');
-      if (!rawUser) return false;
-      const user = JSON.parse(rawUser);
-      const role = String(user?.role || '')
-        .trim()
-        .toLowerCase();
-      const email = String(user?.email || '')
-        .trim()
-        .toLowerCase();
-      const username = String(user?.username || '')
-        .trim()
-        .toLowerCase();
-
-      if (role === 'super_admin' || role === 'boss') return true;
-      if (isSuperAdminRole(role)) return true;
-      if (isCanonicalSuperAdminIdentity(user)) return true;
-      if (email === 'danhdo@gmail.com' || email === 'danny.do@wingslashes.com' || username === 'admin') return true;
-      const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.get('superadmin') === '1' || searchParams.get('super_admin') === '1') return true;
-      return false;
-    } catch {
-      return false;
-    }
-  }, []);
+  const isSuperAdmin = useMemo(() => detectIsSuperAdminFromBrowser(), []);
 
   return {
     resolvedWallets,

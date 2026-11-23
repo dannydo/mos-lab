@@ -306,9 +306,7 @@ export function PostCheckoutDoneCtaButton({
         data-testid="open-post-checkout-combo-btn"
         onClick={onClick}
         className={`w-full py-3 px-4 rounded-2xl border font-extrabold text-[13.5px] shadow-xs active:scale-98 transition-transform text-center cursor-pointer ${
-          isDark
-            ? 'bg-amber-950/60 border-amber-500 text-amber-300'
-            : 'bg-amber-50 border-amber-500 text-amber-900'
+          isDark ? 'bg-amber-950/60 border-amber-500 text-amber-300' : 'bg-amber-50 border-amber-500 text-amber-900'
         }`}
       >
         ⏳ DUYỆT / XỬ LÝ ĐIỀU CHỈNH GÓI COMBO
@@ -322,9 +320,7 @@ export function PostCheckoutDoneCtaButton({
         data-testid="open-post-checkout-tip-qr-btn"
         onClick={onOpenTipQr || onClick}
         className={`py-3 px-3 rounded-2xl border font-extrabold text-[12.5px] shadow-xs active:scale-98 transition-transform text-center cursor-pointer ${
-          isDark
-            ? 'bg-rose-950/40 border-rose-500/70 text-rose-300'
-            : 'bg-rose-50 border-rose-300 text-rose-800'
+          isDark ? 'bg-rose-950/40 border-rose-500/70 text-rose-300' : 'bg-rose-50 border-rose-300 text-rose-800'
         }`}
       >
         ♥ Thêm Tip / QR Tip
@@ -334,9 +330,7 @@ export function PostCheckoutDoneCtaButton({
         data-testid="open-post-checkout-combo-btn"
         onClick={onClick}
         className={`py-3 px-3 rounded-2xl border font-extrabold text-[12.5px] shadow-xs active:scale-98 transition-transform text-center cursor-pointer ${
-          isDark
-            ? 'bg-neutral-900 border-amber-500/70 text-amber-300'
-            : 'bg-white border-amber-500 text-amber-900'
+          isDark ? 'bg-neutral-900 border-amber-500/70 text-amber-300' : 'bg-white border-amber-500 text-amber-900'
         }`}
       >
         + Điều chỉnh Combo

@@ -4,10 +4,7 @@ import React, { useState } from 'react';
 import { computePreCheckoutPaymentSummary } from '@mos-lab/shared';
 import { CheckCircle2, QrCode } from 'lucide-react';
 import type { BookingItem } from '../../../state/mockData';
-import {
-  PreCheckoutPaymentModal,
-  type SavePreCheckoutPaymentPayload,
-} from '../../modals/PreCheckoutPaymentModal';
+import { PreCheckoutPaymentModal, type SavePreCheckoutPaymentPayload } from '../../modals/PreCheckoutPaymentModal';
 
 export interface PreCheckoutStatusCardProps {
   isDark: boolean;
@@ -31,7 +28,8 @@ export function PreCheckoutStatusCard({
   }
 
   const summary = computePreCheckoutPaymentSummary({
-    grandTotal: quotedServiceTotalWithVat + (booking?.billing?.preCheckoutTipAmount ?? booking?.billing?.tipAmount ?? 0),
+    grandTotal:
+      quotedServiceTotalWithVat + (booking?.billing?.preCheckoutTipAmount ?? booking?.billing?.tipAmount ?? 0),
     billing: booking?.billing,
   });
 
@@ -41,7 +39,9 @@ export function PreCheckoutStatusCard({
         <div
           data-testid="precheckout-recorded-card"
           className={`rounded-2xl p-3 border flex items-center justify-between gap-2.5 ${
-            isDark ? 'bg-emerald-950/35 border-emerald-600/50 text-emerald-200' : 'bg-emerald-50 border-emerald-300 text-emerald-950'
+            isDark
+              ? 'bg-emerald-950/35 border-emerald-600/50 text-emerald-200'
+              : 'bg-emerald-50 border-emerald-300 text-emerald-950'
           }`}
         >
           <div className="min-w-0 space-y-0.5">

@@ -1,111 +1,39 @@
 'use client';
 
 import React, { Suspense, useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { canSwitchIosBranch, hasCompleteNaturalLashSet, isDoneBookingPendingCheckout } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
+import { IOS_STEPS } from './state/iosStepRegistry';
 import { useIosSessionAuth } from './state/useIosSessionAuth';
 import { useIosFontScale } from './state/useIosFontScale';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
-import { IosProfileMenuSheet } from './components/ui-kit/IosProfileMenuSheet';
 import { CvFeather1Badge } from './components/ui-kit/CvFeatherLabels';
-import { IosSimulationWorkspaceBar } from './components/simulation/IosSimulationWorkspaceBar';
-import { IosSimulationHistorySheet } from './components/simulation/IosSimulationHistorySheet';
-import { IosCreateBookingSheet } from './components/modals/booking/IosCreateBookingSheet';
 import { SimulationReceiptReplayBar } from './components/screens/checkout/SimulationReceiptReplayBar';
+import { IosAppGlobalOverlays } from './components/IosAppGlobalOverlays';
+import {
+  Screen02CheckInProfile,
+  Screen03ConsultationMatrix,
+  Screen04StaffQueueAssign,
+  Screen05ServicingTransfer,
+  Screen06CvDashboardReceive,
+  Screen07LashProgressBefore,
+  Screen07bLashProgressCleaned,
+  Screen08LashProgressTimer,
+  Screen09LashProgressAfter,
+  Screen10CustomerSurvey,
+  Screen11ProductUpsell,
+  Screen12CheckoutBilling,
+  Screen13CheckoutTip,
+  Screen14ThermalReceiptDone,
+  ScreenStoreDashboard,
+  ScreenInventoryStock,
+  ScreenCvPaystub,
+  ScreenSettingsRoleSwitch,
+} from './components/IosAppDynamicScreens';
 import './ios-typography.css';
 
 import { Screen01IncomingBookings } from './components/screens/Screen01IncomingBookings';
-
-const ScreenSkeleton = () => (
-  <div
-    className="w-full min-h-[450px] flex items-center justify-center backdrop-blur-sm animate-pulse"
-    style={{ backgroundColor: 'var(--background)' }}
-  >
-    <div className="flex flex-col items-center gap-3">
-      <div
-        className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-        style={{ borderColor: 'var(--mos-accent)', borderTopColor: 'transparent' }}
-      />
-      <span className="text-xs font-medium" style={{ color: 'var(--mos-text-muted)' }}>
-        Đang tải màn hình...
-      </span>
-    </div>
-  </div>
-);
-
-const Screen02CheckInProfile = dynamic(
-  () => import('./components/screens/Screen02CheckInProfile').then((m) => m.Screen02CheckInProfile),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen03ConsultationMatrix = dynamic(
-  () => import('./components/screens/Screen03ConsultationMatrix').then((m) => m.Screen03ConsultationMatrix),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen04StaffQueueAssign = dynamic(
-  () => import('./components/screens/Screen04StaffQueueAssign').then((m) => m.Screen04StaffQueueAssign),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen05ServicingTransfer = dynamic(
-  () => import('./components/screens/Screen05ServicingTransfer').then((m) => m.Screen05ServicingTransfer),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen06CvDashboardReceive = dynamic(
-  () => import('./components/screens/Screen06CvDashboardReceive').then((m) => m.Screen06CvDashboardReceive),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen07LashProgressBefore = dynamic(
-  () => import('./components/screens/Screen07LashProgressBefore').then((m) => m.Screen07LashProgressBefore),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen07bLashProgressCleaned = dynamic(
-  () => import('./components/screens/Screen07bLashProgressCleaned').then((m) => m.Screen07bLashProgressCleaned),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen08LashProgressTimer = dynamic(
-  () => import('./components/screens/Screen08LashProgressTimer').then((m) => m.Screen08LashProgressTimer),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen09LashProgressAfter = dynamic(
-  () => import('./components/screens/Screen09LashProgressAfter').then((m) => m.Screen09LashProgressAfter),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen10CustomerSurvey = dynamic(
-  () => import('./components/screens/Screen10CustomerSurvey').then((m) => m.Screen10CustomerSurvey),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen11ProductUpsell = dynamic(
-  () => import('./components/screens/Screen11ProductUpsell').then((m) => m.Screen11ProductUpsell),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen12CheckoutBilling = dynamic(
-  () => import('./components/screens/Screen12CheckoutBilling').then((m) => m.Screen12CheckoutBilling),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen13CheckoutTip = dynamic(
-  () => import('./components/screens/Screen13CheckoutTip').then((m) => m.Screen13CheckoutTip),
-  { loading: () => <ScreenSkeleton /> }
-);
-const Screen14ThermalReceiptDone = dynamic(
-  () => import('./components/screens/Screen14ThermalReceiptDone').then((m) => m.Screen14ThermalReceiptDone),
-  { loading: () => <ScreenSkeleton /> }
-);
-const ScreenStoreDashboard = dynamic(
-  () => import('./components/screens/ScreenStoreDashboard').then((m) => m.ScreenStoreDashboard),
-  { loading: () => <ScreenSkeleton /> }
-);
-const ScreenInventoryStock = dynamic(
-  () => import('./components/screens/ScreenInventoryStock').then((m) => m.ScreenInventoryStock),
-  { loading: () => <ScreenSkeleton /> }
-);
-const ScreenCvPaystub = dynamic(() => import('./components/screens/ScreenCvPaystub').then((m) => m.ScreenCvPaystub), {
-  loading: () => <ScreenSkeleton />,
-});
-const ScreenSettingsRoleSwitch = dynamic(
-  () => import('./components/screens/ScreenSettingsRoleSwitch').then((m) => m.ScreenSettingsRoleSwitch),
-  { loading: () => <ScreenSkeleton /> }
-);
 
 function IosAppInner() {
   const [authorized, setAuthorized] = useState<boolean>(false);
@@ -116,7 +44,7 @@ function IosAppInner() {
   const bookingIdStr = searchParams.get('bookingId');
   const isDemoMode = searchParams.get('demo') === '1' || searchParams.get('demo') === 'true';
   const isSimModeParam = searchParams.get('sim') === '1' || searchParams.get('sim') === 'true';
-  const initialStep = stepStr ? parseInt(stepStr, 10) : 1;
+  const initialStep = stepStr ? parseInt(stepStr, 10) : IOS_STEPS.INCOMING;
   const initialBookingId = bookingIdStr ? parseInt(bookingIdStr, 10) : undefined;
   const initialRole: IosUserRole =
     roleParam && ['CVL', 'CVLL', 'CC', 'CV', 'STORE', 'INVENTORY'].includes(roleParam) ? roleParam : 'CVL';
@@ -126,7 +54,7 @@ function IosAppInner() {
   useIosSessionAuth(roleParam, state.setRole, setAuthorized);
 
   useEffect(() => {
-    if (!authorized || state.currentStep !== 6) return;
+    if (!authorized || state.currentStep !== IOS_STEPS.CV_RECEIVE) return;
     const candidate =
       state.bookings.find((b) => Number(b.id) === Number(state.activeBookingId)) ||
       (state.activeServicingBooking
@@ -134,7 +62,7 @@ function IosAppInner() {
         : null);
     if (!candidate || candidate.id <= 0) return;
     if (!hasCompleteNaturalLashSet(candidate) && !candidate.progress?.startedAt) {
-      state.handleOpenConsultation(6);
+      state.handleOpenConsultation(IOS_STEPS.CV_RECEIVE);
     }
   }, [
     authorized,
@@ -162,24 +90,24 @@ function IosAppInner() {
     state.setActiveBookingId(idNum);
     const target = state.bookings.find((b) => Number(b.id) === idNum);
     if (target && isDoneBookingPendingCheckout(target)) {
-      state.setCurrentStep(13);
+      state.setCurrentStep(IOS_STEPS.CHECKOUT);
     } else if (target?.status === 'DONE' || Boolean(target?.billing?.completedAt)) {
-      state.setCurrentStep(15);
+      state.setCurrentStep(IOS_STEPS.RECEIPT_DONE);
     } else if (target?.status === 'SERVICING') {
       const needsNaturalLashCheck = !hasCompleteNaturalLashSet(target) && !target.progress?.startedAt;
       const step = target.progress?.currentStep;
       if (needsNaturalLashCheck) {
-        state.handleOpenConsultation(6);
-      } else if (step && step >= 3 && step <= 14) {
+        state.handleOpenConsultation(IOS_STEPS.CV_RECEIVE);
+      } else if (step && step >= IOS_STEPS.CONSULTATION && step <= IOS_STEPS.CHECKOUT_TIP) {
         state.setCurrentStep(step);
       } else {
-        state.setCurrentStep(6);
+        state.setCurrentStep(IOS_STEPS.CV_RECEIVE);
       }
     } else if (target?.status === 'CHECKED_IN') {
-      state.setCurrentStep(3);
+      state.setCurrentStep(IOS_STEPS.CONSULTATION);
     } else {
       // Khách INCOMING / Chờ đón: Bắt buộc vào Step 2 (Check-in hồ sơ đón khách)
-      state.setCurrentStep(2);
+      state.setCurrentStep(IOS_STEPS.CHECK_IN);
     }
   };
 
@@ -273,7 +201,7 @@ function IosAppInner() {
           isDemoMode={isDemoMode}
           onBack={() => {
             state.setActiveTab('booking');
-            state.setCurrentStep(1);
+            state.setCurrentStep(IOS_STEPS.INCOMING);
           }}
           onOpenSettings={() => state.setIsSettingsOpen(true)}
         />
@@ -289,9 +217,9 @@ function IosAppInner() {
       state.activeBooking;
 
     switch (state.currentStep) {
-      case 1:
+      case IOS_STEPS.INCOMING:
         return renderIncomingBookingsScreen();
-      case 2:
+      case IOS_STEPS.CHECK_IN:
         return (
           <Screen02CheckInProfile
             booking={currentBooking}
@@ -307,7 +235,7 @@ function IosAppInner() {
             )}
             activeServicingCustomerName={state.activeServicingBooking?.customerName}
             onResumeServicing={() => state.handleResumeServicing()}
-            onBack={() => state.setCurrentStep(1)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.INCOMING)}
             onCheckIn={state.handleCheckIn}
             onQuickCheckIn={state.handleSaveConsultation}
             onSelectComboWallet={state.handleSelectComboWallet}
@@ -315,14 +243,14 @@ function IosAppInner() {
             onReferralConfirmed={state.setPendingReferral}
           />
         );
-      case 3:
+      case IOS_STEPS.CONSULTATION:
         return (
           <Screen03ConsultationMatrix
             booking={currentBooking}
             actor={state.actor}
             isAdmin={state.isAdmin}
             onRefreshDb={() => state.refreshDb()}
-            onBack={() => state.setCurrentStep(2)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.CHECK_IN)}
             onSave={state.handleSaveConsultation}
             onUpdateAvatar={state.handleUpdateCustomerAvatar}
             onAutoSaveDraft={state.handleAutoSaveConsultationDraft}
@@ -335,41 +263,41 @@ function IosAppInner() {
             onSavePreCheckoutPayment={state.handleSavePreCheckoutPayment}
           />
         );
-      case 4:
+      case IOS_STEPS.STAFF_ASSIGN:
         return (
           <Screen04StaffQueueAssign
             booking={currentBooking}
             currentBranch={state.currentBranch}
-            onBack={() => state.setCurrentStep(3)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.CONSULTATION)}
             onAssign={state.handleAssignStaff}
           />
         );
-      case 5:
+      case IOS_STEPS.TRANSFER:
         return (
           <Screen05ServicingTransfer
             booking={currentBooking}
             servicingBookings={state.bookings.filter((b) => b.status === 'SERVICING')}
             currentBranch={state.currentBranch}
-            onBack={() => state.setCurrentStep(4)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.STAFF_ASSIGN)}
             onTransferToCv={state.handleTransferToCv}
           />
         );
-      case 6:
+      case IOS_STEPS.CV_RECEIVE:
         return (
           <Screen06CvDashboardReceive
             booking={currentBooking}
             onStartTask={state.handleCvStartTask}
-            onEditService={() => state.handleOpenConsultation(6)}
+            onEditService={() => state.handleOpenConsultation(IOS_STEPS.CV_RECEIVE)}
             onBack={() => {
               state.setActiveTab('booking');
-              state.setCurrentStep(1);
+              state.setCurrentStep(IOS_STEPS.INCOMING);
             }}
             staffStats={state.staffStats}
             isReadOnlyMentorView={state.isReadOnlyMentorView}
             onSavePreCheckoutPayment={state.handleSavePreCheckoutPayment}
           />
         );
-      case 7:
+      case IOS_STEPS.LASH_BEFORE:
         return (
           <Screen07LashProgressBefore
             booking={currentBooking}
@@ -379,11 +307,11 @@ function IosAppInner() {
             isSimulationMode={state.isSimulationMode}
           />
         );
-      case 8:
+      case IOS_STEPS.LASH_CLEANED:
         return (
           <Screen07bLashProgressCleaned
             booking={currentBooking}
-            onBack={() => state.setCurrentStep(7)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.LASH_BEFORE)}
             onSavePhoto={(photoUrl, retainLashes) => state.handleSaveCleanedPhoto(photoUrl, retainLashes)}
             onAutoSavePhoto={(url, retainLashes) =>
               state.handleAutoSavePhoto('cleaned', url, retainLashes ? { retainLashes } : undefined)
@@ -391,29 +319,29 @@ function IosAppInner() {
             isSimulationMode={state.isSimulationMode}
           />
         );
-      case 9:
+      case IOS_STEPS.LASH_TIMER:
         return (
           <Screen08LashProgressTimer
             booking={currentBooking}
-            onBack={() => state.setCurrentStep(8)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.LASH_CLEANED)}
             onFinishTimer={state.handleFinishTimer}
-            onEditService={() => state.handleOpenConsultation(9)}
+            onEditService={() => state.handleOpenConsultation(IOS_STEPS.LASH_TIMER)}
             isAdmin={state.isAdmin}
             isSimulationMode={state.isSimulationMode}
             onRevertToIncoming={state.handleRevertToIncoming}
           />
         );
-      case 10:
+      case IOS_STEPS.LASH_AFTER:
         return (
           <Screen09LashProgressAfter
             booking={currentBooking}
-            onBack={() => state.setCurrentStep(9)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.LASH_TIMER)}
             onSavePhoto={state.handleSaveAfterPhoto}
             onAutoSavePhoto={(url) => state.handleAutoSavePhoto('after', url)}
             isSimulationMode={state.isSimulationMode}
           />
         );
-      case 11:
+      case IOS_STEPS.CUSTOMER_SURVEY:
         return (
           <Screen10CustomerSurvey
             booking={currentBooking}
@@ -423,7 +351,7 @@ function IosAppInner() {
             onComplete={state.handleCompleteSurvey}
           />
         );
-      case 12:
+      case IOS_STEPS.PRODUCT_UPSELL:
         return (
           <Screen11ProductUpsell
             booking={currentBooking}
@@ -436,7 +364,7 @@ function IosAppInner() {
             onGoToBilling={state.handleGoToBilling}
           />
         );
-      case 13:
+      case IOS_STEPS.CHECKOUT:
         return (
           <Screen12CheckoutBilling
             booking={currentBooking}
@@ -445,9 +373,9 @@ function IosAppInner() {
             onBack={() => {
               if (isDoneBookingPendingCheckout(currentBooking)) {
                 state.setBookingSegment('DONE');
-                state.setCurrentStep(1);
+                state.setCurrentStep(IOS_STEPS.INCOMING);
               } else {
-                state.setCurrentStep(12);
+                state.setCurrentStep(IOS_STEPS.PRODUCT_UPSELL);
               }
             }}
             onChoosePayment={state.handleChoosePaymentMethod}
@@ -455,21 +383,21 @@ function IosAppInner() {
             onUpdateCartProducts={state.handleUpdateCartProducts}
             onSelectComboWallet={state.handleSelectComboWallet}
             onUpdateCombos={state.handleUpdateCombos}
-            onEditService={() => state.handleOpenConsultation(13)}
+            onEditService={() => state.handleOpenConsultation(IOS_STEPS.CHECKOUT)}
             pendingReferral={state.pendingReferral}
           />
         );
-      case 14:
+      case IOS_STEPS.CHECKOUT_TIP:
         return (
           <Screen13CheckoutTip
             booking={currentBooking}
             actor={state.actor}
             cvPlusRules={state.staffStats?.cvPlusRules}
-            onBack={() => state.setCurrentStep(13)}
+            onBack={() => state.setCurrentStep(IOS_STEPS.CHECKOUT)}
             onRecordTip={state.handleRecordTip}
           />
         );
-      case 15:
+      case IOS_STEPS.RECEIPT_DONE:
         return (
           <Screen14ThermalReceiptDone
             booking={currentBooking}
@@ -496,7 +424,7 @@ function IosAppInner() {
             onBack={() => {
               state.setActiveServicingBookingId(null);
               state.setBookingSegment('DONE');
-              state.setCurrentStep(1);
+              state.setCurrentStep(IOS_STEPS.INCOMING);
             }}
           />
         );
@@ -506,7 +434,10 @@ function IosAppInner() {
   };
 
   const showTabBar =
-    !state.isSettingsOpen && (state.activeTab === 'paystub' || state.currentStep === 1 || state.currentStep === 6);
+    !state.isSettingsOpen &&
+    (state.activeTab === 'paystub' ||
+      state.currentStep === IOS_STEPS.INCOMING ||
+      state.currentStep === IOS_STEPS.CV_RECEIVE);
 
   const handleTabChange = (tab: string) => {
     state.setActiveTab(tab);
@@ -516,12 +447,12 @@ function IosAppInner() {
     }
 
     if (tab === 'booking') {
-      state.setCurrentStep(1);
+      state.setCurrentStep(IOS_STEPS.INCOMING);
     } else if (tab === 'task') {
       if (state.activeServicingBooking) {
         state.handleResumeServicing(state.activeServicingBooking.id);
       } else {
-        state.setCurrentStep(6);
+        state.setCurrentStep(IOS_STEPS.CV_RECEIVE);
       }
     } else if (tab === 'paystub') {
       state.setActiveTab('paystub');
@@ -537,140 +468,44 @@ function IosAppInner() {
         className="w-full max-w-[430px] h-[100dvh] max-h-[100dvh] flex flex-col relative overflow-hidden transition-colors"
         style={{ backgroundColor: 'var(--background)' }}
       >
-        <IosSimulationWorkspaceBar
-          isSimulationMode={state.isSimulationMode}
-          isReadOnlyMentorView={state.isReadOnlyMentorView}
-          simulationActorStaffName={state.simulationActorStaffName}
-          menteesList={state.menteesList}
-          selectedMenteeStaffId={state.selectedMenteeStaffId}
-          onSelectMentee={state.selectMenteeStaffId}
-          activeBooking={state.activeBooking}
-          currentStep={state.currentStep}
-          isBusy={state.isSimActionBusy}
-          simActionError={state.simActionError}
-          onDismissError={() => state.setSimActionError(null)}
-          onOpenHistory={state.openHistoryForBooking}
-          onRevertConsultation={state.handleSimRevertConsultation}
-          onResetToIncoming={state.handleSimResetToIncoming}
-          onExitSimulation={state.toggleSimulationMode}
-          simPresetMode={state.simPresetMode}
-          onSelectSimPresetMode={state.selectSimPresetMode}
-          onSimJumpToStep={state.handleSimJumpToStep}
-          simMaterialsChecklist={state.simMaterialsChecklist}
-          onToggleSimMaterial={state.toggleSimMaterialCheck}
-        />
-
-        {/* Screen Body */}
-        <div
-          className="flex-1 flex flex-col min-h-0 relative overflow-hidden transition-colors"
-          style={{ backgroundColor: 'var(--background)' }}
+        <IosAppGlobalOverlays
+          state={state}
+          isProfileSheetOpen={isProfileSheetOpen}
+          setIsProfileSheetOpen={setIsProfileSheetOpen}
         >
-          {renderActiveScreen()}
-        </div>
+          {/* Screen Body */}
+          <div
+            className="flex-1 flex flex-col min-h-0 relative overflow-hidden transition-colors"
+            style={{ backgroundColor: 'var(--background)' }}
+          >
+            {renderActiveScreen()}
+          </div>
 
-        {/* Real Native iOS Bottom TabBar */}
-        {showTabBar && (
-          <IosTabBar
-            role={state.role}
-            activeTab={state.activeTab}
-            onTabChange={handleTabChange}
-            onCenterPlusClick={() => {
-              if (state.isSimulationMode && !state.activeServicingBooking) {
-                state.setIsCreateBookingOpen(true);
-              } else if (state.activeServicingBooking) {
-                state.handleResumeServicing(state.activeServicingBooking.id);
-              } else {
-                state.setActiveTab('booking');
-                state.setCurrentStep(3);
-              }
-            }}
-            badgeCounts={{
-              booking: state.counts.incoming,
-              task: state.counts.servicing || 1,
-              staff: 0,
-              dispense: 0,
-            }}
-          />
-        )}
-
-        {/* iOS Native Profile & Admin Switch Action Sheet */}
-        <IosProfileMenuSheet
-          isOpen={isProfileSheetOpen}
-          onClose={() => setIsProfileSheetOpen(false)}
-          actor={state.actor}
-          role={state.role}
-          canSwitchRole={state.canSwitchRole}
-          currentBranch={state.currentBranch}
-          selectedStoreId={state.selectedStoreId}
-          onSelectBranch={
-            canSwitchIosBranch({ isAdmin: state.isAdmin, iosRole: state.role }) ? state.setSelectedStoreId : undefined
-          }
-          availableBranches={state.availableBranches}
-          isAdmin={state.isAdmin}
-          isSimulationMode={state.isSimulationMode}
-          onToggleSimulationMode={state.toggleSimulationMode}
-          menteesList={state.menteesList}
-          selectedMenteeStaffId={state.selectedMenteeStaffId}
-          onSelectMentee={state.selectMenteeStaffId}
-          onOpenCreateBooking={!state.isReadOnlyMentorView ? () => state.setIsCreateBookingOpen(true) : undefined}
-          onRoleChange={(r) => {
-            state.setRole(r);
-            setIsProfileSheetOpen(false);
-          }}
-          onOpenPaystub={() => {
-            state.setActiveTab('paystub');
-            setIsProfileSheetOpen(false);
-          }}
-          onOpenChat={() => {
-            setIsProfileSheetOpen(false);
-            const win = window.open('/chat', '_blank');
-            if (!win || win.closed) window.location.href = '/chat';
-          }}
-          onOpenCareer={() => {
-            setIsProfileSheetOpen(false);
-            const url = `/dashboard/career-path${state.actor?.staffId ? `?staffId=${state.actor.staffId}` : ''}`;
-            const win = window.open(url, '_blank');
-            if (!win || win.closed) window.location.href = url;
-          }}
-          onLogout={() => {
-            setIsProfileSheetOpen(false);
-            if (typeof window !== 'undefined') {
-              ['mos_token', 'mos_user', 'mos_omicall_auto_init', 'mos_original_token', 'mos_original_user', 'mos_original_omicall_auto_init', 'mos_impersonation_audit_id'].forEach((k) => window.localStorage.removeItem(k));
-              window.location.replace('/login');
-            }
-          }}
-        />
-
-        <IosCreateBookingSheet
-          isOpen={state.isCreateBookingOpen}
-          onClose={() => state.setIsCreateBookingOpen(false)}
-          isSimulationMode={state.isSimulationMode}
-          selectedStoreId={state.selectedStoreId}
-          branchName={state.currentBranch?.name}
-          targetDate={state.targetDateStr}
-          actorStaffId={state.actor?.staffId}
-          onCreated={state.handleBookingCreated}
-        />
-
-        <IosSimulationHistorySheet
-          isOpen={state.isHistorySheetOpen}
-          onClose={() => state.setIsHistorySheetOpen(false)}
-          booking={state.bookings.find((b) => Number(b.id) === Number(state.historyBookingId)) || state.activeBooking}
-          attempts={state.historyBookingId ? state.attemptsByBookingId[state.historyBookingId] || [] : []}
-          isLoading={state.historyLoading}
-          error={state.historyError}
-          isReadOnly={state.isReadOnlyMentorView}
-          isBusy={state.isSimActionBusy}
-          onRetryLoad={() => {
-            if (state.historyBookingId) {
-              void state.loadAttemptsForBooking(state.historyBookingId);
-            }
-          }}
-          onRevertConsultation={state.handleSimRevertConsultation}
-          onResetToIncoming={state.handleSimResetToIncoming}
-          onUpdateAttempt={state.handleUpdateSimulationAttempt}
-          onApplyAttempt={state.handleApplyAttemptToWorkspace}
-        />
+          {/* Real Native iOS Bottom TabBar */}
+          {showTabBar && (
+            <IosTabBar
+              role={state.role}
+              activeTab={state.activeTab}
+              onTabChange={handleTabChange}
+              onCenterPlusClick={() => {
+                if (state.isSimulationMode && !state.activeServicingBooking) {
+                  state.setIsCreateBookingOpen(true);
+                } else if (state.activeServicingBooking) {
+                  state.handleResumeServicing(state.activeServicingBooking.id);
+                } else {
+                  state.setActiveTab('booking');
+                  state.setCurrentStep(IOS_STEPS.CONSULTATION);
+                }
+              }}
+              badgeCounts={{
+                booking: state.counts.incoming,
+                task: state.counts.servicing || 1,
+                staff: 0,
+                dispense: 0,
+              }}
+            />
+          )}
+        </IosAppGlobalOverlays>
       </div>
     </div>
   );

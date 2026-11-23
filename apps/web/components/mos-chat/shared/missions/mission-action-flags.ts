@@ -37,38 +37,38 @@ export function resolveMissionActionFlags(
 
   const canApproveImplementation = Boolean(
     mission.superAdminActions?.canApproveImplementation ||
-      mission.status === 'NEW' ||
-      (mission.status === 'APPROVED' && !mission.superAdminActions?.activeJobId)
+    mission.status === 'NEW' ||
+    (mission.status === 'APPROVED' && !mission.superAdminActions?.activeJobId)
   );
 
   const canSuperAdminApproveCommit = Boolean(
     mission.canSuperAdminApproveCommit ||
-      mission.superAdminActions?.canApproveCommit ||
-      mission.status === 'AWAITING_DANNY_COMMIT_REVIEW' ||
-      mission.superAdminActions?.executionPhase === 'AWAITING_COMMIT_REVIEW'
+    mission.superAdminActions?.canApproveCommit ||
+    mission.status === 'AWAITING_DANNY_COMMIT_REVIEW' ||
+    mission.superAdminActions?.executionPhase === 'AWAITING_COMMIT_REVIEW'
   );
 
   const canSuperAdminApproveDeploy = Boolean(
     mission.canSuperAdminApproveDeploy ||
-      mission.superAdminActions?.canApproveDeploy ||
-      mission.status === 'AWAITING_DANNY_DEPLOY_APPROVAL' ||
-      mission.superAdminActions?.executionPhase === 'AWAITING_DEPLOY_REVIEW'
+    mission.superAdminActions?.canApproveDeploy ||
+    mission.status === 'AWAITING_DANNY_DEPLOY_APPROVAL' ||
+    mission.superAdminActions?.executionPhase === 'AWAITING_DEPLOY_REVIEW'
   );
 
   const canReporterAccept = Boolean(
     !isTerminal &&
-      (typeof mission.canReporterAccept === 'boolean'
-        ? mission.canReporterAccept
-        : mission.stage === 'READY_FOR_REVIEW' ||
-          mission.status === 'FIXED' ||
-          mission.status === 'AWAITING_REPORTER_ACCEPTANCE')
+    (typeof mission.canReporterAccept === 'boolean'
+      ? mission.canReporterAccept
+      : mission.stage === 'READY_FOR_REVIEW' ||
+        mission.status === 'FIXED' ||
+        mission.status === 'AWAITING_REPORTER_ACCEPTANCE')
   );
 
   const canRequestUpgradeOrRework = Boolean(
     canReporterAccept ||
-      mission.reporterActions?.canAcceptOrReopen ||
-      mission.stage === 'COMPLETED' ||
-      mission.status === 'CLOSED'
+    mission.reporterActions?.canAcceptOrReopen ||
+    mission.stage === 'COMPLETED' ||
+    mission.status === 'CLOSED'
   );
 
   return {

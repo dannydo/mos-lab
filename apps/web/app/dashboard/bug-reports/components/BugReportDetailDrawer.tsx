@@ -1,51 +1,27 @@
 'use client';
 
 import { useState } from 'react';
-
+import { Alert, Avatar, Button, Image, List, Typography } from 'antd';
 import {
-  Alert,
-  Avatar,
-  Button,
-  Descriptions,
-  Dropdown,
-  Image,
-  Input,
-  List,
-  Popconfirm,
-  Radio,
-  Select,
-  Space,
-  Typography,
-} from 'antd';
-import {
-  type BugPriority,
   type BugReportDetail,
   type BugReportPlanReviewCandidate,
   type InboxImplementationModelTier,
   isDeferredBugReport,
   BUG_REPORT_Z_INDEX,
 } from '@mos-lab/shared';
-import { CheckCircle2, Clock, Gavel, HelpCircle, RefreshCw, Send } from 'lucide-react';
-import {
-  AdaptiveDrawer,
-  AdaptiveModal,
-  AppIcon,
-  SectionCard,
-  StatePanel,
-} from '../../../../components/ui';
-import { RichTextEditor, RichTextViewer } from '../../../../components/ui/rich-text';
+import { RefreshCw } from 'lucide-react';
+import { AdaptiveDrawer, AdaptiveModal, AppIcon, SectionCard, StatePanel } from '../../../../components/ui';
+import { RichTextViewer } from '../../../../components/ui/rich-text';
 import { BugReportConversation } from '../../../../components/bug-reports/BugReportConversation';
 import { BugReportResolutionTracking } from './BugReportResolutionTracking';
 import { BugReportExecutionTimingCard } from './BugReportExecutionTimingCard';
-import {
-  BugReportImplementationStatusCards,
-  EXECUTION_OWNER_LABELS,
-  MODEL_TIER_LABELS,
-} from './BugReportImplementationStatusCards';
+import { BugReportImplementationStatusCards } from './BugReportImplementationStatusCards';
 import { FeatureRequestDetails } from './FeatureRequestDetails';
 import { BugReportDeferModal } from './BugReportDeferModal';
 import { BugReportReasonModal } from './BugReportReasonModal';
 import { BugReportDiagnosticsSection } from './BugReportDiagnosticsSection';
+import { BugReportDetailHeaderActions } from './BugReportDetailHeaderActions';
+import { BugReportTriageSection } from './BugReportTriageSection';
 import {
   AgentProgressTag,
   BugStatusTag,
@@ -58,12 +34,9 @@ import {
   PriorityTag,
   ProtectedAttachment,
   RequestTypeTag,
-  STATUS_LABELS,
-  TRANSITIONS,
 } from '../bug-report-presenters';
 import { useBugReportDetail, type BugReportDetailOptions } from '../hooks/useBugReportDetail';
 import type { useBugReports } from '../hooks/useBugReports';
-import styles from './BugReportDetailDrawer.module.css';
 
 const { Text } = Typography;
 
@@ -132,12 +105,6 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
     approveDeploy,
   } = useBugReportDetail(actions);
 
-  const approvalItems = (['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({
-    key: item,
-    label: `Duyệt triển khai ${item}`,
-    onClick: () => void save({ status: 'APPROVED', priority: item }),
-  }));
-
   const context = detail?.context;
   const isDeferred = detail ? isDeferredBugReport(detail) : false;
   const activeExecutionOwner: 'AG_WIN' | 'AUTO' | 'AG_MAC' =
@@ -156,331 +123,46 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
         title={detail ? `${detail.key} · ${detail.title}` : 'Chi tiết yêu cầu'}
         extra={
           detail ? (
-            <Space wrap>
-              {canTriage && !isDeferred && ['NEW', 'APPROVED'].includes(detail.status) && (
-                <Button
-                  loading={saving}
-                  icon={<AppIcon icon={Clock} size="sm" />}
-                  onClick={() => {
-                    setDeferReason('');
-                    setDeferOpen(true);
-                  }}
-                >
-                  Tạm hoãn
-                </Button>
-              )}
-              {canTriage && isDeferred && (
-                <Popconfirm
-                  classNames={{ root: styles.confirmationPopup }}
-                  title="Mở lại ticket này?"
-                  description="Ticket sẽ được chuyển về trạng thái Mới (NEW) để Agent và Danny tiếp tục xử lý."
-                  okText="Mở lại"
-                  cancelText="Để sau"
-                  onConfirm={() => void save({ status: 'NEW', note: 'Mở lại ticket sau thời gian tạm hoãn' })}
-                >
-                  <Button type="primary" loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
-                    Mở lại ticket
-                  </Button>
-                </Popconfirm>
-              )}
-              {canTriage && detail.status === 'NEW' && (
-                <Dropdown menu={{ items: approvalItems }} trigger={['click']}>
-                  <Button
-                    type="primary"
-                    loading={saving}
-                    disabled={
-                      detail.requestType === 'FEATURE'
-                        ? detail.clarification.status !== 'READY'
-                        : detail.clarification.status !== 'READY' && businessContext.trim().length < 10
-                    }
-                    title={
-                      detail.requestType === 'FEATURE'
-                        ? 'Agent phải xác nhận yêu cầu đã đủ rõ trước khi Danny duyệt triển khai'
-                        : 'Cần Agent xác nhận đủ rõ hoặc nhập biz logic/kết quả đúng trước khi duyệt triển khai'
-                    }
-                    icon={<AppIcon icon={Send} size="sm" />}
-                  >
-                    Duyệt triển khai
-                  </Button>
-                </Dropdown>
-              )}
-              {canTriage &&
-                detail.status === 'APPROVED' &&
-                detail.agentProgress.stage === 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL' &&
-                (!detail.implementation ||
-                  !['PENDING', 'LEASED', 'RUNNING', 'AWAITING_COMMIT_REVIEW', 'AWAITING_DEPLOY_REVIEW'].includes(
-                    detail.implementation.status
-                  )) &&
-                !approvalReceived &&
-                detail.priority &&
-                detail.clarification.status === 'READY' && (
-                  <Popconfirm
-                    classNames={{ root: styles.confirmationPopup }}
-                    title="Duyệt AI chạy code/test?"
-                    description={
-                      <div className="max-w-md space-y-2.5">
-                        <div>
-                          AI chỉ làm trong worktree riêng; mặc định đẩy về Win AG (có thể chọn Auto-overflow hoặc Mac
-                          AG). Sau đó ticket sẽ chờ Danny duyệt commit.
-                        </div>
-                        <div className="space-y-1.5 pt-1">
-                          <Text strong className="block text-xs">
-                            Chọn máy thực thi:
-                          </Text>
-                          <Radio.Group
-                            value={activeExecutionOwner}
-                            onChange={(e) =>
-                              setExecutionOwnerOverride({
-                                reportId: detail.id,
-                                owner: e.target.value as 'AG_WIN' | 'AUTO' | 'AG_MAC',
-                              })
-                            }
-                            className="flex flex-col gap-1.5"
-                          >
-                            <Radio value="AG_WIN" className="whitespace-nowrap">
-                              {EXECUTION_OWNER_LABELS.AG_WIN}
-                            </Radio>
-                            <Radio value="AUTO" className="whitespace-nowrap">
-                              {EXECUTION_OWNER_LABELS.AUTO}
-                            </Radio>
-                            <Radio value="AG_MAC" className="whitespace-nowrap">
-                              {EXECUTION_OWNER_LABELS.AG_MAC}
-                            </Radio>
-                          </Radio.Group>
-                        </div>
-                        <div className="space-y-1.5 pt-1">
-                          <Text strong className="block text-xs">
-                            Chọn model Antigravity (khi tạo session mới):
-                          </Text>
-                          <Radio.Group
-                            value={activeModelTier}
-                            onChange={(e) =>
-                              setModelTierOverride({
-                                reportId: detail.id,
-                                tier: e.target.value as InboxImplementationModelTier,
-                              })
-                            }
-                            className="flex flex-col gap-1.5"
-                          >
-                            <Radio value="hydrogen" className="whitespace-nowrap">
-                              {MODEL_TIER_LABELS.hydrogen}
-                            </Radio>
-                            <Radio value="orchestrator_neon" className="whitespace-nowrap">
-                              {MODEL_TIER_LABELS.orchestrator_neon}
-                            </Radio>
-                            <Radio value="orchestrator_carbon" className="whitespace-nowrap">
-                              {MODEL_TIER_LABELS.orchestrator_carbon}
-                            </Radio>
-                            <Radio value="orchestrator_argon" className="whitespace-nowrap">
-                              {MODEL_TIER_LABELS.orchestrator_argon}
-                            </Radio>
-                            <Radio value="flash" className="whitespace-nowrap">
-                              {MODEL_TIER_LABELS.flash}
-                            </Radio>
-                          </Radio.Group>
-                        </div>
-                      </div>
-                    }
-                    okText="Duyệt code/test"
-                    cancelText="Chưa duyệt"
-                    okButtonProps={{ loading: saving, disabled: saving || approvalReceived }}
-                    onConfirm={() => void approveCodeExecution(activeExecutionOwner, activeModelTier)}
-                  >
-                    <Button
-                      type="primary"
-                      loading={saving}
-                      disabled={saving || approvalReceived}
-                      icon={<AppIcon icon={Gavel} size="sm" />}
-                    >
-                      Duyệt code/test
-                    </Button>
-                  </Popconfirm>
-                )}
-              {canTriage && approvalReceived && (
-                <Button disabled type="dashed" icon={<AppIcon icon={RefreshCw} size="sm" className="animate-spin" />}>
-                  Đã duyệt · Đang xếp hàng code/test...
-                </Button>
-              )}
-              {canTriage && detail.planReview && !approvalReceived && (
-                <Button
-                  disabled={saving}
-                  icon={<AppIcon icon={RefreshCw} size="sm" />}
-                  onClick={() => {
-                    setPlanReason('');
-                    setReviewedPlan(detail.planReview!);
-                  }}
-                >
-                  Yêu cầu sửa lại plan
-                </Button>
-              )}
-              {canTriage && !approvalReceived && !['CLOSED', 'REJECTED', 'CANCELLED'].includes(detail.status) && (
-                <Popconfirm
-                  classNames={{ root: styles.confirmationPopup }}
-                  title="Yêu cầu AG làm rõ lại ticket?"
-                  description="Ticket sẽ chuyển về PENDING_AGENT để Antigravity (AG) rà soát sâu mã nguồn và đặt câu hỏi cho người báo."
-                  okText="Làm rõ lại (AG)"
-                  cancelText="Hủy"
-                  okButtonProps={{ loading: saving }}
-                  onConfirm={() => void retryClarification()}
-                >
-                  <Button disabled={saving} icon={<AppIcon icon={HelpCircle} size="sm" />}>
-                    Yêu cầu AG làm rõ
-                  </Button>
-                </Popconfirm>
-              )}
-              {canTriage &&
-                detail.agentProgress.stage === 'IMPLEMENTATION_FAILED' &&
-                detail.priority &&
-                detail.clarification.status === 'READY' &&
-                (detail.implementation?.canAuthorizeBuildLockRecoveryRetry ? (
-                  <Popconfirm
-                    classNames={{ root: styles.confirmationPopup }}
-                    title="Cho phép một retry sau khi sửa lock build?"
-                    description="Đúng lỗi lock output Next đã được sửa và kiểm chứng. Hệ thống tạo đúng một worktree code/test mới; commit, push, merge, deploy và migration vẫn không tự chạy."
-                    okText="Cho phép retry"
-                    cancelText="Chưa cho phép"
-                    onConfirm={() => void authorizeBuildLockRecoveryRetry()}
-                  >
-                    <Button type="primary" loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
-                      Cho phép retry sau khi sửa lock build
-                    </Button>
-                  </Popconfirm>
-                ) : detail.implementation?.canAuthorizeQualityGateRecoveryRetry ? (
-                  <Popconfirm
-                    classNames={{ root: styles.confirmationPopup }}
-                    title="Cho phép một retry sau khi sửa cổng kiểm thử?"
-                    description="Cổng kiểm thử đã được sửa và xác minh. Hệ thống tạo đúng một worktree code/test mới; commit, push, merge, deploy và migration vẫn không tự chạy."
-                    okText="Cho phép retry"
-                    cancelText="Chưa cho phép"
-                    onConfirm={() => void authorizeQualityGateRecoveryRetry()}
-                  >
-                    <Button type="primary" loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
-                      Cho phép retry sau khi sửa cổng kiểm thử
-                    </Button>
-                  </Popconfirm>
-                ) : detail.implementation?.canAuthorizeSchemaRecoveryRetry ? (
-                  <Popconfirm
-                    classNames={{ root: styles.confirmationPopup }}
-                    title="Cho phép một retry sau khi đã sửa schema?"
-                    description="Chỉ áp dụng cho lỗi schema đã được chẩn đoán chỉ-đọc và xác minh. Hệ thống tạo worktree code/test mới, không commit, push, merge, deploy hay chạy migration. Quyền này chỉ dùng một lần cho lượt hiện tại."
-                    okText="Cho phép retry"
-                    cancelText="Chưa cho phép"
-                    onConfirm={() => void authorizeSchemaRecoveryRetry()}
-                  >
-                    <Button type="primary" loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
-                      Cho phép retry sau khi sửa schema
-                    </Button>
-                  </Popconfirm>
-                ) : detail.implementation?.canAuthorizeWorkerRecoveryRetry ? (
-                  <Popconfirm
-                    classNames={{ root: styles.confirmationPopup }}
-                    title="Cho phép một retry sau khi đã sửa Worker?"
-                    description="Chỉ áp dụng cho lỗi hạ tầng đã nhận diện sau hai retry thường. Hệ thống tạo worktree code/test mới, không commit, push, merge, deploy hay chạy migration. Quyền này chỉ dùng một lần cho lượt hiện tại."
-                    okText="Cho phép retry"
-                    cancelText="Chưa cho phép"
-                    onConfirm={() => void authorizeWorkerRecoveryRetry()}
-                  >
-                    <Button type="primary" loading={saving} icon={<AppIcon icon={RefreshCw} size="sm" />}>
-                      Cho phép retry sau khi sửa Worker
-                    </Button>
-                  </Popconfirm>
-                ) : detail.implementation?.canRetryImplementation ? (
-                  <Button
-                    type="primary"
-                    loading={saving}
-                    icon={<AppIcon icon={RefreshCw} size="sm" />}
-                    onClick={() => setRetryConfirmationOpen(true)}
-                  >
-                    Tạo retry sạch
-                  </Button>
-                ) : null)}
-              {canTriage && (detail.agentProgress.stage === 'QUEUED_FOR_COMMIT' || commitApprovalReceived) && (
-                <Button disabled type="dashed" icon={<AppIcon icon={RefreshCw} size="sm" className="animate-spin" />}>
-                  Đã duyệt commit · Chờ worker...
-                </Button>
-              )}
-              {canTriage &&
-                detail.agentProgress.stage === 'AWAITING_DANNY_COMMIT_REVIEW' &&
-                !commitApprovalReceived && (
-                  <>
-                    <Popconfirm
-                      classNames={{ root: styles.confirmationPopup }}
-                      title="Duyệt commit bản đã review?"
-                      description="Worker Mac chỉ stage đúng các tệp đã ghi trong review, commit vào branch riêng rồi dừng. Không push, merge hay deploy."
-                      okText="Duyệt commit"
-                      cancelText="Chưa duyệt"
-                      okButtonProps={{ loading: saving, disabled: saving || commitApprovalReceived }}
-                      onConfirm={() => void approveCommit()}
-                    >
-                      <Button
-                        type="primary"
-                        loading={saving}
-                        disabled={saving || commitApprovalReceived}
-                        icon={<AppIcon icon={CheckCircle2} size="sm" />}
-                      >
-                        Duyệt commit
-                      </Button>
-                    </Popconfirm>
-                    {detail.implementation?.reviewCandidate && (
-                      <Button
-                        disabled={saving || commitApprovalReceived}
-                        icon={<AppIcon icon={RefreshCw} size="sm" />}
-                        onClick={() => {
-                          setChangesReason('');
-                          setChangesOpen(true);
-                        }}
-                      >
-                        Yêu cầu sửa lại
-                      </Button>
-                    )}
-                  </>
-                )}
-              {canTriage && (detail.agentProgress.stage === 'QUEUED_FOR_DEPLOY' || deployApprovalReceived) && (
-                <Button
-                  disabled
-                  className="!border-emerald-500 !text-emerald-600 dark:!text-emerald-400 !bg-emerald-50 dark:!bg-emerald-950/40 font-semibold cursor-default"
-                  icon={<AppIcon icon={CheckCircle2} size="sm" />}
-                >
-                  Đã duyệt deploy · Đang triển khai...
-                </Button>
-              )}
-              {canTriage &&
-                detail.agentProgress.stage === 'AWAITING_DANNY_DEPLOY_APPROVAL' &&
-                !deployApprovalReceived && (
-                  <Popconfirm
-                    classNames={{ root: styles.confirmationPopup }}
-                    title="Duyệt deploy commit đã review?"
-                    description="Worker Mac sẽ merge đúng commit vào main, push, chạy pipeline production và chỉ bàn giao khi release marker khớp."
-                    okText="Duyệt deploy"
-                    cancelText="Chưa duyệt"
-                    okButtonProps={{ loading: saving, disabled: saving || deployApprovalReceived }}
-                    onConfirm={() => void approveDeploy()}
-                  >
-                    <Button
-                      type="primary"
-                      loading={saving}
-                      disabled={saving || deployApprovalReceived}
-                      icon={<AppIcon icon={CheckCircle2} size="sm" />}
-                    >
-                      Duyệt deploy
-                    </Button>
-                  </Popconfirm>
-                )}
-              {canTriage &&
-                ['APPROVED', 'IN_PROGRESS', 'FIXED'].includes(detail.status) &&
-                detail.agentProgress.stage !== 'AWAITING_REPORTER_ACCEPTANCE' && (
-                  <Button
-                    loading={saving}
-                    icon={<AppIcon icon={CheckCircle2} size="sm" />}
-                    onClick={() => {
-                      setExceptionCloseReason('');
-                      setExceptionCloseOpen(true);
-                    }}
-                  >
-                    Đóng ngoại lệ
-                  </Button>
-                )}
-            </Space>
+            <BugReportDetailHeaderActions
+              detail={detail}
+              canTriage={canTriage}
+              isDeferred={isDeferred}
+              saving={saving}
+              businessContext={businessContext}
+              approvalReceived={approvalReceived}
+              commitApprovalReceived={commitApprovalReceived}
+              deployApprovalReceived={deployApprovalReceived}
+              activeExecutionOwner={activeExecutionOwner}
+              onExecutionOwnerChange={(owner) => setExecutionOwnerOverride({ reportId: detail.id, owner })}
+              activeModelTier={activeModelTier}
+              onModelTierChange={(tier) => setModelTierOverride({ reportId: detail.id, tier })}
+              onOpenDefer={() => {
+                setDeferReason('');
+                setDeferOpen(true);
+              }}
+              onSaveTriage={(override) => void save(override)}
+              onApproveCodeExecution={(owner, tier) => void approveCodeExecution(owner, tier)}
+              onOpenPlanRevision={(plan) => {
+                setPlanReason('');
+                setReviewedPlan(plan);
+              }}
+              onRetryClarification={() => void retryClarification()}
+              onAuthorizeBuildLockRecoveryRetry={() => void authorizeBuildLockRecoveryRetry()}
+              onAuthorizeQualityGateRecoveryRetry={() => void authorizeQualityGateRecoveryRetry()}
+              onAuthorizeSchemaRecoveryRetry={() => void authorizeSchemaRecoveryRetry()}
+              onAuthorizeWorkerRecoveryRetry={() => void authorizeWorkerRecoveryRetry()}
+              onOpenRetryConfirmation={() => setRetryConfirmationOpen(true)}
+              onApproveCommit={() => void approveCommit()}
+              onOpenChangesModal={() => {
+                setChangesReason('');
+                setChangesOpen(true);
+              }}
+              onApproveDeploy={() => void approveDeploy()}
+              onOpenExceptionClose={() => {
+                setExceptionCloseReason('');
+                setExceptionCloseOpen(true);
+              }}
+            />
           ) : undefined
         }
       >
@@ -718,80 +400,22 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
             <BugReportDiagnosticsSection context={context} />
 
             {canTriage ? (
-              <SectionCard title={detail.requestType === 'FEATURE' ? 'Danny quyết định sản phẩm' : 'Danny triage'}>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <label className="space-y-1">
-                    <Text strong>Trạng thái</Text>
-                    <Select
-                      value={status}
-                      onChange={setStatus}
-                      options={TRANSITIONS[detail.status].map((item) => ({
-                        value: item,
-                        label: item === 'REJECTED' && isDeferred ? 'Tạm hoãn' : STATUS_LABELS[item],
-                      }))}
-                      getPopupContainer={(node) => node.parentElement || document.body}
-                      className="w-full"
-                    />
-                  </label>
-                  <label className="space-y-1">
-                    <Text strong>Ưu tiên</Text>
-                    <Select
-                      allowClear
-                      placeholder="Chọn P0–P3"
-                      value={priority}
-                      onChange={(value) => setPriority(value ?? null)}
-                      options={(['P0', 'P1', 'P2', 'P3'] as BugPriority[]).map((item) => ({
-                        value: item,
-                        label: item,
-                      }))}
-                      getPopupContainer={(node) => node.parentElement || document.body}
-                      className="w-full"
-                    />
-                  </label>
-                </div>
-                <label className="mt-4 block space-y-1">
-                  <Text strong>
-                    {detail.requestType === 'FEATURE' ? 'Phạm vi / acceptance criteria' : 'Biz logic / kết quả đúng'}
-                  </Text>
-                  <RichTextEditor
-                    value={businessContext}
-                    onChange={(val) => setBusinessContext(val)}
-                    placeholder={
-                      detail.requestType === 'FEATURE'
-                        ? 'Ghi phạm vi đã chốt, điều kiện được xem là đạt và giới hạn nếu có'
-                        : 'Bổ sung điều Agent cần hiểu về nghiệp vụ hoặc kết quả đúng mong muốn'
-                    }
-                    maxLength={4000}
-                    rows={4}
-                  />
-                </label>
-                <label className="mt-4 block space-y-1">
-                  <Text strong>Ghi chú xử lý</Text>
-                  <Input.TextArea
-                    value={note}
-                    onChange={(event) => setNote(event.target.value)}
-                    placeholder="Bắt buộc khi Fixed, Rejected, mở lại hoặc dùng Đóng ngoại lệ"
-                    maxLength={2000}
-                    autoSize={{ minRows: 2, maxRows: 6 }}
-                    showCount
-                  />
-                </label>
-                {status === 'DUPLICATE' && (
-                  <label className="mt-4 block space-y-1">
-                    <Text strong>Ticket gốc</Text>
-                    <Input
-                      value={duplicateKey}
-                      onChange={(event) => setDuplicateKey(event.target.value)}
-                      placeholder="MOS-BUG-123 hoặc MOS-FEAT-123"
-                    />
-                  </label>
-                )}
-                <div className="mt-4 flex justify-end">
-                  <Button type="primary" loading={saving} onClick={() => void save()}>
-                    Lưu triage
-                  </Button>
-                </div>
-              </SectionCard>
+              <BugReportTriageSection
+                detail={detail}
+                isDeferred={isDeferred}
+                status={status}
+                onStatusChange={setStatus}
+                priority={priority}
+                onPriorityChange={setPriority}
+                businessContext={businessContext}
+                onBusinessContextChange={setBusinessContext}
+                note={note}
+                onNoteChange={setNote}
+                duplicateKey={duplicateKey}
+                onDuplicateKeyChange={setDuplicateKey}
+                saving={saving}
+                onSave={() => void save()}
+              />
             ) : null}
 
             <SectionCard title={`Audit history (${detail.audits.length})`}>

@@ -1,11 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  resolveNormalizedPaymentBreakdown,
-  type IosPaymentBreakdown,
-  type IosPaymentMethod,
-} from '@mos-lab/shared';
+import { resolveNormalizedPaymentBreakdown, type IosPaymentBreakdown, type IosPaymentMethod } from '@mos-lab/shared';
 import { Heart, QrCode, ShieldCheck, X } from 'lucide-react';
 import type { BookingItem } from '../../state/mockData';
 import { buildCheckoutVietQrInfo } from '../../state/iosBillingMath';
@@ -132,10 +128,7 @@ export function PreCheckoutPaymentModal({
     }
   };
 
-  const handlePickPhoto = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    target: 'service' | 'tip'
-  ) => {
+  const handlePickPhoto = async (e: React.ChangeEvent<HTMLInputElement>, target: 'service' | 'tip') => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {

@@ -24,10 +24,7 @@ import { useTodaySandbox, type MaterialStatus } from '../context/SandboxModeCont
 import { formatVND } from '../../../../lib/format-utils';
 import { CvFeather1Badge, CvFeather2Badge } from '../../../ios-app/components/ui-kit/CvFeatherLabels';
 
-const MATERIAL_STATUS_META: Record<
-  MaterialStatus,
-  { label: string; lightClass: string; darkClass: string }
-> = {
+const MATERIAL_STATUS_META: Record<MaterialStatus, { label: string; lightClass: string; darkClass: string }> = {
   sufficient: {
     label: 'Đủ dùng',
     lightClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -392,9 +389,7 @@ export default function SandboxControlPanel() {
                 aria-label="Tên khách hàng giả lập"
                 placeholder="Tên khách giả lập..."
                 className={`px-2.5 py-1 rounded-lg border text-xs w-44 ${
-                  isDark
-                    ? 'bg-slate-900 border-slate-700 text-slate-100'
-                    : 'bg-white border-slate-300 text-slate-900'
+                  isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-300 text-slate-900'
                 }`}
               />
             </div>
@@ -474,19 +469,25 @@ export default function SandboxControlPanel() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div
+                className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
+              >
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">Gói Combo đã chốt</span>
                 <div className="text-sm font-bold text-amber-600 dark:text-amber-400 tabular-nums mt-0.5">
                   {sandbox.simulatedCombos.length} gói · {formatVND(sandbox.totalSimulatedComboRevenue)}
                 </div>
               </div>
-              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div
+                className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
+              >
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">Sản phẩm bán kèm</span>
                 <div className="text-sm font-bold text-blue-600 dark:text-blue-400 tabular-nums mt-0.5">
                   {sandbox.simulatedProducts.length} SP · {formatVND(sandbox.totalSimulatedProductRevenue)}
                 </div>
               </div>
-              <div className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div
+                className={`rounded-lg border p-2.5 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
+              >
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">Quà tặng kèm ưu đãi</span>
                 <div className="text-sm font-bold text-pink-600 dark:text-pink-400 tabular-nums mt-0.5">
                   {sandbox.simulatedGifts.length} quà tặng

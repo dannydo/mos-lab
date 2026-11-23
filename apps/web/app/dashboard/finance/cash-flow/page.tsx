@@ -1,20 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { Button, Card, Col, DatePicker, Form, Row, Select, Tabs, message, Alert, Badge } from 'antd';
-import {
-  WalletCards,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  ShieldCheck,
-  RefreshCw,
-  Download,
-  Plus,
-  Landmark,
-  Percent,
-  SlidersHorizontal,
-} from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Button, DatePicker, Form, Select, Tabs, message, Badge } from 'antd';
+import { TrendingUp, TrendingDown, RefreshCw, Download, Plus, Landmark, SlidersHorizontal } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
 import { PageHeader, AppIcon } from '../../../../components/ui';
@@ -34,80 +22,11 @@ import { DayInspectionModal } from './components/DayInspectionModal';
 import { TimelineOverviewTab } from './components/TimelineOverviewTab';
 import { OutflowTab } from './components/OutflowTab';
 import { InflowTab } from './components/InflowTab';
+import { CASH_FLOW_CATEGORY_NAMES, CASH_FLOW_PRIORITY_META, CASH_FLOW_STATUS_META } from './components/cash-flow-meta';
+import { CashFlowSummarySection } from './components/CashFlowSummarySection';
+import { CashFlowAccountsTab } from './components/CashFlowAccountsTab';
 
 const { RangePicker } = DatePicker;
-
-const CATEGORY_NAMES: Record<string, string> = {
-  REVENUE_SERVICE: 'Doanh thu Dịch vụ',
-  REVENUE_PRODUCT: 'Bán lẻ Sản phẩm',
-  REVENUE_ACADEMY: 'Học phí Academy',
-  REVENUE_OTHER: 'Thu nhập khác',
-  SALARY: 'Lương & Thù lao',
-  RENT: 'Thuê mặt bằng',
-  SUPPLIER_MATERIAL: 'Vật tư & NCC',
-  TAX: 'Thuế (TNDN & GTGT)',
-  TRANSACTION_FEE: 'Phí giao dịch / POS',
-  OPEX: 'Chi phí vận hành',
-  OTHER: 'Chi phí khác',
-};
-
-const PRIORITY_META: Record<CashFlowPriority, { label: string; badgeClass: string; desc: string }> = {
-  CRITICAL: {
-    label: 'Bắt buộc / Khẩn cấp',
-    badgeClass:
-      'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-800',
-    desc: 'Lương, mặt bằng, thuế đến hạn - không thể hoãn',
-  },
-  HIGH: {
-    label: 'Thiết yếu / Ưu tiên cao',
-    badgeClass:
-      'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800',
-    desc: 'Vật tư phục vụ khách, tiền điện mạng',
-  },
-  MEDIUM: {
-    label: 'Bình thường',
-    badgeClass:
-      'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800',
-    desc: 'Bảo trì định kỳ, văn phòng phẩm',
-  },
-  LOW: {
-    label: 'Có thể hoãn',
-    badgeClass:
-      'bg-slate-50 text-slate-600 dark:bg-slate-900 dark:text-slate-400 border border-slate-200 dark:border-slate-800',
-    desc: 'Trang trí, nâng cấp decor khi dòng tiền dồi dào',
-  },
-};
-
-const STATUS_META: Record<CashFlowStatus, { label: string; badgeClass: string }> = {
-  PENDING: {
-    label: 'Chờ duyệt / Dự kiến',
-    badgeClass: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-  },
-  APPROVED: {
-    label: 'Đã duyệt chi',
-    badgeClass: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
-  },
-  PAID: {
-    label: 'Đã thanh toán',
-    badgeClass: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
-  },
-  COLLECTED: {
-    label: 'Đã thu tiền',
-    badgeClass: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
-  },
-  OVERDUE: {
-    label: 'Trễ hạn',
-    badgeClass: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
-  },
-  DEFERRED: {
-    label: 'Tạm hoãn chi',
-    badgeClass: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400',
-  },
-  CANCELLED: {
-    label: 'Đã hủy',
-    badgeClass: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-500',
-  },
-};
 
 export default function CashFlowForecastPage() {
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs(), dayjs().add(30, 'day')]);
@@ -115,7 +34,7 @@ export default function CashFlowForecastPage() {
   const [selectedAccount, setSelectedAccount] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<string>('overview');
 
-  const [loading, setLoading] = useState<boolean>(true);
+  const [, setLoading] = useState<boolean>(true);
   const [forecastData, setForecastData] = useState<CashFlowForecastResponse | null>(null);
   const [selectedDayPoint, setSelectedDayPoint] = useState<CashFlowTimelinePoint | null>(null);
 
@@ -143,6 +62,16 @@ export default function CashFlowForecastPage() {
     setIncomeDefaultCategory(cat);
     incomeForm.setFieldsValue({ category: cat });
     setIsIncomeModalOpen(true);
+  };
+
+  const handleOpenAccountModal = (acc: CashAccount) => {
+    setSelectedAccountForEdit(acc);
+    accountForm.setFieldsValue({
+      currentBalance: acc.currentBalance,
+      minSafetyThreshold: acc.minSafetyThreshold,
+      notes: acc.notes,
+    });
+    setIsAccountModalOpen(true);
   };
 
   const fetchForecast = useCallback(async () => {
@@ -293,7 +222,7 @@ export default function CashFlowForecastPage() {
   const handleUpdateStatus = async (id: number, newStatus: CashFlowStatus) => {
     try {
       await apiClient.cashFlow.updateEntry(id, { status: newStatus });
-      message.success(`Đã cập nhật trạng thái sang: ${STATUS_META[newStatus]?.label || newStatus}`);
+      message.success(`Đã cập nhật trạng thái sang: ${CASH_FLOW_STATUS_META[newStatus]?.label || newStatus}`);
       fetchForecast();
       fetchEntries();
     } catch {
@@ -409,123 +338,7 @@ export default function CashFlowForecastPage() {
         }
       />
 
-      {summary?.isShortfallRisk && (
-        <Alert
-          message={
-            <div className="flex items-center gap-2 font-bold text-rose-600 dark:text-rose-400">
-              <AppIcon icon={AlertTriangle} size="sm" />
-              CẢNH BÁO NGUY CƠ THIẾU TIỀN VÀO NGÀY {summary.shortfallDate}
-            </div>
-          }
-          description={
-            <div className="mt-1 text-sm text-neutral-700 dark:text-neutral-300">
-              Số dư dự kiến sẽ giảm xuống mức thấp nhất là{' '}
-              <strong className="text-rose-500 tabular-nums">
-                {summary.minForecastBalance.toLocaleString('vi-VN')}đ
-              </strong>{' '}
-              (dưới ngưỡng an toàn {summary.minSafetyThreshold.toLocaleString('vi-VN')}đ). Tổng các khoản chi khẩn cấp
-              và thiết yếu đang chờ duyệt là{' '}
-              <strong className="tabular-nums">{summary.criticalOutflowPending.toLocaleString('vi-VN')}đ</strong>. Đề
-              xuất: kiểm tra giãn tiến độ hoặc tạm hoãn các khoản chi mức ưu tiên{' '}
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                Có thể hoãn
-              </span>{' '}
-              và đẩy mạnh thu hồi công nợ/doanh thu.
-            </div>
-          }
-          type="error"
-          showIcon={false}
-          className="border-rose-400 dark:border-rose-800"
-        />
-      )}
-
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} lg={4}>
-          <Card bordered={false} className="shadow-sm border border-neutral-200 dark:border-neutral-800 h-full">
-            <div className="text-xs text-neutral-400 font-medium">Số dư hiện tại</div>
-            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 tabular-nums mt-1">
-              {summary ? (summary.openingBalance / 1000000).toFixed(1) : 0} Tr
-            </div>
-            <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-              <AppIcon icon={ShieldCheck} size="sm" className="text-emerald-500" />
-              Ngưỡng AT: {summary ? (summary.minSafetyThreshold / 1000000).toFixed(0) : 0} Tr
-            </div>
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} lg={4}>
-          <Card bordered={false} className="shadow-sm border border-neutral-200 dark:border-neutral-800 h-full">
-            <div className="text-xs text-neutral-400 font-medium">Tổng dự kiến Thu</div>
-            <div className="text-2xl font-bold text-emerald-500 tabular-nums mt-1">
-              +{summary ? (summary.totalExpectedInflow / 1000000).toFixed(1) : 0} Tr
-            </div>
-            <div className="text-xs text-neutral-400 mt-1">
-              Dự kiến phát sinh đến cuối kỳ
-            </div>
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} lg={4}>
-          <Card bordered={false} className="shadow-sm border border-neutral-200 dark:border-neutral-800 h-full">
-            <div className="text-xs text-neutral-400 font-medium">Tổng dự kiến Chi</div>
-            <div className="text-2xl font-bold text-rose-500 tabular-nums mt-1">
-              -{summary ? (summary.totalExpectedOutflow / 1000000).toFixed(1) : 0} Tr
-            </div>
-            <div className="text-xs text-neutral-400 mt-1">
-              Đã chi thực tế: {summary ? (summary.totalActualOutflow / 1000000).toFixed(1) : 0} Tr
-            </div>
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} lg={4}>
-          <Card bordered={false} className="shadow-sm border border-neutral-200 dark:border-neutral-800 h-full">
-            <div className="text-xs text-neutral-400 font-medium">Số dư dự kiến cuối kỳ</div>
-            <div
-              className={`text-2xl font-bold tabular-nums mt-1 ${
-                (summary?.closingForecastBalance || 0) < (summary?.minSafetyThreshold || 0)
-                  ? 'text-rose-500'
-                  : 'text-neutral-800 dark:text-neutral-100'
-              }`}
-            >
-              {summary ? (summary.closingForecastBalance / 1000000).toFixed(1) : 0} Tr
-            </div>
-            <div className="text-xs text-neutral-400 mt-1">
-              Dòng tiền ròng:{' '}
-              <span
-                className={`tabular-nums font-semibold ${
-                  (summary?.netCashFlowForecast || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'
-                }`}
-              >
-                {(summary?.netCashFlowForecast || 0) >= 0 ? '+' : ''}
-                {summary ? (summary.netCashFlowForecast / 1000000).toFixed(1) : 0} Tr
-              </span>
-            </div>
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} lg={4}>
-          <Card bordered={false} className="shadow-sm border border-neutral-200 dark:border-neutral-800 h-full">
-            <div className="text-xs text-neutral-400 font-medium">Chi khẩn cấp (CRITICAL/HIGH)</div>
-            <div className="text-2xl font-bold text-amber-500 tabular-nums mt-1">
-              {summary ? (summary.criticalOutflowPending / 1000000).toFixed(1) : 0} Tr
-            </div>
-            <div className="text-xs text-neutral-400 mt-1">Ưu tiên chi trả lương & NCC chính</div>
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} lg={4}>
-          <Card bordered={false} className="shadow-sm border border-neutral-200 dark:border-neutral-800 h-full">
-            <div className="text-xs text-neutral-400 font-medium flex items-center gap-1">
-              <AppIcon icon={Percent} size="sm" className="text-blue-500" />
-              Thuế VAT trong chi phí
-            </div>
-            <div className="text-2xl font-bold text-blue-500 tabular-nums mt-1">
-              {summary ? (summary.totalVatOutflow / 1000000).toFixed(1) : 0} Tr
-            </div>
-            <div className="text-xs text-neutral-400 mt-1">Phần thuế GTGT đầu vào hợp lệ</div>
-          </Card>
-        </Col>
-      </Row>
+      <CashFlowSummarySection summary={summary} />
 
       <Tabs
         activeKey={activeTab}
@@ -544,8 +357,8 @@ export default function CashFlowForecastPage() {
                 timeline={timeline}
                 summary={summary}
                 onSelectDay={setSelectedDayPoint}
-                categoryNames={CATEGORY_NAMES}
-                priorityMeta={PRIORITY_META}
+                categoryNames={CASH_FLOW_CATEGORY_NAMES}
+                priorityMeta={CASH_FLOW_PRIORITY_META}
               />
             ),
           },
@@ -570,9 +383,9 @@ export default function CashFlowForecastPage() {
                 setOutflowStatusFilter={setOutflowStatusFilter}
                 onUpdateStatus={handleUpdateStatus}
                 onDeleteEntry={handleDeleteEntry}
-                categoryNames={CATEGORY_NAMES}
-                priorityMeta={PRIORITY_META}
-                statusMeta={STATUS_META}
+                categoryNames={CASH_FLOW_CATEGORY_NAMES}
+                priorityMeta={CASH_FLOW_PRIORITY_META}
+                statusMeta={CASH_FLOW_STATUS_META}
               />
             ),
           },
@@ -593,8 +406,8 @@ export default function CashFlowForecastPage() {
                 onUpdateStatus={handleUpdateStatus}
                 onDeleteEntry={handleDeleteEntry}
                 onOpenIncomeModal={handleOpenIncomeModal}
-                categoryNames={CATEGORY_NAMES}
-                statusMeta={STATUS_META}
+                categoryNames={CASH_FLOW_CATEGORY_NAMES}
+                statusMeta={CASH_FLOW_STATUS_META}
               />
             ),
           },
@@ -607,62 +420,7 @@ export default function CashFlowForecastPage() {
               </span>
             ),
             children: (
-              <Row gutter={[16, 16]}>
-                {(forecastData?.accounts || []).map((acc) => (
-                  <Col key={acc.id} xs={24} sm={12} md={8} lg={6}>
-                    <Card
-                      bordered={false}
-                      className="shadow-sm border border-neutral-200 dark:border-neutral-800"
-                      actions={[
-                        <Button
-                          key="edit"
-                          type="link"
-                          onClick={() => {
-                            setSelectedAccountForEdit(acc);
-                            accountForm.setFieldsValue({
-                              currentBalance: acc.currentBalance,
-                              minSafetyThreshold: acc.minSafetyThreshold,
-                              notes: acc.notes,
-                            });
-                            setIsAccountModalOpen(true);
-                          }}
-                        >
-                          Cập nhật số dư / Ngưỡng AT
-                        </Button>,
-                      ]}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-                          {acc.accountType === 'CASH' ? 'Tiền mặt' : 'Ngân hàng'}
-                        </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                          {acc.code}
-                        </span>
-                      </div>
-                      <div className="font-bold text-base text-neutral-800 dark:text-neutral-100">{acc.name}</div>
-                      {acc.accountNumber && (
-                        <div className="text-xs text-neutral-400 mt-0.5">
-                          STK: {acc.accountNumber} ({acc.bankName})
-                        </div>
-                      )}
-                      <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800 space-y-1.5 text-xs tabular-nums">
-                        <div className="flex justify-between">
-                          <span className="text-neutral-400">Số dư hiện tại:</span>
-                          <span className="font-bold text-neutral-800 dark:text-neutral-200">
-                            {acc.currentBalance.toLocaleString('vi-VN')}đ
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-neutral-400">Ngưỡng an toàn:</span>
-                          <span className="font-semibold text-emerald-500">
-                            {acc.minSafetyThreshold.toLocaleString('vi-VN')}đ
-                          </span>
-                        </div>
-                      </div>
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
+              <CashFlowAccountsTab accounts={forecastData?.accounts || []} onEditAccount={handleOpenAccountModal} />
             ),
           },
         ]}

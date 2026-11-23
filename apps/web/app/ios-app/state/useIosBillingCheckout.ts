@@ -5,23 +5,19 @@ import {
   calculateCvComboTierBonus,
   calculateCvSerumTierBonus,
   calculateDualComboTierBonus,
-  canDirectlySettleCounterPayment,
   resolveEffectiveServiceTotal,
   resolveServicePriceSplit,
   resolveCheckoutTipBaseAmount,
   buildPercentageTipSuggestions,
   CHECKOUT_TIP_PERCENT_TIERS,
   calculateActorTipBreakdown,
-  resolveNormalizedPaymentBreakdown,
 } from '@mos-lab/shared';
 import type {
   ActorTipBreakdown,
   CheckoutTipPercentTier,
   CvToCvPlusRequirements,
-  IosPaymentBreakdown,
   IosPaymentMethod,
   IosPromotionOption,
-  IosSettlementStatus,
   IosSimulationAttemptSummary,
   PercentTipSuggestionItem,
 } from '@mos-lab/shared';
@@ -34,15 +30,20 @@ import {
   applyCombosUpdateToBookingDraft,
   applyTargetPromotionToBookingDraft,
   buildPreCheckoutBillingSnapshot,
-  buildPromoActionSnapshot,
   buildRecomputedCheckoutBilling,
   buildRecordedTipBillingSnapshot,
   computeFreshBillingLineTotals,
-  mergePromotionSelectionIntoBookingDraft,
   type CartProductItem,
   type PreCheckoutPaymentDraftInput,
   type SavePromotionTarget,
 } from './iosBillingMath';
+import {
+  buildChoosePaymentBookingUpdate,
+  buildGoToBillingBookingUpdate,
+  type PaymentPromotionSelection,
+  type PaymentZaloConsent,
+  type UpsellPayload,
+} from './iosBillingCheckoutBuilders';
 
 export {
   calculateCvComboTierBonus,
@@ -62,19 +63,10 @@ export type {
   CheckoutTipPercentTier,
   CvToCvPlusRequirements,
   PercentTipSuggestionItem,
+  PreCheckoutPaymentDraftInput,
   SavePromotionTarget,
+  UpsellPayload,
 };
-
-export interface UpsellPayload {
-  cartProducts?: CartProductItem[];
-  selectedCombo?: NonNullable<BookingItem['selectedCombo']> | null;
-  selectedUnderCombo?: NonNullable<BookingItem['selectedUnderCombo']> | null;
-  comboRedemption?: NonNullable<BookingItem['comboRedemption']> | null;
-  selectedUpperComboBalanceId?: number | null;
-  selectedUnderComboBalanceId?: number | null;
-  skipUpperCombo?: boolean;
-  skipUnderCombo?: boolean;
-}
 
 export interface UseIosBillingCheckoutParams {
   activeBookingId: number;
@@ -149,171 +141,14 @@ export function useIosBillingCheckout({
   const handleGoToBilling = useCallback(
     (upsellPayload?: UpsellPayload) => {
       updateActiveBooking((prev) => {
-        const nextProducts: CartProductItem[] =
-          upsellPayload?.cartProducts !== undefined ? upsellPayload.cartProducts : prev.cartProducts || [];
-        const nextCombo =
-          upsellPayload?.selectedCombo !== undefined ? upsellPayload.selectedCombo : prev.selectedCombo || null;
-        const nextUnderCombo =
-          upsellPayload?.selectedUnderCombo !== undefined
-            ? upsellPayload.selectedUnderCombo
-            : prev.selectedUnderCombo || null;
-        const nextRedemption =
-          upsellPayload?.comboRedemption !== undefined ? upsellPayload.comboRedemption : prev.comboRedemption || null;
-        const nextUpperBalanceId =
-          upsellPayload?.selectedUpperComboBalanceId !== undefined
-            ? upsellPayload.selectedUpperComboBalanceId
-            : (prev.selectedUpperComboBalanceId ?? null);
-        const nextUnderBalanceId =
-          upsellPayload?.selectedUnderComboBalanceId !== undefined
-            ? upsellPayload.selectedUnderComboBalanceId
-            : (prev.selectedUnderComboBalanceId ?? null);
-        const nextSkipUpper =
-          upsellPayload?.skipUpperCombo !== undefined
-            ? Boolean(upsellPayload.skipUpperCombo)
-            : Boolean(prev.skipUpperCombo);
-        const nextSkipUnder =
-          upsellPayload?.skipUnderCombo !== undefined
-            ? Boolean(upsellPayload.skipUnderCombo)
-            : Boolean(prev.skipUnderCombo);
-        const {
-          serviceTotal: effectiveServiceTotal,
-          comboTotal,
-          productTotal,
-          subtotal,
-          promotionDiscountAmount,
-          serviceDiscountAmount,
-          comboDiscountAmount,
-          productDiscountAmount,
-          subtotalAfterDiscount,
-          vatRate,
-          vatAmount,
-          creditEligiblePayableWithVat,
-          hasAnyCreditRestrictedItem,
-          isFullCreditLocked,
-          unifiedOrderPromotionId,
-          primaryPromotion,
-        } = computeFreshBillingLineTotals({
-          ...prev,
-          cartProducts: nextProducts,
-          selectedCombo: nextCombo,
-          selectedUnderCombo: nextUnderCombo,
-          comboRedemption: nextSkipUpper ? null : nextRedemption,
-          selectedUpperComboBalanceId: nextUpperBalanceId,
-          selectedUnderComboBalanceId: nextUnderBalanceId,
-          skipUpperCombo: nextSkipUpper,
-          skipUnderCombo: nextSkipUnder,
-        });
-        const tipAmount = prev.billing?.tipAmount ?? 0;
-        const maxEligibleDiamonds = Math.floor(creditEligiblePayableWithVat / 1000);
-        const clampedDiamondUsed = isFullCreditLocked
-          ? 0
-          : hasAnyCreditRestrictedItem
-            ? Math.max(0, Math.min(prev.billing?.diamondUsed ?? 0, maxEligibleDiamonds))
-            : (prev.billing?.diamondUsed ?? 0);
-        const diamondDiscountAmount = isFullCreditLocked
-          ? 0
-          : hasAnyCreditRestrictedItem
-            ? clampedDiamondUsed * 1000
-            : (prev.billing?.diamondDiscountAmount ?? 0);
-
-        const isActorCc = actor.tier === 'CC';
-        const isTrainingMenteeOrder = Boolean(prev.isTrainingCvlOrder);
-        const dualBonus = calculateDualComboTierBonus(
-          nextCombo ? Number(nextCombo.price || 0) : 0,
-          nextUnderCombo ? Number(nextUnderCombo.price || 0) : 0,
+        const { nextBooking, postActionPayload } = buildGoToBillingBookingUpdate(
+          prev,
+          upsellPayload,
+          actor,
           cvPlusRules
         );
-        const comboBonusAmount = isActorCc ? 0 : dualBonus.totalBonus;
-        const serumBonusAmount = isActorCc
-          ? 0
-          : nextProducts.reduce(
-              (sum, p) =>
-                sum +
-                (p.cvBonus !== undefined
-                  ? p.cvBonus * p.quantity
-                  : calculateCvSerumTierBonus(p.price, p.quantity, cvPlusRules)),
-              0
-            );
-
-        const shouldCreditComboToTech = !isActorCc || isTrainingMenteeOrder;
-        const resolvedNextCombo = nextCombo
-          ? { ...nextCombo, bonus: shouldCreditComboToTech ? dualBonus.upperBonus : 0 }
-          : null;
-        const resolvedNextUnderCombo = nextUnderCombo
-          ? { ...nextUnderCombo, bonus: shouldCreditComboToTech ? dualBonus.underBonus : 0 }
-          : null;
-
-        void postAction('SAVE_UPSELL_AND_CHECKOUT', {
-          cartProducts: nextProducts,
-          selectedCombo: resolvedNextCombo,
-          selectedUnderCombo: resolvedNextUnderCombo,
-          comboRedemption: nextSkipUpper ? null : nextRedemption,
-          selectedUpperComboBalanceId: nextUpperBalanceId,
-          selectedUnderComboBalanceId: nextUnderBalanceId,
-          skipUpperCombo: nextSkipUpper,
-          skipUnderCombo: nextSkipUnder,
-          hasUnderMinkCombo: !nextSkipUnder && Boolean(prev.underMinkComboStatus?.hasUnderCombo),
-        });
-
-        const tipBreakdown = calculateActorTipBreakdown(
-          {
-            ...prev,
-            checkOutStaffId: actor.staffId,
-            checkOutStaffName: actor.name,
-          },
-          actor,
-          tipAmount
-        );
-
-        return {
-          ...prev,
-          checkOutStaffId: actor.staffId,
-          checkOutStaffName: actor.name,
-          checkOutStaffTier: actor.tier,
-          cartProducts: nextProducts,
-          selectedCombo: resolvedNextCombo,
-          selectedUnderCombo: resolvedNextUnderCombo,
-          comboRedemption: nextSkipUpper ? null : nextRedemption,
-          selectedUpperComboBalanceId: nextUpperBalanceId,
-          selectedUnderComboBalanceId: nextUnderBalanceId,
-          skipUpperCombo: nextSkipUpper,
-          skipUnderCombo: nextSkipUnder,
-          _localComboUpdatedAt: Date.now(),
-          cvRewardBreakdown: {
-            techTipPercent: 70,
-            checkInTipPercent: 10,
-            checkOutTipPercent: 10,
-            cvTotalTipPercent: tipBreakdown.actorEarnedPercent,
-            comboBonusAmount,
-            serumBonusAmount,
-            totalOrderBonusForCheckoutStaff: comboBonusAmount + serumBonusAmount,
-          },
-          billing: {
-            ...(prev.billing || {}),
-            subtotal,
-            vatRate,
-            vatAmount,
-            serviceTotal: effectiveServiceTotal,
-            comboTotal,
-            productTotal,
-            paymentMethod: prev.billing?.paymentMethod || 'VIETQR',
-            tipAmount,
-            tipCvShare: tipBreakdown.techShareAmount,
-            tipCheckInShare: tipBreakdown.checkInShareAmount,
-            tipCheckOutShare: tipBreakdown.checkOutShareAmount,
-            tipCcShare: tipBreakdown.checkInShareAmount + tipBreakdown.checkOutShareAmount,
-            promotionId: unifiedOrderPromotionId ?? primaryPromotion?.promotionId ?? prev.promotionId ?? null,
-            promotionName: primaryPromotion?.name ?? prev.billing?.promotionName,
-            promotionDiscountAmount,
-            serviceDiscountAmount,
-            comboDiscountAmount,
-            productDiscountAmount,
-            ...(isFullCreditLocked || hasAnyCreditRestrictedItem
-              ? { diamondUsed: clampedDiamondUsed, diamondDiscountAmount }
-              : {}),
-            grandTotal: Math.max(0, subtotalAfterDiscount + vatAmount + tipAmount - diamondDiscountAmount),
-          },
-        };
+        void postAction('SAVE_UPSELL_AND_CHECKOUT', postActionPayload);
+        return nextBooking;
       });
       setCurrentStep(13);
     },
@@ -390,162 +225,27 @@ export function useIosBillingCheckout({
       chosenTip?: number,
       chosenDiamond?: number,
       proofPhoto?: string,
-      zaloConsent?: {
-        agreed: boolean;
-        phone: string;
-        sentAt?: string;
-        voucherCode?: string;
-      },
-      promotionSelection?: {
-        promotionId?: number | null;
-        appliedPromotion?: IosPromotionOption | null;
-        servicePromotionId?: number | null;
-        servicePromotion?: IosPromotionOption | null;
-        comboPromotionId?: number | null;
-        comboPromotion?: IosPromotionOption | null;
-        underComboPromotionId?: number | null;
-        underComboPromotion?: IosPromotionOption | null;
-        cartProducts?: CartProductItem[];
-        paymentBreakdown?: IosPaymentBreakdown;
-        tipTransferProofPhoto?: string;
-        qrSplitTipSeparate?: boolean;
-      }
+      zaloConsent?: PaymentZaloConsent,
+      promotionSelection?: PaymentPromotionSelection
     ) => {
       const completedAt = new Date().toISOString();
       let calculatedBilling: any = null;
       let promoActionSnapshot: Record<string, any> = {};
 
       updateActiveBooking((prev) => {
-        const tipAmount = chosenTip !== undefined ? chosenTip : (prev.billing?.tipAmount ?? 0);
-        const tipBreakdown = calculateActorTipBreakdown(prev, actor, tipAmount);
-        const cvShare = tipBreakdown.techShareAmount;
-        const checkInShare = tipBreakdown.checkInShareAmount;
-        const checkOutShare = tipBreakdown.checkOutShareAmount;
-        const ccShare = checkInShare + checkOutShare;
-
-        const nextBookingDraft = mergePromotionSelectionIntoBookingDraft(prev, promotionSelection);
-
-        const {
-          serviceTotal: freshServiceTotal,
-          comboTotal: freshComboTotal,
-          productTotal: freshProductTotal,
-          subtotal,
-          promotionDiscountAmount,
-          serviceDiscountAmount,
-          comboDiscountAmount,
-          productDiscountAmount,
-          subtotalAfterDiscount,
-          vatRate,
-          vatAmount,
-          creditEligiblePayableWithVat,
-          hasAnyCreditRestrictedItem,
-          isFullCreditLocked,
-          unifiedOrderPromotionId,
-          primaryPromotion,
-        } = computeFreshBillingLineTotals(nextBookingDraft);
-
-        const totalBeforeDiamond = subtotalAfterDiscount + vatAmount + tipAmount;
-
-        // 💎 TỶ GIÁ VÍ KIM CƯƠNG: 1 💎 = 1.000 VNĐ
-        const DIAMOND_RATE = 1000;
-        const currentDiamondBalance = prev.diamondBalance ?? 0;
-        const maxDiamondVnd = isFullCreditLocked
-          ? 0
-          : hasAnyCreditRestrictedItem
-            ? creditEligiblePayableWithVat
-            : totalBeforeDiamond;
-        const diamondUsed = Math.min(
-          chosenDiamond ?? 0,
-          currentDiamondBalance,
-          Math.floor(maxDiamondVnd / DIAMOND_RATE)
-        );
-        const diamondDiscountAmount = diamondUsed * DIAMOND_RATE;
-        const grandTotal = Math.max(0, totalBeforeDiamond - diamondDiscountAmount);
-        const remainingDiamondBalance = Math.max(0, currentDiamondBalance - diamondUsed);
-
-        const isSessionWaivedIntoNewCombo = Boolean(
-          nextBookingDraft.selectedCombo && nextBookingDraft.selectedCombo.todaySingleServiceWaived !== false
-        );
-        const effectiveOrderPromoId =
-          unifiedOrderPromotionId ??
-          (isSessionWaivedIntoNewCombo ? null : nextBookingDraft.promotionId) ??
-          primaryPromotion?.promotionId ??
-          null;
-        promoActionSnapshot = buildPromoActionSnapshot(
-          nextBookingDraft,
-          effectiveOrderPromoId,
-          isSessionWaivedIntoNewCombo
-        );
-
-        const normalizedPayment = resolveNormalizedPaymentBreakdown(
-          grandTotal,
+        const result = buildChoosePaymentBookingUpdate(prev, {
           method,
-          promotionSelection?.paymentBreakdown ?? (method === 'MIXED' ? prev.billing?.paymentBreakdown : undefined)
-        );
-        const optimisticSettlement: IosSettlementStatus =
-          grandTotal <= 0 || normalizedPayment.isPureVietqrOrZero || canDirectlySettleCounterPayment(actor.tier)
-            ? 'SETTLED_COMPLETED'
-            : 'PENDING_COUNTER_SETTLEMENT';
-
-        const nextBilling = {
-          ...(prev.billing || {}),
-          subtotal,
-          serviceTotal: freshServiceTotal,
-          comboTotal: freshComboTotal,
-          productTotal: freshProductTotal,
-          promotionId: effectiveOrderPromoId,
-          promotionName:
-            primaryPromotion?.name ??
-            (isSessionWaivedIntoNewCombo ? undefined : nextBookingDraft.appliedPromotion?.name) ??
-            undefined,
-          promotionDiscountAmount,
-          serviceDiscountAmount,
-          comboDiscountAmount,
-          productDiscountAmount,
-          paymentMethod: normalizedPayment.paymentMethod,
-          paymentBreakdown: normalizedPayment.breakdown,
-          settlementStatus: optimisticSettlement,
-          vatRate,
-          vatAmount,
-          tipAmount,
-          tipCvShare: cvShare,
-          tipCheckInShare: checkInShare,
-          tipCheckOutShare: checkOutShare,
-          tipCcShare: ccShare,
-          diamondUsed,
-          diamondDiscountAmount,
-          transferProofPhoto: proofPhoto || prev.billing?.transferProofPhoto,
-          ...(promotionSelection?.tipTransferProofPhoto || prev.billing?.tipTransferProofPhoto
-            ? { tipTransferProofPhoto: promotionSelection?.tipTransferProofPhoto || prev.billing?.tipTransferProofPhoto }
-            : {}),
-          ...(promotionSelection?.qrSplitTipSeparate !== undefined
-            ? { qrSplitTipSeparate: promotionSelection.qrSplitTipSeparate }
-            : prev.billing?.qrSplitTipSeparate !== undefined
-              ? { qrSplitTipSeparate: prev.billing.qrSplitTipSeparate }
-              : {}),
-          zaloConsent: zaloConsent || prev.billing?.zaloConsent,
-          grandTotal,
+          chosenTip,
+          chosenDiamond,
+          proofPhoto,
+          zaloConsent,
+          promotionSelection,
+          actor,
           completedAt,
-        };
-
-        calculatedBilling = nextBilling;
-
-        return {
-          ...nextBookingDraft,
-          status: 'DONE',
-          orderState: optimisticSettlement === 'PENDING_COUNTER_SETTLEMENT' ? 'CheckOut' : 'Completed',
-          diamondBalance: remainingDiamondBalance,
-          promotionId: effectiveOrderPromoId,
-          checkOutStaffId: prev.checkOutStaffId || actor.staffId,
-          checkOutStaffName: prev.checkOutStaffName || actor.name,
-          checkOutStaffTier: prev.checkOutStaffTier || actor.tier,
-          progress: {
-            ...(prev.progress || { elapsedSeconds: 0, timerRunning: false }),
-            completedAt,
-            currentStep: 1,
-          },
-          billing: nextBilling,
-        };
+        });
+        calculatedBilling = result.calculatedBilling;
+        promoActionSnapshot = result.promoActionSnapshot;
+        return result.nextBooking;
       });
 
       dispatchCompleteOrder({
@@ -569,7 +269,16 @@ export function useIosBillingCheckout({
       setBookingSegment('DONE');
       setCurrentStep(15);
     },
-    [activeBookingId, actor, dispatchCompleteOrder, setBookingSegment, setCurrentStep, updateActiveBooking]
+    [
+      activeBookingId,
+      actor,
+      dispatchCompleteOrder,
+      isSimulationMode,
+      pendingReferral,
+      setBookingSegment,
+      setCurrentStep,
+      updateActiveBooking,
+    ]
   );
 
   // Pre-Checkout: Lưu tiền dịch vụ và/hoặc tiền tip thu trước khi vào phòng mi (giữ nguyên tiến trình ca làm)

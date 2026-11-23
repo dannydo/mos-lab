@@ -20,7 +20,14 @@ export interface AdaptiveDrawerProps extends DrawerProps {
   intent?: OverlayIntent;
 }
 
-export function AdaptiveDrawer({ intent = 'detail', className = '', width, closable, styles, ...props }: AdaptiveDrawerProps) {
+export function AdaptiveDrawer({
+  intent = 'detail',
+  className = '',
+  width,
+  closable,
+  styles,
+  ...props
+}: AdaptiveDrawerProps) {
   const tier = useResponsiveTier();
   const isMobile = tier === 'mobile';
   const isBottom = props.placement === 'bottom';
@@ -130,7 +137,8 @@ export function resolveAdaptiveModalConfig({
     : styles;
 
   const resolvedWidth = isMobile ? mobileModalWidth : (width ?? getOverlayWidth(tier, intent));
-  const resolvedClassName = `adaptive-overlay ${isFullscreenMobile ? 'adaptive-overlay-mobile-fullscreen' : ''} ${className}`.trim();
+  const resolvedClassName =
+    `adaptive-overlay ${isFullscreenMobile ? 'adaptive-overlay-mobile-fullscreen' : ''} ${className}`.trim();
 
   return {
     isMobile,

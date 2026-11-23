@@ -1,187 +1,22 @@
 'use client';
 
 import React from 'react';
-import { Alert, Button, Image, Input, Tag, Typography, message, theme } from 'antd';
+import { Alert, Button, message, theme } from 'antd';
 import {
-  BUG_REPORT_Z_INDEX,
   type BugReportCommentCreateResult,
-  BugReportNotification,
-  BugReportReporterState,
-  CreateBugReportCommentRequest,
-  MyBugReportItem,
-  ReviewBugReportRequest,
+  type BugReportNotification,
+  type CreateBugReportCommentRequest,
+  type MyBugReportItem,
+  type ReviewBugReportRequest,
 } from '@mos-lab/shared';
-import dayjs from 'dayjs';
-import {
-  Ban,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  CircleDotDashed,
-  Clock3,
-  ExternalLink,
-  FileText,
-  ImageIcon,
-  ListTree,
-  MessageCircleQuestion,
-  MessageSquare,
-  RotateCcw,
-  Search,
-  Sparkles,
-  type LucideIcon,
-} from 'lucide-react';
-import { AppIcon, StatePanel, StatusTag } from '../ui';
-import { RichTextViewer } from '../ui/rich-text';
-import { BugReportConversation } from './BugReportConversation';
-import { BugReportAttachmentPreview } from './BugReportAttachmentPreview';
+import { StatePanel } from '../ui';
 import { BugReportRejectionModal } from './BugReportRejectionModal';
 import { BugReportCancelModal } from './BugReportCancelModal';
+import { MyBugReportsListPane } from './MyBugReportsListPane';
+import { MyBugReportsDetailPane } from './MyBugReportsDetailPane';
+import { REPORTER_GROUPS, getReporterToneVisual, toneForState } from './my-bug-reports.helpers';
 
-const { Text } = Typography;
-
-type ReporterTone = 'attention' | 'working' | 'done' | 'quiet';
-
-const REPORTER_STATE_TONES: Record<BugReportReporterState, Parameters<typeof StatusTag>[0]['status']> = {
-  RECEIVED: 'processing',
-  REVIEWING: 'processing',
-  IN_PROGRESS: 'cyan',
-  WAITING_REPORTER: 'warning',
-  READY_FOR_REVIEW: 'success',
-  COMPLETED: 'success',
-  NOT_PROCEEDING: 'default',
-};
-
-const REPORTER_STATE_ICONS: Record<BugReportReporterState, LucideIcon> = {
-  RECEIVED: CircleDotDashed,
-  REVIEWING: CircleDotDashed,
-  IN_PROGRESS: Sparkles,
-  WAITING_REPORTER: MessageCircleQuestion,
-  READY_FOR_REVIEW: CheckCircle2,
-  COMPLETED: CheckCircle2,
-  NOT_PROCEEDING: CircleDotDashed,
-};
-
-const REPORTER_GROUPS: Array<{
-  id: string;
-  label: string;
-  helper: string;
-  tone: ReporterTone;
-  states: BugReportReporterState[];
-}> = [
-  {
-    id: 'needs-attention',
-    label: 'Cần bạn chú ý',
-    helper: 'Có việc cần bạn quyết định hoặc trả lời',
-    tone: 'attention',
-    states: ['WAITING_REPORTER', 'READY_FOR_REVIEW'],
-  },
-  {
-    id: 'in-progress',
-    label: 'mOS đang xử lý',
-    helper: 'Bạn chưa cần làm gì lúc này',
-    tone: 'working',
-    states: ['RECEIVED', 'REVIEWING', 'IN_PROGRESS'],
-  },
-  {
-    id: 'completed',
-    label: 'Đã hoàn tất',
-    helper: 'Những yêu cầu đã có kết quả',
-    tone: 'done',
-    states: ['COMPLETED', 'NOT_PROCEEDING'],
-  },
-];
-
-function elapsedSince(value: string): string {
-  const minutes = Math.max(0, dayjs().diff(dayjs(value), 'minute'));
-  if (minutes < 1) return 'vừa cập nhật';
-  if (minutes < 60) return `${minutes} phút trước`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} giờ trước`;
-  return `${Math.floor(hours / 24)} ngày trước`;
-}
-
-function toneForState(state: BugReportReporterState): ReporterTone {
-  if (['WAITING_REPORTER', 'READY_FOR_REVIEW'].includes(state)) return 'attention';
-  if (['COMPLETED', 'NOT_PROCEEDING'].includes(state)) return 'done';
-  return 'working';
-}
-
-function requestTypeLabel(report: MyBugReportItem): string {
-  return report.requestType === 'FEATURE' ? 'Cải thiện' : 'Báo lỗi';
-}
-
-export function resolveFeatureUrl(item: {
-  id?: number;
-  key?: string;
-  title?: string;
-  description?: string | null;
-  sourcePath?: string | null;
-  resolution?: {
-    releaseUrl?: string | null;
-    changedFiles?: string[];
-  } | null;
-}): string | null {
-  const rawReleaseUrl = item.resolution?.releaseUrl?.trim() || null;
-  if (rawReleaseUrl) {
-    try {
-      const parsed = rawReleaseUrl.startsWith('http')
-        ? new URL(rawReleaseUrl)
-        : new URL(rawReleaseUrl, 'https://lab.masteros.app');
-      const path = parsed.pathname;
-      if (path !== '/dashboard/bug-reports' && path !== '/dashboard/inbox' && path !== '/dashboard' && path !== '/') {
-        return rawReleaseUrl;
-      }
-    } catch {
-      if (!rawReleaseUrl.includes('/dashboard/bug-reports') && !rawReleaseUrl.includes('/dashboard/inbox')) {
-        return rawReleaseUrl;
-      }
-    }
-  }
-
-  // Next: check if title or description contains a specific feature route
-  const textToScan = `${item.title || ''} ${item.description || ''}`;
-  const routeMatch = textToScan.match(/(?:https?:\/\/[^\s"'`]+)?(\/dashboard\/[a-zA-Z0-9_\-/?=&#.]+)/i);
-  if (routeMatch && routeMatch[1]) {
-    const matchedPath = routeMatch[1].replace(/[.,;!?)]+$/, '');
-    if (
-      !matchedPath.startsWith('/dashboard/bug-reports') &&
-      !matchedPath.startsWith('/dashboard/inbox') &&
-      matchedPath !== '/dashboard'
-    ) {
-      return matchedPath;
-    }
-  }
-
-  // Next: check sourcePath
-  if (
-    item.sourcePath &&
-    item.sourcePath.startsWith('/') &&
-    !item.sourcePath.startsWith('/dashboard/bug-reports') &&
-    !item.sourcePath.startsWith('/dashboard/inbox') &&
-    item.sourcePath !== '/'
-  ) {
-    return item.sourcePath;
-  }
-
-  // Next: check changedFiles
-  if (item.resolution?.changedFiles && item.resolution.changedFiles.length > 0) {
-    for (const file of item.resolution.changedFiles) {
-      const match = file.match(/apps\/web\/app\/dashboard\/([a-zA-Z0-9_-]+)/);
-      if (match && match[1] && match[1] !== 'bug-reports' && match[1] !== 'inbox') {
-        const moduleName = match[1];
-        if (moduleName === 'bk') {
-          if (file.toLowerCase().includes('game') || textToScan.toLowerCase().includes('game')) {
-            return '/dashboard/bk?tab=game';
-          }
-          return '/dashboard/bk';
-        }
-        return `/dashboard/${moduleName}`;
-      }
-    }
-  }
-
-  return null;
-}
+export { resolveFeatureUrl } from './my-bug-reports.helpers';
 
 interface MyBugReportsPanelProps {
   reports: MyBugReportItem[];
@@ -221,7 +56,6 @@ export function MyBugReportsPanel({
   const [technicalHistoryOpen, setTechnicalHistoryOpen] = React.useState(false);
   // Mobile navigation: 'list' shows the ticket list, 'detail' shows the selected ticket detail
   const [mobileView, setMobileView] = React.useState<'list' | 'detail'>('list');
-
   const [rejectionModalOpen, setRejectionModalOpen] = React.useState(false);
 
   const handleMobileSelect = React.useCallback(
@@ -230,23 +64,6 @@ export function MyBugReportsPanel({
       setMobileView('detail');
     },
     [onSelect]
-  );
-
-  const visualForTone = React.useCallback(
-    (tone: ReporterTone) => {
-      if (tone === 'attention')
-        return { accent: token.colorWarning, border: token.colorWarningBorder, background: token.colorWarningBg };
-      if (tone === 'done')
-        return { accent: token.colorSuccess, border: token.colorSuccessBorder, background: token.colorSuccessBg };
-      if (tone === 'quiet')
-        return {
-          accent: token.colorTextTertiary,
-          border: token.colorBorderSecondary,
-          background: token.colorFillQuaternary,
-        };
-      return { accent: token.colorInfo, border: token.colorInfoBorder, background: token.colorInfoBg };
-    },
-    [token]
   );
 
   const submitReview = async (payload: ReviewBugReportRequest) => {
@@ -337,19 +154,20 @@ export function MyBugReportsPanel({
     : reports;
   const selected =
     matchingReports.find((report) => report.key === selectedKey) ?? matchingReports[0] ?? reports[0] ?? null;
-  const selectedVisual = visualForTone(selected ? toneForState(selected.reporterExperience.state) : 'quiet');
+  const selectedVisual = getReporterToneVisual(
+    token,
+    selected ? toneForState(selected.reporterExperience.state) : 'quiet'
+  );
   const groupedReports = REPORTER_GROUPS.map((group) => ({
     ...group,
     reports: matchingReports.filter((report) => group.states.includes(report.reporterExperience.state)),
   }));
-  const recentUpdates = selected?.reporterExperience.updates.slice(0, 2) ?? [];
-  const selectedEvidence = selected?.evidenceAttachments ?? [];
   const canCancelSelected = Boolean(
     onCancel &&
-      selected &&
-      (selected.canCancel ??
-        (!['COMPLETED', 'NOT_PROCEEDING'].includes(selected.reporterExperience.state) &&
-          !['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(selected.status)))
+    selected &&
+    (selected.canCancel ??
+      (!['COMPLETED', 'NOT_PROCEEDING'].includes(selected.reporterExperience.state) &&
+        !['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(selected.status)))
   );
 
   return (
@@ -376,465 +194,34 @@ export function MyBugReportsPanel({
         className="reporter-request-layout overflow-hidden rounded-2xl border"
         style={{ borderColor: token.colorBorderSecondary, background: token.colorBgContainer }}
       >
-        {/* Mobile: list view — hidden on desktop (lg+), visible on mobile only when mobileView='list' */}
-        <section
-          className={`reporter-request-list lg:border-b ${mobileView === 'detail' ? 'hidden lg:block' : 'block'}`}
-          style={{ borderColor: token.colorBorderSecondary }}
-          aria-label="Danh sách yêu cầu của tôi"
-        >
-          <div className="px-5 pb-3 pt-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <Text strong className="text-lg">
-                  Yêu cầu của tôi
-                </Text>
-                <Text type="secondary" className="mt-0.5 block text-sm">
-                  Chỉ cần nói mOS cần giúp gì
-                </Text>
-              </div>
-              <span
-                className="rounded-full px-2 py-0.5 text-xs"
-                style={{ background: token.colorFillQuaternary, color: token.colorTextSecondary }}
-              >
-                {reports.length}
-              </span>
-            </div>
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              allowClear
-              prefix={<AppIcon icon={Search} size="sm" />}
-              placeholder="Tìm yêu cầu"
-              aria-label="Tìm yêu cầu"
-              className="mt-4"
-            />
-          </div>
-
-          <div className="max-h-[612px] space-y-5 overflow-y-auto overscroll-contain px-3 pb-5" aria-label="Các nhóm yêu cầu">
-            {groupedReports
-              .filter((group) => group.reports.length > 0)
-              .map((group) => {
-                const groupVisual = visualForTone(group.tone);
-                return (
-                  <div key={group.id}>
-                    <div className="mb-2 flex items-start justify-between gap-2 px-2">
-                      <div>
-                        <Text strong className="text-sm" style={{ color: groupVisual.accent }}>
-                          {group.label}
-                        </Text>
-                        <Text type="secondary" className="mt-0.5 block text-xs">
-                          {group.helper}
-                        </Text>
-                      </div>
-                      <span
-                        className="rounded-full px-1.5 py-0.5 text-[11px]"
-                        style={{ background: groupVisual.background, color: groupVisual.accent }}
-                      >
-                        {group.reports.length}
-                      </span>
-                    </div>
-                    <div className="space-y-1.5">
-                      {group.reports.map((report) => {
-                        const active = selected?.id === report.id;
-                        const visual = visualForTone(toneForState(report.reporterExperience.state));
-                        return (
-                          <button
-                            key={report.id}
-                            type="button"
-                            aria-current={active ? 'true' : undefined}
-                            className="group w-full rounded-xl border px-3 py-2.5 text-left transition-all hover:-translate-y-px"
-                            style={{
-                              borderColor: active ? visual.border : 'transparent',
-                              background: active ? visual.background : token.colorFillQuaternary,
-                              boxShadow: active ? `inset 3px 0 0 ${visual.accent}` : undefined,
-                            }}
-                            onClick={() => handleMobileSelect(report.key)}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="inline-flex min-w-0 items-center gap-1.5">
-                                <span
-                                  className="h-1.5 w-1.5 shrink-0 rounded-full"
-                                  style={{ background: visual.accent }}
-                                />
-                                <Text strong className="truncate text-xs">
-                                  {report.key}
-                                </Text>
-                              </span>
-                              <Text type="secondary" className="shrink-0 text-[11px]">
-                                {elapsedSince(report.updatedAt)}
-                              </Text>
-                            </div>
-                            <Text ellipsis={{ tooltip: report.title }} className="mt-1 block text-sm font-medium">
-                              {report.title}
-                            </Text>
-                            <div className="mt-1 flex items-center justify-between gap-2">
-                              <Text
-                                type="secondary"
-                                ellipsis={{ tooltip: report.reporterExperience.summary }}
-                                className="min-w-0 text-xs"
-                              >
-                                {report.reporterExperience.summary}
-                              </Text>
-                              <span className="flex shrink-0 items-center gap-1">
-                                {report.evidenceAttachments.length ? (
-                                  <span
-                                    className="inline-flex items-center gap-0.5 text-[11px]"
-                                    style={{ color: token.colorTextTertiary }}
-                                    title={`${report.evidenceAttachments.length} ảnh bạn đã gửi`}
-                                  >
-                                    <AppIcon icon={ImageIcon} size={12} />
-                                    {report.evidenceAttachments.length}
-                                  </span>
-                                ) : null}
-                                <AppIcon icon={ChevronRight} size="sm" style={{ color: token.colorTextTertiary }} />
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            {!matchingReports.length ? (
-              <Text type="secondary" className="block px-2 py-8 text-center text-sm">
-                Không tìm thấy yêu cầu phù hợp.
-              </Text>
-            ) : null}
-          </div>
-        </section>
+        <MyBugReportsListPane
+          totalCount={reports.length}
+          search={search}
+          onSearchChange={setSearch}
+          groupedReports={groupedReports}
+          hasMatches={matchingReports.length > 0}
+          selectedId={selected?.id ?? null}
+          mobileView={mobileView}
+          onSelectReport={handleMobileSelect}
+        />
 
         {selected ? (
-          <section className={`min-w-0 ${mobileView === 'list' ? 'hidden lg:block' : 'block'}`} aria-label={`Chi tiết ${selected.key}`}>
-            {/* Mobile back button — only shown on mobile when in detail view */}
-            <div
-              className="flex items-center border-b px-4 py-3 lg:hidden"
-              style={{ borderColor: token.colorBorderSecondary }}
-            >
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 text-sm font-medium"
-                style={{ color: token.colorPrimary }}
-                onClick={() => setMobileView('list')}
-              >
-                <AppIcon icon={ChevronLeft} size="sm" />
-                Danh sách yêu cầu
-              </button>
-            </div>
-            <header
-              className="border-b px-5 py-5 sm:px-7"
-              style={{ borderColor: selectedVisual.border, background: selectedVisual.background }}
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                  style={{ background: token.colorBgContainer, color: selectedVisual.accent }}
-                >
-                  <AppIcon icon={REPORTER_STATE_ICONS[selected.reporterExperience.state]} size="md" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-2">
-                      <Text strong>{selected.key}</Text>
-                      <Text type="secondary" className="text-xs">
-                        {requestTypeLabel(selected)}
-                      </Text>
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <StatusTag
-                        status={REPORTER_STATE_TONES[selected.reporterExperience.state]}
-                        icon={<AppIcon icon={REPORTER_STATE_ICONS[selected.reporterExperience.state]} size="sm" />}
-                        label={selected.reporterExperience.label}
-                      />
-                      {canCancelSelected ? (
-                        <Button
-                          size="small"
-                          danger
-                          type="text"
-                          icon={<AppIcon icon={Ban} size="sm" />}
-                          onClick={() => setCancelModalOpen(true)}
-                        >
-                          Huỷ yêu cầu
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-                  <Text strong className="mt-1.5 block text-lg leading-snug">
-                    {selected.title}
-                  </Text>
-                  <Text type="secondary" className="mt-1 block text-sm">
-                    Cập nhật {elapsedSince(selected.updatedAt)}
-                  </Text>
-                </div>
-              </div>
-            </header>
-
-            <div className="space-y-3 px-5 py-5 sm:px-7">
-              <InfoBlock
-                icon={FileText}
-                title={selected.requestType === 'FEATURE' ? 'Điều bạn muốn' : 'Điều bạn đã báo'}
-              >
-                <RichTextViewer content={selected.description} />
-              </InfoBlock>
-              {selectedEvidence.length ? (
-                <InfoBlock icon={ImageIcon} title="Ảnh bạn đã gửi">
-                  <Image.PreviewGroup
-                    preview={{
-                      zIndex: BUG_REPORT_Z_INDEX.PREVIEW,
-                      countRender: (current: number, total: number) => (
-                        <span className="tabular-nums font-semibold tracking-wide">
-                          {current} / {total}
-                        </span>
-                      ),
-                    }}
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      {selectedEvidence.map((attachment) => (
-                        <BugReportAttachmentPreview
-                          key={attachment.id}
-                          reportId={selected.id}
-                          attachment={attachment}
-                          thumbnail
-                        />
-                      ))}
-                    </div>
-                  </Image.PreviewGroup>
-                  <Text type="secondary" className="mt-2 block text-xs">
-                    Bấm vào ảnh để xem và lướt qua các ảnh.
-                  </Text>
-                </InfoBlock>
-              ) : null}
-              <InfoBlock
-                icon={Sparkles}
-                title={
-                  ['COMPLETED', 'NOT_PROCEEDING'].includes(selected.reporterExperience.state)
-                    ? 'mOS đã làm'
-                    : 'mOS đang làm gì'
-                }
-                accent={selectedVisual.accent}
-                background={selectedVisual.background}
-              >
-                {selected.reporterExperience.summary}
-                {recentUpdates.length ? (
-                  <div className="mt-3 space-y-1.5 border-t pt-3" style={{ borderColor: selectedVisual.border }}>
-                    {recentUpdates.map((update) => (
-                      <div
-                        key={`${update.label}-${update.occurredAt}`}
-                        className="flex items-start justify-between gap-3 text-xs"
-                      >
-                        <span>{update.label}</span>
-                        <span className="shrink-0" style={{ color: token.colorTextTertiary }}>
-                          {elapsedSince(update.occurredAt)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-              </InfoBlock>
-              {selected.resolution
-                ? (() => {
-                    const featureUrl = resolveFeatureUrl(selected);
-                    const ticketUrl = `/dashboard/bug-reports?selected=${encodeURIComponent(selected.key)}`;
-                    return (
-                      <InfoBlock
-                        icon={CheckCircle2}
-                        title="Kết quả"
-                        accent={token.colorSuccess}
-                        background={token.colorSuccessBg}
-                      >
-                        <div className="text-sm leading-relaxed">{selected.resolution.solutionSummary}</div>
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          {featureUrl ? (
-                            <Button
-                              type="primary"
-                              href={featureUrl}
-                              target="_blank"
-                              icon={<AppIcon icon={ExternalLink} size="sm" />}
-                              style={{
-                                backgroundColor: token.colorSuccess,
-                                borderColor: token.colorSuccess,
-                              }}
-                            >
-                              Mở kết quả
-                            </Button>
-                          ) : null}
-                          <Button href={ticketUrl} target="_blank" icon={<AppIcon icon={FileText} size="sm" />}>
-                            Mở ticket
-                          </Button>
-                        </div>
-                      </InfoBlock>
-                    );
-                  })()
-                : null}
-
-              <section
-                className="rounded-xl border p-4"
-                style={{ borderColor: selectedVisual.border, background: selectedVisual.background }}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5" style={{ color: selectedVisual.accent }}>
-                    <AppIcon icon={Clock3} size="sm" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <Text type="secondary" className="text-xs font-semibold uppercase tracking-wide">
-                      Việc tiếp theo
-                    </Text>
-                    <Text strong className="mt-0.5 block">
-                      {selected.reporterExperience.nextAction.label}
-                    </Text>
-                    <Text type="secondary" className="mt-0.5 block text-sm">
-                      {selected.reporterExperience.nextAction.detail}
-                    </Text>
-                  </div>
-                </div>
-                {selected.clarification.status === 'WAITING_REPORTER' ? (
-                  <div className="mt-4 border-t pt-4" style={{ borderColor: selectedVisual.border }}>
-                    <BugReportConversation
-                      reportId={selected.id}
-                      requestType={selected.requestType}
-                      status={selected.status}
-                      clarification={selected.clarification}
-                      comments={selected.comments}
-                      reporterMode
-                      onSubmit={(request) => onComment(selected.id, request)}
-                    />
-                  </div>
-                ) : null}
-                {selected.canReview || selected.canReopenUnchanged ? (
-                  <div
-                    className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4"
-                    style={{ borderColor: selectedVisual.border }}
-                  >
-                    <Text type="secondary" className="max-w-md text-xs">
-                      {selected.canReview
-                        ? 'Nếu vẫn chưa đúng ý, bạn có thể gửi phản hồi kèm hình ảnh để Agent sửa lại.'
-                        : 'Nếu vẫn chưa đúng, mOS sẽ dùng lại thông tin bạn đã gửi trước đó.'}
-                    </Text>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        danger
-                        loading={saving}
-                        disabled={saving}
-                        icon={<AppIcon icon={RotateCcw} size="sm" />}
-                        onClick={() => setRejectionModalOpen(true)}
-                      >
-                        Cần sửa lại
-                      </Button>
-                      {selected.canReview ? (
-                        <Button
-                          type="primary"
-                          loading={saving}
-                          disabled={saving}
-                          icon={<AppIcon icon={CheckCircle2} size="sm" />}
-                          onClick={() => void submitReview({ decision: 'APPROVE' })}
-                        >
-                          Đã đúng
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : null}
-                {canCancelSelected && !selected.canReview && (
-                  <div
-                    className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-3"
-                    style={{ borderColor: selectedVisual.border }}
-                  >
-                    <Text type="secondary" className="text-xs">
-                      Nếu yêu cầu này bị báo nhầm hoặc không còn cần thiết, bạn có thể huỷ yêu cầu.
-                    </Text>
-                    <Button
-                      danger
-                      loading={cancelling}
-                      disabled={cancelling}
-                      icon={<AppIcon icon={Ban} size="sm" />}
-                      onClick={() => setCancelModalOpen(true)}
-                    >
-                      Huỷ yêu cầu
-                    </Button>
-                  </div>
-                )}
-              </section>
-
-              {/* Trao đổi & bình luận (luôn hiển thị để người dùng có thể theo dõi và comment thêm trong quá trình xử lý của agent) */}
-              {selected.clarification.status !== 'WAITING_REPORTER' &&
-                (!['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(selected.status) ||
-                  selected.comments.length > 0) && (
-                  <section
-                    className="rounded-xl border p-4"
-                    style={{ borderColor: token.colorBorderSecondary, background: token.colorBgContainer }}
-                  >
-                    <div className="mb-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <AppIcon icon={MessageSquare} size="sm" />
-                        <Text strong className="text-sm">
-                          Trao đổi & Bình luận ({selected.comments.length})
-                        </Text>
-                      </div>
-                      {['NEW', 'APPROVED', 'IN_PROGRESS'].includes(selected.status) ? (
-                        <Tag color="processing" className="m-0">
-                          {selected.agentProgress.stage === 'ANALYZING' ||
-                          selected.agentProgress.stage === 'CHECKING_BUSINESS_LOGIC' ||
-                          selected.clarification.status === 'PENDING_AGENT'
-                            ? 'Agent đang phân tích'
-                            : selected.agentProgress.stage === 'IMPLEMENTING' ||
-                                selected.agentProgress.stage === 'COMMITTING' ||
-                                selected.agentProgress.stage === 'DEPLOYING' ||
-                                selected.agentProgress.stage === 'VERIFYING' ||
-                                selected.status === 'APPROVED' ||
-                                selected.status === 'IN_PROGRESS'
-                              ? 'Agent đang xử lý'
-                              : 'Đang xử lý'}
-                        </Tag>
-                      ) : null}
-                    </div>
-                    <BugReportConversation
-                      reportId={selected.id}
-                      requestType={selected.requestType}
-                      status={selected.status}
-                      clarification={selected.clarification}
-                      comments={selected.comments}
-                      reporterMode
-                      onSubmit={(request) => onComment(selected.id, request)}
-                    />
-                  </section>
-                )}
-
-              {canViewTechnicalHistory ? (
-                <details
-                  open={technicalHistoryOpen}
-                  onToggle={(event) => setTechnicalHistoryOpen(event.currentTarget.open)}
-                  className="rounded-xl border"
-                  style={{ borderColor: token.colorBorderSecondary }}
-                >
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
-                    <span className="inline-flex items-center gap-2">
-                      <AppIcon icon={ListTree} size="sm" />
-                      <Text strong className="text-sm">
-                        Xem lịch sử xử lý
-                      </Text>
-                    </span>
-                    <Text type="secondary" className="text-xs">
-                      Dành cho dev / AI Agent
-                    </Text>
-                  </summary>
-                  <div className="border-t px-4 py-3" style={{ borderColor: token.colorBorderSecondary }}>
-                    <Text type="secondary" className="block text-sm">
-                      Lịch sử kỹ thuật, audit và workflow nội bộ được xem trong mOS Mission để không làm rối màn hình
-                      người báo.
-                    </Text>
-                    <Button
-                      className="mt-3"
-                      size="small"
-                      href={`/dashboard/bug-reports?selected=${encodeURIComponent(selected.key)}`}
-                      icon={<AppIcon icon={ExternalLink} size="sm" />}
-                    >
-                      Mở chi tiết xử lý
-                    </Button>
-                  </div>
-                </details>
-              ) : null}
-            </div>
-          </section>
+          <MyBugReportsDetailPane
+            selected={selected}
+            selectedVisual={selectedVisual}
+            mobileView={mobileView}
+            onBackToList={() => setMobileView('list')}
+            saving={saving}
+            cancelling={cancelling}
+            canCancelSelected={canCancelSelected}
+            canViewTechnicalHistory={canViewTechnicalHistory}
+            technicalHistoryOpen={technicalHistoryOpen}
+            onToggleTechnicalHistory={setTechnicalHistoryOpen}
+            onOpenCancelModal={() => setCancelModalOpen(true)}
+            onOpenRejectionModal={() => setRejectionModalOpen(true)}
+            onApproveResult={() => void submitReview({ decision: 'APPROVE' })}
+            onComment={onComment}
+          />
         ) : null}
       </div>
 
@@ -867,40 +254,6 @@ export function MyBugReportsPanel({
         />
       ) : null}
     </div>
-  );
-}
-
-function InfoBlock({
-  icon,
-  title,
-  accent,
-  background,
-  children,
-}: {
-  icon: LucideIcon;
-  title: string;
-  accent?: string;
-  background?: string;
-  children: React.ReactNode;
-}) {
-  const { token } = theme.useToken();
-  return (
-    <section
-      className="rounded-xl border p-4"
-      style={{ borderColor: accent ? undefined : token.colorBorderSecondary, background }}
-    >
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5" style={{ color: accent ?? token.colorTextTertiary }}>
-          <AppIcon icon={icon} size="sm" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <Text type="secondary" className="text-xs font-semibold uppercase tracking-wide">
-            {title}
-          </Text>
-          <div className="mt-1 whitespace-pre-wrap text-sm leading-6">{children}</div>
-        </div>
-      </div>
-    </section>
   );
 }
 

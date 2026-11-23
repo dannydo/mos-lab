@@ -1,79 +1,33 @@
 'use client';
 
-import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
-import { Modal, Input, Select, DatePicker, message as antdMessage } from 'antd';
-import dayjs from 'dayjs';
-import type {
-  MosChatMessage,
-  MosChatTaskItem,
-  MosChatTaskPriority,
-  MosChatThreadReply,
-  SafeAny,
-} from '@mos-lab/shared';
+import React, { useMemo, useRef, useState } from 'react';
+import { message as antdMessage } from 'antd';
+import type { MosChatCustomerCard, MosChatImageAttachment, MosChatMessage, MosChatThreadReply } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import { MosChatMobileHeader } from './MosChatMobileHeader';
 import { MosChatMobileInbox } from './MosChatMobileInbox';
 import { MosChatMobileStream } from './MosChatMobileStream';
 import { MosChatMobileComposer } from './MosChatMobileComposer';
-import { MosChatMobileActionSheet } from './MosChatMobileActionSheet';
-import { MosChatMobileReactionSheet } from './MosChatMobileReactionSheet';
-import { MosChatMobileReactionUsersSheet } from './MosChatMobileReactionUsersSheet';
-import { MosChatMobileSeenUsersSheet } from './MosChatMobileSeenUsersSheet';
 import { MosChatMobileThreadSheet } from './MosChatMobileThreadSheet';
 import { MosChatMobileTasksTab } from './MosChatMobileTasksTab';
 import { MosChatMobilePinnedTab } from './MosChatMobilePinnedTab';
 import { MosChatFilesPane } from '../components/MosChatFilesPane';
-import { MosChatGoogleWorkspaceDrawer } from '../components/MosChatGoogleWorkspaceDrawer';
-import type { MosChatActiveSubtab } from '../types/mos-chat-types';
-import { MosChatMobileTaskDetailSheet } from './MosChatMobileTaskDetailSheet';
-import { MosChatMobileEditTaskModal } from './MosChatMobileEditTaskModal';
-import { MosChatMobileNegotiateTaskModal } from './MosChatMobileNegotiateTaskModal';
-import { MosChatMobileDateTimePicker } from './MosChatMobileDateTimePicker';
-import { MosChatMobileMissionModal } from './MosChatMobileMissionModal';
-import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
-import { MosChatMobileEditModal } from './MosChatMobileEditModal';
-import { MosChatMobileMoveThreadModal } from './MosChatMobileMoveThreadModal';
-import { MosChatForwardModal } from '../components/MosChatForwardModal';
-import { MosChatMobileSearchSheet, type FilterScope } from './MosChatMobileSearchSheet';
-import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
-import { MosChatRichEditorModal } from '../MosChatRichEditorModal';
-import { MosChatAvatar } from '../MosChatAvatar';
-import { MosChatSpaceConfigModal } from '../MosChatSpaceConfigModal';
-import { MosChatSpaceMembersModal } from '../MosChatSpaceMembersModal';
 import { formatStickerToken, type MosChatStickerItem, type MosChatStickerPackId } from '../mos-chat-stickers';
-import {
-  AI_COPILOT_CONV_ID,
-  DEADLINE_PRESETS,
-  GOOGLE_CHAT_REACTION_EMOJIS,
-  WINGS_SIGNATURE_EMOJIS,
-} from '../constants/chat-constants';
-import { apiClient } from '../../../lib/api-client';
+import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
-import { MosChatCustomerPickerModal } from '../MosChatCustomerPickerModal';
-import type { MosChatImageAttachment, MosChatCustomerCard, MosChatSearchResultItem } from '@mos-lab/shared';
-import { useMosChatVoiceCall } from '../utils/useMosChatVoiceCall';
-import { MosChatVoiceCallWidget, MosChatActiveCallRoomBanner } from '../components/MosChatVoiceCallWidget';
-import { useMosChatWebPush } from '../utils/useMosChatWebPush';
-import { MosChatPushNotificationModal } from '../components/MosChatPushNotificationModal';
+import { MosChatActiveCallRoomBanner } from '../components/MosChatVoiceCallWidget';
 import { useTheme } from '../../../context/ThemeContext';
-import { UnifiedProfileSheet } from '../../profile/UnifiedProfileSheet';
 import '../../../app/ios-app/ios-typography.css';
 import { useIosFontScale } from '../../../app/ios-app/state/useIosFontScale';
+import { useMobileAppNavigation, type MobileInitialNavTarget } from './app/useMobileAppNavigation';
+import { useMobileTaskWorkflow } from './app/useMobileTaskWorkflow';
+import { MobileAppModalsAndSheets } from './app/MobileAppModalsAndSheets';
 
 export interface MosChatMobileAppProps {
   standalone?: boolean;
   onStartVoiceCall?: (conversationId: string) => void;
   onClose?: () => void;
-  initialNavTarget?: {
-    conversationId?: string;
-    messageId?: string;
-    threadRootMessageId?: string;
-    openTab?: MosChatActiveSubtab;
-    taskId?: string;
-    /** Permalink: open this exact AI Copilot session. */
-    aiSessionId?: string;
-    timestamp?: number;
-  } | null;
+  initialNavTarget?: MobileInitialNavTarget | null;
 }
 
 export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
@@ -141,6 +95,11 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
   const [isUploadingImages, setIsUploadingImages] = useState<boolean>(false);
   const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
   const [customerPickerOpen, setCustomerPickerOpen] = useState<boolean>(false);
+  const [pushModalOpen, setPushModalOpen] = useState(false);
+  const [themeSheetOpen, setThemeSheetOpen] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const prevMsgForMoving = useMemo(() => {
     if (!movingMsgForThread) return null;
@@ -149,367 +108,36 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
     return null;
   }, [messages, movingMsgForThread]);
 
-  // Task Detail Bottom Sheet & Modals state
-  const [selectedDetailTaskId, setSelectedDetailTaskId] = useState<string | null>(null);
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [negotiatingTaskId, setNegotiatingTaskId] = useState<string | null>(null);
-  const [missionTaskId, setMissionTaskId] = useState<string | null>(null);
-
-  const selectedDetailTask = useMemo(
-    () => tasks.find((t) => t.id === selectedDetailTaskId) || null,
-    [tasks, selectedDetailTaskId]
-  );
-  const editingTask = useMemo(() => tasks.find((t) => t.id === editingTaskId) || null, [tasks, editingTaskId]);
-  const negotiatingTask = useMemo(
-    () => tasks.find((t) => t.id === negotiatingTaskId) || null,
-    [tasks, negotiatingTaskId]
-  );
-  const missionTask = useMemo(() => tasks.find((t) => t.id === missionTaskId) || null, [tasks, missionTaskId]);
-
-  // Stream Media Gallery Lightbox state
-  const [streamGallery, setStreamGallery] = useState<{
-    open: boolean;
-    images: MosChatGalleryImage[];
-    initialIndex: number;
-  }>({
-    open: false,
-    images: [],
-    initialIndex: 0,
+  const nav = useMobileAppNavigation({
+    standalone,
+    onStartVoiceCall,
+    initialNavTarget,
+    currentUser,
+    activeConversation,
+    conversations,
+    messages,
+    mobileView,
+    setMobileView,
+    setActiveThreadMsg,
+    setActiveConvId,
+    openAiSessionById,
   });
 
-  // Mobile Message Search Sheet state
-  const [searchSheetOpen, setSearchSheetOpen] = useState(false);
-  const [searchInitialQuery, setSearchInitialQuery] = useState('');
-  const [searchInitialScope, setSearchInitialScope] = useState<FilterScope>('ALL');
-  const [pushModalOpen, setPushModalOpen] = useState(false);
-  const [themeSheetOpen, setThemeSheetOpen] = useState(false);
-
-  const pendingPushTargetRef = useRef<{
-    convId: string;
-    msgId?: string;
-    threadRootMsgId?: string;
-  } | null>(null);
-
-  const navigateToPushTarget = useCallback(
-    (convId: string, msgId?: string, threadRootMsgId?: string) => {
-      setActiveConvId(convId);
-      const targetConv = conversations.find((c) => c.id === convId);
-      const candidateMsgs = targetConv?.messages?.length ? targetConv.messages : messages;
-      const parentMsg = threadRootMsgId
-        ? candidateMsgs.find((m) => m.id === threadRootMsgId)
-        : msgId
-          ? candidateMsgs.find((m) => (m.thread || []).some((r) => r.id === msgId))
-          : undefined;
-
-      if (parentMsg) {
-        setActiveThreadMsg(parentMsg);
-        setMobileView('thread');
-        pendingPushTargetRef.current = null;
-      } else {
-        setMobileView('room');
-        if (threadRootMsgId || msgId) {
-          pendingPushTargetRef.current = { convId, msgId, threadRootMsgId };
-        }
-      }
-
-      if (msgId && typeof document !== 'undefined') {
-        setTimeout(() => {
-          const el =
-            document.getElementById(`thread-reply-${msgId}`) ||
-            document.getElementById(`mos-chat-reply-${msgId}`) ||
-            document.getElementById(`mos-chat-msg-${msgId}`) ||
-            document.getElementById(`mobile-msg-${msgId}`) ||
-            document.getElementById(`msg-${msgId}`);
-          if (el && typeof el.scrollIntoView === 'function') {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 350);
-      }
-    },
-    [conversations, messages, setActiveConvId, setActiveThreadMsg, setMobileView]
-  );
-
-  const handledInitialNavKeyRef = useRef<string | null>(null);
-
-  // Permalink: /chat?convId=dm-wings-ai-copilot&sessionId=<id>
-  const handledAiSessionNavKeyRef = useRef<string | null>(null);
-  useEffect(() => {
-    const sessionId = initialNavTarget?.aiSessionId;
-    if (!sessionId || !openAiSessionById || !currentUser?.id) return;
-    const navKey = `${sessionId}::${initialNavTarget?.timestamp || ''}`;
-    if (handledAiSessionNavKeyRef.current === navKey) return;
-    handledAiSessionNavKeyRef.current = navKey;
-    void openAiSessionById(sessionId).then((ok) => {
-      if (ok) setMobileView('room');
-    });
-  }, [initialNavTarget?.aiSessionId, initialNavTarget?.timestamp, openAiSessionById, currentUser?.id, setMobileView]);
-
-  useEffect(() => {
-    if (!initialNavTarget?.conversationId) return;
-    const navKey = `${initialNavTarget.conversationId}::${initialNavTarget.messageId || ''}::${initialNavTarget.threadRootMessageId || ''}::${initialNavTarget.timestamp || ''}`;
-    if (handledInitialNavKeyRef.current === navKey) return;
-    handledInitialNavKeyRef.current = navKey;
-    navigateToPushTarget(
-      initialNavTarget.conversationId,
-      initialNavTarget.messageId,
-      initialNavTarget.threadRootMessageId
-    );
-  }, [initialNavTarget, navigateToPushTarget]);
-
-  useEffect(() => {
-    const pending = pendingPushTargetRef.current;
-    if (!pending || activeConversation?.id !== pending.convId) return;
-    if (!messages || messages.length === 0) return;
-
-    const parentMsg = pending.threadRootMsgId
-      ? messages.find((m) => m.id === pending.threadRootMsgId)
-      : pending.msgId
-        ? messages.find((m) => (m.thread || []).some((r) => r.id === pending.msgId))
-        : undefined;
-
-    if (parentMsg) {
-      setActiveThreadMsg(parentMsg);
-      setMobileView('thread');
-    }
-
-    if (pending.msgId && typeof document !== 'undefined') {
-      setTimeout(() => {
-        const el =
-          document.getElementById(`thread-reply-${pending.msgId}`) ||
-          document.getElementById(`mos-chat-reply-${pending.msgId}`) ||
-          document.getElementById(`mos-chat-msg-${pending.msgId}`) ||
-          document.getElementById(`mobile-msg-${pending.msgId}`) ||
-          document.getElementById(`msg-${pending.msgId}`);
-        if (el && typeof el.scrollIntoView === 'function') {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 250);
-    }
-    pendingPushTargetRef.current = null;
-  }, [activeConversation?.id, messages, setActiveThreadMsg, setMobileView]);
-
-  const webPush = useMosChatWebPush({
-    enabled: Boolean(currentUser?.id),
-    onSelectConversationFromPush: (convId, msgId, threadRootMsgId) => {
-      navigateToPushTarget(convId, msgId, threadRootMsgId);
-    },
+  const taskWorkflow = useMobileTaskWorkflow({
+    currentUser,
+    staffDirectory,
+    activeConversation,
+    conversations,
+    activeThreadMsg,
+    tasks,
+    createTask,
+    updateTask,
+    dispatchMissionFromTask,
+    sendThreadReply,
+    setActiveConvId,
+    setActiveThreadMsg,
+    setMobileView,
   });
-
-  const standaloneVoiceCall = useMosChatVoiceCall({
-    currentStaffId: currentUser?.id ?? null,
-    enabled: Boolean(standalone && currentUser?.id),
-  });
-
-  const handleCallCurrentRoom = () => {
-    if (!activeConversation?.id || activeConversation.id === AI_COPILOT_CONV_ID) return;
-    if (onStartVoiceCall) {
-      onStartVoiceCall(activeConversation.id);
-    } else {
-      void standaloneVoiceCall.startOrJoinVoiceCall(activeConversation.id);
-    }
-  };
-
-  const handleSelectSearchResult = (item: MosChatSearchResultItem) => {
-    setSearchSheetOpen(false);
-    setActiveConvId(item.conversationId);
-    setMobileView('room');
-
-    if (item.isThreadReply && item.parentMessageId) {
-      const targetConv = conversations.find((c) => c.id === item.conversationId);
-      const parent = targetConv?.messages?.find((m) => m.id === item.parentMessageId);
-      if (parent) {
-        setActiveThreadMsg(parent);
-        setMobileView('thread');
-      } else {
-        // Fallback: create stub parent message so user can view the thread immediately
-        setActiveThreadMsg({
-          id: item.parentMessageId,
-          conversationId: item.conversationId,
-          senderId: 'system',
-          senderName: 'Luồng thảo luận',
-          senderRole: 'Hệ thống',
-          text: 'Đang mở luồng thảo luận...',
-          createdAt: item.createdAt,
-          timeLabel: item.timeLabel || '',
-          thread: [
-            {
-              id: item.id,
-              senderId: item.senderId,
-              senderName: item.senderName,
-              senderRole: item.senderRole || 'Nhân sự',
-              senderAvatar: item.senderAvatar || undefined,
-              text: item.text,
-              createdAt: item.createdAt,
-              timeLabel: item.timeLabel || '',
-            },
-          ],
-        });
-        setMobileView('thread');
-      }
-    }
-
-    // Scroll & highlight selected message smoothly
-    setTimeout(() => {
-      const el =
-        document.getElementById(`thread-reply-${item.id}`) ||
-        document.getElementById(`mos-chat-reply-${item.id}`) ||
-        document.getElementById(`mos-chat-msg-${item.id}`) ||
-        document.getElementById(`mobile-msg-${item.id}`) ||
-        document.getElementById(`msg-${item.id}`);
-
-      if (el && typeof el.scrollIntoView === 'function') {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('bg-amber-500/25', 'transition-all', 'duration-500');
-        setTimeout(() => {
-          el.classList.remove('bg-amber-500/25');
-        }, 2500);
-      }
-    }, 350);
-  };
-
-  const handleOpenStreamGallery = (msg: MosChatMessage, attIdx: number) => {
-    const list: MosChatGalleryImage[] = [];
-    (msg.attachments || []).forEach((att, idx) => {
-      list.push({
-        id: att.id || `msg-${msg.id}-att-${idx}`,
-        url: att.url,
-        name: att.name,
-        senderName: msg.senderName,
-        senderRole: msg.senderRole,
-        createdAt: msg.createdAt,
-      });
-    });
-    (msg.thread || []).forEach((reply) => {
-      (reply.attachments || []).forEach((att, idx) => {
-        list.push({
-          id: att.id || `reply-${reply.id}-att-${idx}`,
-          url: att.url,
-          name: att.name,
-          senderName: reply.senderName,
-          senderRole: reply.senderRole,
-          createdAt: reply.createdAt,
-        });
-      });
-    });
-    setStreamGallery({
-      open: true,
-      images: list,
-      initialIndex: attIdx,
-    });
-  };
-
-  // Quick Task Creation Modal
-  const [taskModalOpen, setTaskModalOpen] = useState<boolean>(false);
-  const [editingTaskForModal, setEditingTaskForModal] = useState<MosChatTaskItem | null>(null);
-  const [taskThreadContext, setTaskThreadContext] = useState<{
-    inThread: boolean;
-    sourceReply?: MosChatThreadReply | null;
-  } | null>(null);
-  const [taskTitle, setTaskTitle] = useState<string>('');
-  const [taskAssigneeId, setTaskAssigneeId] = useState<string | undefined>(undefined);
-  const [taskDueAt, setTaskDueAt] = useState<string | null>(null);
-  const [taskPriority, setTaskPriority] = useState<MosChatTaskPriority>('NORMAL');
-  const [taskSourceMsg, setTaskSourceMsg] = useState<MosChatMessage | null>(null);
-
-  // Match current user in staff directory
-  const currentStaff = useMemo(() => {
-    if (!currentUser) return undefined;
-    const cid = Number(currentUser.id);
-    const cUser = String(currentUser.username || '').toLowerCase();
-    const cName = String(currentUser.fullName || currentUser.name || currentUser.displayName || '').toLowerCase();
-    return staffDirectory.find(
-      (s) =>
-        (cid > 0 && Number(s.id) === cid) ||
-        (cUser && String(s.username || '').toLowerCase() === cUser) ||
-        (cName && String(s.displayName || '').toLowerCase() === cName)
-    );
-  }, [currentUser, staffDirectory]);
-
-  // Options for task assignee select
-  const assigneeOptions = useMemo(() => {
-    const list = [...staffDirectory];
-    const myId = currentStaff?.id || Number(currentUser?.id) || 0;
-    const myName =
-      currentStaff?.displayName ||
-      currentStaff?.username ||
-      currentUser?.displayName ||
-      currentUser?.fullName ||
-      currentUser?.name ||
-      'Danny Do';
-
-    const hasMeInList = myId > 0 && list.some((s) => s.id === myId);
-
-    list.sort((a, b) => {
-      if (a.id === myId) return -1;
-      if (b.id === myId) return 1;
-      const nameA = a.displayName || a.username || '';
-      const nameB = b.displayName || b.username || '';
-      return nameA.localeCompare(nameB, 'vi');
-    });
-
-    const opts = list.map((s) => {
-      const isMe = s.id === myId;
-      const roleStr = s.role ? ` (${s.role})` : '';
-      const name = s.displayName || s.username;
-      const emailHint = s.username && s.displayName && s.username !== s.displayName ? ` · ${s.username}` : '';
-      return {
-        value: String(s.id),
-        label: isMe ? `⭐ Chính tôi (${name})` : `${name}${emailHint}${roleStr}`,
-        staffId: s.id,
-        displayName: name,
-        avatarUrl: s.avatarUrl || null,
-        role: s.role || null,
-        isMe,
-      };
-    });
-
-    if (!hasMeInList && myId > 0) {
-      opts.unshift({
-        value: String(myId),
-        label: `⭐ Chính tôi (${myName})`,
-        staffId: myId,
-        displayName: myName,
-        avatarUrl: currentStaff?.avatarUrl || currentUser?.avatarUrl || currentUser?.avatar || null,
-        role: currentStaff?.role || currentUser?.role || null,
-        isMe: true,
-      });
-    }
-
-    return opts;
-  }, [staffDirectory, currentStaff, currentUser]);
-
-  // Hidden file input for image & video uploads
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
-
-  // Edge Swipe-to-Back gesture (iOS Safari style)
-  const edgeTouchStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!e.touches || e.touches.length === 0) return;
-    edgeTouchStartRef.current = {
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY,
-    };
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!e.changedTouches || e.changedTouches.length === 0) return;
-    const deltaX = e.changedTouches[0].clientX - edgeTouchStartRef.current.x;
-    const deltaY = e.changedTouches[0].clientY - edgeTouchStartRef.current.y;
-
-    // If swipe started from left edge (< 30px) and moved right > 70px with minimal vertical move
-    if (edgeTouchStartRef.current.x < 30 && deltaX > 70 && Math.abs(deltaY) < 50) {
-      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
-        navigator.vibrate?.(15);
-      }
-      if (mobileView === 'thread') {
-        setMobileView('room');
-      } else if (mobileView === 'room') {
-        setMobileView('inbox');
-      }
-    }
-  };
 
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -541,249 +169,19 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
     }
   };
 
-  const openCreateTaskModal = (initialTitle = '', sourceMsg: MosChatMessage | null = null) => {
-    setEditingTaskForModal(null);
-    setTaskThreadContext(null);
-    setTaskTitle(initialTitle);
-    setTaskSourceMsg(sourceMsg);
-
-    const myId = currentStaff?.id || Number(currentUser?.id) || 0;
-    let initialAssigneeId: string | undefined = undefined;
-
-    if (activeConversation?.isSelf) {
-      initialAssigneeId = myId > 0 ? String(myId) : undefined;
-    } else if (activeConversation?.type === 'dm') {
-      const peerId = activeConversation.memberIds?.find((id: SafeAny) => Number(id) !== myId);
-      initialAssigneeId = peerId ? String(peerId) : myId > 0 ? String(myId) : undefined;
-    } else {
-      initialAssigneeId = myId > 0 ? String(myId) : undefined;
-    }
-
-    setTaskAssigneeId(initialAssigneeId);
-    setTaskDueAt(null);
-    setTaskPriority('NORMAL');
-    setTaskModalOpen(true);
-  };
-
-  const openTaskModalForThread = (params?: {
-    initialTitle?: string;
-    sourceMsg?: MosChatMessage | null;
-    existingTask?: MosChatTaskItem | null;
-    sourceReply?: MosChatThreadReply | null;
-    isNew?: boolean;
-  }) => {
-    const sourceMsg = params?.sourceMsg || activeThreadMsg || null;
-    // CRITICAL (MOS-BUG-190): Only set editingTaskForModal if existingTask is explicitly passed.
-    // If user is adding a subtask/task in the thread (or isNew is true), do NOT fallback to the thread's main task.
-    const existing = params?.isNew ? null : params?.existingTask || null;
-
-    setEditingTaskForModal(existing);
-    setTaskSourceMsg(sourceMsg);
-    setTaskThreadContext({
-      inThread: true,
-      sourceReply: params?.sourceReply || null,
-    });
-
-    if (existing) {
-      setTaskTitle(params?.initialTitle || existing.title);
-      setTaskAssigneeId(existing.assigneeId ? String(existing.assigneeId) : undefined);
-      setTaskDueAt(existing.dueAt || existing.deadline || null);
-      setTaskPriority(existing.priority || 'NORMAL');
-    } else {
-      setTaskTitle(params?.initialTitle || sourceMsg?.text.slice(0, 100) || '');
-      const myId = currentStaff?.id || Number(currentUser?.id) || 0;
-      let initialAssigneeId: string | undefined = undefined;
-
-      if (activeConversation?.isSelf) {
-        initialAssigneeId = myId > 0 ? String(myId) : undefined;
-      } else if (activeConversation?.type === 'dm') {
-        const peerId = activeConversation.memberIds?.find((id: SafeAny) => Number(id) !== myId);
-        initialAssigneeId = peerId ? String(peerId) : myId > 0 ? String(myId) : undefined;
-      } else {
-        initialAssigneeId = myId > 0 ? String(myId) : undefined;
-      }
-
-      setTaskAssigneeId(initialAssigneeId);
-      setTaskDueAt(null);
-      setTaskPriority('NORMAL');
-    }
-
-    setTaskModalOpen(true);
-  };
-
-  const handleCreateTaskFromMsg = (msg: MosChatMessage) => {
-    openCreateTaskModal(msg.text.slice(0, 100), msg);
-  };
-
-  const handleConfirmCreateTask = async () => {
-    const trimmed = taskTitle.trim();
-    if (!trimmed) {
-      antdMessage.warning('Vui lòng nhập tên công việc');
-      return;
-    }
-
-    const myId = currentStaff?.id || Number(currentUser?.id) || 0;
-    const resolvedId = taskAssigneeId || (myId > 0 ? String(myId) : undefined);
-    const assignee = staffDirectory.find((s) => String(s.id) === String(resolvedId)) || currentStaff;
-
-    const resolvedAssigneeId = assignee ? String(assignee.id) : resolvedId;
-    const resolvedAssigneeName =
-      assignee?.displayName ||
-      assignee?.username ||
-      currentUser?.displayName ||
-      currentUser?.fullName ||
-      currentUser?.name ||
-      'Danny Do';
-
-    const isThreadContext = taskThreadContext?.inThread && activeThreadMsg;
-
-    if (editingTaskForModal) {
-      const success = await updateTask(editingTaskForModal.id, {
-        title: trimmed,
-        assigneeId: resolvedAssigneeId,
-        assigneeName: resolvedAssigneeName,
-        dueAt: taskDueAt,
-        deadline: taskDueAt,
-        priority: taskPriority,
-      });
-
-      if (success) {
-        antdMessage.success(`Đã cập nhật Main Task cho ${resolvedAssigneeName}`);
-
-        if (isThreadContext) {
-          const dueFormatted = taskDueAt ? dayjs(taskDueAt).format('HH:mm DD/MM') : 'Không có';
-          await sendThreadReply(
-            `📌 Đã cập nhật Main Task: "${trimmed}" · Người nhận: @${resolvedAssigneeName} · Hạn chót: ${dueFormatted}`
-          );
-        }
-
-        setTaskModalOpen(false);
-        setEditingTaskForModal(null);
-        setTaskThreadContext(null);
-        setTaskTitle('');
-        setTaskAssigneeId(undefined);
-        setTaskDueAt(null);
-        setTaskSourceMsg(null);
-      } else {
-        antdMessage.error('Không thể cập nhật công việc, vui lòng thử lại');
-      }
-    } else {
-      const success = await createTask(trimmed, {
-        assigneeStaffId: resolvedAssigneeId,
-        assigneeName: resolvedAssigneeName,
-        dueAt: taskDueAt,
-        priority: taskPriority,
-        sourceMessageId: taskSourceMsg?.id,
-      });
-
-      if (success) {
-        const isSelf = String(resolvedAssigneeId) === String(myId);
-        antdMessage.success(
-          isSelf
-            ? `Đã tạo việc cho chính mình (${resolvedAssigneeName})`
-            : `Đã giao việc thành công cho ${resolvedAssigneeName}`
-        );
-
-        if (isThreadContext) {
-          const dueFormatted = taskDueAt ? dayjs(taskDueAt).format('HH:mm DD/MM') : 'Không có';
-          await sendThreadReply(
-            `📌 Đã giao việc cho Main Task: "${trimmed}" · Người nhận: @${resolvedAssigneeName} · Hạn chót: ${dueFormatted}`
-          );
-        }
-
-        setTaskModalOpen(false);
-        setEditingTaskForModal(null);
-        setTaskThreadContext(null);
-        setTaskTitle('');
-        setTaskAssigneeId(undefined);
-        setTaskDueAt(null);
-        setTaskSourceMsg(null);
-      } else {
-        antdMessage.error('Không thể tạo việc, vui lòng thử lại');
-      }
-    }
-  };
-
   const handleSelectSticker = (sticker: MosChatStickerItem) => {
     sendMessage(formatStickerToken(sticker.id));
     setStickerPickerOpen(false);
   };
 
-  const handleSaveEditedTask = async (
-    taskId: string,
-    updates: {
-      title: string;
-      assigneeId?: string;
-      assigneeName?: string;
-      dueAt?: string | null;
-      priority: MosChatTaskPriority;
-    }
-  ) => {
-    const success = await updateTask(taskId, updates);
-    if (success) {
-      antdMessage.success('Đã lưu thay đổi công việc');
-    } else {
-      antdMessage.error('Không thể lưu thay đổi công việc');
-    }
-  };
-
-  const handleSubmitNegotiation = async (task: MosChatTaskItem, proposedDeadline: string, reason: string) => {
-    const myName =
-      currentUser?.displayName || currentUser?.fullName || currentUser?.name || currentUser?.username || 'Danny Do';
-    const nowIso = new Date().toISOString();
-
-    const success = await updateTask(task.id, {
-      negotiatedDeadline: proposedDeadline,
-      negotiationNote: reason,
-      negotiatedBy: myName,
-      negotiatedAt: nowIso,
-    });
-    if (success) {
-      antdMessage.success('Đã gửi đề xuất thương lượng dời hạn chót thành công!');
-    } else {
-      antdMessage.error('Không thể gửi đề xuất thương lượng dời hạn');
-    }
-  };
-
-  const handleSubmitMission = async (
-    task: MosChatTaskItem,
-    missionData: { title: string; type: 'BUG' | 'FEATURE'; note: string }
-  ) => {
-    try {
-      const mission = await dispatchMissionFromTask(task, missionData);
-      if (mission) {
-        antdMessage.success(`🚀 Đã chuyển vào mOS Mission #${mission.missionKey} thành công!`);
-      }
-    } catch (err: SafeAny) {
-      antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể chuyển vào mOS Mission');
-    }
-  };
-
-  const handleGoToSourceMessage = (task: MosChatTaskItem) => {
-    if (!task.sourceMessageId) return;
-    if (task.conversationId && task.conversationId !== activeConversation?.id) {
-      setActiveConvId(task.conversationId);
-    }
-    const targetConv = conversations.find((c) => c.id === task.conversationId) || activeConversation;
-    const msg = targetConv?.messages?.find((m) => m.id === task.sourceMessageId);
-    if (msg) {
-      setActiveThreadMsg(msg);
-      setMobileView('thread');
-    } else {
-      setMobileView('room');
-    }
-    setSelectedDetailTaskId(null);
-  };
-
   return (
     <div
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      onTouchStart={nav.handleTouchStart}
+      onTouchEnd={nav.handleTouchEnd}
       className={`ios-app-font-scope flex flex-col bg-[var(--background)] text-[var(--mos-text)] overflow-hidden ${
         standalone ? 'h-[100dvh] w-screen fixed inset-0 z-50' : 'h-full w-full'
       }`}
     >
-      {/* Hidden file input supporting multiple files, images, videos & documents */}
       <input
         ref={fileInputRef}
         type="file"
@@ -802,35 +200,33 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         aria-label="Tải video đính kèm"
       />
 
-      {/* Top Header */}
       <MosChatMobileHeader
         onOpenSettings={() => setSpaceConfigModalOpen(true)}
         onOpenMembersModal={() => setSpaceMembersModalOpen(true)}
-        onOpenTaskModal={() => openTaskModalForThread()}
+        onOpenTaskModal={() => taskWorkflow.openTaskModalForThread()}
         onOpenSearch={() => {
-          setSearchInitialQuery('');
-          setSearchInitialScope(
+          nav.setSearchInitialQuery('');
+          nav.setSearchInitialScope(
             activeConversation?.id && activeConversation.id !== AI_COPILOT_CONV_ID ? 'CURRENT_CONV' : 'ALL'
           );
-          setSearchSheetOpen(true);
+          nav.setSearchSheetOpen(true);
         }}
         onOpenPushSettings={() => setPushModalOpen(true)}
         onOpenThemeSheet={() => setThemeSheetOpen(true)}
         onOpenNewDm={() => setNewDmModalOpen(true)}
-        isPushSubscribed={webPush.isSubscribed}
-        onCallRoom={handleCallCurrentRoom}
+        isPushSubscribed={nav.webPush.isSubscribed}
+        onCallRoom={nav.handleCallCurrentRoom}
         onClose={onClose}
       />
 
-      {/* Dynamic Screen View */}
       {mobileView === 'inbox' && (
         <MosChatMobileInbox
           newDmModalOpen={newDmModalOpen}
           onNewDmModalOpenChange={setNewDmModalOpen}
           onOpenSearchSheet={(q) => {
-            setSearchInitialQuery(q || '');
-            setSearchInitialScope('ALL');
-            setSearchSheetOpen(true);
+            nav.setSearchInitialQuery(q || '');
+            nav.setSearchInitialScope('ALL');
+            nav.setSearchSheetOpen(true);
           }}
         />
       )}
@@ -839,10 +235,10 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         <>
           {standalone && (
             <MosChatActiveCallRoomBanner
-              call={standaloneVoiceCall.getActiveCallForConversation(activeConversation?.id)}
-              currentCallId={standaloneVoiceCall.currentCall?.callId}
+              call={nav.standaloneVoiceCall.getActiveCallForConversation(activeConversation?.id)}
+              currentCallId={nav.standaloneVoiceCall.currentCall?.callId}
               isDark={isDark}
-              onJoinCall={(cid) => void standaloneVoiceCall.startOrJoinVoiceCall(cid)}
+              onJoinCall={(cid) => void nav.standaloneVoiceCall.startOrJoinVoiceCall(cid)}
             />
           )}
           {activeSubtab === 'chat' && (
@@ -852,7 +248,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
                   setActiveThreadMsg(msg);
                   setMobileView('thread');
                 }}
-                onOpenGallery={handleOpenStreamGallery}
+                onOpenGallery={nav.handleOpenStreamGallery}
                 onOpenPinnedTab={() => setActiveSubtab('pinned')}
               />
               <MosChatMobileComposer
@@ -879,12 +275,8 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
 
           {activeSubtab === 'tasks' && (
             <MosChatMobileTasksTab
-              onOpenCreateTaskModal={() => {
-                openCreateTaskModal();
-              }}
-              onSelectTask={(task) => {
-                setSelectedDetailTaskId(task.id);
-              }}
+              onOpenCreateTaskModal={() => taskWorkflow.openCreateTaskModal()}
+              onSelectTask={(task) => taskWorkflow.setSelectedDetailTaskId(task.id)}
             />
           )}
 
@@ -937,417 +329,69 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
 
       {mobileView === 'thread' && (
         <MosChatMobileThreadSheet
-          onOpenTaskModal={openTaskModalForThread}
+          onOpenTaskModal={taskWorkflow.openTaskModalForThread}
           onOpenMoveReply={(sourceMsg, replyId) => setMovingReplyForThread({ parentMsg: sourceMsg, replyId })}
           onForwardMessage={(sourceMsg, reply) => setForwardTarget({ message: sourceMsg, reply: reply || null })}
         />
       )}
 
-      {/* Bottom Action Sheet */}
-      <MosChatMobileActionSheet
-        open={actionSheetOpen}
-        onClose={() => setActionSheetOpen(false)}
-        onSelectCustomer={() => setCustomerPickerOpen(true)}
-        onSelectCKEditor={() => setCkEditorOpen(true)}
-        onSelectFile={() => fileInputRef.current?.click()}
-        onSelectImage={() => fileInputRef.current?.click()}
-        onSelectVideo={() => videoInputRef.current?.click()}
-        onSelectDrive={() => antdMessage.info('Mở liên kết Google Drive')}
-        onSelectTask={() => {
-          openCreateTaskModal();
-        }}
-        onSelectWorkflow={() => antdMessage.info('Kích hoạt quy trình làm việc')}
-        onSelectSticker={() => {
-          setStickerPickerInitialPack('wings');
-          setStickerPickerOpen(true);
-        }}
-        onSelectVoice={() => antdMessage.info('Giữ nút Mic để thu âm giọng nói')}
-        onSelectAiCopilot={() => {
-          setActiveConvId(AI_COPILOT_CONV_ID);
-          setMobileView('room');
-          setActiveSubtab('chat');
-        }}
-      />
-
-      {/* MOS-BUG-222: CKEditor Rich Editor Modal for Mobile */}
-      <MosChatRichEditorModal
-        open={ckEditorOpen}
-        zIndex={2000}
-        onClose={() => setCkEditorOpen(false)}
-        initialValue={composerText}
-        initialMode="compact"
+      <MobileAppModalsAndSheets
+        standalone={standalone}
         isDark={isDark}
-        title="Soạn thảo phong phú (CKEditor)"
-        onApply={(text) => {
-          setComposerText(text);
-          antdMessage.success('Đã áp dụng nội dung CKEditor vào ô chat');
-        }}
-        onSend={async (text) => {
-          if (text.trim()) {
-            await sendMessage(text, {
-              attachments: attachedImages.length > 0 ? attachedImages : undefined,
-              customerCard: stagedCustomerCard || undefined,
-            });
-            setComposerText('');
-            setAttachedImages([]);
-            setStagedCustomerCard(null);
-          }
-        }}
-      />
-
-      {/* Customer / Booking Picker Modal */}
-      <MosChatCustomerPickerModal
-        open={customerPickerOpen}
-        zIndex={1400}
-        onClose={() => setCustomerPickerOpen(false)}
-        onSelectCustomerCard={(card, sendImmediately = false) => {
-          if (sendImmediately) {
-            sendMessage(`Đính kèm thẻ khách hàng ${card.name}:`, { customerCard: card });
-            antdMessage.success(`Đã gửi thẻ khách hàng ${card.name}`);
-          } else {
-            setStagedCustomerCard(card);
-            antdMessage.success(`Đã đính kèm thẻ khách hàng ${card.name} vào ô soạn thảo`);
-          }
-          setCustomerPickerOpen(false);
-        }}
-      />
-
-      {/* Long-press Reaction & Action Sheet */}
-      <MosChatMobileReactionSheet
-        message={selectedMsgForAction}
-        onClose={() => setSelectedMsgForAction(null)}
-        onOpenThread={(msg) => {
-          setActiveThreadMsg(msg);
-          setMobileView('thread');
-        }}
-        onCreateTaskFromMsg={handleCreateTaskFromMsg}
-        onEditMessage={(msg) => setEditingMessage(msg)}
-        onOpenMoveThread={(msg) => setMovingMsgForThread(msg)}
-        onForwardMessage={(msg) => setForwardTarget({ message: msg })}
-      />
-
-      {/* Forward Message & Subthread Modal (Mobile) */}
-      <MosChatForwardModal
-        open={forwardTarget !== null}
-        onClose={() => setForwardTarget(null)}
-        sourceConversation={activeConversation}
-        sourceMessage={forwardTarget?.message || null}
-        sourceReply={forwardTarget?.reply || null}
+        currentUser={currentUser}
+        activeConversation={activeConversation}
         conversations={conversations}
         staffDirectory={staffDirectory}
-        currentUser={currentUser}
-        pinnedIds={Array.from(pinnedConvIds)}
-        isDark={isDark}
-        onSubmit={async (payload) => {
-          if (!forwardMessage) return null;
-          return forwardMessage(payload);
-        }}
-        onNavigateToConversation={(cid) => {
-          setActiveConvId(cid);
-          setActiveSubtab('chat');
-          setMobileView('room');
-        }}
-      />
-
-      {/* Reaction Users Bottom Sheet (Xem ai đã react) */}
-      <MosChatMobileReactionUsersSheet />
-
-      {/* Seen Users Bottom Sheet (Xem người đã đọc tin nhắn - MOS-BUG-229) */}
-      <MosChatMobileSeenUsersSheet />
-
-      {/* Move / Merge to Thread Modals */}
-      <MosChatMobileMoveThreadModal
-        open={movingMsgForThread !== null}
-        sourceMessage={movingMsgForThread}
-        prevMessage={prevMsgForMoving}
-        onClose={() => setMovingMsgForThread(null)}
-      />
-
-      <MosChatMobileMoveThreadModal
-        open={movingReplyForThread !== null}
-        sourceMessage={movingReplyForThread?.parentMsg || null}
-        replyId={movingReplyForThread?.replyId}
-        onClose={() => setMovingReplyForThread(null)}
-      />
-
-      {/* Edit Message Modal */}
-      <MosChatMobileEditModal
-        open={editingMessage !== null}
-        initialText={editingMessage?.text || ''}
-        title="Chỉnh sửa tin nhắn"
-        onClose={() => setEditingMessage(null)}
-        onSave={async (newText) => {
-          if (!editingMessage) return;
-          await editMessage(editingMessage.id, newText);
-          antdMessage.success('Đã lưu chỉnh sửa tin nhắn');
-        }}
-      />
-
-      {/* Sticker & Emoji Bottom Sheet */}
-      <MosChatMobileStickerSheet
-        open={stickerPickerOpen}
-        onClose={() => setStickerPickerOpen(false)}
-        initialPack={stickerPickerInitialPack}
-        onSelectSticker={handleSelectSticker}
-        onSelectEmoji={(emoji) => {
-          setComposerText((prev) => `${prev}${emoji}`);
-        }}
-        currentText={composerText}
-        onSend={() => {
-          const trimmed = composerText.trim();
-          if (trimmed) {
-            sendMessage(trimmed);
-            setComposerText('');
-          }
-        }}
-      />
-
-      {/* Create / Edit Task Modal */}
-      <Modal
-        open={taskModalOpen}
-        zIndex={2500}
-        onCancel={() => {
-          setTaskModalOpen(false);
-          setEditingTaskForModal(null);
-          setTaskThreadContext(null);
-        }}
-        onOk={handleConfirmCreateTask}
-        title={
-          editingTaskForModal
-            ? 'Cập nhật Main Task'
-            : taskThreadContext?.inThread
-              ? 'Giao việc cho Main Task'
-              : 'Giao việc & Hạn chót'
-        }
-        okText={editingTaskForModal ? 'Lưu thay đổi' : 'Tạo công việc'}
-        cancelText="Hủy"
-        centered
-        width="calc(100vw - 24px)"
-        style={{ maxWidth: 440, margin: '0 auto' }}
-        className="mos-mobile-task-modal"
-      >
-        <div className="space-y-3.5 py-2">
-          <div>
-            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1">
-              Nội dung công việc *
-            </label>
-            <Input.TextArea
-              rows={3}
-              value={taskTitle}
-              onChange={(e) => setTaskTitle(e.target.value)}
-              placeholder="Nhập chi tiết công việc cần giao..."
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1">Người thực hiện</label>
-            <Select
-              className="w-full"
-              placeholder="Chọn người được giao (Mặc định: Chính tôi)"
-              value={taskAssigneeId}
-              onChange={(val) => setTaskAssigneeId(val)}
-              allowClear
-              showSearch
-              filterOption={(input, option) =>
-                String(option?.label ?? '')
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              options={assigneeOptions}
-              optionRender={(option) => {
-                const data = option.data as SafeAny;
-                const staffName = data?.displayName || String(option.label || '');
-                return (
-                  <div className="flex items-center gap-2 py-0.5 min-w-0">
-                    <MosChatAvatar
-                      size="xs"
-                      src={data?.avatarUrl}
-                      name={staffName}
-                      staffId={data?.staffId ?? option.value}
-                      staffDirectory={staffDirectory}
-                    />
-                    <span className="truncate text-xs font-medium">{option.label}</span>
-                  </div>
-                );
-              }}
-              labelRender={(props) => {
-                const matched = assigneeOptions.find((o) => String(o.value) === String(props.value));
-                const staffName = matched?.displayName || String(props.label || props.value || '');
-                return (
-                  <span className="inline-flex items-center gap-2 min-w-0">
-                    <MosChatAvatar
-                      size="xs"
-                      src={matched?.avatarUrl}
-                      name={staffName}
-                      staffId={matched?.staffId ?? (props.value as string | number)}
-                      staffDirectory={staffDirectory}
-                    />
-                    <span className="truncate">{matched?.label || props.label || props.value}</span>
-                  </span>
-                );
-              }}
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1.5">
-              Thời hạn hoàn thành (Deadline)
-            </label>
-            <MosChatMobileDateTimePicker
-              value={taskDueAt}
-              onChange={(d) => setTaskDueAt(d)}
-              placeholder="Hoặc chọn ngày giờ cụ thể"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-[var(--mos-text-muted)] block mb-1">Mức độ ưu tiên</label>
-            <Select
-              className="w-full"
-              value={taskPriority}
-              onChange={(val) => setTaskPriority(val)}
-              options={[
-                { value: 'NORMAL', label: 'P2 · Bình thường' },
-                { value: 'HIGH', label: 'P1 · Ưu tiên cao' },
-                { value: 'URGENT', label: 'P0 · Khẩn cấp' },
-              ]}
-            />
-          </div>
-        </div>
-      </Modal>
-
-      {/* Stream Image Media Gallery Modal */}
-      <MosChatMobileMediaGallery
-        open={streamGallery.open}
-        images={streamGallery.images}
-        initialIndex={streamGallery.initialIndex}
-        onClose={() => setStreamGallery((prev) => ({ ...prev, open: false }))}
-      />
-
-      {/* Task Detail Bottom Sheet (iOS Style) */}
-      <MosChatMobileTaskDetailSheet
-        task={selectedDetailTask}
-        open={selectedDetailTask !== null}
-        onClose={() => setSelectedDetailTaskId(null)}
-        onEditTask={(task) => setEditingTaskId(task.id)}
-        onNegotiateDeadline={(task) => setNegotiatingTaskId(task.id)}
-        onDispatchMission={(task) => setMissionTaskId(task.id)}
-        onGoToSourceMessage={handleGoToSourceMessage}
-      />
-
-      {/* Edit Task Modal */}
-      <MosChatMobileEditTaskModal
-        task={editingTask}
-        open={editingTask !== null}
-        onClose={() => setEditingTaskId(null)}
-        onSave={handleSaveEditedTask}
-      />
-
-      {/* Negotiate Task Deadline Modal */}
-      <MosChatMobileNegotiateTaskModal
-        task={negotiatingTask}
-        open={negotiatingTask !== null}
-        onClose={() => setNegotiatingTaskId(null)}
-        onSubmit={handleSubmitNegotiation}
-      />
-
-      {/* Dispatch to mOS Mission Modal */}
-      <MosChatMobileMissionModal
-        task={missionTask}
-        open={missionTask !== null}
-        onClose={() => setMissionTaskId(null)}
-        onSubmit={handleSubmitMission}
-      />
-
-      {/* Space Configuration & Emoji Selection Modal */}
-      <MosChatSpaceConfigModal
-        open={spaceConfigModalOpen}
-        conversation={activeConversation}
-        onClose={() => setSpaceConfigModalOpen(false)}
-        onOpenMembersModal={() => setSpaceMembersModalOpen(true)}
-        isPinned={activeConversation ? Boolean(pinnedConvIds?.has(activeConversation.id)) : false}
+        pinnedConvIds={pinnedConvIds}
+        selectedMsgForAction={selectedMsgForAction}
+        setSelectedMsgForAction={setSelectedMsgForAction}
+        setActiveThreadMsg={setActiveThreadMsg}
+        setMobileView={setMobileView}
+        setActiveConvId={setActiveConvId}
+        setActiveSubtab={setActiveSubtab}
+        sendMessage={sendMessage}
+        editMessage={editMessage}
+        forwardMessage={forwardMessage}
+        updateSpaceConfig={updateSpaceConfig}
         togglePinConversation={togglePinConversation}
-        onUpdated={(updated) => {
-          if (updateSpaceConfig && activeConversation) {
-            void updateSpaceConfig(activeConversation.id, {
-              name: updated.name,
-              subtitle: updated.subtitle,
-              avatar: updated.avatar,
-              color: updated.color,
-            });
-          }
-        }}
-      />
-
-      {/* Space Members & Management Modal */}
-      <MosChatSpaceMembersModal
-        open={spaceMembersModalOpen}
-        conversation={activeConversation}
-        onClose={() => setSpaceMembersModalOpen(false)}
-      />
-
-      {/* Message Search Full-Screen Sheet */}
-      <MosChatMobileSearchSheet
-        open={searchSheetOpen}
-        onClose={() => setSearchSheetOpen(false)}
-        activeConversation={activeConversation}
-        onSelectMessage={handleSelectSearchResult}
-        initialQuery={searchInitialQuery}
-        initialScope={searchInitialScope}
-      />
-
-      {/* Lock-Screen Call Notification (Web Push PWA) Modal */}
-      <MosChatPushNotificationModal
-        open={pushModalOpen}
-        onClose={() => setPushModalOpen(false)}
-        isSupported={webPush.isSupported}
-        isIos={webPush.isIos}
-        isStandalonePwa={webPush.isStandalonePwa}
-        needsIosHomeScreen={webPush.needsIosHomeScreen}
-        permission={webPush.permission}
-        isSubscribed={webPush.isSubscribed}
-        subscribedCount={webPush.subscribedCount}
-        isLoading={webPush.isLoading}
-        testCountdown={webPush.testCountdown}
-        onEnablePush={() => void webPush.enablePushNotifications()}
-        onDisablePush={() => void webPush.disablePushNotifications()}
-        onSendTestPush={() => void webPush.sendDelayedTestPush(4)}
-        onSendTestCallPush={() => void webPush.sendTestCallPushNow(activeConversation?.id)}
-      />
-
-      {standalone && (
-        <MosChatVoiceCallWidget
-          currentCall={standaloneVoiceCall.currentCall}
-          incomingCall={standaloneVoiceCall.incomingCall}
-          isMuted={standaloneVoiceCall.isMuted}
-          isSpeakerMuted={standaloneVoiceCall.isSpeakerMuted}
-          durationSec={standaloneVoiceCall.durationSec}
-          speakingStaffIds={standaloneVoiceCall.speakingStaffIds}
-          audioWarning={standaloneVoiceCall.audioWarning}
-          isConnecting={standaloneVoiceCall.isConnecting}
-          isDark={isDark}
-          onAcceptIncoming={(callId) => void standaloneVoiceCall.acceptIncomingCall(callId)}
-          onDeclineIncoming={(callId) => void standaloneVoiceCall.declineIncomingCall(callId)}
-          onToggleMute={() => void standaloneVoiceCall.toggleMute()}
-          onToggleSpeakerMute={standaloneVoiceCall.toggleSpeakerMute}
-          onEndCall={() => void standaloneVoiceCall.endCurrentCall()}
-        />
-      )}
-
-      <UnifiedProfileSheet
-        open={themeSheetOpen}
-        onClose={() => setThemeSheetOpen(false)}
-        appContext="chat"
-        user={currentUser}
-      />
-
-      <MosChatGoogleWorkspaceDrawer
-        isMobile={true}
-        isDark={isDark}
-        activeConversationId={activeConversation?.id}
-        onPostAiReplyToChat={(replyText, docTitle) => {
-          void sendMessage(`✨ **Phân tích AI (${docTitle}):**\n\n${replyText}`);
-        }}
+        actionSheetOpen={actionSheetOpen}
+        setActionSheetOpen={setActionSheetOpen}
+        ckEditorOpen={ckEditorOpen}
+        setCkEditorOpen={setCkEditorOpen}
+        composerText={composerText}
+        setComposerText={setComposerText}
+        attachedImages={attachedImages}
+        setAttachedImages={setAttachedImages}
+        stagedCustomerCard={stagedCustomerCard}
+        setStagedCustomerCard={setStagedCustomerCard}
+        customerPickerOpen={customerPickerOpen}
+        setCustomerPickerOpen={setCustomerPickerOpen}
+        stickerPickerOpen={stickerPickerOpen}
+        setStickerPickerOpen={setStickerPickerOpen}
+        stickerPickerInitialPack={stickerPickerInitialPack}
+        setStickerPickerInitialPack={setStickerPickerInitialPack}
+        editingMessage={editingMessage}
+        setEditingMessage={setEditingMessage}
+        movingMsgForThread={movingMsgForThread}
+        setMovingMsgForThread={setMovingMsgForThread}
+        prevMsgForMoving={prevMsgForMoving}
+        movingReplyForThread={movingReplyForThread}
+        setMovingReplyForThread={setMovingReplyForThread}
+        forwardTarget={forwardTarget}
+        setForwardTarget={setForwardTarget}
+        spaceConfigModalOpen={spaceConfigModalOpen}
+        setSpaceConfigModalOpen={setSpaceConfigModalOpen}
+        spaceMembersModalOpen={spaceMembersModalOpen}
+        setSpaceMembersModalOpen={setSpaceMembersModalOpen}
+        pushModalOpen={pushModalOpen}
+        setPushModalOpen={setPushModalOpen}
+        themeSheetOpen={themeSheetOpen}
+        setThemeSheetOpen={setThemeSheetOpen}
+        fileInputRef={fileInputRef}
+        videoInputRef={videoInputRef}
+        handleSelectSticker={handleSelectSticker}
+        nav={nav}
+        taskWorkflow={taskWorkflow}
       />
     </div>
   );

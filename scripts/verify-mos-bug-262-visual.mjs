@@ -319,7 +319,12 @@ async function setupRoutes(page, data) {
       }
       if (pathname === '/api/career/cv-plus-rewards') return json({ success: true, data: null });
       if (pathname.startsWith('/api/menu-access')) {
-        return json({ items: [], policies: [], allowedPaths: ['/dashboard', '/dashboard/career-path'], isUnrestricted: true });
+        return json({
+          items: [],
+          policies: [],
+          allowedPaths: ['/dashboard', '/dashboard/career-path'],
+          isUnrestricted: true,
+        });
       }
       if (pathname === '/api/bug-reports/mine') {
         return json({ data: [], notifications: [], unreadCount: 0, actionRequiredCount: 0 });
@@ -429,7 +434,11 @@ async function main() {
 
     // 3. Mobile (390x844) Dark Theme + Mobile Staff Sheet Branch Filter
     {
-      const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, reducedMotion: 'reduce' });
+      const context = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        hasTouch: true,
+        reducedMotion: 'reduce',
+      });
       await context.addInitScript(
         ({ user }) => {
           localStorage.setItem('mos_token', 'mock-playwright-token');
@@ -450,7 +459,9 @@ async function main() {
       await context.close();
     }
 
-    console.log('Playwright visual QA PASSED: desktop light, desktop dark, mobile dark + branch filter & SPH verified.');
+    console.log(
+      'Playwright visual QA PASSED: desktop light, desktop dark, mobile dark + branch filter & SPH verified.'
+    );
   } catch (err) {
     console.error('Playwright visual QA FAILED:', err);
     exitCode = 1;

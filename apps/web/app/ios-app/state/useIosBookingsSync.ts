@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, MutableRefObject, Dispatch, SetStateAction } from 'react';
+import { useState, useEffect, useCallback, useRef, MutableRefObject, Dispatch, SetStateAction } from 'react';
 import { canSwitchIosBranch } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import { BookingItem, INITIAL_BOOKINGS } from './mockData';
@@ -18,13 +18,7 @@ import {
   setActiveServicingStep,
   clearLocalProgressSnapshot,
 } from './offlineSync';
-import type {
-  IosUserRole,
-  BookingScopeMode,
-  SegmentCounts,
-  StaffMonthlyStats,
-  ActiveActorProfile,
-} from './iosActorProfile';
+import type { IosUserRole, BookingScopeMode, StaffMonthlyStats, ActiveActorProfile } from './iosActorProfile';
 
 export interface UseIosBookingsSyncParams {
   enabled: boolean;
@@ -83,12 +77,12 @@ export function useIosBookingsSync({
   setSelectedDateOffset,
   setBookings,
 }: UseIosBookingsSyncParams) {
-  const [, setCounts] = useState<SegmentCounts>({ incoming: 0, servicing: 0, done: 0, cancel: 0 });
   const [totalStoreCount, setTotalStoreCount] = useState<number | undefined>(undefined);
   const [staffStats, setStaffStats] = useState<StaffMonthlyStats | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
   const [isLiveDb, setIsLiveDb] = useState<boolean>(false);
+  const isRefreshInFlightRef = useRef<boolean>(false);
 
   const getDateStrForOffset = useCallback((offset: number) => {
     const d = new Date();
@@ -278,6 +272,9 @@ export function useIosBookingsSync({
       date?: string;
       isPolling?: boolean;
     }) => {
+      if (options?.isPolling && isRefreshInFlightRef.current) {
+        return;
+      }
       const seg = options?.segment || bookingSegment;
       const storeId = options?.storeId ?? effectiveStoreId;
       const effScope: BookingScopeMode =
@@ -285,7 +282,10 @@ export function useIosBookingsSync({
       const effStaffId = options?.staffId ?? actor.staffId;
       const targetDateStr = options?.date ?? getDateStrForOffset(selectedDateOffset);
 
-      setIsRefreshing(true);
+      isRefreshInFlightRef.current = true;
+      if (!options?.isPolling) {
+        setIsRefreshing(true);
+      }
       try {
         const data = await apiClient.ios.getBookings(
           {
@@ -315,9 +315,6 @@ export function useIosBookingsSync({
             setServerAssignedStoreId?.(Number(data.storeId));
           }
           setBookings((prev) => mergeServerBookingsWithLocalState(prev, data.bookings, selectedDateOffset, storeId));
-          if (data.counts) {
-            setCounts(data.counts);
-          }
           if (typeof data.totalStoreCount === 'number') {
             setTotalStoreCount(data.totalStoreCount);
           } else if (effScope === 'STORE_ALL') {
@@ -407,7 +404,10 @@ export function useIosBookingsSync({
           setBookings((prev) => (prev.length > 0 ? prev : INITIAL_BOOKINGS));
         }
       } finally {
-        setIsRefreshing(false);
+        isRefreshInFlightRef.current = false;
+        if (!options?.isPolling) {
+          setIsRefreshing(false);
+        }
       }
     },
     [

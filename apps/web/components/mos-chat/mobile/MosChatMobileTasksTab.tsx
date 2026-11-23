@@ -483,11 +483,7 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
                       <div className="flex items-center gap-1 mt-2 text-[11px] font-medium tabular-nums">
                         <Clock
                           className={`w-3 h-3 shrink-0 ${
-                            isOverdue
-                              ? isDark
-                                ? 'text-rose-400'
-                                : 'text-rose-600'
-                              : 'text-[var(--mos-text-muted)]'
+                            isOverdue ? (isDark ? 'text-rose-400' : 'text-rose-600') : 'text-[var(--mos-text-muted)]'
                           }`}
                         />
                         <span

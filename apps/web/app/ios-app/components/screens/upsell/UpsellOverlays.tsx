@@ -99,25 +99,27 @@ export function UpsellOverlays({
 }: UpsellOverlaysProps) {
   return (
     <>
-      <ComboCatalogConsultModal
-        open={isConsultModalOpen}
-        onClose={onCloseConsultModal}
-        initialCategoryId={activeCategoryId}
-        initialVolume={activeVolume}
-        welcomeEligibility={welcomeEligibility}
-        selectedPackageId={selectedNewComboPkg?.id || null}
-        todaySingleServicePrice={todaySingleServicePrice}
-        existingUpperExpirySnapshot={existingUpperExpirySnapshot}
-        existingUnderExpirySnapshot={existingUnderExpirySnapshot}
-        upperTodayUsageMode={upperTodayUsageMode}
-        underTodayUsageMode={underTodayUsageMode}
-        todayServiceType={todayServiceType}
-        underServiceType={underServiceType}
-        initialSelectedUpperPkg={selectedNewComboPkg}
-        initialSelectedUnderPkg={selectedUnderComboPkg}
-        onSelectPackage={onSelectComboPackage}
-        onApplyPackages={onApplyComboPackages}
-      />
+      {isConsultModalOpen && (
+        <ComboCatalogConsultModal
+          open={isConsultModalOpen}
+          onClose={onCloseConsultModal}
+          initialCategoryId={activeCategoryId}
+          initialVolume={activeVolume}
+          welcomeEligibility={welcomeEligibility}
+          selectedPackageId={selectedNewComboPkg?.id || null}
+          todaySingleServicePrice={todaySingleServicePrice}
+          existingUpperExpirySnapshot={existingUpperExpirySnapshot}
+          existingUnderExpirySnapshot={existingUnderExpirySnapshot}
+          upperTodayUsageMode={upperTodayUsageMode}
+          underTodayUsageMode={underTodayUsageMode}
+          todayServiceType={todayServiceType}
+          underServiceType={underServiceType}
+          initialSelectedUpperPkg={selectedNewComboPkg}
+          initialSelectedUnderPkg={selectedUnderComboPkg}
+          onSelectPackage={onSelectComboPackage}
+          onApplyPackages={onApplyComboPackages}
+        />
+      )}
 
       <UpsellModals
         isDark={isDark}
@@ -132,32 +134,36 @@ export function UpsellOverlays({
         onCloseLockedWelcomeModal={onCloseLockedWelcomeModal}
       />
 
-      <ProductQrScannerModal
-        open={isQrScannerOpen}
-        isDark={isDark}
-        bookingId={Number(booking?.id || 0)}
-        cartProducts={localCartProducts}
-        onScannedProduct={onScannedProduct}
-        onRemoveUnit={onRemoveScannedUnit}
-        onClose={onCloseQrScanner}
-      />
+      {isQrScannerOpen && (
+        <ProductQrScannerModal
+          open={isQrScannerOpen}
+          isDark={isDark}
+          bookingId={Number(booking?.id || 0)}
+          cartProducts={localCartProducts}
+          onScannedProduct={onScannedProduct}
+          onRemoveUnit={onRemoveScannedUnit}
+          onClose={onCloseQrScanner}
+        />
+      )}
 
-      <ComboWalletDetailModal
-        booking={booking || null}
-        isOpen={isWalletModalOpen}
-        onClose={onCloseWalletModal}
-        isAdmin={isAdmin}
-        theme={isDark ? 'dark' : 'light'}
-        onUpdated={onRefreshDb}
-        selectedUpperBalanceId={resolvedWallets?.selectedUpperComboBalanceId}
-        selectedUnderBalanceId={resolvedWallets?.selectedUnderComboBalanceId}
-        skipUpperCombo={resolvedWallets?.skipUpperCombo}
-        skipUnderCombo={resolvedWallets?.skipUnderCombo}
-        onSelectWallet={(wallet) => {
-          onSelectWalletFromModal?.(wallet);
-          onCloseWalletModal();
-        }}
-      />
+      {isWalletModalOpen && (
+        <ComboWalletDetailModal
+          booking={booking || null}
+          isOpen={isWalletModalOpen}
+          onClose={onCloseWalletModal}
+          isAdmin={isAdmin}
+          theme={isDark ? 'dark' : 'light'}
+          onUpdated={onRefreshDb}
+          selectedUpperBalanceId={resolvedWallets?.selectedUpperComboBalanceId}
+          selectedUnderBalanceId={resolvedWallets?.selectedUnderComboBalanceId}
+          skipUpperCombo={resolvedWallets?.skipUpperCombo}
+          skipUnderCombo={resolvedWallets?.skipUnderCombo}
+          onSelectWallet={(wallet) => {
+            onSelectWalletFromModal?.(wallet);
+            onCloseWalletModal();
+          }}
+        />
+      )}
     </>
   );
 }
