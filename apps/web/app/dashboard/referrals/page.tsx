@@ -1,49 +1,73 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Table, Input, Card, Space, Button, Tag, Typography, theme, Spin, Tooltip, Tabs } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Table, Input, Card, Space, Button, Tag, Typography, theme, Spin, Tabs } from 'antd';
 import { SearchOutlined, ShareAltOutlined, EyeOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
+import type { ReferralTabCounts, ReferrerSummaryItem } from '@mos-lab/shared';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
-import { removeVietnameseTones } from '@mos-lab/shared';
 import { CopyPhoneButton, DataTable } from '../../../components/ui';
 
 const CustomerDetailDrawer = dynamic(() => import('../../../components/CustomerDetailDrawer'), { ssr: false });
 
 const { Title, Text } = Typography;
 
+type ReferralTimeFilterKey = 'this_month' | 'last_month' | 'this_year' | 'last_year' | 'all_time';
+
+const EMPTY_TAB_COUNTS: ReferralTabCounts = {
+  all_time: 0,
+  this_month: 0,
+  last_month: 0,
+  this_year: 0,
+  last_year: 0,
+};
+
 export default function ReferralsPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
 
   const [loading, setLoading] = useState(false);
-  const [referrers, setReferrers] = useState<SafeAny[]>([]);
+  const [referrers, setReferrers] = useState<ReferrerSummaryItem[]>([]);
+  const [totalReferrers, setTotalReferrers] = useState(0);
+  const [tabCounts, setTabCounts] = useState<ReferralTabCounts>(EMPTY_TAB_COUNTS);
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  const [timeFilter, setTimeFilter] = useState<'this_month' | 'last_month' | 'this_year' | 'last_year' | 'all_time'>(
-    'all_time'
-  );
+  const [timeFilter, setTimeFilter] = useState<ReferralTimeFilterKey>('all_time');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('mos_referrals_pageSize');
-      if (saved) {
+      if (saved && Number.isFinite(Number(saved)) && Number(saved) > 0) {
         setPageSize(Number(saved));
       }
       const urlParams = new URLSearchParams(window.location.search);
       const urlFilter = urlParams.get('timeFilter') || urlParams.get('tab');
       const savedFilter = urlFilter || localStorage.getItem('mos_referrals_timeFilter');
       if (savedFilter && ['this_month', 'last_month', 'this_year', 'last_year', 'all_time'].includes(savedFilter)) {
-        setTimeFilter(savedFilter as SafeAny);
+        setTimeFilter(savedFilter as ReferralTimeFilterKey);
       }
     }
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch((prev) => {
+        const next = searchText.trim();
+        if (prev !== next) {
+          setCurrentPage(1);
+        }
+        return next;
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
   const handleTimeFilterChange = (key: string) => {
-    setTimeFilter(key as SafeAny);
+    setTimeFilter(key as ReferralTimeFilterKey);
     setCurrentPage(1);
     if (typeof window !== 'undefined') {
       localStorage.setItem('mos_referrals_timeFilter', key);
@@ -63,128 +87,47 @@ export default function ReferralsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetchReferrals();
-  }, [timeFilter]);
-
-  const fetchReferrals = async () => {
+  const fetchReferrals = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiClient.customers.getReferrals({ timeFilter, search: searchText });
-      setReferrers(data || []);
+      const data = await apiClient.customers.getReferrals({
+        timeFilter,
+        search: debouncedSearch || undefined,
+        page: currentPage,
+        pageSize,
+      });
+      if (Array.isArray(data)) {
+        setReferrers(data as unknown as ReferrerSummaryItem[]);
+        setTotalReferrers(data.length);
+      } else {
+        setReferrers(data?.items || []);
+        setTotalReferrers(Number(data?.total || 0));
+        if (data?.tabCounts) {
+          setTabCounts(data.tabCounts);
+        }
+      }
     } catch (err) {
       console.error('[ReferralsPage] Failed to fetch referrals:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeFilter, debouncedSearch, currentPage, pageSize]);
 
-  const showCustomerDetails = React.useCallback((id: number) => {
+  useEffect(() => {
+    void fetchReferrals();
+  }, [fetchReferrals]);
+
+  const showCustomerDetails = useCallback((id: number) => {
     setSelectedCustomerId(id);
     setDrawerOpen(true);
   }, []);
-
-  const isInRange = (dateStr: string | null, filter: string) => {
-    if (filter === 'all_time') return true;
-    if (!dateStr) return false;
-
-    const date = new Date(dateStr);
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-
-    const year = date.getFullYear();
-    const month = date.getMonth();
-
-    if (filter === 'this_month') {
-      return year === currentYear && month === currentMonth;
-    }
-    if (filter === 'last_month') {
-      const targetMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-      const targetYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-      return year === targetYear && month === targetMonth;
-    }
-    if (filter === 'this_year') {
-      return year === currentYear;
-    }
-    if (filter === 'last_year') {
-      return year === currentYear - 1;
-    }
-    return true;
-  };
-
-  const tabCounts = React.useMemo(() => {
-    const counts = {
-      all_time: 0,
-      this_month: 0,
-      last_month: 0,
-      this_year: 0,
-      last_year: 0,
-    };
-
-    for (const r of referrers) {
-      const users = r.referredUsers || [];
-      let cAllTime = 0;
-      let cThisMonth = 0;
-      let cLastMonth = 0;
-      let cThisYear = 0;
-      let cLastYear = 0;
-
-      for (const ru of users) {
-        if (isInRange(ru.dateCreated, 'all_time')) cAllTime++;
-        if (isInRange(ru.dateCreated, 'this_month')) cThisMonth++;
-        if (isInRange(ru.dateCreated, 'last_month')) cLastMonth++;
-        if (isInRange(ru.dateCreated, 'this_year')) cThisYear++;
-        if (isInRange(ru.dateCreated, 'last_year')) cLastYear++;
-      }
-
-      if (cAllTime > 0) counts.all_time++;
-      if (cThisMonth > 0) counts.this_month++;
-      if (cLastMonth > 0) counts.last_month++;
-      if (cThisYear > 0) counts.this_year++;
-      if (cLastYear > 0) counts.last_year++;
-    }
-
-    return counts;
-  }, [referrers]);
-
-  const processedReferrers = React.useMemo(() => {
-    return referrers
-      .map((r) => {
-        const filteredUsers = (r.referredUsers || []).filter((ru: SafeAny) => isInRange(ru.dateCreated, timeFilter));
-        const totalReferred = filteredUsers.length;
-        const totalRewardDiamonds = filteredUsers.reduce(
-          (sum: number, ru: SafeAny) => sum + (ru.rewardDiamonds || 0),
-          0
-        );
-
-        return {
-          ...r,
-          totalReferred,
-          totalRewardDiamonds,
-          referredUsers: filteredUsers,
-        };
-      })
-      .filter((r) => r.totalReferred > 0);
-  }, [referrers, timeFilter]);
-
-  // Filter local referrers based on name or phone
-  const filteredReferrers = React.useMemo(() => {
-    const term = removeVietnameseTones(searchText);
-    if (!term) return processedReferrers;
-    return processedReferrers.filter((r) => {
-      return (
-        removeVietnameseTones(r.referrerName).includes(term) || removeVietnameseTones(r.referrerPhone).includes(term)
-      );
-    });
-  }, [processedReferrers, searchText]);
 
   const columns = React.useMemo(
     () => [
       {
         title: 'Khách hàng giới thiệu',
         key: 'referrer',
-        render: (record: SafeAny) => (
+        render: (record: ReferrerSummaryItem) => (
           <Space direction="vertical" size={2}>
             <span
               onClick={() => showCustomerDetails(record.referrerId)}
@@ -208,7 +151,7 @@ export default function ReferralsPage() {
         title: 'Số người đã giới thiệu',
         dataIndex: 'totalReferred',
         key: 'totalReferred',
-        sorter: (a: SafeAny, b: SafeAny) => a.totalReferred - b.totalReferred,
+        sorter: (a: ReferrerSummaryItem, b: ReferrerSummaryItem) => a.totalReferred - b.totalReferred,
         render: (val: number) => (
           <Tag color="blue" className="tabular-nums font-mono" style={{ fontWeight: 'bold', borderRadius: '4px' }}>
             {val} người bạn
@@ -219,7 +162,7 @@ export default function ReferralsPage() {
         title: 'Tổng Kim Cương tích luỹ',
         dataIndex: 'totalRewardDiamonds',
         key: 'totalRewardDiamonds',
-        sorter: (a: SafeAny, b: SafeAny) => a.totalRewardDiamonds - b.totalRewardDiamonds,
+        sorter: (a: ReferrerSummaryItem, b: ReferrerSummaryItem) => a.totalRewardDiamonds - b.totalRewardDiamonds,
         render: (val: number) => (
           <Tag color="warning" className="tabular-nums font-mono" style={{ fontWeight: 'bold', borderRadius: '4px' }}>
             💎 {val} KC
@@ -229,7 +172,7 @@ export default function ReferralsPage() {
       {
         title: 'Hành động',
         key: 'actions',
-        render: (record: SafeAny) => (
+        render: (record: ReferrerSummaryItem) => (
           <Button
             type="link"
             icon={<EyeOutlined />}
@@ -297,8 +240,8 @@ export default function ReferralsPage() {
     [token.colorPrimary, showCustomerDetails]
   );
 
-  const expandedRowRender = React.useCallback(
-    (record: SafeAny) => {
+  const expandedRowRender = useCallback(
+    (record: ReferrerSummaryItem) => {
       return (
         <Table
           columns={subColumns}
@@ -414,7 +357,7 @@ export default function ReferralsPage() {
           </div>
         ) : (
           <DataTable
-            dataSource={filteredReferrers}
+            dataSource={referrers}
             columns={columns}
             rowKey="referrerId"
             expandable={{
@@ -423,7 +366,8 @@ export default function ReferralsPage() {
             }}
             pagination={{
               current: currentPage,
-              pageSize: pageSize,
+              pageSize,
+              total: totalReferrers,
               showSizeChanger: true,
               pageSizeOptions: ['10', '20', '50', '100'],
               onChange: handlePageSizeChange,
@@ -442,8 +386,7 @@ export default function ReferralsPage() {
         onClose={() => {
           setDrawerOpen(false);
           setSelectedCustomerId(null);
-          // Refresh list to update any diamonds or changes
-          fetchReferrals();
+          void fetchReferrals();
         }}
       />
     </div>

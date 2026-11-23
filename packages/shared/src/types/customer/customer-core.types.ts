@@ -327,6 +327,39 @@ export interface Referral {
   referredPhone: string;
 }
 
+export interface ReferralTabCounts {
+  all_time: number;
+  this_month: number;
+  last_month: number;
+  this_year: number;
+  last_year: number;
+}
+
+export interface ReferralFriendItem {
+  id: number;
+  name: string;
+  phone: string;
+  dateCreated: string | null;
+  rewardDiamonds: number;
+}
+
+export interface ReferrerSummaryItem {
+  referrerId: number;
+  referrerName: string;
+  referrerPhone: string;
+  totalReferred: number;
+  totalRewardDiamonds: number;
+  referredUsers: ReferralFriendItem[];
+}
+
+export interface ReferralsPaginatedResponse {
+  items: ReferrerSummaryItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  tabCounts: ReferralTabCounts;
+}
+
 export interface CustomerNote {
   id: number;
   customerId: number;

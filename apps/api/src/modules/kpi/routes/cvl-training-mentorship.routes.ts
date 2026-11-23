@@ -42,6 +42,7 @@ export async function registerCvlTrainingMentorshipRoutes(fastify: FastifyInstan
     try {
       const updatedBy = request.user?.displayName || request.user?.username || 'admin';
       const saved = await CvlTrainingMentorshipService.saveConfig(fastify, body, updatedBy);
+      fastify.cache?.invalidatePattern('^kpi:(cv-paystub|cc-xoay):');
       const full = await CvlTrainingMentorshipService.getConfigWithStaffOptions(fastify);
       return {
         ...full,

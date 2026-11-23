@@ -8238,7 +8238,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 41
+        "line": 77
       }
     },
     {
@@ -8252,7 +8252,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 136
+        "line": 204
       }
     },
     {
@@ -8266,7 +8266,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 223
+        "line": 291
       }
     },
     {
@@ -8280,7 +8280,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 306
+        "line": 374
       }
     },
     {
@@ -8294,7 +8294,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 332
+        "line": 400
       }
     },
     {
@@ -9554,7 +9554,7 @@
         "path": "/api/saved-filters",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 16
+        "line": 17
       }
     },
     {
@@ -9568,7 +9568,7 @@
         "path": "/api/saved-filters",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 33
+        "line": 34
       }
     },
     {
@@ -9582,7 +9582,7 @@
         "path": "/api/saved-filters/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 88
+        "line": 89
       }
     },
     {
@@ -9596,7 +9596,7 @@
         "path": "/api/customers/services",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 117
+        "line": 118
       }
     },
     {
@@ -9610,7 +9610,7 @@
         "path": "/api/customers/service-filter-options",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 186
+        "line": 187
       }
     },
     {
@@ -9624,7 +9624,7 @@
         "path": "/api/customers/staff",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 200
+        "line": 201
       }
     },
     {
@@ -9638,7 +9638,7 @@
         "path": "/api/customers/promotions",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 324
+        "line": 325
       }
     },
     {
@@ -9652,7 +9652,7 @@
         "path": "/api/customers/referrals",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 343
+        "line": 344
       }
     },
     {
@@ -9666,7 +9666,7 @@
         "path": "/api/customers/create-options",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 509
+        "line": 374
       }
     },
     {
@@ -9680,7 +9680,7 @@
         "path": "/api/customers/create",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 556
+        "line": 421
       }
     },
     {
@@ -11500,7 +11500,7 @@
         "path": "/api/kpi/cv-allowances/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 53
+        "line": 54
       }
     },
     {
@@ -11514,7 +11514,7 @@
         "path": "/api/kpi/cv-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 77
+        "line": 79
       }
     },
     {
@@ -11640,7 +11640,7 @@
         "path": "/api/kpi/cv-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 256
+        "line": 269
       }
     },
     {
@@ -11654,7 +11654,7 @@
         "path": "/api/kpi/cv-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 350
+        "line": 363
       }
     },
     {
@@ -14216,7 +14216,7 @@
         "path": "/api/wings-garden/qr/lookup",
         "module": "wings-garden",
         "handler": "inlineHandler",
-        "line": 60
+        "line": 69
       }
     },
     {
@@ -14230,7 +14230,7 @@
         "path": "/api/wings-garden/actions",
         "module": "wings-garden",
         "handler": "inlineHandler",
-        "line": 79
+        "line": 88
       }
     },
     {
@@ -24624,6 +24624,54 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "Referral",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ReferralTabCounts",
+      "type": "SharedType",
+      "label": "ReferralTabCounts",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ReferralTabCounts",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ReferralFriendItem",
+      "type": "SharedType",
+      "label": "ReferralFriendItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ReferralFriendItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ReferrerSummaryItem",
+      "type": "SharedType",
+      "label": "ReferrerSummaryItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ReferrerSummaryItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ReferralsPaginatedResponse",
+      "type": "SharedType",
+      "label": "ReferralsPaginatedResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ReferralsPaginatedResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -45641,8 +45689,8 @@
       "filePath": "apps/api/src/modules/bug-reports/routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16417,
-        "lineCount": 402,
+        "sizeBytes": 16430,
+        "lineCount": 403,
         "ext": ".ts"
       }
     },
@@ -46648,6 +46696,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/chat/chat-bootstrap-window.test.ts",
+      "type": "File",
+      "label": "chat-bootstrap-window.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-bootstrap-window.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3187,
+        "lineCount": 90,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/chat/chat-bulk-sync.test.ts",
       "type": "File",
       "label": "chat-bulk-sync.test.ts",
@@ -46746,8 +46807,8 @@
       "filePath": "apps/api/src/modules/chat/chat-format.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19428,
-        "lineCount": 517,
+        "sizeBytes": 20683,
+        "lineCount": 548,
         "ext": ".ts"
       }
     },
@@ -47318,8 +47379,8 @@
       "filePath": "apps/api/src/modules/chat/routes/bootstrap.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15099,
-        "lineCount": 380,
+        "sizeBytes": 17385,
+        "lineCount": 448,
         "ext": ".ts"
       }
     },
@@ -48150,8 +48211,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-meta.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 25677,
-        "lineCount": 615,
+        "sizeBytes": 19971,
+        "lineCount": 480,
         "ext": ".ts"
       }
     },
@@ -48178,6 +48239,32 @@
       "metadata": {
         "sizeBytes": 7196,
         "lineCount": 219,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/customer-referrals.helper.ts",
+      "type": "File",
+      "label": "customer-referrals.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/customer-referrals.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9720,
+        "lineCount": 260,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/customer-referrals.test.ts",
+      "type": "File",
+      "label": "customer-referrals.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/customer-referrals.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3493,
+        "lineCount": 104,
         "ext": ".ts"
       }
     },
@@ -48215,7 +48302,7 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats-routes/customer-nyc-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8453,
+        "sizeBytes": 8449,
         "lineCount": 230,
         "ext": ".ts"
       }
@@ -48319,8 +48406,8 @@
       "filePath": "apps/api/src/modules/customers/routes/cv-status.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27218,
-        "lineCount": 605,
+        "sizeBytes": 27277,
+        "lineCount": 611,
         "ext": ".ts"
       }
     },
@@ -48605,7 +48692,7 @@
       "filePath": "apps/api/src/modules/customers/routes/list/customer-list-query.helper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20919,
+        "sizeBytes": 20933,
         "lineCount": 545,
         "ext": ".ts"
       }
@@ -50737,8 +50824,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub-routes/cv-allowances.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3784,
-        "lineCount": 109,
+        "sizeBytes": 3904,
+        "lineCount": 111,
         "ext": ".ts"
       }
     },
@@ -50750,8 +50837,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub-routes/cv-paystub-main.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 1830,
-        "lineCount": 44,
+        "sizeBytes": 2559,
+        "lineCount": 61,
         "ext": ".ts"
       }
     },
@@ -50815,8 +50902,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub-routes/cv-seniority-config.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2312,
-        "lineCount": 54,
+        "sizeBytes": 2374,
+        "lineCount": 55,
         "ext": ".ts"
       }
     },
@@ -50984,8 +51071,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17928,
-        "lineCount": 379,
+        "sizeBytes": 18577,
+        "lineCount": 392,
         "ext": ".ts"
       }
     },
@@ -50997,8 +51084,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cvl-training-mentorship.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2386,
-        "lineCount": 59,
+        "sizeBytes": 2456,
+        "lineCount": 60,
         "ext": ".ts"
       }
     },
@@ -51569,8 +51656,8 @@
       "filePath": "apps/api/src/modules/kpi/services/cc-kpi/cc-kpi-xoay.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18339,
-        "lineCount": 434,
+        "sizeBytes": 19053,
+        "lineCount": 446,
         "ext": ".ts"
       }
     },
@@ -54013,8 +54100,8 @@
       "filePath": "apps/api/src/modules/wings-garden/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3581,
-        "lineCount": 97,
+        "sizeBytes": 4030,
+        "lineCount": 107,
         "ext": ".ts"
       }
     },
@@ -54169,8 +54256,21 @@
       "filePath": "apps/api/src/plugins/prisma.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3194,
-        "lineCount": 97,
+        "sizeBytes": 3514,
+        "lineCount": 102,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/plugins/slow-query-logger.test.ts",
+      "type": "File",
+      "label": "slow-query-logger.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/plugins/slow-query-logger.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4082,
+        "lineCount": 95,
         "ext": ".ts"
       }
     },
@@ -54182,8 +54282,8 @@
       "filePath": "apps/api/src/plugins/slow-query-logger.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4181,
-        "lineCount": 135,
+        "sizeBytes": 6474,
+        "lineCount": 201,
         "ext": ".ts"
       }
     },
@@ -55911,8 +56011,8 @@
       "filePath": "apps/web/app/api/ios/bookings/route.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2471,
-        "lineCount": 83,
+        "sizeBytes": 2483,
+        "lineCount": 85,
         "ext": ".ts"
       }
     },
@@ -55924,8 +56024,8 @@
       "filePath": "apps/web/app/api/ios/photos/[filename]/route.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1632,
-        "lineCount": 48,
+        "sizeBytes": 1644,
+        "lineCount": 50,
         "ext": ".ts"
       }
     },
@@ -62671,8 +62771,8 @@
       "filePath": "apps/web/app/dashboard/customers/hooks/useCustomerData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20155,
-        "lineCount": 505,
+        "sizeBytes": 20146,
+        "lineCount": 503,
         "ext": ".ts"
       }
     },
@@ -63295,8 +63395,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-xoay-tab/useCvXoayData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4076,
-        "lineCount": 131,
+        "sizeBytes": 4125,
+        "lineCount": 133,
         "ext": ".ts"
       }
     },
@@ -67806,8 +67906,8 @@
       "filePath": "apps/web/app/dashboard/referrals/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14646,
-        "lineCount": 452,
+        "sizeBytes": 12974,
+        "lineCount": 395,
         "ext": ".tsx"
       }
     },
@@ -74189,8 +74289,8 @@
       "filePath": "apps/web/lib/api/customers.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20201,
-        "lineCount": 517,
+        "sizeBytes": 20315,
+        "lineCount": 522,
         "ext": ".ts"
       }
     },
@@ -74332,8 +74432,8 @@
       "filePath": "apps/web/lib/api/staff.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10372,
-        "lineCount": 259,
+        "sizeBytes": 10422,
+        "lineCount": 264,
         "ext": ".ts"
       }
     },
@@ -75905,8 +76005,8 @@
       "filePath": "packages/shared/src/types/customer/customer-core.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9353,
-        "lineCount": 353,
+        "sizeBytes": 10017,
+        "lineCount": 386,
         "ext": ".ts"
       }
     },
@@ -76334,8 +76434,8 @@
       "filePath": "packages/shared/src/types/mos-chat/messages-and-tasks.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10649,
-        "lineCount": 421,
+        "sizeBytes": 10749,
+        "lineCount": 424,
         "ext": ".ts"
       }
     },
@@ -89762,6 +89862,34 @@
     {
       "id": "edge:type:@mos-lab/shared:Referral:ws:packages/shared",
       "source": "type:@mos-lab/shared:Referral",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ReferralTabCounts:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ReferralTabCounts",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ReferralFriendItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ReferralFriendItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ReferrerSummaryItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ReferrerSummaryItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ReferralsPaginatedResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ReferralsPaginatedResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -107463,6 +107591,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/chat/chat-bootstrap-window.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-bootstrap-window.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/chat/chat-buzz.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-buzz.test.ts",
       "target": "ws:packages/shared",
@@ -108130,6 +108265,13 @@
     {
       "id": "edge:file:apps/api/src/modules/customers/routes/customer-notes.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/customers/routes/customer-notes.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/customer-referrals.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/customer-referrals.helper.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -130578,31 +130720,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 5978,
-    "totalEdges": 7655,
+    "totalNodes": 5986,
+    "totalEdges": 7661,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
       "FastifyRoute": 779,
       "Component": 66,
-      "SharedType": 1578,
+      "SharedType": 1582,
       "DesignToken": 12,
       "UIComponent": 783,
-      "File": 2574
+      "File": 2578
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1773,
+      "EXPORTS": 1777,
       "HANDLES_ROUTE": 779,
       "RENDERS": 849,
       "USES_TOKEN": 785,
-      "IMPORTS": 1564,
+      "IMPORTS": 1566,
       "QUERIES_MODEL": 602,
       "API_CALL": 1303
     },
     "fastifyRouteCount": 779,
     "prismaModelCount": 183,
     "nextPageCount": 66,
-    "sharedTypeCount": 1578
+    "sharedTypeCount": 1582
   },
   "routes": [
     {

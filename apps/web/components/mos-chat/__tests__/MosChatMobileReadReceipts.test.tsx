@@ -11,12 +11,7 @@ import {
 import { MosChatMobileSeenUsersSheet } from '../mobile/MosChatMobileSeenUsersSheet';
 import { MosChatMobileReactionSheet } from '../mobile/MosChatMobileReactionSheet';
 import { MosChatContext } from '../context/MosChatContext';
-import type {
-  MosChatConversation,
-  MosChatMessage,
-  MosChatThreadReply,
-  MosChatStaffMember,
-} from '@mos-lab/shared';
+import type { MosChatConversation, MosChatMessage, MosChatThreadReply, MosChatStaffMember } from '@mos-lab/shared';
 import type { MosChatContextValue } from '../types/mos-chat-types';
 
 describe('MOS-BUG-229: Mobile Read Receipts & Seen Users Breakdown', () => {
@@ -163,6 +158,61 @@ describe('MOS-BUG-229: Mobile Read Receipts & Seen Users Breakdown', () => {
       expect(stoppedMap['msg-2']?.some((r) => r.staffId === 102)).toBe(true);
       // He should not be counted as stopped at msg-1
       expect(stoppedMap['msg-1']?.some((r) => r.staffId === 102)).toBeFalsy();
+    });
+
+    it('aligns getMessageReadBreakdown and stopped readers accurately on windowed conversations with totalMessageCount > messages.length', () => {
+      const windowedMsgs: MosChatMessage[] = Array.from({ length: 5 }, (_, idx) => ({
+        id: `msg-${41 + idx}`,
+        conversationId: 'conv-window',
+        senderId: 101,
+        senderName: 'Alice',
+        senderRole: 'CV',
+        text: `Windowed #${41 + idx}`,
+        timeLabel: '10:30',
+        createdAt: `2026-11-15T10:3${idx}:00.000Z`,
+      }));
+      const windowedConv: MosChatConversation = {
+        ...sampleConversation,
+        id: 'conv-window',
+        totalMessageCount: 45,
+        hasMoreMessages: true,
+        oldestLoadedMessageId: 'msg-41',
+        messages: windowedMsgs,
+        readReceipts: [
+          {
+            staffId: 102,
+            displayName: 'Bob Tran',
+            role: 'CVL',
+            readCount: 43, // read through msg-43 (index 2 in visible window)
+            readAt: '2026-11-15T10:35:00.000Z',
+          },
+          {
+            staffId: 103,
+            displayName: 'Charlie Le',
+            role: 'admin',
+            readCount: 15, // stopped in hidden older history before window starts at 41
+            readAt: '2026-11-15T10:15:00.000Z',
+          },
+        ],
+      };
+
+      const msg43Breakdown = getMessageReadBreakdown(windowedConv, windowedMsgs[2], 101);
+      expect(msg43Breakdown.seenBy.some((r) => r.staffId === 102)).toBe(true);
+      expect(msg43Breakdown.seenBy.some((r) => r.staffId === 103)).toBe(false);
+
+      const msg44Breakdown = getMessageReadBreakdown(windowedConv, windowedMsgs[3], 101);
+      expect(msg44Breakdown.seenBy.some((r) => r.staffId === 102)).toBe(false);
+      expect(msg44Breakdown.unseenBy.some((r) => r.staffId === 102)).toBe(true);
+
+      const stopped = calculateStoppedReadersByMsgId(windowedConv, 101);
+      expect(stopped['msg-43']?.some((r) => r.staffId === 102)).toBe(true);
+      expect(stopped['msg-45']).toBeUndefined();
+      // Charlie stopped at count 15 (< hiddenOlderCount=40), so he should not appear on visible messages
+      expect(
+        Object.values(stopped)
+          .flat()
+          .some((r) => r.staffId === 103)
+      ).toBe(false);
     });
 
     it('formats read timestamps nicely with formatReadAtLabel', () => {

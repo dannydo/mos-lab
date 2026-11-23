@@ -232,6 +232,9 @@ export interface MosChatConversation {
   unreadBuzzCount?: number;
   readReceipts?: MosChatReadReceiptEntry[];
   messages: MosChatMessage[];
+  totalMessageCount?: number;
+  hasMoreMessages?: boolean;
+  oldestLoadedMessageId?: string | null;
   updatedAt: string;
 }
 

@@ -317,6 +317,10 @@ export function computeUnreadThreadReplyCountForUser(
   }).length;
 }
 
+export interface ChatFormatWindowOptions {
+  messageLimit?: number;
+}
+
 /**
  * Personalizes a 1-1 Direct Message or Space for the requesting user so that:
  * - Person A sees Person B's name, role, avatar, and `participantStaffId: B`.
@@ -329,8 +333,10 @@ export function formatConversationForUser(
   user: JwtUserPayload | undefined,
   staffDirectory: MosChatStaffMember[],
   userPrefs?: MosChatUserSidebarPrefs,
-  allUserPrefsByUserKey?: Record<string, MosChatUserSidebarPrefs>
+  allUserPrefsByUserKey?: Record<string, MosChatUserSidebarPrefs>,
+  options?: ChatFormatWindowOptions
 ): MosChatConversation {
+  const allMessages = conv.messages || [];
   const myStaffId = resolveUserStaffId(user, staffDirectory);
   const myPrefKey = resolveUserPrefKey(user, staffDirectory);
   const mergedPrefsMap: Record<string, MosChatUserSidebarPrefs> = {
@@ -342,8 +348,21 @@ export function formatConversationForUser(
   const participantIds = resolveConversationParticipantStaffIds(conv, staffDirectory, mergedPrefsMap);
   const readReceipts = computeConversationReadReceipts(conv, staffDirectory, mergedPrefsMap);
 
+  const requestedLimit = options?.messageLimit;
+  const shouldWindow = typeof requestedLimit === 'number' && requestedLimit > 0;
+  const windowSliceStart =
+    shouldWindow && allMessages.length > requestedLimit ? allMessages.length - requestedLimit : 0;
+  const skippedOlderMessages = windowSliceStart > 0 ? allMessages.slice(0, windowSliceStart) : [];
+  const windowSourceMessages = windowSliceStart > 0 ? allMessages.slice(windowSliceStart) : allMessages;
+
   let unreadThreadCount = 0;
-  const formattedMessages: MosChatMessage[] = (conv.messages || []).map((m) => {
+  for (const skippedMsg of skippedOlderMessages) {
+    if (skippedMsg.thread && skippedMsg.thread.length > 0) {
+      unreadThreadCount += computeUnreadThreadReplyCountForUser(conv, skippedMsg, myStaffId, staffDirectory, userPrefs);
+    }
+  }
+
+  const formattedMessages: MosChatMessage[] = windowSourceMessages.map((m) => {
     if (!m.thread || m.thread.length === 0) {
       return m;
     }
@@ -362,6 +381,15 @@ export function formatConversationForUser(
       unreadThreadReplyCount,
     };
   });
+
+  const windowMetadata: Partial<MosChatConversation> =
+    requestedLimit !== undefined
+      ? {
+          totalMessageCount: allMessages.length,
+          hasMoreMessages: windowSliceStart > 0,
+          oldestLoadedMessageId: formattedMessages[0]?.id ?? null,
+        }
+      : {};
 
   // Compute unread buzz status for this user
   let hasUnreadBuzz = false;
@@ -442,6 +470,7 @@ export function formatConversationForUser(
       unreadBuzzCount,
       readReceipts,
       messages: formattedMessages,
+      ...windowMetadata,
     };
   }
   const convIdStr = String(conv.id || '');
@@ -458,6 +487,7 @@ export function formatConversationForUser(
       unreadBuzzCount,
       readReceipts,
       messages: formattedMessages,
+      ...windowMetadata,
     };
   }
   const dmIds = resolveDmParticipantIds(conv, staffDirectory);
@@ -480,6 +510,7 @@ export function formatConversationForUser(
     unreadBuzzCount,
     readReceipts,
     messages: formattedMessages,
+    ...windowMetadata,
   };
 }
 
@@ -488,11 +519,12 @@ export function filterAndFormatConversationsForUser(
   user: JwtUserPayload | undefined,
   staffDirectory: MosChatStaffMember[],
   userPrefs?: MosChatUserSidebarPrefs,
-  allUserPrefsByUserKey?: Record<string, MosChatUserSidebarPrefs>
+  allUserPrefsByUserKey?: Record<string, MosChatUserSidebarPrefs>,
+  options?: ChatFormatWindowOptions
 ): MosChatConversation[] {
   return conversations
     .filter((c) => canUserAccessConversation(c, user, staffDirectory))
-    .map((c) => formatConversationForUser(c, user, staffDirectory, userPrefs, allUserPrefsByUserKey));
+    .map((c) => formatConversationForUser(c, user, staffDirectory, userPrefs, allUserPrefsByUserKey, options));
 }
 
 export function filterTasksForUser(

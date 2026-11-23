@@ -314,6 +314,7 @@ export const MosChatDesktopMainColumn: React.FC<MosChatDesktopMainColumnProps> =
           handleOpenForwardModal={navActions.handleOpenForwardModal}
           accessibleConversationIds={navActions.accessibleConversationIds}
           onJumpToForwardedSource={navActions.handleJumpToForwardedSource}
+          onLoadOlderMessages={realtime.loadOlderMessages}
         />
 
         {sidebarPrefs.activeConversation?.id === AI_COPILOT_CONV_ID && aiAccess.isAiSessionReadOnly && (

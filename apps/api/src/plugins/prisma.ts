@@ -35,9 +35,14 @@ function configureDatabasePoolUrl(
   }
 }
 
+export function shouldEnablePrismaQueryEvents(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.ENABLE_SLOW_QUERY_LOGGER === 'true' || Boolean(env.SLOW_QUERY_THRESHOLD_MS);
+}
+
 const prismaPlugin: FastifyPluginAsync = fp(async (fastify: FastifyInstance) => {
   const legacyUrl = configureDatabasePoolUrl(process.env.LEGACY_DATABASE_URL, 25, 20);
   const crmUrl = configureDatabasePoolUrl(process.env.CRM_DATABASE_URL, 15, 20);
+  const queryEventsEnabled = shouldEnablePrismaQueryEvents();
 
   const legacy = new LegacyPrismaClient({
     datasources: {
@@ -45,7 +50,7 @@ const prismaPlugin: FastifyPluginAsync = fp(async (fastify: FastifyInstance) => 
         url: legacyUrl,
       },
     },
-    log: [{ emit: 'event', level: 'query' }] as SafeAny,
+    ...(queryEventsEnabled ? { log: [{ emit: 'event', level: 'query' }] as SafeAny } : {}),
   });
 
   const crm = new CrmPrismaClient({
@@ -54,7 +59,7 @@ const prismaPlugin: FastifyPluginAsync = fp(async (fastify: FastifyInstance) => 
         url: crmUrl,
       },
     },
-    log: [{ emit: 'event', level: 'query' }] as SafeAny,
+    ...(queryEventsEnabled ? { log: [{ emit: 'event', level: 'query' }] as SafeAny } : {}),
   });
 
   // Connect on start

@@ -3,6 +3,8 @@ import type { MosChatConversation, MosChatMessage, MosChatThreadReply } from '@m
 import {
   mergeThreadReplies,
   mergeDeltaConversations,
+  mergeWindowedBootstrapConversations,
+  prependOlderConversationMessages,
   applyRealtimeEventToConversations,
 } from '../store/useChatRealtimeSync';
 
@@ -203,5 +205,63 @@ describe('useChatRealtimeSync - MOS-BUG-208 thread reply deletion persistence', 
     const reply = res[0].messages[0].thread?.[0];
     expect(reply?.isDeleted).toBe(true);
     expect(reply?.deletedByName).toBe('Nguyễn Quang Khải');
+  });
+
+  it('mergeWindowedBootstrapConversations preserves prepended older history when newer tail window arrives', () => {
+    const mkMsg = (n: number): MosChatMessage => ({
+      id: `msg-${n}`,
+      conversationId: 'space-core-team',
+      senderId: 1,
+      senderName: 'Danny',
+      senderRole: 'Super Admin',
+      text: `M${n}`,
+      timeLabel: '10:00',
+      createdAt: `2026-11-20T01:${String(n).padStart(2, '0')}:00.000Z`,
+    });
+
+    const initial: MosChatConversation[] = [
+      {
+        id: 'space-core-team',
+        type: 'space',
+        name: 'Core Team',
+        color: '#1a73e8',
+        unreadCount: 0,
+        updatedAt: '2026-11-20T01:40:00.000Z',
+        totalMessageCount: 40,
+        hasMoreMessages: true,
+        oldestLoadedMessageId: 'msg-11',
+        messages: Array.from({ length: 30 }, (_, i) => mkMsg(i + 11)),
+      },
+    ];
+
+    const afterLoadOlder = prependOlderConversationMessages(initial, 'space-core-team', {
+      messages: Array.from({ length: 10 }, (_, i) => mkMsg(i + 1)),
+      hasMore: false,
+      nextCursor: null,
+    });
+    expect(afterLoadOlder[0].messages.map((m) => m.id)).toHaveLength(40);
+    expect(afterLoadOlder[0].hasMoreMessages).toBe(false);
+
+    const incomingNewWindow: MosChatConversation[] = [
+      {
+        id: 'space-core-team',
+        type: 'space',
+        name: 'Core Team',
+        color: '#1a73e8',
+        unreadCount: 0,
+        updatedAt: '2026-11-20T01:41:00.000Z',
+        totalMessageCount: 41,
+        hasMoreMessages: true,
+        oldestLoadedMessageId: 'msg-12',
+        messages: Array.from({ length: 30 }, (_, i) => mkMsg(i + 12)),
+      },
+    ];
+
+    const merged = mergeWindowedBootstrapConversations(afterLoadOlder, incomingNewWindow);
+    expect(merged[0].messages).toHaveLength(41);
+    expect(merged[0].messages[0].id).toBe('msg-1');
+    expect(merged[0].messages[40].id).toBe('msg-41');
+    expect(merged[0].hasMoreMessages).toBe(false);
+    expect(merged[0].oldestLoadedMessageId).toBe('msg-1');
   });
 });

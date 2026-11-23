@@ -39,7 +39,7 @@ import type {
   Promotion,
   RandomIdsResponse,
   RecallAllocationBatchDto,
-  Referral,
+  ReferralsPaginatedResponse,
   ReleaseElsaReservationInput,
   RevokePreviewResponse,
   SaveMissedLogInput,
@@ -118,7 +118,10 @@ export const customersApi = {
     },
     getElsaReservation: async (
       id: number
-    ): Promise<{ success: boolean; data: { active: CustomerElsaReservation | null; history: CustomerElsaReservation[] } }> => {
+    ): Promise<{
+      success: boolean;
+      data: { active: CustomerElsaReservation | null; history: CustomerElsaReservation[] };
+    }> => {
       const response = await api.get(`/customers/${id}/elsa-reservation`);
       return response.data;
     },
@@ -231,7 +234,12 @@ export const customersApi = {
       const response = await api.get(`/customers/${customerId}/assignment-timeline`);
       return response.data;
     },
-    getReferrals: async (params?: Record<string, unknown>): Promise<Referral[]> => {
+    getReferrals: async (params?: {
+      page?: number;
+      pageSize?: number;
+      search?: string;
+      timeFilter?: string;
+    }): Promise<ReferralsPaginatedResponse> => {
       const response = await api.get('/customers/referrals', { params });
       return response.data;
     },

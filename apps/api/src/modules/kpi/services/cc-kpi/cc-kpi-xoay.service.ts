@@ -51,6 +51,14 @@ export async function getCcXoayReport(fastify: FastifyInstance, filters: CcKpiFi
     getActiveCcStaffIds(fastify),
     CvlTrainingMentorshipService.getActivePairsForRange(fastify, monthStartStr, endStr),
   ]);
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+  const cacheTtlMs = endStr < todayStr ? 300_000 : 30_000;
+  const trainingKey = activeTrainingPairs.map((p) => `${p.menteeLegacyStaffId}:${p.startDate}:${p.endDate}`).join('|');
+  const cacheKey = `kpi:cc-xoay:${startStr}:${endStr}:${queryEndAt}:${storeId || 'ALL'}:${consultantId || 'ALL'}:${page}:${limit}:${includeComparison ? 1 : 0}:${comparisonMode || ''}:${activeCcIds.join(',')}:${trainingKey}`;
+  const cached = fastify.cache?.get<CcXoayReportResponse>(cacheKey);
+  if (cached) {
+    return cached;
+  }
   const excludeTrainingXoaySql = buildExcludeTrainingCvlOrderSql(activeTrainingPairs, 'o.id', 'ro.date');
 
   let activeCcFilter = '';
@@ -408,7 +416,7 @@ export async function getCcXoayReport(fastify: FastifyInstance, filters: CcKpiFi
       })
     : null;
 
-  return {
+  const result: CcXoayReportResponse = {
     data: paginatedRecords,
     total,
     summary: {
@@ -430,4 +438,6 @@ export async function getCcXoayReport(fastify: FastifyInstance, filters: CcKpiFi
           : undefined,
     },
   };
+  fastify.cache?.set(cacheKey, result, cacheTtlMs);
+  return result;
 }

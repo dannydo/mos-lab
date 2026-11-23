@@ -30,6 +30,7 @@ export function registerCvAllowanceRoutes(fastify: FastifyInstance) {
           note: note ? String(note).trim() : null,
         },
       });
+      fastify.cache?.invalidatePattern('^kpi:cv-paystub:');
 
       return reply.send({
         success: true,
@@ -62,6 +63,7 @@ export function registerCvAllowanceRoutes(fastify: FastifyInstance) {
       await fastify.prisma.crm.crmCvPayrollAllowance.delete({
         where: { id: allowanceId },
       });
+      fastify.cache?.invalidatePattern('^kpi:cv-paystub:');
 
       return reply.send({
         success: true,

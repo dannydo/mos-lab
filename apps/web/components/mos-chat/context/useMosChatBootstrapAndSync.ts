@@ -12,7 +12,12 @@ import type {
 import { apiClient } from '../../../lib/api-client';
 import { AI_COPILOT_CONV_ID, STAFF_DIRECTORY_CACHE_KEY } from '../constants/chat-constants';
 import { useMosChatBridgeListener } from '../store/mos-chat-bridge';
-import { mergeDeltaConversations, mergeDeltaTasks, useChatRealtimeSync } from '../store/useChatRealtimeSync';
+import {
+  mergeDeltaConversations,
+  mergeDeltaTasks,
+  mergeWindowedBootstrapConversations,
+  useChatRealtimeSync,
+} from '../store/useChatRealtimeSync';
 import type { MosChatActiveSubtab, MosChatMobileView } from '../types/mos-chat-types';
 
 export interface UseMosChatBootstrapAndSyncParams {
@@ -103,22 +108,25 @@ export function useMosChatBootstrapAndSync({
         lastVersionRef.current = res.version;
       }
       if (res && res.conversations) {
-        setConversations(res.conversations);
-        const map: Record<string, MosChatMessage[]> = {};
-        res.conversations.forEach((c) => {
-          if (c.messages && c.messages.length > 0) {
-            map[c.id] = c.messages;
-          }
-        });
-        setAllMessagesByConv((prev) => ({ ...prev, ...map }));
+        setConversations((prev) => {
+          const merged = mergeWindowedBootstrapConversations(prev, res.conversations);
+          const map: Record<string, MosChatMessage[]> = {};
+          merged.forEach((c) => {
+            if (c.messages && c.messages.length > 0) {
+              map[c.id] = c.messages;
+            }
+          });
+          setAllMessagesByConv((prevMap) => ({ ...prevMap, ...map }));
 
-        setActiveThreadMsg((current) => {
-          if (!current) return null;
-          for (const c of res.conversations) {
-            const found = c.messages?.find((m) => m.id === current.id);
-            if (found) return found;
-          }
-          return current;
+          setActiveThreadMsg((current) => {
+            if (!current) return null;
+            for (const c of merged) {
+              const found = c.messages?.find((m) => m.id === current.id);
+              if (found) return found;
+            }
+            return current;
+          });
+          return merged;
         });
       }
       if (res?.userPrefs?.pinnedIds) {

@@ -36,19 +36,24 @@ async function computeNycStats(
     return createEmptyNycStats();
   }
 
-  // Prequery active live combo user IDs to exclude, avoiding correlated NOT EXISTS subquery across 40k users
-  const liveComboRows = await fastify.prisma.legacy.$queryRawUnsafe<Array<{ user_id: number }>>(`
+  // Run active combo exclusion prequery and NYC touchpoints config fetch in parallel
+  const [liveComboRows, config] = await Promise.all([
+    fastify.prisma.legacy.$queryRawUnsafe<Array<{ user_id: number }>>(`
       SELECT DISTINCT user_id 
       FROM user_service_balance 
-      WHERE (normal_count + retain_count) > 0 
+      WHERE (normal_count > 0 OR retain_count > 0) 
         AND (service_group IS NULL OR service_group != 'LashesUnder') 
         AND (date_expired IS NULL OR date_expired > NOW())
-    `);
+    `),
+    fastify.prisma.crm.crmConfig.findUnique({
+      where: { key: 'NYC_TOUCHPOINTS_CONFIG' },
+    }),
+  ]);
   const liveComboUserIds = liveComboRows.map((r) => r.user_id);
 
   const innerWhereClauses: string[] = [
-    'COALESCE(up.is_deleted, 0) = 0',
-    'COALESCE(up.is_disabled, 0) = 0',
+    '(up.is_deleted IS NULL OR up.is_deleted = 0)',
+    '(up.is_disabled IS NULL OR up.is_disabled = 0)',
     'up.last_order_booking IS NOT NULL',
     `EXISTS (
       SELECT 1 FROM user_contact uc
@@ -75,11 +80,6 @@ async function computeNycStats(
   }
 
   const innerWhereString = innerWhereClauses.length > 0 ? `WHERE ${innerWhereClauses.join(' AND ')}` : '';
-
-  // Get NYC touchpoints config
-  const config = await fastify.prisma.crm.crmConfig.findUnique({
-    where: { key: 'NYC_TOUCHPOINTS_CONFIG' },
-  });
 
   const activeConfigs: Record<string, SafeAny[]> = config
     ? JSON.parse(config.value)

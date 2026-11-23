@@ -20,13 +20,16 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
       consultantId?: string;
       page?: number | string;
       limit?: number | string;
+      summaryOnly?: boolean | string;
     };
     const dateFrom = queryParams.dateFrom;
     const dateTo = queryParams.dateTo;
     const storeId = queryParams.storeId;
     const consultantId = queryParams.consultantId;
     const pageNum = Math.max(1, Number(queryParams.page) || 1);
-    const limitNum = queryParams.limit ? Math.max(1, Number(queryParams.limit)) : 10000;
+    const limitNum = queryParams.limit ? Math.min(10000, Math.max(1, Number(queryParams.limit))) : 500;
+    const summaryOnly =
+      queryParams.summaryOnly === true || queryParams.summaryOnly === 'true' || queryParams.summaryOnly === '1';
 
     const startStr = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
     const endStr = dateTo || new Date().toLocaleDateString('en-CA');
@@ -35,6 +38,13 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
     const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
 
     const activeCvIds = await getActiveCvIds(fastify);
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+    const cacheTtlMs = endPart < todayStr ? 300_000 : 30_000;
+    const cacheKey = `kpi:cv-xoay:${startPart}:${endPart}:${storeId || 'ALL'}:${consultantId || 'ALL'}:${pageNum}:${limitNum}:${summaryOnly ? 1 : 0}:${activeCvIds.join(',')}`;
+    const cached = fastify.cache?.get<CvXoayReportResponse>(cacheKey);
+    if (cached) {
+      return reply.send(cached);
+    }
 
     try {
       let whereCond = `ro.date BETWEEN '${startPart}' AND '${endPart}' AND o.order_state = 'Completed' AND os.assigned_staff_id > 0`;
@@ -143,7 +153,10 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
       `;
 
       const dbRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(rawSql);
-      const falMap = await getFalReadModelMap(
+      const monthStart = `${startPart.slice(0, 7)}-01`;
+      const pointsAccuMap = new Map<number, number>();
+
+      const falMapPromise = getFalReadModelMap(
         fastify,
         dbRows.map((r) => ({
           orderServiceId: Number(r.orderServiceId),
@@ -156,14 +169,11 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
         }))
       );
 
-      // Pre-query prior accumulated points in current month if startPart > 1st of month
-      const monthStart = `${startPart.slice(0, 7)}-01`;
-      const pointsAccuMap = new Map<number, number>();
-
-      if (startPart > monthStart) {
-        try {
-          // Optimized: Inner join on staff_bonus by (order_service_id, user_id, bonus_type) drops query from 9s to 33ms
-          const priorSql = `
+      const priorPromise =
+        startPart > monthStart
+          ? fastify.prisma.legacy
+              .$queryRawUnsafe<SafeAny[]>(
+                `
             SELECT 
               os.assigned_staff_id AS techId,
               SUM(sb.bonus_amount) AS priorPts
@@ -175,17 +185,20 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
               AND o.order_state = 'Completed'
               AND os.assigned_staff_id > 0
             GROUP BY os.assigned_staff_id
-          `;
-          const priorRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(priorSql);
-          for (const pr of priorRows) {
-            const techId = Number(pr.techId || 0);
-            const priorPts = Math.round(Number(pr.priorPts || 0));
-            if (techId > 0 && priorPts > 0) {
-              pointsAccuMap.set(techId, priorPts);
-            }
-          }
-        } catch (priorErr) {
-          fastify.log.warn(priorErr as SafeAny, 'Error fetching prior points for CV Xoay');
+          `
+              )
+              .catch((priorErr) => {
+                fastify.log.warn(priorErr as SafeAny, 'Error fetching prior points for CV Xoay');
+                return [];
+              })
+          : Promise.resolve<SafeAny[]>([]);
+
+      const [falMap, priorRows] = await Promise.all([falMapPromise, priorPromise]);
+      for (const pr of priorRows) {
+        const techId = Number(pr.techId || 0);
+        const priorPts = Math.round(Number(pr.priorPts || 0));
+        if (techId > 0 && priorPts > 0) {
+          pointsAccuMap.set(techId, priorPts);
         }
       }
 
@@ -233,7 +246,7 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
       const totalBonus = recordsDesc.reduce((sum, r) => sum + r.techBonus, 0);
       const totalPoints = recordsDesc.reduce((sum, r) => sum + r.techPoints, 0);
 
-      const paginatedData = recordsDesc.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+      const paginatedData = summaryOnly ? [] : recordsDesc.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
       const response: CvXoayReportResponse = {
         data: paginatedData,
@@ -245,6 +258,7 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
         },
       };
 
+      fastify.cache?.set(cacheKey, response, cacheTtlMs);
       return reply.send(response);
     } catch (err) {
       fastify.log.error(err as Error, 'Error fetching CV Xoay report');

@@ -9,6 +9,7 @@ import { mergeStaffDirectory, type DirectoryStaff } from '../services/staff-dire
 import { BookingPromotionService } from '../services/booking-promotion.service.js';
 import { CustomerAccessService } from '../services/customer-access.service.js';
 import { AllocationLedgerService } from '../../allocation/allocation-ledger.service.js';
+import { createEmptyReferralsResponse, getPaginatedReferrals } from './customer-referrals.helper.js';
 
 export async function registerCustomerMetaRoutes(fastify: FastifyInstance) {
   // GET /api/saved-filters
@@ -339,13 +340,9 @@ export async function registerCustomerMetaRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/customers/referrals
-  // Get list of all customers who referred someone and their details (Optimized)
+  // Get paginated list of customers who referred someone and their details (cached 60s)
   fastify.get('/customers/referrals', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
-      if (CustomerAccessService.isTelesales(request.user)) {
-        return [];
-      }
-
       const { page, pageSize, search, timeFilter } = request.query as {
         page?: string;
         pageSize?: string;
@@ -353,151 +350,19 @@ export async function registerCustomerMetaRoutes(fastify: FastifyInstance) {
         timeFilter?: string;
       };
 
-      const hasPagination = page !== undefined || pageSize !== undefined;
       const pageNum = Math.max(1, Number(page) || 1);
       const limit = Math.min(100, Math.max(1, Number(pageSize) || 20));
-      const offset = (pageNum - 1) * limit;
 
-      let timeWhere = '';
-      if (timeFilter === 'this_month') {
-        timeWhere = 'AND up.date_created >= DATE_FORMAT(NOW(), "%Y-%m-01")';
-      } else if (timeFilter === 'last_month') {
-        timeWhere =
-          'AND up.date_created >= DATE_FORMAT(NOW() - INTERVAL 1 MONTH, "%Y-%m-01") AND up.date_created < DATE_FORMAT(NOW(), "%Y-%m-01")';
-      } else if (timeFilter === 'this_year') {
-        timeWhere = 'AND up.date_created >= DATE_FORMAT(NOW(), "%Y-01-01")';
-      } else if (timeFilter === 'last_year') {
-        timeWhere =
-          'AND up.date_created >= DATE_FORMAT(NOW() - INTERVAL 1 YEAR, "%Y-01-01") AND up.date_created < DATE_FORMAT(NOW(), "%Y-01-01")';
+      if (CustomerAccessService.isTelesales(request.user)) {
+        return createEmptyReferralsResponse(pageNum, limit);
       }
 
-      let searchWhere = '';
-      if (search && search.trim()) {
-        const cleanSearch = search.trim().replace(/'/g, "''");
-        searchWhere = `AND (r_up.full_name LIKE '%${cleanSearch}%' OR r_uc.phone_number LIKE '%${cleanSearch}%')`;
-      }
-
-      // 1. Fetch referrers summary (with pagination LIMIT offset if enabled)
-      const referrers = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT 
-           up.referrer_user_id as referrerId,
-           r_up.full_name as referrerName,
-           COALESCE(r_uc.phone_number, '') as referrerPhone,
-           COUNT(*) as totalReferred
-         FROM user_profile up
-         INNER JOIN user r_u ON up.referrer_user_id = r_u.id
-         INNER JOIN user_profile r_up ON r_u.id = r_up.user_id
-         LEFT JOIN user_contact r_uc ON r_u.id = r_uc.user_id AND r_uc.is_disabled = 0
-         WHERE up.referrer_user_id IS NOT NULL AND up.is_deleted = 0 ${timeWhere} ${searchWhere}
-         GROUP BY up.referrer_user_id
-         ORDER BY totalReferred DESC
-         ${hasPagination ? `LIMIT ${limit} OFFSET ${offset}` : ''}`
-      );
-
-      const referrerIds = referrers.map((r) => Number(r.referrerId)).filter(Boolean);
-      if (referrerIds.length === 0) {
-        return [];
-      }
-      const refIdListStr = referrerIds.join(',');
-
-      // 2. Fetch referred friends for active page referrers only
-      const referredFriends = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT 
-           u.id as referredId,
-           up.full_name as referredName,
-           COALESCE(uc.phone_number, '') as referredPhone,
-           u.date_created as dateCreated,
-           up.referrer_user_id as referrerId
-         FROM user u
-         INNER JOIN user_profile up ON u.id = up.user_id
-         LEFT JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
-         WHERE up.referrer_user_id IN (${refIdListStr}) AND up.is_deleted = 0
-         ORDER BY u.id DESC`
-      );
-
-      // 3. Fetch referral transactions for active page referrers only
-      const referralTxs = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT user_id as referrerId, amount, tracking_key FROM user_balance_transaction 
-         WHERE template_id = 7 AND currency_id = 3 AND user_id IN (${refIdListStr})`
-      );
-
-      // Map of referrerId -> Map of referredId -> rewardAmount
-      const referrerRewardMaps = new Map<number, Map<number, number>>();
-      // Map of referrerId -> totalRewardDiamonds
-      const referrerTotalRewards = new Map<number, number>();
-
-      for (const tx of referralTxs) {
-        const refId = Number(tx.referrerId);
-        try {
-          if (tx.tracking_key) {
-            const keyObj = JSON.parse(tx.tracking_key);
-            const referredId = Number(keyObj.user_id);
-            if (referredId && refId) {
-              const amt = Number(tx.amount);
-
-              if (!referrerRewardMaps.has(refId)) {
-                referrerRewardMaps.set(refId, new Map<number, number>());
-              }
-              referrerRewardMaps.get(refId)!.set(referredId, amt);
-
-              referrerTotalRewards.set(refId, (referrerTotalRewards.get(refId) || 0) + amt);
-            }
-          }
-        } catch {
-          // ignore parsing error
-        }
-      }
-
-      // Map of referrerId -> Map of referredId -> friend_info (to collapse duplicate contacts)
-      const friendsGrouped = new Map<number, Map<number, SafeAny>>();
-
-      for (const rf of referredFriends) {
-        const refId = Number(rf.referrerId);
-        const friendId = Number(rf.referredId);
-        if (!refId || !friendId) continue;
-
-        if (!friendsGrouped.has(refId)) {
-          friendsGrouped.set(refId, new Map<number, SafeAny>());
-        }
-
-        const refMap = friendsGrouped.get(refId)!;
-        if (refMap.has(friendId)) {
-          const existing = refMap.get(friendId);
-          if (rf.referredPhone && !existing.phone.includes(rf.referredPhone)) {
-            existing.phone = existing.phone ? `${existing.phone}, ${rf.referredPhone}` : rf.referredPhone;
-          }
-        } else {
-          const refRewardMap = referrerRewardMaps.get(refId);
-          const rewardDiamonds = refRewardMap ? refRewardMap.get(friendId) || 0 : 0;
-
-          refMap.set(friendId, {
-            id: friendId,
-            name: rf.referredName || 'Khách hàng',
-            phone: rf.referredPhone || '',
-            dateCreated: rf.dateCreated ? new Date(rf.dateCreated).toISOString() : null,
-            rewardDiamonds,
-          });
-        }
-      }
-
-      const friendsMap = new Map<number, SafeAny[]>();
-      for (const [refId, refMap] of friendsGrouped.entries()) {
-        friendsMap.set(refId, Array.from(refMap.values()));
-      }
-
-      const result = referrers.map((r) => {
-        const refId = Number(r.referrerId);
-        return {
-          referrerId: refId,
-          referrerName: r.referrerName || 'Khách hàng',
-          referrerPhone: r.referrerPhone || '',
-          totalReferred: Number(r.totalReferred),
-          totalRewardDiamonds: referrerTotalRewards.get(refId) || 0,
-          referredUsers: friendsMap.get(refId) || [],
-        };
+      return await getPaginatedReferrals(fastify, {
+        page: pageNum,
+        pageSize: limit,
+        search,
+        timeFilter,
       });
-
-      return result;
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get referrals list error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Failed to retrieve referrals list' });

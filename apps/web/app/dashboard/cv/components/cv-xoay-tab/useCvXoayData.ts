@@ -59,7 +59,9 @@ export function useCvXoayData({ dateRange, selectedStore, selectedConsultant, co
       };
       const [res, previousRes] = await Promise.all([
         apiClient.kpi.getCvXoayReport({ dateFrom, dateTo, ...query }),
-        previousPeriod ? apiClient.kpi.getCvXoayReport({ ...previousPeriod.params, ...query }) : Promise.resolve(null),
+        previousPeriod
+          ? apiClient.kpi.getCvXoayReport({ ...previousPeriod.params, ...query, limit: 1, summaryOnly: true })
+          : Promise.resolve(null),
       ]);
 
       if (res) {

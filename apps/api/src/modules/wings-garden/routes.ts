@@ -45,7 +45,16 @@ export async function wingsGardenRoutes(fastify: FastifyInstance): Promise<void>
 
     try {
       const query = request.query as { warehouseId?: string; previewRole?: string };
+      const warehouseKey = Number(query?.warehouseId) === 41 ? 41 : 3;
+      const previewKey = String(query?.previewRole || '');
+      const cacheKey = `wings-garden:state:${actor.id}:${warehouseKey}:${previewKey}`;
+      const cached = fastify.cache?.get(cacheKey);
+      if (cached) {
+        return reply.send(cached);
+      }
+
       const payload = await getWingsGardenState(fastify, actor, query?.warehouseId, query?.previewRole);
+      fastify.cache?.set(cacheKey, payload, 20_000);
       return reply.send(payload);
     } catch (error: unknown) {
       const err = error as HttpErrorLike;
@@ -83,6 +92,7 @@ export async function wingsGardenRoutes(fastify: FastifyInstance): Promise<void>
     try {
       const body = (request.body || {}) as WingsGardenActionRequest;
       const result = await executeWingsGardenAction(fastify, actor, body);
+      fastify.cache?.invalidatePattern('^wings-garden:state:');
       return reply.send(result);
     } catch (error: unknown) {
       const err = error as HttpErrorLike;

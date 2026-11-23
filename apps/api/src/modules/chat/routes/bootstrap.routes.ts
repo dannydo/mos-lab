@@ -36,6 +36,42 @@ import {
   getUnreadSummaryCacheForFastify,
 } from '../chat-state-store.js';
 
+const DEFAULT_BOOTSTRAP_MESSAGE_LIMIT = 30;
+const MAX_BOOTSTRAP_MESSAGE_LIMIT = 500;
+const MAX_BOOTSTRAP_CACHE_ENTRIES = 60;
+
+interface BootstrapCacheEntry {
+  version: number;
+  staffFetchedAt: number;
+  accessUpdatedAt: string;
+  payload: MosChatBootstrapResponse;
+}
+
+const bootstrapCacheByFastify = new WeakMap<FastifyInstance, Map<string, BootstrapCacheEntry>>();
+
+function getBootstrapCacheForFastify(fastify: FastifyInstance): Map<string, BootstrapCacheEntry> {
+  let cache = bootstrapCacheByFastify.get(fastify);
+  if (!cache) {
+    cache = new Map();
+    bootstrapCacheByFastify.set(fastify, cache);
+  }
+  return cache;
+}
+
+function parseBootstrapMessageLimit(raw?: string): number {
+  if (raw === undefined || raw === '') {
+    return DEFAULT_BOOTSTRAP_MESSAGE_LIMIT;
+  }
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_BOOTSTRAP_MESSAGE_LIMIT;
+  }
+  if (parsed === 0) {
+    return 0;
+  }
+  return Math.min(MAX_BOOTSTRAP_MESSAGE_LIMIT, Math.max(1, Math.floor(parsed)));
+}
+
 export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
   // GET /api/chat/bootstrap
   fastify.get(
@@ -46,10 +82,15 @@ export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const user = (request as SafeAny).user as JwtUserPayload | undefined;
-        const query = (request.query || {}) as { sinceVersion?: string };
+        const query = (request.query || {}) as { sinceVersion?: string; messageLimit?: string };
         const clientVersion = Number(query.sinceVersion) || 0;
+        const messageLimit = parseBootstrapMessageLimit(query.messageLimit);
 
-        const state = await loadChatState(fastify);
+        const [state, staffDirectory, wfState] = await Promise.all([
+          loadChatState(fastify),
+          loadStaffDirectoryCached(fastify),
+          loadWorkflowState(fastify),
+        ]);
         const { conversations, tasks, accessConfig, userPrefsByUserKey } = state;
         const missionMutated = await ChatMissionBridgeService.syncLinkedMissionsIntoChatState(
           fastify,
@@ -64,8 +105,9 @@ export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
           ]);
         }
         const version = getMemoryChatVersion() || state.version;
+        const staffFetchedAt = getMemoryStaffFetchedAt() || 0;
+        const accessUpdatedAt = String(accessConfig?.updatedAt || '');
 
-        const staffDirectory = await loadStaffDirectoryCached(fastify);
         const canAccessChat = evaluateCanUserAccessMosChat(user, staffDirectory, accessConfig);
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
         const userPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
@@ -90,15 +132,27 @@ export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
           } satisfies MosChatBootstrapResponse;
         }
 
+        const bootstrapCache = getBootstrapCacheForFastify(fastify);
+        const cacheKey = `${Number(user?.id || 0)}:${String(user?.username || '').toLowerCase()}:${String(user?.role || '').toLowerCase()}:${messageLimit}`;
+        const cached = !missionMutated && hasMemoryChatCache() ? bootstrapCache.get(cacheKey) : undefined;
+        if (
+          cached &&
+          cached.version === version &&
+          cached.staffFetchedAt === staffFetchedAt &&
+          cached.accessUpdatedAt === accessUpdatedAt
+        ) {
+          return cached.payload;
+        }
+
         const userConversations = filterAndFormatConversationsForUser(
           conversations,
           user,
           staffDirectory,
           userPrefs,
-          userPrefsByUserKey
+          userPrefsByUserKey,
+          { messageLimit }
         );
         const userTasks = filterTasksForUser(tasks, conversations, user, staffDirectory);
-        const wfState = await loadWorkflowState(fastify);
         const wfInstanceMap = new Map<string, MosChatWorkflowInstance>();
         for (const inst of wfState.instances) {
           wfInstanceMap.set(inst.id, inst);
@@ -124,6 +178,20 @@ export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
           workflowInstances: wfState.instances,
           storageEngine: 'PRISMA_RELATIONAL',
         };
+
+        if (hasMemoryChatCache()) {
+          if (bootstrapCache.size >= MAX_BOOTSTRAP_CACHE_ENTRIES) {
+            const oldestKey = bootstrapCache.keys().next().value;
+            if (oldestKey !== undefined) bootstrapCache.delete(oldestKey);
+          }
+          bootstrapCache.set(cacheKey, {
+            version,
+            staffFetchedAt,
+            accessUpdatedAt,
+            payload,
+          });
+        }
+
         return payload;
       } catch (err: SafeAny) {
         fastify.log.error('Chat bootstrap error:', err);

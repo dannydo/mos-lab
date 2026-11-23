@@ -6,6 +6,7 @@ import type {
   MosChatDeltaSyncResponse,
   MosChatMessage,
   MosChatMissionSummary,
+  MosChatPaginatedMessagesResponse,
   MosChatRealtimeEvent,
   MosChatTaskItem,
   MosChatThreadReply,
@@ -106,10 +107,7 @@ export function mergeThreadReplies(
   );
 }
 
-export function mergeSingleChatMessage(
-  existing: MosChatMessage | undefined,
-  incoming: MosChatMessage
-): MosChatMessage {
+export function mergeSingleChatMessage(existing: MosChatMessage | undefined, incoming: MosChatMessage): MosChatMessage {
   if (!existing) return incoming;
   const mergedThread = mergeThreadReplies(existing.thread, incoming.thread);
   const prevDeleted = Boolean(existing.isDeleted);
@@ -456,4 +454,69 @@ export function useChatRealtimeSync(options: UseChatRealtimeSyncOptions) {
     triggerDeltaSync,
     getLastCursor: () => cursorRef.current,
   };
+}
+
+export function mergeWindowedBootstrapConversations(
+  prevConversations: MosChatConversation[],
+  incomingConversations: MosChatConversation[]
+): MosChatConversation[] {
+  if (!Array.isArray(prevConversations) || prevConversations.length === 0) {
+    return incomingConversations;
+  }
+  const prevById = new Map<string, MosChatConversation>();
+  for (const conv of prevConversations) {
+    prevById.set(conv.id, conv);
+  }
+
+  return incomingConversations.map((incoming) => {
+    const prev = prevById.get(incoming.id);
+    if (!prev || !prev.messages?.length || !incoming.messages?.length || !incoming.hasMoreMessages) {
+      return incoming;
+    }
+
+    const incomingIds = new Set(incoming.messages.map((m) => m.id));
+    const firstOverlapIdx = prev.messages.findIndex((m) => incomingIds.has(m.id));
+    if (firstOverlapIdx <= 0) {
+      return incoming;
+    }
+
+    const olderPrefix = prev.messages.slice(0, firstOverlapIdx).filter((m) => !incomingIds.has(m.id));
+    if (olderPrefix.length === 0) {
+      return incoming;
+    }
+
+    const mergedMessages = [...olderPrefix, ...incoming.messages];
+    const totalMessageCount = Math.max(incoming.totalMessageCount ?? mergedMessages.length, mergedMessages.length);
+    const hasMoreMessages = Boolean(incoming.hasMoreMessages) && mergedMessages.length < totalMessageCount;
+    return {
+      ...incoming,
+      messages: mergedMessages,
+      totalMessageCount,
+      hasMoreMessages,
+      oldestLoadedMessageId: mergedMessages[0]?.id ?? incoming.oldestLoadedMessageId ?? null,
+    };
+  });
+}
+
+export function prependOlderConversationMessages(
+  conversations: MosChatConversation[],
+  conversationId: string,
+  page: Pick<MosChatPaginatedMessagesResponse, 'messages' | 'hasMore' | 'nextCursor'>
+): MosChatConversation[] {
+  return conversations.map((conv) => {
+    if (conv.id !== conversationId) return conv;
+    const existingMessages = conv.messages || [];
+    const existingIds = new Set(existingMessages.map((m) => m.id));
+    const olderMsgs = (page.messages || []).filter((m) => !existingIds.has(m.id));
+    const mergedMessages = [...olderMsgs, ...existingMessages];
+    const totalMessageCount = Math.max(conv.totalMessageCount ?? mergedMessages.length, mergedMessages.length);
+    const hasMoreMessages = Boolean(page.hasMore) && mergedMessages.length < totalMessageCount;
+    return {
+      ...conv,
+      messages: mergedMessages,
+      totalMessageCount,
+      hasMoreMessages,
+      oldestLoadedMessageId: page.nextCursor || mergedMessages[0]?.id || null,
+    };
+  });
 }

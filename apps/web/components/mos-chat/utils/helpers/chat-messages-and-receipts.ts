@@ -329,11 +329,14 @@ export function getMessageReadBreakdown(
   if (!conv || !conv.readReceipts || conv.readReceipts.length === 0 || conv.isSelf) {
     return { seenBy: [], unseenBy: [] };
   }
-  const visibleMessages = (conv.messages || []).filter((m) => !m.deletedAt && !m.isDeleted);
+  const rawMessages = conv.messages || [];
+  const hiddenOlderCount = Math.max(0, (conv.totalMessageCount ?? rawMessages.length) - rawMessages.length);
+  const visibleMessages = rawMessages.filter((m) => !m.deletedAt && !m.isDeleted);
   const msgIdx = visibleMessages.findIndex((m) => m.id === msg.id);
   if (msgIdx < 0) {
     return { seenBy: [], unseenBy: [] };
   }
+  const absoluteOrder = hiddenOlderCount + msgIdx + 1;
   const myStaffId = Number(currentUserId || 0);
   const rawReceipts = conv.readReceipts.filter(
     (r) => r.staffId !== myStaffId && !doesReceiptMatchAuthor(r.staffId, r.displayName, msg.senderId, msg.senderName)
@@ -347,8 +350,8 @@ export function getMessageReadBreakdown(
     }
   }
   const otherReceipts = Array.from(receiptMap.values());
-  const seenBy = otherReceipts.filter((r) => r.readCount >= msgIdx + 1);
-  const unseenBy = otherReceipts.filter((r) => r.readCount < msgIdx + 1);
+  const seenBy = otherReceipts.filter((r) => r.readCount >= absoluteOrder);
+  const unseenBy = otherReceipts.filter((r) => r.readCount < absoluteOrder);
   return { seenBy, unseenBy };
 }
 
@@ -399,13 +402,16 @@ export function calculateStoppedReadersByMsgId(
   if (!conv || !conv.readReceipts || conv.readReceipts.length === 0 || conv.isSelf) {
     return out;
   }
-  const visibleMessages = (conv.messages || []).filter((m) => !m.deletedAt && !m.isDeleted);
+  const rawMessages = conv.messages || [];
+  const hiddenOlderCount = Math.max(0, (conv.totalMessageCount ?? rawMessages.length) - rawMessages.length);
+  const visibleMessages = rawMessages.filter((m) => !m.deletedAt && !m.isDeleted);
   if (visibleMessages.length === 0) return out;
   const myStaffId = Number(currentUserId || 0);
   for (const r of conv.readReceipts) {
     if (r.staffId === myStaffId || r.readCount <= 0) continue;
-    const maxIdx = Math.min(r.readCount, visibleMessages.length) - 1;
-    for (let i = maxIdx; i >= 0; i--) {
+    const localMaxIdx = Math.min(r.readCount - hiddenOlderCount, visibleMessages.length) - 1;
+    if (localMaxIdx < 0) continue;
+    for (let i = localMaxIdx; i >= 0; i--) {
       const candidate = visibleMessages[i];
       if (!candidate) continue;
       if (!doesReceiptMatchAuthor(r.staffId, r.displayName, candidate.senderId, candidate.senderName)) {

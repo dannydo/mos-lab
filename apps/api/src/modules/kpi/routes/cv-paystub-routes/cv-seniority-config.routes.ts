@@ -43,6 +43,7 @@ export function registerCvSeniorityConfigRoutes(fastify: FastifyInstance) {
           update: { value: jsonValue, updatedAt: new Date() },
           create: { key: 'CV_SENIORITY_BONUS_CONFIG', value: jsonValue },
         });
+        fastify.cache?.invalidatePattern('^kpi:cv-paystub:');
         return reply.send({ success: true, rules: cleanRules });
       } catch (err) {
         fastify.log.error(err as Error, 'Save CV seniority config error');

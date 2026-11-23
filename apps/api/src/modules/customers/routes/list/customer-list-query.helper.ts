@@ -223,7 +223,7 @@ export async function buildCustomerListSql({
   if (trash === 'true') {
     innerWhereClauses.push('up.is_deleted = 1');
   } else {
-    innerWhereClauses.push('COALESCE(up.is_deleted, 0) = 0');
+    innerWhereClauses.push('(up.is_deleted IS NULL OR up.is_deleted = 0)');
   }
 
   allowedUserIds = subtractExcludedUserIds(allowedUserIds, excludedUserIds);

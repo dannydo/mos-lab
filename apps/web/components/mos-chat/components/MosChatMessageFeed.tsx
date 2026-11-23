@@ -114,6 +114,7 @@ export interface MosChatMessageFeedProps {
   onJumpToForwardedSource?: (sourceConversationId: string, sourceMessageId: string) => void;
   handleOpenReactionUsers?: (target: SafeAny, initialEmoji?: string) => void;
   staffDirectory?: MosChatStaffMember[];
+  onLoadOlderMessages?: (conversationId: string) => Promise<void> | void;
 }
 
 export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
@@ -216,8 +217,10 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
     onJumpToForwardedSource,
     handleOpenReactionUsers,
     staffDirectory = [],
+    onLoadOlderMessages,
   }) => {
     const [openMoreMenuMsgId, setOpenMoreMenuMsgId] = useState<string | null>(null);
+    const [loadingOlderConvId, setLoadingOlderConvId] = useState<string | null>(null);
 
     const taskByMsgOrTaskId = useMemo(() => {
       const map = new Map<string, MosChatTaskItem>();
@@ -270,6 +273,29 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
         />
 
         <div ref={mainMessagesContainerRef} className="flex-1 overflow-y-auto py-3">
+          {activeConversation?.hasMoreMessages && onLoadOlderMessages && (
+            <div className="flex justify-center pb-3 pt-1">
+              <button
+                type="button"
+                disabled={loadingOlderConvId === activeConversation.id}
+                onClick={() => {
+                  const convId = activeConversation.id;
+                  setLoadingOlderConvId(convId);
+                  Promise.resolve(onLoadOlderMessages(convId)).finally(() => {
+                    setLoadingOlderConvId((curr) => (curr === convId ? null : curr));
+                  });
+                }}
+                className="px-3 py-1 rounded-full text-xs font-medium transition-opacity disabled:opacity-60"
+                style={{
+                  background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.06)',
+                  border: `1px solid ${borderColor}`,
+                  color: token.colorTextSecondary,
+                }}
+              >
+                {loadingOlderConvId === activeConversation.id ? 'Đang tải tin nhắn cũ...' : 'Tải thêm tin nhắn cũ'}
+              </button>
+            </div>
+          )}
           {visibleMessages.map((m, idx, filteredMessages) => {
             const linkedTask = (m.taskId ? taskByMsgOrTaskId.get(m.taskId) : undefined) || taskByMsgOrTaskId.get(m.id);
             const isMine = isMessageFromCurrentUser(m);

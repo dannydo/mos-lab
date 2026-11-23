@@ -17,7 +17,13 @@ import type {
 import { apiClient } from '../../../lib/api-client';
 import { STAFF_DIRECTORY_CACHE_KEY } from '../constants/chat-constants';
 import { useMosChatBridgeListener } from '../store/mos-chat-bridge';
-import { mergeDeltaConversations, mergeDeltaTasks, useChatRealtimeSync } from '../store/useChatRealtimeSync';
+import {
+  mergeDeltaConversations,
+  mergeDeltaTasks,
+  mergeWindowedBootstrapConversations,
+  prependOlderConversationMessages,
+  useChatRealtimeSync,
+} from '../store/useChatRealtimeSync';
 import type { MosChatActiveSubtab } from '../types/mos-chat-types';
 import { dispatchConversationNotifications, loadNotifiedBuzzKeys } from '../utils/portal-notification-dispatch';
 import { useMosChatVoiceCall } from '../utils/useMosChatVoiceCall';
@@ -112,6 +118,8 @@ export function usePortalBootstrapAndRealtime({
   const staffDirectoryHashRef = useRef<string>('');
   const staffDirectoryLenRef = useRef<number>(staffDirectory.length);
   staffDirectoryLenRef.current = staffDirectory.length;
+  const oldestCursorByConvRef = useRef<Record<string, string | null>>({});
+  const manuallyPagedConvsRef = useRef<Set<string>>(new Set());
 
   // Keep volatile snapshot values in refs so fetchBootstrap stays identity-stable and polling timers do not reset
   const userPrefsRef = useRef(userPrefs);
@@ -241,7 +249,12 @@ export function usePortalBootstrapAndRealtime({
           lastVersionRef.current = res.version;
         }
         if (Array.isArray(res?.conversations)) {
-          setConversations(res.conversations);
+          for (const conv of res.conversations) {
+            if (!manuallyPagedConvsRef.current.has(conv.id)) {
+              oldestCursorByConvRef.current[conv.id] = conv.oldestLoadedMessageId || conv.messages?.[0]?.id || null;
+            }
+          }
+          setConversations((prev) => mergeWindowedBootstrapConversations(prev, res.conversations));
 
           if (pendingNavRef.current) {
             const pending = pendingNavRef.current;
@@ -413,9 +426,32 @@ export function usePortalBootstrapAndRealtime({
     };
   }, [broadcastChannelRef, fetchBootstrap]);
 
+  const loadOlderMessages = useCallback(
+    async (conversationId: string) => {
+      const beforeCursor = oldestCursorByConvRef.current[conversationId];
+      if (!conversationId || !beforeCursor) return;
+      try {
+        const page = await apiClient.chat.listConversationMessages(conversationId, {
+          before: beforeCursor,
+          limit: 30,
+        });
+        manuallyPagedConvsRef.current.add(conversationId);
+        const nextOldest = page?.messages?.[0]?.id || page?.nextCursor || null;
+        if (nextOldest) {
+          oldestCursorByConvRef.current[conversationId] = nextOldest;
+        }
+        setConversations((prev) => prependOlderConversationMessages(prev, conversationId, page));
+      } catch {
+        // Ignore transient network errors when loading older history
+      }
+    },
+    [setConversations]
+  );
+
   return {
     notifiedBuzzIdsRef,
     fetchBootstrap,
+    loadOlderMessages,
     voiceCall,
   };
 }
