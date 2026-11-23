@@ -5,8 +5,6 @@
   "maxDotAgentsMdBytes": 1500,
   "files": {
     "apps/api/src/modules/bug-reports/inbox-implementation.service.ts": 4123,
-    "apps/web/app/dashboard/academy-leads/components/AcademyTalentWorkshopDrawer.tsx": 3045,
-    "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx": 2891,
-    "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx": 3022
+    "apps/web/app/dashboard/academy-leads/components/AcademyTalentWorkshopDrawer.tsx": 3045
   }
 }

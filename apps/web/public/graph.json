@@ -59271,8 +59271,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 153564,
-        "lineCount": 2891,
+        "sizeBytes": 4391,
+        "lineCount": 116,
         "ext": ".tsx"
       }
     },
@@ -59338,6 +59338,175 @@
       "metadata": {
         "sizeBytes": 6725,
         "lineCount": 207,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationCultureAndQaGates.tsx",
+      "type": "File",
+      "label": "SimulationCultureAndQaGates.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationCultureAndQaGates.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14689,
+        "lineCount": 318,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationFinancialJackpotCard.tsx",
+      "type": "File",
+      "label": "SimulationFinancialJackpotCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationFinancialJackpotCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 21471,
+        "lineCount": 426,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationMobileBottomBar.tsx",
+      "type": "File",
+      "label": "SimulationMobileBottomBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationMobileBottomBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3130,
+        "lineCount": 82,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationMobileQuestBadges.tsx",
+      "type": "File",
+      "label": "SimulationMobileQuestBadges.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationMobileQuestBadges.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5954,
+        "lineCount": 155,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationPerformanceGates.tsx",
+      "type": "File",
+      "label": "SimulationPerformanceGates.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationPerformanceGates.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13671,
+        "lineCount": 291,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationProfileHeader.tsx",
+      "type": "File",
+      "label": "SimulationProfileHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationProfileHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15907,
+        "lineCount": 327,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationQuestGateCard.tsx",
+      "type": "File",
+      "label": "SimulationQuestGateCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationQuestGateCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2942,
+        "lineCount": 95,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationQuestGateList.tsx",
+      "type": "File",
+      "label": "SimulationQuestGateList.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationQuestGateList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2476,
+        "lineCount": 76,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationQuestsPanel.tsx",
+      "type": "File",
+      "label": "SimulationQuestsPanel.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationQuestsPanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13828,
+        "lineCount": 296,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationStatusAndIcons.tsx",
+      "type": "File",
+      "label": "SimulationStatusAndIcons.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationStatusAndIcons.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3351,
+        "lineCount": 133,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationWhatIfSliders.tsx",
+      "type": "File",
+      "label": "SimulationWhatIfSliders.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationWhatIfSliders.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 18229,
+        "lineCount": 424,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/simulationTypesAndHelpers.ts",
+      "type": "File",
+      "label": "simulationTypesAndHelpers.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/simulationTypesAndHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 19681,
+        "lineCount": 527,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/useRealStaffSimulationState.ts",
+      "type": "File",
+      "label": "useRealStaffSimulationState.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/useRealStaffSimulationState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6486,
+        "lineCount": 216,
         "ext": ".ts"
       }
     },
@@ -61806,8 +61975,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 151608,
-        "lineCount": 3022,
+        "sizeBytes": 5671,
+        "lineCount": 192,
         "ext": ".tsx"
       }
     },
@@ -61913,6 +62082,227 @@
         "sizeBytes": 8744,
         "lineCount": 258,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvAllowanceModal.tsx",
+      "type": "File",
+      "label": "CvAllowanceModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvAllowanceModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4602,
+        "lineCount": 130,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvIncomeForecastSubtext.tsx",
+      "type": "File",
+      "label": "CvIncomeForecastSubtext.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvIncomeForecastSubtext.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2140,
+        "lineCount": 56,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvIncomeSummaryCards.tsx",
+      "type": "File",
+      "label": "CvIncomeSummaryCards.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvIncomeSummaryCards.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6845,
+        "lineCount": 156,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubAllowanceAndNetRows.tsx",
+      "type": "File",
+      "label": "CvPaystubAllowanceAndNetRows.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubAllowanceAndNetRows.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 17908,
+        "lineCount": 326,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubDetailModal.tsx",
+      "type": "File",
+      "label": "CvPaystubDetailModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubDetailModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8865,
+        "lineCount": 187,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubSelfManagedSection.tsx",
+      "type": "File",
+      "label": "CvPaystubSelfManagedSection.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubSelfManagedSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13648,
+        "lineCount": 247,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubTableCard.tsx",
+      "type": "File",
+      "label": "CvPaystubTableCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubTableCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6874,
+        "lineCount": 193,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubTimeAndBonusRows.tsx",
+      "type": "File",
+      "label": "CvPaystubTimeAndBonusRows.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubTimeAndBonusRows.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 20712,
+        "lineCount": 369,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvSelfManagedSubRow.tsx",
+      "type": "File",
+      "label": "CvSelfManagedSubRow.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvSelfManagedSubRow.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7447,
+        "lineCount": 137,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvSeniorityConfigPopover.tsx",
+      "type": "File",
+      "label": "CvSeniorityConfigPopover.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvSeniorityConfigPopover.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4377,
+        "lineCount": 118,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileList.tsx",
+      "type": "File",
+      "label": "CvThuNhapMobileList.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11466,
+        "lineCount": 228,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvWorkLogModal.tsx",
+      "type": "File",
+      "label": "CvWorkLogModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvWorkLogModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9687,
+        "lineCount": 260,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/cvThuNhapColumns.tsx",
+      "type": "File",
+      "label": "cvThuNhapColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/cvThuNhapColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13201,
+        "lineCount": 331,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/cvThuNhapUtils.ts",
+      "type": "File",
+      "label": "cvThuNhapUtils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/cvThuNhapUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11797,
+        "lineCount": 337,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/useCvIncomeModals.ts",
+      "type": "File",
+      "label": "useCvIncomeModals.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/useCvIncomeModals.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9205,
+        "lineCount": 273,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/useCvPaystubData.ts",
+      "type": "File",
+      "label": "useCvPaystubData.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/useCvPaystubData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4920,
+        "lineCount": 142,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/useCvSeniorityConfig.ts",
+      "type": "File",
+      "label": "useCvSeniorityConfig.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/useCvSeniorityConfig.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4076,
+        "lineCount": 125,
+        "ext": ".ts"
       }
     },
     {
@@ -110746,13 +111136,6 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx:ws:packages/shared",
-      "source": "file:apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
       "id": "edge:file:apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "target": "ws:packages/shared",
@@ -110776,6 +111159,83 @@
     {
       "id": "edge:file:apps/web/app/dashboard/career-path/components/career-config-drawer/careerConfigTypesAndHelpers.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/careerConfigTypesAndHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationCultureAndQaGates.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationCultureAndQaGates.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationFinancialJackpotCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationFinancialJackpotCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationMobileBottomBar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationMobileBottomBar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationMobileQuestBadges.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationMobileQuestBadges.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationPerformanceGates.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationPerformanceGates.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationProfileHeader.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationProfileHeader.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationQuestGateList.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationQuestGateList.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationQuestsPanel.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationQuestsPanel.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationStatusAndIcons.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/SimulationStatusAndIcons.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/simulationTypesAndHelpers.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/simulationTypesAndHelpers.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/useRealStaffSimulationState.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/real-staff-simulation-card/useRealStaffSimulationState.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -111651,6 +112111,97 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cv/components/cv-speed/CvSpeedTrendLineChart.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cv/components/cv-speed/CvSpeedTrendLineChart.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvAllowanceModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvAllowanceModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubAllowanceAndNetRows.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubAllowanceAndNetRows.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubDetailModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubDetailModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubSelfManagedSection.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubSelfManagedSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubTableCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubTableCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubTimeAndBonusRows.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubTimeAndBonusRows.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvSelfManagedSubRow.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvSelfManagedSubRow.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileList.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileList.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvWorkLogModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvWorkLogModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/cvThuNhapColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/cvThuNhapColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/cvThuNhapUtils.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/cvThuNhapUtils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/useCvIncomeModals.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/useCvIncomeModals.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/useCvPaystubData.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/useCvPaystubData.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -128590,8 +129141,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 5865,
-    "totalEdges": 7580,
+    "totalNodes": 5895,
+    "totalEdges": 7603,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -128600,14 +129151,14 @@
       "SharedType": 1573,
       "DesignToken": 12,
       "UIComponent": 780,
-      "File": 2471
+      "File": 2501
     },
     "edgeTypeCounts": {
       "EXPORTS": 1768,
       "HANDLES_ROUTE": 777,
       "RENDERS": 846,
       "USES_TOKEN": 782,
-      "IMPORTS": 1502,
+      "IMPORTS": 1525,
       "QUERIES_MODEL": 602,
       "API_CALL": 1303
     },
