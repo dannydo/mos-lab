@@ -96,6 +96,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     <AdaptiveDrawer
       intent="form"
       className="booking-reschedule-overlay"
+      maskClosable={false}
       width={isCompact ? '100%' : 720}
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#D4A84B' }}>

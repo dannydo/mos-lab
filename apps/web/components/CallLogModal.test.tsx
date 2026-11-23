@@ -40,6 +40,7 @@ vi.mock('../context/OmiCallContext', () => ({
 describe('CallLogModal - Anti-Rage-Click & Quick Presets', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
     apiMocks.createCall.mockResolvedValue({ id: 999, success: true });
     apiMocks.listCustomers.mockResolvedValue({ data: [{ id: 1001, fullName: 'Nguyễn Văn Test' }] });
   });
@@ -190,6 +191,54 @@ describe('CallLogModal - Anti-Rage-Click & Quick Presets', () => {
           note: 'Khách yêu cầu gọi lại chiều mai',
         })
       );
+    });
+    expect(sessionStorage.getItem('mos_call_log_note_draft:1001')).toBeNull();
+  });
+
+  it('restores unsaved call note draft if modal closes and reopens before saving', async () => {
+    const { rerender } = render(
+      <CallLogModal
+        visible={true}
+        customerName="Khách Draft"
+        legacyUserId={2002}
+        onCancel={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    const textarea = screen.getByPlaceholderText(/Nhập ghi chú chi tiết về cuộc hội thoại/i) as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: 'Đang nhập ghi chú cuộc gọi dở' } });
+
+    await waitFor(() => {
+      expect(sessionStorage.getItem('mos_call_log_note_draft:2002')).toBe(
+        JSON.stringify('Đang nhập ghi chú cuộc gọi dở')
+      );
+    });
+
+    // Simulate modal closing unexpectedly and reopening
+    rerender(
+      <CallLogModal
+        visible={false}
+        customerName="Khách Draft"
+        legacyUserId={2002}
+        onCancel={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+    rerender(
+      <CallLogModal
+        visible={true}
+        customerName="Khách Draft"
+        legacyUserId={2002}
+        onCancel={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(
+        (screen.getByPlaceholderText(/Nhập ghi chú chi tiết về cuộc hội thoại/i) as HTMLTextAreaElement).value
+      ).toBe('Đang nhập ghi chú cuộc gọi dở');
     });
   });
 });

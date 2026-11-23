@@ -233,16 +233,6 @@ export function useTodayFetching({
     applySandboxDashboardData();
   }, [sandbox.isSandbox, applySandboxDashboardData]);
 
-  // When switching back to live data, immediately fetch real data
-  useEffect(() => {
-    if (sandbox.mode === 'live' && selectedDate) {
-      void fetchDashboardData(selectedDate, dateRangeMode);
-      if (showRevenueView) {
-        void fetchRevenueData(selectedDate, dateRangeMode);
-      }
-    }
-  }, [sandbox.mode, selectedDate, dateRangeMode, showRevenueView, fetchDashboardData, fetchRevenueData]);
-
   // Instantly refresh today dashboard tables when popup/modal updates data
   useEffect(() => {
     const handleDataChanged = () => {

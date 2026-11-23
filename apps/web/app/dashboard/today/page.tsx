@@ -2,7 +2,7 @@
 // Touch for Turbopack cache refresh - tab labels update
 
 import '../../suppress-warnings';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Col, Row, Spin, message, theme } from 'antd';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -50,6 +50,9 @@ function TodayDashboardContent() {
     onSuccess: (msg) => message.success(msg),
     onError: (msg) => message.error(msg),
   });
+  const handleCloseCustomerDrawer = useCallback(() => {
+    data.setDrawerVisible(false);
+  }, [data.setDrawerVisible]);
 
   if (!data.selectedDate) {
     return (
@@ -92,6 +95,7 @@ function TodayDashboardContent() {
         autoRefresh={data.autoRefresh}
         refreshInterval={data.refreshInterval}
         refreshResetSignal={data.refreshResetSignal}
+        pauseAutoRefresh={data.drawerVisible || data.teamModalVisible}
         mainViewMode={mainViewMode}
         sandboxMode={sandbox.mode}
         isSandbox={sandbox.isSandbox}
@@ -226,7 +230,7 @@ function TodayDashboardContent() {
       <CustomerDetailDrawer
         open={data.drawerVisible}
         customerId={data.selectedCustomer?.customerId || null}
-        onClose={() => data.setDrawerVisible(false)}
+        onClose={handleCloseCustomerDrawer}
         onUpdate={data.handleRefresh}
       />
 

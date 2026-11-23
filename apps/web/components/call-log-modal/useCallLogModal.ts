@@ -8,6 +8,7 @@ import { useOmiCall } from '~/context/OmiCallContext';
 import { useTheme } from '~/context/ThemeContext';
 import { apiClient } from '~/lib/api-client';
 import { notifyCallLogSaved } from '~/lib/call-events';
+import { clearSessionDraft, readSessionDraft, writeSessionDraft } from '~/lib/note-draft-storage';
 import {
   buildFormSubmitPayload,
   buildQuickActionPayload,
@@ -66,6 +67,13 @@ export function useCallLogModal({
     propCustomerName,
     propPlanId,
   });
+  const noteDraftKey =
+    legacyUserId && legacyUserId > 0
+      ? `mos_call_log_note_draft:${legacyUserId}`
+      : activeCall?.phone
+        ? `mos_call_log_note_draft:phone:${activeCall.phone}`
+        : null;
+  const watchedNote = Form.useWatch('note', form);
 
   const focusNoteInput = useCallback((delayMs: number) => {
     return setTimeout(() => {
@@ -79,19 +87,32 @@ export function useCallLogModal({
     }, delayMs);
   }, []);
 
-  // 1. Initial defaults on open
+  // 1. Initial defaults on open (restore any unsaved note draft for this target)
+  const prevVisibleRef = useRef(false);
   useEffect(() => {
-    if (!visible) return;
+    const justOpened = visible && !prevVisibleRef.current;
+    prevVisibleRef.current = visible;
+    if (!justOpened) return;
     form.resetFields();
     const defaults = resolveInitialCallDefaults(activeCall, resolvedLog, callDuration);
+    const savedNoteDraft = readSessionDraft<string>(noteDraftKey);
     form.setFieldsValue({
       callResult: defaults.callResult,
       outcome: defaults.outcome,
-      note: defaults.note,
+      note: savedNoteDraft && savedNoteDraft.trim().length > 0 ? savedNoteDraft : defaults.note,
     });
     setCallResult(defaults.callResult);
     setOutcome(defaults.outcome);
-  }, [visible, form]);
+  }, [visible, form, activeCall, resolvedLog, callDuration, noteDraftKey]);
+
+  useEffect(() => {
+    if (!visible || !noteDraftKey || watchedNote === undefined) return;
+    if (String(watchedNote).trim().length > 0) {
+      writeSessionDraft<string>(noteDraftKey, String(watchedNote));
+    } else {
+      clearSessionDraft(noteDraftKey);
+    }
+  }, [visible, noteDraftKey, watchedNote]);
 
   // 2. Update when resolvedLog is loaded if user hasn't touched the fields yet
   useEffect(() => {
@@ -193,6 +214,7 @@ export function useCallLogModal({
 
       const data = buildPayload(targetUserId);
       const savedLog = await apiClient.calls.create(data as CreateCallRequest);
+      clearSessionDraft(noteDraftKey);
       message.success(successMessage);
       notifyCallLogSaved({
         customerId: targetUserId,

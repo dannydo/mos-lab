@@ -87,6 +87,7 @@ export const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
     <AdaptiveModal
       intent="confirm"
       className="booking-cancel-modal"
+      maskClosable={false}
       open={open}
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isDark ? '#f87171' : '#dc2626' }}>

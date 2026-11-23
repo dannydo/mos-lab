@@ -114,6 +114,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
       intent="detail"
       className="customer-detail-overlay"
       zIndex={zIndex}
+      maskClosable={!isNoteModalOpen && !isEditModalOpen && !rescheduleModalVisible && !bookingWizardOpen}
       title={
         customer && (
           <CustomerDetailHeader
