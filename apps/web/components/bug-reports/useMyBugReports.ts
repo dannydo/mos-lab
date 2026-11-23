@@ -74,7 +74,7 @@ export function useMyBugReports(enabled: boolean, isSurfaceOpen = true) {
     if (!enabled) return;
     let initialTimer: number | undefined;
     if (isSurfaceOpen) {
-      void refresh();
+      void refresh({ force: true });
     } else {
       initialTimer = window.setTimeout(() => {
         if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
@@ -189,7 +189,7 @@ export function useMyBugReports(enabled: boolean, isSurfaceOpen = true) {
 
   const markNotificationsRead = React.useCallback(
     async (notificationIds?: number[]) => {
-      if (!unreadCount) return;
+      if (!unreadCount && !notificationIds?.length) return;
       await apiClient.bugReports.markNotificationsRead({ notificationIds });
       const marked = notificationIds?.length ? new Set(notificationIds) : null;
       const now = new Date().toISOString();

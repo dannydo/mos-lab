@@ -2,7 +2,7 @@
 
 import React from 'react';
 import dynamic from 'next/dynamic';
-import { Button, notification } from 'antd';
+import { Button, notification as notificationStatic } from 'antd';
 import { usePathname } from 'next/navigation';
 import {
   BUG_REPORT_Z_INDEX,
@@ -36,6 +36,9 @@ const BugReportWorkflowModal = dynamic(() => import('./BugReportWorkflowGuide').
  */
 export function BugReportSurface() {
   const pathname = usePathname();
+  const [notificationApi, notificationContextHolder] = notificationStatic.useNotification({
+    maxCount: 3,
+  });
   const [open, setOpen] = React.useState(false);
   const [hasOpenedModal, setHasOpenedModal] = React.useState(false);
   const [workflowOpen, setWorkflowOpen] = React.useState(false);
@@ -127,7 +130,7 @@ export function BugReportSurface() {
   );
 
   const showHistory = React.useCallback(
-    (key?: string | null) => {
+    (key?: string | null, notificationId?: number) => {
       previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setSelectedReportKey(
         key ||
@@ -138,11 +141,32 @@ export function BugReportSurface() {
       setActiveView('history');
       setHasOpenedModal(true);
       setOpen(true);
-      void myBugs.refresh();
-      if (myBugs.unreadCount) void myBugs.markNotificationsRead();
+      if (notificationId !== undefined) {
+        notificationApi.destroy(`bug-report-${notificationId}`);
+      } else {
+        for (const item of myBugs.notifications) {
+          if (!item.readAt) notificationApi.destroy(`bug-report-${item.id}`);
+        }
+      }
+      void myBugs.refresh({ force: true });
+      if (notificationId !== undefined) {
+        void myBugs.markNotificationsRead([notificationId]).catch(() => {});
+      } else if (myBugs.unreadCount) {
+        void myBugs.markNotificationsRead().catch(() => {});
+      }
     },
-    [myBugs.data, myBugs.markNotificationsRead, myBugs.refresh, myBugs.unreadCount]
+    [
+      myBugs.data,
+      myBugs.markNotificationsRead,
+      myBugs.notifications,
+      myBugs.refresh,
+      myBugs.unreadCount,
+      notificationApi,
+    ]
   );
+
+  const showHistoryRef = React.useRef(showHistory);
+  showHistoryRef.current = showHistory;
 
   React.useEffect(() => {
     if (!enabled) return;
@@ -180,22 +204,40 @@ export function BugReportSurface() {
   }, [enabled, showHistory]);
 
   React.useEffect(() => {
-    const next = myBugs.notifications.find((item) => !item.readAt && !announcedNotificationsRef.current.has(item.id));
-    if (!next) return;
-    announcedNotificationsRef.current.add(next.id);
-    const isClarification = next.type.endsWith('CLARIFICATION_NEEDED');
-    notification[isClarification ? 'warning' : 'success']({
-      key: `bug-report-${next.id}`,
-      message: next.title,
-      description: next.message,
-      duration: 0,
-      btn: (
-        <Button type="primary" size="small" onClick={() => showHistory(next.reportKey)}>
-          {isClarification ? 'Trả lời Agent' : 'Xem & duyệt'}
-        </Button>
-      ),
-    });
-  }, [myBugs.notifications, showHistory]);
+    if (!enabled) return;
+    const pending = myBugs.notifications.filter(
+      (item) => !item.readAt && !announcedNotificationsRef.current.has(item.id)
+    );
+    if (!pending.length) return;
+    for (const next of pending.slice(0, 3)) {
+      announcedNotificationsRef.current.add(next.id);
+      const noticeKey = `bug-report-${next.id}`;
+      const isClarification = next.type.endsWith('CLARIFICATION_NEEDED');
+      const handleOpenFromNotification = () => {
+        notificationApi.destroy(noticeKey);
+        showHistoryRef.current(next.reportKey, next.id);
+      };
+      notificationApi[isClarification ? 'warning' : 'success']({
+        key: noticeKey,
+        message: next.title,
+        description: next.message,
+        duration: 0,
+        onClick: handleOpenFromNotification,
+        actions: (
+          <Button
+            type="primary"
+            size="small"
+            onClick={(event) => {
+              event.stopPropagation();
+              handleOpenFromNotification();
+            }}
+          >
+            {isClarification ? 'Trả lời Agent' : 'Xem & duyệt'}
+          </Button>
+        ),
+      });
+    }
+  }, [enabled, myBugs.notifications, notificationApi]);
 
   const closeReporter = React.useCallback(() => {
     if (submittingRef.current) return;
@@ -214,6 +256,7 @@ export function BugReportSurface() {
 
   return (
     <>
+      {notificationContextHolder}
       {(hasOpenedModal || open) && (
         <BugReportModalShell
           open={open}
