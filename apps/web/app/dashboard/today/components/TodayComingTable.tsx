@@ -13,6 +13,7 @@ import { ComingClientData } from '../hooks/useTodayData';
 import { DataTable, SectionCard } from '../../../../components/ui';
 import { maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { getContrastingTextColor } from '../../../../lib/color-utils';
+import { TodayBookingNotesCell } from './TodayBookingNotesCell';
 
 const { Text } = Typography;
 
@@ -277,6 +278,20 @@ const TodayComingTable = React.memo(function TodayComingTable({
       ),
     },
     {
+      title: 'Booking Notes',
+      dataIndex: 'bookingNote',
+      key: 'bookingNote',
+      width: 240,
+      render: (note: string, record: ComingClientData) => (
+        <TodayBookingNotesCell
+          bookingNote={note}
+          ccNote={record.ccNote}
+          ccNoteStaffName={record.ccNoteStaffName}
+          status={record.status}
+        />
+      ),
+    },
+    {
       title: 'Trạng Thái',
       dataIndex: 'status',
       key: 'status',
@@ -444,6 +459,13 @@ const TodayComingTable = React.memo(function TodayComingTable({
               <span>CV: {record.cv || '-'}</span>
               <span>CC: {record.cc || '-'}</span>
             </div>
+            <TodayBookingNotesCell
+              bookingNote={record.bookingNote}
+              ccNote={record.ccNote}
+              ccNoteStaffName={record.ccNoteStaffName}
+              status={record.status}
+              isMobile
+            />
             <div className="flex justify-end gap-2 pt-1">
               <Button
                 size="small"

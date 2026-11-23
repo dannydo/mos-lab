@@ -46,6 +46,8 @@ export interface BookingData {
   bookingDateTime?: string;
   requestedCv?: string;
   bookingNote?: string;
+  ccNote?: string;
+  ccNoteStaffName?: string | null;
   status?: 'completed' | 'serving' | 'arrived' | 'confirmed' | 'pending' | 'late';
 }
 
@@ -65,6 +67,9 @@ export interface ComingClientData {
   cc: string;
   cv: string;
   service: string;
+  bookingNote?: string;
+  ccNote?: string;
+  ccNoteStaffName?: string | null;
   status: 'completed' | 'serving' | 'arrived' | 'confirmed' | 'pending' | 'late';
   avatarColor?: string;
   code?: string;

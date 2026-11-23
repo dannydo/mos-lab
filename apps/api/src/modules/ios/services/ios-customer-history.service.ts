@@ -197,7 +197,7 @@ export async function getIosCustomerHistory(
   const orderIds = orderRows.map((r) => Number(r.order_id)).filter((id) => Number.isFinite(id) && id > 0);
   const inPlaceholders = orderIds.map(() => '?').join(',');
 
-  const [paymentResult, serviceResult, comboResult, productResult, diamondTxnResult] = await Promise.all([
+  const [paymentResult, serviceResult, comboResult, productResult, diamondTxnResult, orderCcNoteResult] = await Promise.all([
     orderIds.length > 0
       ? pool
           .query<mysql.RowDataPacket[]>(
@@ -300,6 +300,23 @@ export async function getIosCustomerHistory(
         [customerId]
       )
       .catch(() => emptyQuery),
+    orderIds.length > 0
+      ? pool
+          .query<mysql.RowDataPacket[]>(
+            `SELECT
+               un.order_id,
+               un.note,
+               un.date_created,
+               COALESCE(up.full_name, 'Tư vấn viên') AS staff_name
+             FROM user_note un
+             LEFT JOIN user_profile up ON up.user_id = un.created_staff_id
+             WHERE un.order_id IN (${inPlaceholders})
+               AND un.note_field_key = 'order_note'
+             ORDER BY un.date_created DESC, un.id DESC`,
+            orderIds
+          )
+          .catch(() => emptyQuery)
+      : emptyQuery,
   ]);
 
   const serviceOrderIds = new Set(serviceResult[0].map((s) => Number(s.order_id || 0)));
@@ -409,6 +426,7 @@ export async function getIosCustomerHistory(
       comboRows: comboResult[0],
       productRows: productResult[0],
       diamondTxnRows: diamondTxnResult[0],
+      orderCcNoteRows: orderCcNoteResult[0],
       lashHydrationByOrder,
       notes,
       now,

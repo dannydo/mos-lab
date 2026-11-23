@@ -111,7 +111,7 @@ export async function fetchAndBuildDashboardTodayBase({
   ).filter((id): id is number => id !== null && id !== undefined && !isNaN(Number(id)) && Number(id) > 0);
   const allOrderIds = Array.from(new Set([...bookingsOrders.map((o) => o.id), ...comingOrders.map((o) => o.id)]));
 
-  const [userProfiles, userContacts, userBalances, allOrderServices] = await Promise.all([
+  const [userProfiles, userContacts, userBalances, allOrderServices, orderCcNotesRaw] = await Promise.all([
     userIds.length > 0
       ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT up.user_id as userId, up.full_name as fullName, up.avatar, u.email, u.gender, u.date_of_birth as dob
@@ -155,7 +155,28 @@ export async function fetchAndBuildDashboardTodayBase({
           },
         })
       : Promise.resolve([]),
+    allOrderIds.length > 0
+      ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+          SELECT un.order_id as orderId, un.note, up.full_name as staffName
+          FROM \`user_note\` un
+          LEFT JOIN \`user_profile\` up ON un.created_staff_id = up.user_id
+          WHERE un.order_id IN (${allOrderIds.join(',')})
+            AND un.note_field_key = 'order_note'
+          ORDER BY un.date_created DESC, un.id DESC
+        `)
+      : Promise.resolve([]),
   ]);
+
+  const ccNoteByOrderId = new Map<number, { note: string; staffName: string | null }>();
+  for (const row of orderCcNotesRaw) {
+    const orderId = Number(row.orderId || 0);
+    const noteText = String(row.note || '').trim();
+    if (!orderId || !noteText || ccNoteByOrderId.has(orderId)) continue;
+    ccNoteByOrderId.set(orderId, {
+      note: noteText,
+      staffName: row.staffName ? String(row.staffName).trim() : null,
+    });
+  }
 
   const balancesByUserId = new Map<number, SafeAny[]>();
   for (const balance of userBalances) {
@@ -372,6 +393,8 @@ export async function fetchAndBuildDashboardTodayBase({
       }
     }
 
+    const ccNoteEntry = status === 'completed' ? ccNoteByOrderId.get(Number(o.id)) : undefined;
+
     const record = {
       key: String(o.id),
       customerId: o.user_id,
@@ -387,6 +410,8 @@ export async function fetchAndBuildDashboardTodayBase({
       requestedCv: cvRequested,
       status,
       bookingNote: o.booking_note || '',
+      ccNote: ccNoteEntry?.note || '',
+      ccNoteStaffName: ccNoteEntry?.staffName || null,
       createdTime: new Date(o.date_created).toLocaleTimeString('vi-VN', {
         timeZone: 'UTC',
         hour: '2-digit',
@@ -454,6 +479,7 @@ export async function fetchAndBuildDashboardTodayBase({
     promoMap,
     staffMap,
     telesalesNames,
+    ccNoteByOrderId,
     checkHasLiveCombo,
   };
 }

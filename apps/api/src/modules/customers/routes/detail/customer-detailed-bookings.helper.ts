@@ -295,6 +295,7 @@ export async function fetchCustomerDetailedBookingsNotesAndCalls(
   const notesSql = `
     SELECT 
       un.id,
+      un.order_id as orderId,
       un.note,
       un.note_field_key as noteFieldKey,
       un.is_sticky as isSticky,
@@ -323,6 +324,7 @@ export async function fetchCustomerDetailedBookingsNotesAndCalls(
     }
     return {
       id: Number(n.id),
+      orderId: n.orderId ? Number(n.orderId) : null,
       note: n.note || '',
       noteFieldKey: n.noteFieldKey || 'note',
       isSticky: Boolean(n.isSticky),
@@ -332,6 +334,28 @@ export async function fetchCustomerDetailedBookingsNotesAndCalls(
       staffAvatar: n.staffAvatar || null,
     };
   });
+
+  const ccNoteByOrderId = new Map<number, { note: string; staffName: string | null; dateCreated: string | null }>();
+  for (const n of formattedNotes) {
+    if (n.noteFieldKey !== 'order_note' || !n.orderId) continue;
+    const noteText = String(n.note || '').trim();
+    if (!noteText || ccNoteByOrderId.has(n.orderId)) continue;
+    ccNoteByOrderId.set(n.orderId, {
+      note: noteText,
+      staffName: n.staffName || null,
+      dateCreated: n.dateCreated || null,
+    });
+  }
+  for (const b of formattedBookings) {
+    const isDone = b.orderState === 'Completed' || b.orderState === 'ServiceCompleted';
+    if (!isDone) continue;
+    const ccNoteEntry = ccNoteByOrderId.get(Number(b.id));
+    if (ccNoteEntry) {
+      (b as SafeAny).ccNote = ccNoteEntry.note;
+      (b as SafeAny).ccNoteStaffName = ccNoteEntry.staffName;
+      (b as SafeAny).ccNoteDate = ccNoteEntry.dateCreated;
+    }
+  }
 
   // 8. Fetch CRM Call Logs
   const logs = await fastify.prisma.crm.crmCallLog.findMany({

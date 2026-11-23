@@ -80,6 +80,9 @@ export interface IosCustomerHistoryVisitItem {
   services: IosCustomerHistoryServiceDetail[];
   isFixOrder: boolean;
   bookingNote: string | null;
+  ccNote?: string | null;
+  ccNoteStaffName?: string | null;
+  ccNoteDate?: string | null;
   branchId: number | null;
   branchName: string;
   staffNames: string[];

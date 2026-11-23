@@ -55,6 +55,7 @@ const MOCK_HISTORY_RESPONSE: IosCustomerHistoryResponse = {
       services: [{ name: 'Combo 10 tặng 6 - Hyperlight 770', price: 770000 }],
       isFixOrder: false,
       bookingNote: 'Tư vấn gói combo mới',
+      ccNote: 'Không hiển thị khi chưa completed',
       branchId: 16,
       branchName: 'Estella Place',
       staffNames: ['Minh Anh'],
@@ -111,6 +112,8 @@ const MOCK_HISTORY_RESPONSE: IosCustomerHistoryResponse = {
       services: [{ name: 'Fix dặm mi', price: 712800, isFix: true }],
       isFixOrder: true,
       bookingNote: 'Fix góc ngoài',
+      ccNote: 'Cb 3r\n-MD: chị không làm, đổi qua sauna\n-CB: 1n 1/10/24',
+      ccNoteStaffName: 'Nguyễn Quang Khải',
       branchId: 16,
       branchName: 'Estella Place',
       staffNames: ['Thảo Vy'],
@@ -171,6 +174,8 @@ const MOCK_HISTORY_RESPONSE: IosCustomerHistoryResponse = {
       services: [],
       isFixOrder: true,
       bookingNote: 'Fix góc ngoài',
+      ccNote: 'Cb 3r\n-MD: chị không làm, đổi qua sauna\n-CB: 1n 1/10/24',
+      ccNoteStaffName: 'Nguyễn Quang Khải',
       branchId: 16,
       branchName: 'Estella Place',
       staffNames: ['Thảo Vy'],
@@ -380,5 +385,40 @@ describe('CustomerHistoryAndSpendingSheet (MOS-FEAT-235)', () => {
 
     fireEvent.click(backdrop);
     expect(handleClose).toHaveBeenCalledTimes(4);
+  });
+
+  it('renders full CC consultant note directly under bookingNote only for completed visits [MOS-FEAT-249]', async () => {
+    render(
+      <CustomerHistoryAndSpendingSheet
+        isOpen={true}
+        initialTab="ALL"
+        isSimulationMode={true}
+        onClose={vi.fn()}
+        booking={SAMPLE_BOOKING}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('history-cc-note-8001')).toBeDefined();
+    });
+
+    const ccNoteBox = screen.getByTestId('history-cc-note-8001');
+    expect(ccNoteBox.textContent).toContain('Ghi chú CC / Tư vấn viên');
+    expect(ccNoteBox.textContent).toContain('Nguyễn Quang Khải');
+    expect(ccNoteBox.textContent).toContain('Cb 3r');
+    expect(ccNoteBox.textContent).toContain('-MD: chị không làm, đổi qua sauna');
+    expect(ccNoteBox.textContent).toContain('-CB: 1n 1/10/24');
+
+    // Booking note appears right before the CC note block inside the same card
+    const card8001 = screen.getByTestId('history-row-ALL-8001');
+    const bookingNoteEl = screen.getByTestId('history-booking-note-8001');
+    expect(
+      Boolean(bookingNoteEl.compareDocumentPosition(ccNoteBox) & Node.DOCUMENT_POSITION_FOLLOWING)
+    ).toBe(true);
+    expect(card8001.innerHTML).not.toContain('line-clamp');
+
+    // Upcoming booking must NOT render CC note block
+    expect(screen.queryByTestId('history-cc-note-9001')).toBeNull();
+    expect(screen.queryByText(/Không hiển thị khi chưa completed/)).toBeNull();
   });
 });
