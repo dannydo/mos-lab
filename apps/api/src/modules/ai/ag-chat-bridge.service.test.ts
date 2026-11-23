@@ -55,3 +55,52 @@ describe('AgChatBridgeService.readAntigravityDaemonHubEnv', () => {
     }
   });
 });
+
+describe('AgChatBridgeService.detectAntigravityLsEnv', () => {
+  it('ignores stale ANTIGRAVITY_LS_ADDRESS env override when endpoint is unreachable and falls back to live hub_*.json', async () => {
+    const daemonDir = await mkdtemp(join(tmpdir(), 'ag-hub-stale-env-'));
+    try {
+      await writeFile(
+        join(daemonDir, 'hub_46121.json'),
+        JSON.stringify({ pid: process.pid, httpPort: 46121, csrfToken: 'fresh-hub-csrf' })
+      );
+
+      const detected = await AgChatBridgeService.detectAntigravityLsEnv({
+        env: {
+          ANTIGRAVITY_LS_ADDRESS: '127.0.0.1:45281',
+          ANTIGRAVITY_CSRF_TOKEN: 'stale-csrf-token',
+          ANTIGRAVITY_PROJECT_ID: 'proj-test',
+        },
+        daemonDir,
+        verifyEndpoint: async () => false,
+        isPidAlive: (pid) => pid === process.pid,
+        probePort: async (port) => (port === 46121 ? { ok: true } : null),
+      });
+
+      assert.deepEqual(detected, {
+        ANTIGRAVITY_LS_ADDRESS: '127.0.0.1:46121',
+        ANTIGRAVITY_CSRF_TOKEN: 'fresh-hub-csrf',
+        ANTIGRAVITY_PROJECT_ID: 'proj-test',
+      });
+    } finally {
+      await rm(daemonDir, { recursive: true, force: true });
+    }
+  });
+
+  it('uses ANTIGRAVITY_LS_ADDRESS env override when endpoint verification succeeds', async () => {
+    const detected = await AgChatBridgeService.detectAntigravityLsEnv({
+      env: {
+        ANTIGRAVITY_LS_ADDRESS: '127.0.0.1:46121',
+        ANTIGRAVITY_CSRF_TOKEN: 'live-env-csrf',
+        ANTIGRAVITY_PROJECT_ID: 'proj-test',
+      },
+      verifyEndpoint: async (addr, token) => addr === '127.0.0.1:46121' && token === 'live-env-csrf',
+    });
+
+    assert.deepEqual(detected, {
+      ANTIGRAVITY_LS_ADDRESS: '127.0.0.1:46121',
+      ANTIGRAVITY_CSRF_TOKEN: 'live-env-csrf',
+      ANTIGRAVITY_PROJECT_ID: 'proj-test',
+    });
+  });
+});

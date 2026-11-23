@@ -112,8 +112,8 @@ export class AgChatBridgeService {
   /**
    * Detect Antigravity project ID
    */
-  static detectAntigravityProjectId(): string {
-    if (process.env.ANTIGRAVITY_PROJECT_ID) return process.env.ANTIGRAVITY_PROJECT_ID;
+  static detectAntigravityProjectId(env: NodeJS.ProcessEnv = process.env): string {
+    if (env.ANTIGRAVITY_PROJECT_ID) return env.ANTIGRAVITY_PROJECT_ID;
     try {
       const glob = execSync(
         'ls -t ~/.gemini/antigravity/brain/*/.system_generated/terminals/*.env 2>/dev/null | head -n 1',
@@ -196,18 +196,66 @@ export class AgChatBridgeService {
   }
 
   /**
+   * Verify that an Antigravity Language Server address + CSRF token pair is alive and accepted.
+   */
+  static async verifyAntigravityLsEndpoint(
+    address: string,
+    csrfToken: string,
+    fetcher: typeof fetch = fetch
+  ): Promise<boolean> {
+    const trimmedAddress = address.trim();
+    const trimmedToken = csrfToken.trim();
+    if (!trimmedAddress || !trimmedToken) return false;
+    const baseUrl = /^https?:\/\//i.test(trimmedAddress)
+      ? trimmedAddress.replace(/\/$/, '')
+      : `http://${trimmedAddress}`;
+    try {
+      const res = await fetcher(`${baseUrl}/exa.language_server_pb.LanguageServerService/GetCascadeModelConfigData`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-codeium-csrf-token': trimmedToken,
+        },
+        body: JSON.stringify({}),
+        signal: AbortSignal.timeout(1_000),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Detect active Antigravity Language Server Environment (Address, CSRF Token, Project ID)
    */
-  static async detectAntigravityLsEnv(): Promise<Record<string, string>> {
-    const projectId = this.detectAntigravityProjectId();
-    if (process.env.ANTIGRAVITY_LS_ADDRESS && process.env.ANTIGRAVITY_CSRF_TOKEN) {
-      return {
-        ANTIGRAVITY_LS_ADDRESS: process.env.ANTIGRAVITY_LS_ADDRESS,
-        ANTIGRAVITY_CSRF_TOKEN: process.env.ANTIGRAVITY_CSRF_TOKEN,
-        ANTIGRAVITY_PROJECT_ID: projectId,
-      };
+  static async detectAntigravityLsEnv(options?: {
+    env?: NodeJS.ProcessEnv;
+    daemonDir?: string;
+    verifyEndpoint?: (address: string, csrfToken: string) => Promise<boolean>;
+    isPidAlive?: (pid: number) => boolean;
+    probePort?: (port: number) => Promise<{ ok: boolean; csrfToken?: string } | null>;
+  }): Promise<Record<string, string>> {
+    const env = options?.env ?? process.env;
+    const projectId = this.detectAntigravityProjectId(env);
+    const envAddress = env.ANTIGRAVITY_LS_ADDRESS?.trim();
+    const envCsrfToken = env.ANTIGRAVITY_CSRF_TOKEN?.trim();
+    if (envAddress && envCsrfToken) {
+      const verify =
+        options?.verifyEndpoint ?? ((addr: string, token: string) => this.verifyAntigravityLsEndpoint(addr, token));
+      if (await verify(envAddress, envCsrfToken)) {
+        return {
+          ANTIGRAVITY_LS_ADDRESS: envAddress,
+          ANTIGRAVITY_CSRF_TOKEN: envCsrfToken,
+          ANTIGRAVITY_PROJECT_ID: projectId,
+        };
+      }
     }
-    const hubEnv = await this.readAntigravityDaemonHubEnv({ projectId });
+    const hubEnv = await this.readAntigravityDaemonHubEnv({
+      daemonDir: options?.daemonDir,
+      projectId,
+      isPidAlive: options?.isPidAlive,
+      probePort: options?.probePort,
+    });
     if (hubEnv) {
       return hubEnv;
     }
@@ -289,10 +337,12 @@ export class AgChatBridgeService {
       throw new Error('Antigravity Language Server is not running');
     }
 
-    const env = {
+    const env: NodeJS.ProcessEnv = {
       ...process.env,
       ...detectedEnv,
     };
+    if (!detectedEnv.ANTIGRAVITY_LS_ADDRESS) delete env.ANTIGRAVITY_LS_ADDRESS;
+    if (!detectedEnv.ANTIGRAVITY_CSRF_TOKEN) delete env.ANTIGRAVITY_CSRF_TOKEN;
 
     let targetConvId = conversationId;
     let initialLineCount = 0;

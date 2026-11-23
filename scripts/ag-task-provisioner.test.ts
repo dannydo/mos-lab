@@ -749,3 +749,36 @@ test('probeIsAntigravityPort + readAntigravityDaemonHubEnv supports Antigravity 
     await rm(daemonDir, { recursive: true, force: true });
   }
 });
+
+test('detectAntigravityLsEnv ignores unreachable ANTIGRAVITY_LS_ADDRESS env override and falls back to live hub_*.json', async () => {
+  const { createServer } = await import('node:http');
+  const daemonDir = await mkdtemp(join(tmpdir(), 'ag-provisioner-stale-'));
+  const server = createServer((_req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(
+      '<!doctype html><html><head><script>window.__APP_CONFIG__ = {"productName":"antigravity","csrfToken":"","appVersion":"2.34.0"};</script></head><body></body></html>'
+    );
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+  const address = server.address();
+  const port = typeof address === 'object' && address ? address.port : 0;
+  try {
+    await writeFile(
+      join(daemonDir, `hub_${port}.json`),
+      JSON.stringify({ pid: process.pid, httpPort: port, csrfToken: 'fresh-hub-csrf' })
+    );
+    const detected = await detectAntigravityLsEnv({
+      env: {
+        ANTIGRAVITY_LS_ADDRESS: '127.0.0.1:45281',
+        ANTIGRAVITY_CSRF_TOKEN: 'stale-csrf-token',
+      },
+      daemonDir,
+      verifyEndpoint: async () => false,
+    });
+    assert.equal(detected.ANTIGRAVITY_LS_ADDRESS, `127.0.0.1:${port}`);
+    assert.equal(detected.ANTIGRAVITY_CSRF_TOKEN, 'fresh-hub-csrf');
+  } finally {
+    server.close();
+    await rm(daemonDir, { recursive: true, force: true });
+  }
+});

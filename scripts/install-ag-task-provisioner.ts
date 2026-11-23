@@ -72,7 +72,7 @@ WorkingDirectory=${repository}
 ExecStart=${pnpm} ag-task-provisioner:daemon
 Restart=always
 RestartSec=5
-Environment=PATH=${pathEnv}
+Environment="PATH=${pathEnv}"
 StandardOutput=append:${resolve(logDir, 'inbox-provisioner.log')}
 StandardError=append:${resolve(logDir, 'inbox-provisioner.error.log')}
 

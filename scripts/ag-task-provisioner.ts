@@ -458,67 +458,27 @@ export function probeIsAntigravityPort(port: number): Promise<{ ok: boolean; csr
   });
 }
 
-export async function detectAntigravityLsEnv(): Promise<Record<string, string>> {
-  const projectId = detectAntigravityProjectId();
-  if (process.env.ANTIGRAVITY_LS_ADDRESS && process.env.ANTIGRAVITY_CSRF_TOKEN) {
-    return {
-      ANTIGRAVITY_LS_ADDRESS: process.env.ANTIGRAVITY_LS_ADDRESS,
-      ANTIGRAVITY_CSRF_TOKEN: process.env.ANTIGRAVITY_CSRF_TOKEN,
-      ANTIGRAVITY_PROJECT_ID: projectId,
-    };
-  }
-  const hubEnv = await AgChatBridgeService.readAntigravityDaemonHubEnv({
-    projectId,
+export async function detectAntigravityLsEnv(options?: {
+  env?: NodeJS.ProcessEnv;
+  daemonDir?: string;
+  verifyEndpoint?: (address: string, csrfToken: string) => Promise<boolean>;
+  isPidAlive?: (pid: number) => boolean;
+  probePort?: (port: number) => Promise<{ ok: boolean; csrfToken?: string } | null>;
+}): Promise<Record<string, string>> {
+  return AgChatBridgeService.detectAntigravityLsEnv({
     probePort: probeIsAntigravityPort,
+    ...options,
   });
-  if (hubEnv) {
-    return hubEnv;
-  }
-  try {
-    const ps = execSync('ps aux | grep "[l]anguage_server.*antigravity"', { encoding: 'utf8' });
-    const matchPid = ps.match(/^\S+\s+(\d+)/);
-    const matchCsrf = ps.match(/--csrf_token\s+([a-f0-9-]+)/i);
-    if (!matchPid) return {};
-    const pid = matchPid[1];
-    let csrfToken = matchCsrf ? matchCsrf[1] : '';
+}
 
-    const lsofCmd = existsSync('/usr/sbin/lsof') ? '/usr/sbin/lsof' : 'lsof';
-    const lsof = execSync(`${lsofCmd} -nP -p ${pid} 2>/dev/null | grep LISTEN || true`, {
-      encoding: 'utf8',
-      env: { ...process.env, PATH: `${process.env.PATH || ''}:/usr/sbin:/sbin:/usr/bin:/bin` },
-    });
-    const ports: number[] = [];
-    for (const line of lsof.split('\n')) {
-      const m = line.match(/TCP\s+(?:127\.0\.0\.1|localhost|\*):(\d+)\s+\(LISTEN\)/);
-      if (m) ports.push(parseInt(m[1], 10));
-    }
-
-    let activePort: number | null = null;
-    for (const port of ports) {
-      const detected = await probeIsAntigravityPort(port);
-      if (detected) {
-        activePort = port;
-        if (detected.csrfToken && !csrfToken) {
-          csrfToken = detected.csrfToken;
-        }
-        break;
-      }
-    }
-    if (!activePort && ports.length > 0) {
-      ports.sort((a, b) => a - b);
-      activePort = ports[0];
-    }
-    if (activePort && csrfToken) {
-      return {
-        ANTIGRAVITY_LS_ADDRESS: `localhost:${activePort}`,
-        ANTIGRAVITY_CSRF_TOKEN: csrfToken,
-        ANTIGRAVITY_PROJECT_ID: projectId,
-      };
-    }
-  } catch {
-    // Best-effort detection
-  }
-  return {};
+function buildAgentApiProcessEnv(detectedEnv: Record<string, string>): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    ...detectedEnv,
+  };
+  if (!detectedEnv.ANTIGRAVITY_LS_ADDRESS) delete env.ANTIGRAVITY_LS_ADDRESS;
+  if (!detectedEnv.ANTIGRAVITY_CSRF_TOKEN) delete env.ANTIGRAVITY_CSRF_TOKEN;
+  return env;
 }
 
 const AGENTAPI_MODEL_ID_BY_TIER: Record<InboxImplementationModelTier, string> = {
@@ -770,10 +730,7 @@ export async function spawnAntigravitySession(
     ? ['agentapi', 'new-conversation', ...modelArg, `--title=${title}`, prompt]
     : ['new-conversation', ...modelArg, `--title=${title}`, prompt];
 
-  const env = {
-    ...process.env,
-    ...detectedEnv,
-  };
+  const env = buildAgentApiProcessEnv(detectedEnv);
 
   let stdout = '';
   try {
@@ -870,10 +827,7 @@ export async function sendMessageToAntigravitySession(
     ? ['agentapi', 'send-message', ...titleArg, conversationId, content]
     : ['send-message', ...titleArg, conversationId, content];
 
-  const env = {
-    ...process.env,
-    ...detectedEnv,
-  };
+  const env = buildAgentApiProcessEnv(detectedEnv);
 
   await execFile(command, args, { timeout: AGENTAPI_TIMEOUT_MS, env });
 }
