@@ -7,6 +7,7 @@ interface CallConnectedProps {
   currentCall: SafeAny;
   callDuration: number;
   isSimulated: boolean;
+  simulationReason?: string | null;
   isMuted: boolean;
   isHeld: boolean;
   descColor: string;
@@ -25,6 +26,7 @@ export const CallConnected: React.FC<CallConnectedProps> = ({
   currentCall,
   callDuration,
   isSimulated,
+  simulationReason,
   isMuted,
   isHeld,
   descColor,
@@ -66,7 +68,7 @@ export const CallConnected: React.FC<CallConnectedProps> = ({
             style={{ borderColor: borderColor }}
           >
             <span className="font-bold">⚠️ CUỘC GỌI MÔ PHỎNG</span>
-            <span>Tài khoản chưa có cấu hình máy lẻ</span>
+            <span>{simulationReason || 'Chế độ mô phỏng (không phát sinh cước)'}</span>
           </div>
         ) : (
           <div

@@ -112,10 +112,26 @@ export function registerOmicallConfigRoutes(fastify: FastifyInstance): void {
         });
       }
 
-      const config = await fastify.prisma.crm.crmOmicallConfig.findUnique({
+      let config = await fastify.prisma.crm.crmOmicallConfig.findUnique({
         where: { staffId: user.id },
         select: { extension: true, phoneNumber: true, sipPassword: true },
       });
+
+      if (!config && isSuperAdmin) {
+        const superAdmins = await fastify.prisma.crm.crmStaff.findMany({
+          where: { isActive: true, role: 'super_admin' },
+          select: { id: true },
+          orderBy: { id: 'asc' },
+        });
+        const superAdminIds = superAdmins.map((s) => s.id);
+        if (superAdminIds.length > 0) {
+          config = await fastify.prisma.crm.crmOmicallConfig.findFirst({
+            where: { staffId: { in: superAdminIds }, sipPassword: { not: null } },
+            orderBy: { staffId: 'asc' },
+            select: { extension: true, phoneNumber: true, sipPassword: true },
+          });
+        }
+      }
 
       if (!config) {
         return reply

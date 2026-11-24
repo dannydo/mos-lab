@@ -24,7 +24,9 @@ interface UseOmiCallActionsParams {
   isTabMuted: boolean;
   isSimulated: boolean;
   isRegistered: boolean;
+  isRegisteredRef: MutableRefObject<boolean>;
   sipConfig: SafeAny;
+  sipConfigRef: MutableRefObject<SafeAny>;
   currentCall: CurrentCall | null;
   isHeld: boolean;
   isSdkReadyRef: MutableRefObject<boolean>;
@@ -54,7 +56,9 @@ export function useOmiCallActions({
   isTabMuted,
   isSimulated,
   isRegistered,
+  isRegisteredRef,
   sipConfig,
+  sipConfigRef,
   currentCall,
   isHeld,
   isSdkReadyRef,
@@ -114,8 +118,9 @@ export function useOmiCallActions({
   };
 
   const executeCall = async () => {
-    if (!currentCall) return;
-    const { phone: cleanPhone, name, legacyUserId: customerId, avatar } = currentCall;
+    const activeCallTarget = currentCallRef.current || currentCall;
+    if (!activeCallTarget) return;
+    const { phone: cleanPhone, name, legacyUserId: customerId, avatar } = activeCallTarget;
 
     if (isSimulated) {
       console.log(`[OmiCallContext] Simulating outbound call to ${cleanPhone}...`);
@@ -156,8 +161,9 @@ export function useOmiCallActions({
     const isReady = isSdkReadyRef.current && (window as SafeAny).__omicall_initialized;
     const sbState = window.OMICallSDK?.getSbState?.();
     const isConnecting = sbState === 'connecting';
+    const isCurrentlyRegistered = isRegistered || isRegisteredRef.current || sbState === 'online';
 
-    if (!window.OMICallSDK || !isReady || !isRegistered || isConnecting) {
+    if (!window.OMICallSDK || !isReady || !isCurrentlyRegistered || isConnecting) {
       if (window.OMICallSDK && !isReady) {
         initOmiCallSdk();
       }
@@ -203,7 +209,8 @@ export function useOmiCallActions({
         return;
       }
 
-      const hotlineNumber = sipConfig?.phoneNumber || '0328703439';
+      const activeSipConfig = sipConfigRef.current || sipConfig;
+      const hotlineNumber = activeSipConfig?.phoneNumber || '0328703439';
       const omicallCall = await window.OMICallSDK.makeCall(cleanPhone, {
         sipNumber: { number: hotlineNumber },
         userData: JSON.stringify({
@@ -317,11 +324,11 @@ export function useOmiCallActions({
       setCallState('wrapup');
       stopRingback();
 
-      // Auto-open global CallLogModal for simulated calls
+      // Auto-open global CallLogModal only for customer calls (not internal staff calls)
       const activeCallDetail = currentCallRef.current;
-      if (activeCallDetail) {
+      if (activeCallDetail?.legacyUserId) {
         setCallLogCustomerInfo({
-          legacyUserId: activeCallDetail.legacyUserId || 0,
+          legacyUserId: activeCallDetail.legacyUserId,
           customerName: activeCallDetail.name || 'Khách hàng',
           planId: activeCallDetail.planId || null,
         });
