@@ -72,7 +72,7 @@ test('getAnalyzerGeminiModels provides deduplicated 429 fallback chain', () => {
   const prev = process.env.OMICALL_GEMINI_MODEL;
   try {
     delete process.env.OMICALL_GEMINI_MODEL;
-    assert.deepEqual(getAnalyzerGeminiModels(), ['gemini-2.5-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite']);
+    assert.deepEqual(getAnalyzerGeminiModels(), ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.5-flash']);
 
     process.env.OMICALL_GEMINI_MODEL = 'gemini-3.5-flash-lite';
     assert.deepEqual(getAnalyzerGeminiModels(), ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-3.5-flash']);
