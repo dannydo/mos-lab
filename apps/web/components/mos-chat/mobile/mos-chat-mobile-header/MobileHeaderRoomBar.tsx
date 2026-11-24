@@ -168,6 +168,7 @@ export const MobileHeaderRoomBar: React.FC<MobileHeaderRoomBarProps> = ({
             moreMenuOpen={moreMenuOpen}
             activeSubtab={activeSubtab}
             activeConversation={activeConversation}
+            staffDirectory={staffDirectory}
             isSpace={isSpace}
             isRoomPinned={isRoomPinned}
             openTaskCount={openTaskCount}

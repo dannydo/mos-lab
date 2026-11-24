@@ -136,6 +136,7 @@ export const MosChatDesktopMainColumn: React.FC<MosChatDesktopMainColumnProps> =
       currentUser={currentUser}
       isDannyAccount={aiAccess.isDannyAccount}
       activeConversation={sidebarPrefs.activeConversation}
+      staffDirectory={staffDirectory}
       activeSubtab={layout.activeSubtab}
       setActiveSubtab={layout.setActiveSubtab}
       setMobileActiveView={layout.setMobileActiveView}

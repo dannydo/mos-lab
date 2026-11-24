@@ -1,12 +1,14 @@
 import type { FastifyInstance } from 'fastify';
-import type {
-  MosChatAccessConfig,
-  MosChatBootstrapResponse,
-  MosChatUnreadSummaryResponse,
-  MosChatUserSidebarPrefs,
-  MosChatWorkflowInstance,
-  SafeAny,
-  UpdateMosChatAccessConfigRequest,
+import {
+  isCanonicalSuperAdminIdentity,
+  type MosChatAccessConfig,
+  type MosChatBootstrapResponse,
+  type MosChatStaffMember,
+  type MosChatUnreadSummaryResponse,
+  type MosChatUserSidebarPrefs,
+  type MosChatWorkflowInstance,
+  type SafeAny,
+  type UpdateMosChatAccessConfigRequest,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../../middlewares/auth.js';
 import { ChatMissionBridgeService } from '../chat-mission-bridge.service.js';
@@ -17,6 +19,7 @@ import {
   evaluateCanUserAccessMosChat,
   computeUnreadCountForUser,
   resolveUserPrefKey,
+  resolveUserStaffId,
 } from '../chat-access.service.js';
 import { filterAndFormatConversationsForUser, filterTasksForUser } from '../chat-format.service.js';
 import {
@@ -72,6 +75,34 @@ function parseBootstrapMessageLimit(raw?: string): number {
   return Math.min(MAX_BOOTSTRAP_MESSAGE_LIMIT, Math.max(1, Math.floor(parsed)));
 }
 
+export function projectStaffDirectoryForCaller(
+  user: JwtUserPayload | undefined,
+  staffDirectory: MosChatStaffMember[]
+): MosChatStaffMember[] {
+  if (!user) {
+    return staffDirectory.map(({ phone: _phone, ...rest }) => rest);
+  }
+  const normalizedRole = String(user.role || '')
+    .toLowerCase()
+    .trim();
+  const callerStaffId = resolveUserStaffId(user, staffDirectory);
+  const callerMember = callerStaffId > 0 ? staffDirectory.find((s) => Number(s.id) === callerStaffId) : undefined;
+  const isGrowthMember =
+    normalizedRole === 'telesales' ||
+    normalizedRole === 'booker' ||
+    Boolean(callerMember?.departmentCodes?.includes('GROWTH'));
+
+  const canViewPhones =
+    isDannyOrSuperAdminUser(user) ||
+    isCanonicalSuperAdminIdentity({ username: user.username, email: (user as SafeAny).email }) ||
+    isGrowthMember;
+
+  if (canViewPhones) {
+    return staffDirectory;
+  }
+  return staffDirectory.map(({ phone: _phone, ...rest }) => rest);
+}
+
 export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
   // GET /api/chat/bootstrap
   fastify.get(
@@ -111,6 +142,7 @@ export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
         const canAccessChat = evaluateCanUserAccessMosChat(user, staffDirectory, accessConfig);
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
         const userPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+        const visibleStaffDirectory = projectStaffDirectoryForCaller(user, staffDirectory);
 
         // Pinned Trumps Hidden Invariant (MOS-BUG-216): Cuộc hội thoại đã ghim thì tuyệt đối không bị ẩn
         if (userPrefs && Array.isArray(userPrefs.pinnedIds) && userPrefs.pinnedIds.length > 0) {
@@ -125,7 +157,7 @@ export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
             unchanged: true,
             conversations: [],
             tasks: [],
-            staffDirectory,
+            staffDirectory: visibleStaffDirectory,
             accessConfig,
             canAccessChat,
             userPrefs,
@@ -170,7 +202,7 @@ export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
           unchanged: false,
           conversations: userConversations,
           tasks: userTasks,
-          staffDirectory,
+          staffDirectory: visibleStaffDirectory,
           accessConfig,
           canAccessChat,
           userPrefs,

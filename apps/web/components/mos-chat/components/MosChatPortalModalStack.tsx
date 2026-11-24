@@ -405,6 +405,6 @@ export const MosChatPortalModalStack: React.FC<MosChatPortalModalStackProps> = (
       </ErrorBoundary>
     )}
 
-    <MosChatOmiCallDialerModal isDark={isDark} currentUser={currentUser} />
+    <MosChatOmiCallDialerModal isDark={isDark} currentUser={currentUser} staffDirectory={staffDirectory} />
   </>
 );

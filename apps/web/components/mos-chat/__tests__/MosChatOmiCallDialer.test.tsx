@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act, renderHook } from '@testing-library/react';
-import type { MosChatCustomerCard } from '@mos-lab/shared';
+import type { MosChatConversation, MosChatCustomerCard, MosChatStaffMember, SafeAny } from '@mos-lab/shared';
 import {
   clearRecentMosChatDials,
   dispatchOpenMosChatOmiCallDialer,
@@ -9,6 +9,7 @@ import {
   MOS_CHAT_OPEN_OMICALL_DIALER_EVENT,
   normalizeVietnamDialPhone,
   readRecentMosChatDials,
+  resolveActiveDmPeerCallTarget,
   saveRecentMosChatDial,
 } from '../utils/omicall-dial-helpers';
 
@@ -86,8 +87,13 @@ vi.mock('antd', async () => {
   };
 });
 
+vi.mock('../../notification-center/HeaderNotificationCenter', () => ({
+  HeaderNotificationCenter: () => null,
+}));
+
 import { MosChatOmiCallDialerModal } from '../modals/MosChatOmiCallDialerModal';
 import { MosChatCustomerCardAttachment } from '../components/MosChatCustomerCardAttachment';
+import { MosChatDesktopHeader } from '../components/MosChatDesktopHeader';
 import { MosChatRichText } from '../MosChatRichText';
 import { useOmiCallActions } from '../../../context/omicall/useOmiCallActions';
 
@@ -197,7 +203,7 @@ describe('MosChatOmiCallDialerModal', () => {
     // Remove extra trailing 9
     fireEvent.click(screen.getByLabelText('Xoá 1 ký tự'));
 
-    const input = screen.getByLabelText('Nhập số điện thoại hoặc tên khách hàng') as HTMLInputElement;
+    const input = screen.getByLabelText('Nhập SĐT, tên nhân sự hoặc khách hàng') as HTMLInputElement;
     expect(input.value).toBe('0909123456');
 
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
@@ -216,7 +222,7 @@ describe('MosChatOmiCallDialerModal', () => {
 
     render(<MosChatOmiCallDialerModal isDark={true} currentUser={{ id: 9 }} open={true} />);
 
-    const input = screen.getByLabelText('Nhập số điện thoại hoặc tên khách hàng');
+    const input = screen.getByLabelText('Nhập SĐT, tên nhân sự hoặc khách hàng');
     fireEvent.change(input, { target: { value: 'Ngọc Hân' } });
 
     await waitFor(
@@ -385,5 +391,199 @@ describe('useOmiCallActions autoEnableAdmin', () => {
         direction: 'outbound',
       })
     );
+  });
+});
+
+describe('Direct Staff DM OmiCall & Staff Directory Dialer Search', () => {
+  const sampleStaff: MosChatStaffMember[] = [
+    {
+      id: 2,
+      username: 'baohan',
+      displayName: 'Bảo Hân',
+      role: 'admin',
+      phone: '+84 909 888 777',
+      avatarUrl: 'https://cdn.example/baohan.jpg',
+    },
+    {
+      id: 3,
+      username: 'nophone',
+      displayName: 'Nhân Sự Chưa Có SĐT',
+      role: 'telesales',
+      phone: null,
+    },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+    mockOmiCallState.canAccessOmiCall = true;
+    mockOmiCallState.callState = 'idle';
+    mockCustomersList.mockResolvedValue({ data: [] });
+  });
+
+  it('resolveActiveDmPeerCallTarget resolves 1-1 DM staff phones and ignores spaces/AI/self DMs', () => {
+    const dmWithPhone: MosChatConversation = {
+      id: 'dm-pair-1-2',
+      type: 'dm',
+      name: 'Bảo Hân',
+      color: '#10b981',
+      participantStaffId: 2,
+      unreadCount: 0,
+      updatedAt: '2026-11-24T00:00:00.000Z',
+      messages: [],
+    };
+    expect(resolveActiveDmPeerCallTarget(dmWithPhone, sampleStaff)).toEqual({
+      staffId: 2,
+      name: 'Bảo Hân',
+      phone: '0909888777',
+      avatar: 'https://cdn.example/baohan.jpg',
+    });
+
+    const dmByNameFallback: MosChatConversation = {
+      ...dmWithPhone,
+      id: 'dm-legacy-baohan',
+      participantStaffId: undefined,
+    };
+    expect(resolveActiveDmPeerCallTarget(dmByNameFallback, sampleStaff)?.phone).toBe('0909888777');
+
+    expect(
+      resolveActiveDmPeerCallTarget({ ...dmWithPhone, type: 'space', id: 'space-ops', name: 'Ops' }, sampleStaff)
+    ).toBeNull();
+    expect(resolveActiveDmPeerCallTarget({ ...dmWithPhone, id: 'dm-wings-ai-copilot' }, sampleStaff)).toBeNull();
+    expect(resolveActiveDmPeerCallTarget({ ...dmWithPhone, id: 'dm-self-1', isSelf: true }, sampleStaff)).toBeNull();
+    expect(
+      resolveActiveDmPeerCallTarget({ ...dmWithPhone, participantStaffId: 3, name: 'Nhân Sự Chưa Có SĐT' }, sampleStaff)
+    ).toBeNull();
+  });
+
+  it('MosChatDesktopHeader dials DM peer staff phone directly and opens dialer for Spaces', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    const dmConv: MosChatConversation = {
+      id: 'dm-pair-1-2',
+      type: 'dm',
+      name: 'Bảo Hân',
+      color: '#10b981',
+      participantStaffId: 2,
+      unreadCount: 0,
+      updatedAt: '2026-11-24T00:00:00.000Z',
+      messages: [],
+    };
+    const baseHeaderProps: SafeAny = {
+      isDark: true,
+      isMobile: false,
+      standalone: true,
+      token: { colorText: '#fff', colorTextSecondary: '#94a3b8', colorBorderSecondary: '#334155' },
+      antdMessage: { success: vi.fn(), info: vi.fn() },
+      surfaceBg: '#0f172a',
+      surfaceRaised: '#1e293b',
+      borderColor: '#334155',
+      currentUser: { id: 1, role: 'super_admin' },
+      isDannyAccount: true,
+      activeConversation: dmConv,
+      staffDirectory: sampleStaff,
+      activeSubtab: 'chat',
+      setActiveSubtab: vi.fn(),
+      setMobileActiveView: vi.fn(),
+      uniqueTasks: [],
+      workspaceSharedItemsCount: 0,
+      userPrefs: { pinnedIds: [], mutedIds: [], hiddenIds: [], manualUnreadIds: [] },
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      renderUserAvatarNode: () => <span />,
+      isConversationParticipantOnline: () => true,
+      setSpaceConfigModalOpen: vi.fn(),
+      setSpaceMembersModalOpen: vi.fn(),
+      voiceCallIsConnecting: false,
+      startOrJoinVoiceCall: vi.fn(),
+      searchModalOpen: false,
+      setSearchModalOpen: vi.fn(),
+      ensurePortalOpen: vi.fn(),
+      navigateToMessageRef: { current: vi.fn() },
+      setNotifSettingsModalOpen: vi.fn(),
+      threadOpen: false,
+      setThreadOpen: vi.fn(),
+      activeThreadMsgId: null,
+      setActiveThreadMsgId: vi.fn(),
+      maximized: false,
+      maximizedRef: { current: false },
+      setMaximized: vi.fn(),
+      persistPersonalLayout: vi.fn(),
+      maiVoiceAnnounceEnabled: false,
+      ttsSpeed: 1,
+      aiSessionId: null,
+      isAiSessionReadOnly: false,
+      aiSessionAccess: null,
+      handleToggleMaiVoiceAnnounce: vi.fn(),
+      togglePinConversation: vi.fn(),
+      toggleManualUnreadConversation: vi.fn(),
+      handlePopOutToMiniDock: vi.fn(),
+      setAiSessionsModalOpen: vi.fn(),
+      handleCopyAiSessionPermalink: vi.fn(),
+      handleToggleAiSessionSharing: vi.fn(),
+      handleClearAiChat: vi.fn(),
+      setAccessConfigTab: vi.fn(),
+      setAccessConfigModalOpen: vi.fn(),
+      onClose: vi.fn(),
+    };
+
+    const { rerender } = render(<MosChatDesktopHeader {...baseHeaderProps} />);
+    fireEvent.click(screen.getByTestId('mos-chat-header-omicall-btn'));
+
+    expect(mockMakeCall).toHaveBeenCalledWith(
+      '0909888777',
+      'Bảo Hân',
+      undefined,
+      'https://cdn.example/baohan.jpg',
+      undefined,
+      { autoEnableAdmin: true }
+    );
+    expect(
+      dispatchSpy.mock.calls.some(
+        (c) => c[0] instanceof CustomEvent && c[0].type === MOS_CHAT_OPEN_OMICALL_DIALER_EVENT
+      )
+    ).toBe(false);
+
+    mockMakeCall.mockClear();
+    rerender(
+      <MosChatDesktopHeader
+        {...baseHeaderProps}
+        activeConversation={{ ...dmConv, id: 'space-ops', type: 'space', name: 'Shop Operations' }}
+      />
+    );
+    fireEvent.click(screen.getByTestId('mos-chat-header-omicall-btn'));
+
+    expect(mockMakeCall).not.toHaveBeenCalled();
+    expect(
+      dispatchSpy.mock.calls.some(
+        (c) => c[0] instanceof CustomEvent && c[0].type === MOS_CHAT_OPEN_OMICALL_DIALER_EVENT
+      )
+    ).toBe(true);
+    dispatchSpy.mockRestore();
+  });
+
+  it('MosChatOmiCallDialerModal searches staffDirectory accent-insensitively and dials in 1 click', async () => {
+    render(
+      <MosChatOmiCallDialerModal isDark={true} currentUser={{ id: 1 }} staffDirectory={sampleStaff} open={true} />
+    );
+
+    const input = screen.getByLabelText('Nhập SĐT, tên nhân sự hoặc khách hàng');
+    fireEvent.change(input, { target: { value: 'Bao Han' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Nhân sự nội bộ')).toBeInTheDocument();
+      expect(screen.getByText('Bảo Hân')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('mos-chat-omicall-staff-call-btn'));
+
+    await waitFor(() => {
+      expect(mockMakeCall).toHaveBeenCalledWith(
+        '0909888777',
+        'Bảo Hân',
+        undefined,
+        'https://cdn.example/baohan.jpg',
+        undefined,
+        { autoEnableAdmin: true }
+      );
+    });
   });
 });

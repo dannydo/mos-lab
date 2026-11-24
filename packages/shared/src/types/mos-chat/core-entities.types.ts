@@ -189,6 +189,7 @@ export interface MosChatStaffMember {
   username: string;
   displayName: string;
   role: string;
+  phone?: string | null;
   avatarUrl?: string | null;
   isOnline?: boolean;
   departmentCodes?: string[];

@@ -23,12 +23,17 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import type { MosChatConversation, MosChatTaskItem, SafeAny } from '@mos-lab/shared';
+import type { MosChatConversation, MosChatStaffMember, MosChatTaskItem, SafeAny } from '@mos-lab/shared';
 import { useOmiCall } from '../../../context/OmiCallContext';
 import { HeaderNotificationCenter } from '../../notification-center/HeaderNotificationCenter';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 import type { MosChatActiveSubtab } from '../types/mos-chat-types';
-import { dispatchOpenMosChatOmiCallDialer } from '../utils/omicall-dial-helpers';
+import {
+  dispatchOpenMosChatOmiCallDialer,
+  formatDisplayPhone,
+  resolveActiveDmPeerCallTarget,
+  saveRecentMosChatDial,
+} from '../utils/omicall-dial-helpers';
 import { MosChatHeaderOverflowMenu, type MosChatHeaderOverflowMenuProps } from './MosChatHeaderOverflowMenu';
 
 export interface MosChatDesktopHeaderProps extends MosChatHeaderOverflowMenuProps {
@@ -38,6 +43,7 @@ export interface MosChatDesktopHeaderProps extends MosChatHeaderOverflowMenuProp
   surfaceRaised: string;
   borderColor: string;
   currentUser: SafeAny;
+  staffDirectory?: MosChatStaffMember[];
   activeSubtab: MosChatActiveSubtab;
   setActiveSubtab: React.Dispatch<React.SetStateAction<MosChatActiveSubtab>>;
   setMobileActiveView: React.Dispatch<React.SetStateAction<'inbox' | 'conversation' | 'thread'>>;
@@ -81,6 +87,7 @@ export const MosChatDesktopHeader: React.FC<MosChatDesktopHeaderProps> = (props)
     surfaceRaised,
     borderColor,
     currentUser,
+    staffDirectory,
     activeConversation,
     activeSubtab,
     setActiveSubtab,
@@ -110,7 +117,8 @@ export const MosChatDesktopHeader: React.FC<MosChatDesktopHeaderProps> = (props)
     persistPersonalLayout,
     onClose,
   } = props;
-  const { canAccessOmiCall, isRegistered: omicallRegistered, callState: omicallCallState } = useOmiCall();
+  const { canAccessOmiCall, isRegistered: omicallRegistered, callState: omicallCallState, makeCall } = useOmiCall();
+  const dmPeerCallTarget = resolveActiveDmPeerCallTarget(activeConversation, staffDirectory);
 
   return (
     <div
@@ -350,12 +358,40 @@ export const MosChatDesktopHeader: React.FC<MosChatDesktopHeaderProps> = (props)
         )}
 
         {canAccessOmiCall && (
-          <Tooltip title="Gọi số điện thoại qua OmiCall">
+          <Tooltip
+            title={
+              dmPeerCallTarget
+                ? `Gọi trực tiếp ${dmPeerCallTarget.name} qua OmiCall (${formatDisplayPhone(dmPeerCallTarget.phone)})`
+                : 'Gọi số điện thoại qua OmiCall'
+            }
+          >
             <button
               type="button"
               data-testid="mos-chat-header-omicall-btn"
-              aria-label="Gọi số điện thoại qua OmiCall"
-              onClick={() => dispatchOpenMosChatOmiCallDialer()}
+              aria-label={
+                dmPeerCallTarget
+                  ? `Gọi trực tiếp ${dmPeerCallTarget.name} qua OmiCall`
+                  : 'Gọi số điện thoại qua OmiCall'
+              }
+              onClick={() => {
+                if (dmPeerCallTarget && omicallCallState === 'idle') {
+                  saveRecentMosChatDial(currentUser?.id ?? currentUser?.username, {
+                    phone: dmPeerCallTarget.phone,
+                    name: dmPeerCallTarget.name,
+                    avatar: dmPeerCallTarget.avatar ?? null,
+                  });
+                  void makeCall(
+                    dmPeerCallTarget.phone,
+                    dmPeerCallTarget.name,
+                    undefined,
+                    dmPeerCallTarget.avatar || undefined,
+                    undefined,
+                    { autoEnableAdmin: true }
+                  );
+                  return;
+                }
+                dispatchOpenMosChatOmiCallDialer();
+              }}
               className="relative w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors"
               style={{
                 background: omicallCallState !== 'idle' ? 'rgba(244, 63, 94, 0.16)' : 'rgba(212, 168, 75, 0.14)',

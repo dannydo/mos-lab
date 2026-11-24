@@ -32,6 +32,7 @@ export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promis
           username: true,
           displayName: true,
           role: true,
+          phone: true,
           avatarUrl: true,
           lastActiveAt: true,
           legacyStaffId: true,
@@ -56,10 +57,14 @@ export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promis
         .catch(() => []),
     ]);
 
-    // Fallback to legacy user_profile avatar for staff who haven't uploaded a custom CRM avatar yet
+    // Fallback to legacy user_profile avatar and user_contact phone for staff who haven't set CRM values yet
     const legacyAvatarMap = new Map<number, string>();
+    const legacyPhoneMap = new Map<number, string>();
     const candidateLegacyIds = rawStaff
       .filter((s) => !s.avatarUrl && s.legacyStaffId && Number(s.legacyStaffId) > 0)
+      .map((s) => Number(s.legacyStaffId));
+    const phoneLegacyIds = rawStaff
+      .filter((s) => !s.phone?.trim() && s.legacyStaffId && Number(s.legacyStaffId) > 0)
       .map((s) => Number(s.legacyStaffId));
 
     if (candidateLegacyIds.length > 0 && fastify.prisma?.legacy?.$queryRawUnsafe) {
@@ -84,6 +89,28 @@ export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promis
         }
       } catch {
         // ignore legacy avatar lookup failure in test/offline mode
+      }
+    }
+
+    if (phoneLegacyIds.length > 0 && fastify.prisma?.legacy?.$queryRawUnsafe) {
+      try {
+        const legacyContacts = await fastify.prisma.legacy.$queryRawUnsafe<
+          Array<{ user_id: number | string; phone_number: string | null }>
+        >(
+          `SELECT user_id, phone_number
+           FROM \`user_contact\`
+           WHERE is_disabled = 0 AND phone_number IS NOT NULL AND phone_number != '' AND user_id IN (${phoneLegacyIds.join(',')})
+           ORDER BY id ASC`
+        );
+        for (const c of legacyContacts || []) {
+          const uid = Number(c.user_id);
+          const rawPhone = String(c.phone_number || '').trim();
+          if (uid > 0 && rawPhone && !legacyPhoneMap.has(uid)) {
+            legacyPhoneMap.set(uid, rawPhone);
+          }
+        }
+      } catch {
+        // ignore legacy phone lookup failure in test/offline mode
       }
     }
 
@@ -143,12 +170,14 @@ export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promis
       }
 
       const fallbackLegacyAvatar = s.legacyStaffId ? legacyAvatarMap.get(Number(s.legacyStaffId)) || null : null;
+      const fallbackLegacyPhone = s.legacyStaffId ? legacyPhoneMap.get(Number(s.legacyStaffId)) || null : null;
 
       return {
         id: s.id,
         username: s.username,
         displayName: s.displayName || s.username,
         role: s.role,
+        phone: (s.phone && s.phone.trim()) || fallbackLegacyPhone || null,
         avatarUrl: s.avatarUrl || fallbackLegacyAvatar,
         isOnline: Boolean(s.lastActiveAt && nowMs - new Date(s.lastActiveAt).getTime() < 5 * 60 * 1000),
         departmentCodes: Array.from(deptSet),

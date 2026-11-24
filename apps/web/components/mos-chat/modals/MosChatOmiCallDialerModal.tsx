@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Avatar, Button, Spin } from 'antd';
+import { Avatar, Button } from 'antd';
 import { Clock, Delete, PhoneCall, Search, Trash2, User, X } from 'lucide-react';
-import type { Customer, SafeAny } from '@mos-lab/shared';
+import { removeVietnameseTones, type Customer, type MosChatStaffMember, type SafeAny } from '@mos-lab/shared';
 import { AdaptiveModal } from '~/components/ui';
 import { useOmiCall } from '~/context/OmiCallContext';
 import { apiClient } from '~/lib/api-client';
@@ -18,10 +18,12 @@ import {
   type MosChatOmiCallDialerPrefill,
   type RecentMosChatDial,
 } from '../utils/omicall-dial-helpers';
+import { MosChatOmiCallMatchList } from './MosChatOmiCallMatchList';
 
 export interface MosChatOmiCallDialerModalProps {
   isDark: boolean;
   currentUser?: SafeAny;
+  staffDirectory?: MosChatStaffMember[];
   open?: boolean;
   initialPrefill?: MosChatOmiCallDialerPrefill | null;
   onClose?: () => void;
@@ -53,6 +55,7 @@ const DIALPAD_KEYS: ReadonlyArray<{ digit: string; letters: string }> = [
 export const MosChatOmiCallDialerModal: React.FC<MosChatOmiCallDialerModalProps> = ({
   isDark,
   currentUser,
+  staffDirectory,
   open: controlledOpen,
   initialPrefill,
   onClose,
@@ -172,6 +175,30 @@ export const MosChatOmiCallDialerModal: React.FC<MosChatOmiCallDialerModalProps>
     onClose?.();
   }, [onClose]);
 
+  const matchedStaff = useMemo(() => {
+    const trimmed = inputValue.trim();
+    if (!trimmed || !Array.isArray(staffDirectory) || staffDirectory.length === 0) {
+      return [];
+    }
+    const queryNorm = removeVietnameseTones(trimmed.toLowerCase());
+    const queryDigits = trimmed.replace(/[^0-9]/g, '');
+
+    return staffDirectory
+      .filter((staff) => {
+        if (!isValidDialablePhone(staff.phone)) return false;
+        const nameNorm = removeVietnameseTones(String(staff.displayName || '').toLowerCase());
+        const unameNorm = String(staff.username || '').toLowerCase();
+        const phoneNorm = normalizeVietnamDialPhone(staff.phone!);
+        const rawDigits = String(staff.phone || '').replace(/[^0-9]/g, '');
+        return (
+          nameNorm.includes(queryNorm) ||
+          unameNorm.includes(queryNorm) ||
+          (queryDigits.length > 0 && (phoneNorm.includes(queryDigits) || rawDigits.includes(queryDigits)))
+        );
+      })
+      .slice(0, 5);
+  }, [inputValue, staffDirectory]);
+
   const dialNumber = useMemo(() => {
     const candidate = selectedCustomer?.phone || inputValue;
     return normalizeVietnamDialPhone(candidate);
@@ -203,6 +230,14 @@ export const MosChatOmiCallDialerModal: React.FC<MosChatOmiCallDialerModalProps>
             resolvedName = exactMatch.name || undefined;
             resolvedCustomerId = exactMatch.id;
             resolvedAvatar = exactMatch.avatar ?? null;
+          } else if (Array.isArray(staffDirectory)) {
+            const exactStaff = staffDirectory.find(
+              (s) => s.phone && normalizeVietnamDialPhone(s.phone) === normalizedPhone
+            );
+            if (exactStaff) {
+              resolvedName = exactStaff.displayName || exactStaff.username;
+              resolvedAvatar = exactStaff.avatarUrl ?? null;
+            }
           }
         }
       }
@@ -225,7 +260,7 @@ export const MosChatOmiCallDialerModal: React.FC<MosChatOmiCallDialerModalProps>
       );
       handleClose();
     },
-    [callState, dialNumber, selectedCustomer, matchedCustomers, userKey, makeCall, handleClose]
+    [callState, dialNumber, selectedCustomer, matchedCustomers, staffDirectory, userKey, makeCall, handleClose]
   );
 
   if (!canAccessOmiCall) {
@@ -352,8 +387,8 @@ export const MosChatOmiCallDialerModal: React.FC<MosChatOmiCallDialerModalProps>
                 void handleTriggerDial();
               }
             }}
-            placeholder="Nhập số điện thoại hoặc tên khách hàng..."
-            aria-label="Nhập số điện thoại hoặc tên khách hàng"
+            placeholder="Nhập SĐT, tên nhân sự hoặc khách hàng..."
+            aria-label="Nhập SĐT, tên nhân sự hoặc khách hàng"
             className="w-full bg-transparent border-0 outline-none text-base font-mono font-semibold tabular-nums"
           />
           {inputValue && (
@@ -401,69 +436,20 @@ export const MosChatOmiCallDialerModal: React.FC<MosChatOmiCallDialerModalProps>
           </div>
         )}
 
-        {/* Matched CRM customers */}
-        {(searchingCustomers || matchedCustomers.length > 0) && (
-          <div className={`rounded-xl border p-2 space-y-1 max-h-40 overflow-y-auto ${cardSurface}`}>
-            <div className="flex items-center justify-between px-1 text-[11px] font-semibold opacity-70">
-              <span>Khách hàng CRM phù hợp</span>
-              {searchingCustomers && <Spin size="small" />}
-            </div>
-            {matchedCustomers.map((customer) => {
-              const dialable = isValidDialablePhone(customer.phone);
-              return (
-                <div
-                  key={customer.id}
-                  className={`flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg transition-colors ${
-                    isDark ? 'hover:bg-slate-800/80' : 'hover:bg-white'
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!customer.phone) return;
-                      const normalized = normalizeVietnamDialPhone(customer.phone);
-                      setInputValue(normalized);
-                      setSelectedCustomer({
-                        id: customer.id,
-                        name: customer.name || 'Khách hàng',
-                        phone: normalized,
-                        avatar: customer.avatar || null,
-                      });
-                    }}
-                    className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer bg-transparent border-0 p-0"
-                  >
-                    <Avatar size={26} src={customer.avatar || undefined} icon={<User size={13} />} />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-semibold truncate">{customer.name || `KH #${customer.id}`}</div>
-                      <div className="text-[11px] opacity-75 font-mono tabular-nums truncate">
-                        {customer.phone || 'Chưa có SĐT'}
-                      </div>
-                    </div>
-                  </button>
-                  {dialable && customer.phone && (
-                    <Button
-                      size="small"
-                      type="primary"
-                      disabled={callState !== 'idle'}
-                      icon={<PhoneCall size={12} />}
-                      onClick={() =>
-                        void handleTriggerDial({
-                          phone: customer.phone!,
-                          name: customer.name || 'Khách hàng',
-                          customerId: customer.id,
-                          avatar: customer.avatar || null,
-                        })
-                      }
-                      style={{ background: '#10b981', borderColor: '#10b981' }}
-                    >
-                      Gọi
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {/* Matched staff & CRM customers */}
+        <MosChatOmiCallMatchList
+          isDark={isDark}
+          cardSurface={cardSurface}
+          callState={callState}
+          matchedStaff={matchedStaff}
+          matchedCustomers={matchedCustomers}
+          searchingCustomers={searchingCustomers}
+          onSelectTarget={(target) => {
+            setInputValue(target.phone);
+            setSelectedCustomer(target);
+          }}
+          onDialTarget={(target) => void handleTriggerDial(target)}
+        />
 
         {/* 3x4 Interactive Dialpad */}
         <div className="grid grid-cols-3 gap-2">

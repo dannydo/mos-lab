@@ -9,6 +9,7 @@ import {
   Mail,
   MailOpen,
   MoreVertical,
+  PhoneCall,
   Pin,
   ShieldCheck,
   Trash2,
@@ -23,8 +24,10 @@ import type {
   MosChatUserSidebarPrefs,
   SafeAny,
 } from '@mos-lab/shared';
+import { useOmiCall } from '../../../context/OmiCallContext';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
+import { dispatchOpenMosChatOmiCallDialer } from '../utils/omicall-dial-helpers';
 
 export interface MosChatHeaderOverflowMenuProps {
   token: GlobalToken;
@@ -75,6 +78,8 @@ export const MosChatHeaderOverflowMenu: React.FC<MosChatHeaderOverflowMenuProps>
   setAccessConfigTab,
   setAccessConfigModalOpen,
 }) => {
+  const { canAccessOmiCall } = useOmiCall();
+
   return (
     <Dropdown
       trigger={['click']}
@@ -156,6 +161,15 @@ export const MosChatHeaderOverflowMenu: React.FC<MosChatHeaderOverflowMenuProps>
                 },
               ]
             : []),
+          ...(canAccessOmiCall
+            ? [
+                {
+                  key: 'omicall-dialer',
+                  icon: <PhoneCall size={15} className="text-amber-500" />,
+                  label: 'Bàn phím quay số OmiCall',
+                },
+              ]
+            : []),
           ...(activeConversation?.id === AI_COPILOT_CONV_ID
             ? [
                 { type: 'divider' as const },
@@ -234,6 +248,8 @@ export const MosChatHeaderOverflowMenu: React.FC<MosChatHeaderOverflowMenuProps>
             toggleManualUnreadConversation(activeConversation);
           } else if (key === 'mini-dock') {
             handlePopOutToMiniDock();
+          } else if (key === 'omicall-dialer') {
+            dispatchOpenMosChatOmiCallDialer();
           } else if (key === 'ai-sessions') {
             setAiSessionsModalOpen(true);
           } else if (key === 'copy-ai-session-link') {

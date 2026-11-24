@@ -503,7 +503,7 @@ export const MobileAppModalsAndSheets: React.FC<MobileAppModalsAndSheetsProps> =
         }}
       />
 
-      <MosChatOmiCallDialerModal isDark={isDark} currentUser={currentUser} />
+      <MosChatOmiCallDialerModal isDark={isDark} currentUser={currentUser} staffDirectory={staffDirectory} />
     </>
   );
 };

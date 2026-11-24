@@ -1,5 +1,8 @@
 'use client';
 
+import type { MosChatConversation, MosChatStaffMember } from '@mos-lab/shared';
+import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
+
 export const MOS_CHAT_OPEN_OMICALL_DIALER_EVENT = 'mos-chat:open-omicall-dialer';
 const RECENT_DIALS_STORAGE_PREFIX = 'mos_chat_omicall_recent_dials_v1';
 const MAX_RECENT_DIALS = 8;
@@ -146,4 +149,56 @@ export function clearRecentMosChatDials(userKey?: string | number | null): void 
   } catch {
     // ignore
   }
+}
+
+export interface MosChatDirectCallTarget {
+  staffId?: number;
+  name: string;
+  phone: string;
+  avatar?: string | null;
+}
+
+export function resolveActiveDmPeerCallTarget(
+  activeConversation: MosChatConversation | null | undefined,
+  staffDirectory: MosChatStaffMember[] | undefined
+): MosChatDirectCallTarget | null {
+  if (!activeConversation || !Array.isArray(staffDirectory) || staffDirectory.length === 0) {
+    return null;
+  }
+  if (
+    activeConversation.type !== 'dm' ||
+    activeConversation.isSelf ||
+    String(activeConversation.id || '').startsWith('dm-self-') ||
+    activeConversation.id === AI_COPILOT_CONV_ID
+  ) {
+    return null;
+  }
+
+  let peer: MosChatStaffMember | undefined;
+  const participantId = Number(activeConversation.participantStaffId);
+  if (Number.isFinite(participantId) && participantId > 0) {
+    peer = staffDirectory.find((s) => Number(s.id) === participantId);
+  }
+  if (!peer && activeConversation.name) {
+    const convName = activeConversation.name.trim().toLowerCase();
+    if (convName) {
+      peer = staffDirectory.find(
+        (s) =>
+          String(s.displayName || '')
+            .trim()
+            .toLowerCase() === convName
+      );
+    }
+  }
+
+  if (!peer || !isValidDialablePhone(peer.phone)) {
+    return null;
+  }
+
+  return {
+    staffId: peer.id,
+    name: peer.displayName || activeConversation.name,
+    phone: normalizeVietnamDialPhone(peer.phone!),
+    avatar: peer.avatarUrl || activeConversation.avatar || null,
+  };
 }
