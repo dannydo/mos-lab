@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { triggerImmediateAnalysis } from '../analyzer.js';
+import { isRealtimeCallEvent, parseOmicallWebhookPayload } from '../webhook-parser.js';
 
 export function registerOmicallWebhookRoutes(fastify: FastifyInstance): void {
   // POST /api/omicall/webhook
@@ -19,42 +20,52 @@ export function registerOmicallWebhookRoutes(fastify: FastifyInstance): void {
       return reply.status(400).send({ error: 'Bad Request', message: 'Empty body' });
     }
 
-    // 2. Parse payload
-    const callUuid = body.call_uuid || body.callUuid;
-    const direction = body.direction; // 'outbound' | 'inbound'
-    const status = body.status; // 'ANSWER' | 'NOANSWER' | 'BUSY' | 'CANCEL'
-    const sourceNumber = body.source_number || body.sourceNumber;
-    const destinationNumber = body.destination_number || body.destinationNumber;
-    const duration = body.duration !== undefined ? Number(body.duration) : 0;
-    const billSec =
-      body.bill_sec !== undefined ? Number(body.bill_sec) : body.billSec !== undefined ? Number(body.billSec) : 0;
-    const recordingUrl = body.recording_url || body.recordingUrl || null;
-    const timeStartCall =
-      body.time_start_call || body.timeStartCall ? new Date(body.time_start_call || body.timeStartCall) : null;
-    const timeEndCall =
-      body.time_end_call || body.timeEndCall ? new Date(body.time_end_call || body.timeEndCall) : null;
+    // Ignore mid-call `call_event` notifications (ringing/answered/hangup leg events)
+    // so only final CDR payloads create or finalize call analysis records.
+    if (isRealtimeCallEvent(body)) {
+      return {
+        success: true,
+        ignored: true,
+        reason: 'realtime_call_event',
+        state: body.state ?? null,
+      };
+    }
+
+    // 2. Parse payload (supports both real OmiCall CDR schema and internal test payloads)
+    const {
+      callUuid,
+      direction,
+      status,
+      sourceNumber,
+      destinationNumber,
+      extensionToMatch,
+      customerPhone,
+      duration,
+      billSec,
+      recordingUrl,
+      timeStartCall,
+      timeEndCall,
+    } = parseOmicallWebhookPayload(body);
 
     if (!callUuid) {
       return reply.status(400).send({ error: 'Bad Request', message: 'callUuid/call_uuid is required' });
     }
 
     try {
-      // 3. Match extension to staffId via CrmOmicallConfig
-      const extensionToMatch = direction === 'outbound' ? sourceNumber : destinationNumber;
-      const customerPhone = direction === 'outbound' ? destinationNumber : sourceNumber;
-      const cleanPhone = customerPhone ? String(customerPhone).replace(/\D/g, '') : '';
+      // 3. Match extension to staffId & customer phone suffix concurrently
+      const cleanPhone = customerPhone.replace(/\D/g, '');
       const phoneSuffix = cleanPhone.length > 9 ? cleanPhone.substring(cleanPhone.length - 9) : cleanPhone;
 
       // These lookups are independent. Keeping them concurrent shortens the
       // webhook critical path while retaining the same matching precedence.
-      const [config, contact, existingCallLog] = await Promise.all([
+      const [config, contact, existingCallLog, existingOmicallLog] = await Promise.all([
         extensionToMatch
           ? fastify.prisma.crm.crmOmicallConfig.findFirst({
-              where: { extension: String(extensionToMatch) },
+              where: { extension: extensionToMatch },
               select: { staffId: true },
             })
           : Promise.resolve(null),
-        customerPhone
+        phoneSuffix
           ? fastify.prisma.legacy.user_contact.findFirst({
               where: {
                 phone_number: { endsWith: phoneSuffix },
@@ -67,19 +78,39 @@ export function registerOmicallWebhookRoutes(fastify: FastifyInstance): void {
           where: { callUuid },
           select: { id: true },
         }),
+        fastify.prisma.crm.crmOmicallLog.findUnique({
+          where: { callUuid },
+          select: { id: true, analysisStatus: true, recordingUrl: true },
+        }),
       ]);
       const staffId = config?.staffId ?? null;
       const legacyUserId = contact?.user_id ?? null;
 
-      // 5. Determine initial analysis status
-      // If call was not answered, skip AI analysis
-      // If answered and recording exists -> PENDING
-      // If answered and no recording -> WAITING_RECORDING
+      // 5. Determine initial / upgraded analysis status
       let analysisStatus = 'PENDING';
       if (status !== 'ANSWER') {
         analysisStatus = 'SKIPPED';
       } else if (!recordingUrl) {
         analysisStatus = 'WAITING_RECORDING';
+      }
+
+      const effectiveRecordingUrl = recordingUrl || existingOmicallLog?.recordingUrl || null;
+      let updateAnalysisFields: { analysisStatus?: string; analysisRetryCount?: number } = {};
+      if (
+        existingOmicallLog &&
+        existingOmicallLog.analysisStatus !== 'PROCESSING' &&
+        existingOmicallLog.analysisStatus !== 'DONE'
+      ) {
+        if (
+          (existingOmicallLog.analysisStatus === 'WAITING_RECORDING' ||
+            existingOmicallLog.analysisStatus === 'SKIPPED') &&
+          status === 'ANSWER' &&
+          effectiveRecordingUrl
+        ) {
+          updateAnalysisFields = { analysisStatus: 'PENDING', analysisRetryCount: 0 };
+        } else if (existingOmicallLog.analysisStatus === 'SKIPPED' && status === 'ANSWER' && !effectiveRecordingUrl) {
+          updateAnalysisFields = { analysisStatus: 'WAITING_RECORDING' };
+        }
       }
 
       // Check if call log was already created in parallel
@@ -117,32 +148,26 @@ export function registerOmicallWebhookRoutes(fastify: FastifyInstance): void {
       const log = await fastify.prisma.crm.crmOmicallLog.upsert({
         where: { callUuid },
         update: {
-          direction: direction || 'outbound',
-          status: status || 'NOANSWER',
-          sourceNumber: sourceNumber ? String(sourceNumber) : '',
-          destinationNumber: destinationNumber ? String(destinationNumber) : '',
+          direction,
+          status,
+          sourceNumber,
+          destinationNumber,
           duration,
           billSec,
-          recordingUrl,
           timeStartCall,
           timeEndCall,
           staffId,
           legacyUserId,
           callLogId,
-          // Do NOT overwrite analysisStatus on update.
-          // If OmiCall re-sends webhook for an already-processed record,
-          // we keep the existing state (PROCESSING/DONE/FAILED).
-          // Only update recordingUrl if we got a new one and record is still waiting.
-          ...(recordingUrl && {
-            recordingUrl,
-          }),
+          ...updateAnalysisFields,
+          ...(recordingUrl ? { recordingUrl } : {}),
         },
         create: {
           callUuid,
-          direction: direction || 'outbound',
-          status: status || 'NOANSWER',
-          sourceNumber: sourceNumber ? String(sourceNumber) : '',
-          destinationNumber: destinationNumber ? String(destinationNumber) : '',
+          direction,
+          status,
+          sourceNumber,
+          destinationNumber,
           duration,
           billSec,
           recordingUrl,

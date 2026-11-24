@@ -3,7 +3,43 @@ import axios from 'axios';
 
 const MAX_RETRIES = 3;
 const _AI_TIMEOUT_MS = 180_000; // 3 minutes
+const SEARCH_LOOKBACK_MS = 85 * 24 * 60 * 60 * 1000;
 let isProcessing = false; // Simple poller mutex
+
+/**
+ * Detects audio MIME type from magic bytes first, then Content-Type, then URL extension.
+ */
+export function detectAudioMimeType(url: string, contentType?: string | null, audioBuffer?: Buffer): string {
+  if (audioBuffer && audioBuffer.length >= 4) {
+    const magic = audioBuffer.subarray(0, 4).toString('ascii');
+    if (magic === 'RIFF') return 'audio/wav';
+    if (magic === 'OggS') return 'audio/ogg';
+    if (magic.startsWith('ID3') || (audioBuffer[0] === 0xff && (audioBuffer[1] & 0xe0) === 0xe0)) {
+      return 'audio/mp3';
+    }
+    if (audioBuffer.length >= 8 && audioBuffer.subarray(4, 8).toString('ascii') === 'ftyp') {
+      return 'audio/mp4';
+    }
+  }
+
+  const normalizedCt = (contentType || '').toLowerCase();
+  if (normalizedCt.includes('wav')) return 'audio/wav';
+  if (normalizedCt.includes('ogg')) return 'audio/ogg';
+  if (normalizedCt.includes('mp4') || normalizedCt.includes('m4a')) return 'audio/mp4';
+  if (normalizedCt.includes('mpeg') || normalizedCt.includes('mp3')) return 'audio/mp3';
+
+  const cleanUrl = url.split('?')[0].toLowerCase();
+  if (cleanUrl.endsWith('.wav')) return 'audio/wav';
+  if (cleanUrl.endsWith('.ogg')) return 'audio/ogg';
+  if (cleanUrl.endsWith('.m4a') || cleanUrl.endsWith('.mp4')) return 'audio/mp4';
+  return 'audio/mp3';
+}
+
+function extractRecordingUrlFromItem(item: SafeAny): string | null {
+  if (!item || typeof item !== 'object') return null;
+  const candidate = item.recording_file_url || item.recording_file || item.recording_url || item.recordingUrl;
+  return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null;
+}
 
 async function fetchRecordingUrl(fastify: FastifyInstance, callUuid: string): Promise<string | null> {
   const apiKey = process.env.OMICALL_API_KEY;
@@ -12,25 +48,74 @@ async function fetchRecordingUrl(fastify: FastifyInstance, callUuid: string): Pr
     return `https://github.com/rafaelreis-hotmart/Audio-Sample-files/raw/master/sample.wav`;
   }
 
+  const apiBaseUrl = (process.env.OMICALL_API_BASE_URL || 'https://public-v1-stg.omicall.com').replace(/\/+$/, '');
+  const now = Date.now();
+  const fromDate = now - SEARCH_LOOKBACK_MS;
+  const toDate = now + 60_000;
+
   try {
-    const response = await axios.get(
-      `https://public-v1.omicall.com/api/call/transaction/detail?call_uuid=${callUuid}`,
+    // 1. Primary: OmiCall v3 call-transaction search with x-api-key
+    const v3Res = await axios.post(
+      `${apiBaseUrl}/api/v3/call-transaction/search?page=1&size=1`,
+      {
+        filter: {
+          transactionIds: [callUuid],
+          fromDate,
+          toDate,
+        },
+      },
       {
         headers: {
           Accept: 'application/json',
-          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
         },
         timeout: 10_000,
+        validateStatus: () => true,
       }
     );
 
-    const data = response.data;
-    const recordingUrl =
-      data?.payload?.recording_file_url ||
-      data?.payload?.recording_url ||
-      data?.recording_file_url ||
-      data?.recording_url;
-    return recordingUrl || null;
+    if (v3Res.status >= 200 && v3Res.status < 300) {
+      const items = v3Res.data?.items || v3Res.data?.payload?.items || [];
+      const recUrl = Array.isArray(items) ? extractRecordingUrlFromItem(items[0]) : null;
+      if (recUrl) return recUrl;
+    }
+
+    // 2. Fallback: exchange apiKey for Bearer access_token and query v2 search
+    const authRes = await axios.get(`${apiBaseUrl}/api/auth?apiKey=${encodeURIComponent(apiKey)}`, {
+      headers: { Accept: 'application/json' },
+      timeout: 10_000,
+      validateStatus: () => true,
+    });
+    const accessToken = authRes.data?.payload?.access_token || authRes.data?.access_token;
+    if (!accessToken) {
+      return null;
+    }
+
+    const v2Res = await axios.post(
+      `${apiBaseUrl}/api/v2/callTransaction/search?page=1&size=1`,
+      {
+        transactionIds: [callUuid],
+        fromDate,
+        toDate,
+      },
+      {
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        timeout: 10_000,
+        validateStatus: () => true,
+      }
+    );
+
+    if (v2Res.status >= 200 && v2Res.status < 300) {
+      const items = v2Res.data?.payload?.items || v2Res.data?.items || [];
+      return Array.isArray(items) ? extractRecordingUrlFromItem(items[0]) : null;
+    }
+
+    return null;
   } catch (error) {
     fastify.log.error(error, `Error fetching OmiCall recording URL for ${callUuid}`);
     return null;
@@ -65,7 +150,8 @@ export async function analyzeLogRecord(fastify: FastifyInstance, log: SafeAny) {
   }
 
   const base64Audio = audioBuffer.toString('base64');
-  const mimeType = log.recordingUrl.toLowerCase().endsWith('.wav') ? 'audio/wav' : 'audio/mp3';
+  const contentType = typeof response.headers?.['content-type'] === 'string' ? response.headers['content-type'] : null;
+  const mimeType = detectAudioMimeType(log.recordingUrl, contentType, audioBuffer);
 
   // 2. Prepare Gemini Prompt
   const promptText = `Bạn là chuyên gia phân tích cuộc gọi bán hàng và chăm sóc khách hàng (Telesales QA). 
