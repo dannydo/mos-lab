@@ -40,16 +40,25 @@ export interface LaughSegment {
 
 export interface ResolvedCallLog {
   id?: number | null;
+  callUuid?: string | null;
   disposition?: string | null;
   duration?: number | null;
+  billSec?: number | null;
   analysisStatus?: string | null;
   analysisError?: string | null;
+  happyCallStatus?: string | null;
+  happyCallReason?: string | null;
   customerSatisfactionScore?: number | null;
   customerSentiment?: string | null;
   satisfactionAnalysis?: string | null;
+  transcript?: string | null;
   laughCountCustomer?: number | null;
   laughCountAgent?: number | null;
   laughTimestamps?: string | LaughSegment[] | null;
+  qaTags?: string[] | null;
+  qaChecklist?: Record<string, boolean> | null;
+  callType?: 'CSKH' | 'TELESALES' | 'OTHER' | null;
+  hasComplaint?: boolean;
   recordingUrl?: string | null;
 }
 

@@ -37,6 +37,9 @@ const CHECKLIST_ITEMS = [
 ];
 
 const PRESET_TAGS = [
+  { value: 'CSKH', label: 'CSKH' },
+  { value: 'Telesales', label: 'Telesales' },
+  { value: 'Khiếu nại', label: 'Khiếu nại' },
   { value: 'Để training', label: 'Để training' },
   { value: 'Xuất sắc', label: 'Xuất sắc' },
   { value: 'Lỗi quy trình', label: 'Lỗi quy trình' },

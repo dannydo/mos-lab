@@ -8,12 +8,20 @@ export const telecomApi = {
       const response = await api.get('/omicall/sip-config');
       return response.data;
     },
-    getLatestLog: async (params: { phone: string; direction: string }): Promise<unknown> => {
+    getLatestLog: async (params: { phone: string; direction: string; callUuid?: string }): Promise<unknown> => {
       const response = await api.get('/omicall/logs/latest', { params });
       return response.data;
     },
     listLogs: async (params: Record<string, unknown>): Promise<unknown> => {
       const response = await api.get('/omicall/logs', { params });
+      return response.data;
+    },
+    reanalyzeLog: async (id: number): Promise<unknown> => {
+      const response = await api.post(`/omicall/logs/${id}/reanalyze`);
+      return response.data;
+    },
+    syncLogs: async (data?: { days?: number; autoAnalyze?: boolean }): Promise<unknown> => {
+      const response = await api.post('/omicall/logs/sync', data || {});
       return response.data;
     },
     getConfigs: async (): Promise<unknown[]> => {
