@@ -14,18 +14,30 @@ export interface OmicallStoredUser {
 export interface OmicallLogRow {
   id: number;
   callUuid: string;
+  direction?: string;
   createdAt: string;
+  timeStartCall?: string | null;
   staffId?: number | null;
   staff?: {
     displayName?: string | null;
   } | null;
   staffName?: string | null;
+  customerName?: string | null;
+  sourceNumber?: string;
   destinationNumber: string;
   duration: number;
+  billSec?: number;
+  recordingUrl?: string | null;
   status: string;
   analysisStatus: string;
   laughCount: number;
+  customerSatisfactionScore?: number | null;
+  customerSentiment?: string | null;
   happyCallStatus: string;
+  happyCallReason?: string | null;
+  qaTags?: string[];
+  callType?: 'CSKH' | 'TELESALES' | null;
+  hasComplaint?: boolean;
 }
 
 export type OmicallConfigRow = OmiCallConfigPayload;
@@ -54,6 +66,12 @@ export interface StatusTagDescriptor {
 export const OMICALL_DEFAULT_LOOKBACK_DAYS = 30;
 export const OMICALL_PAGE_SIZE_OPTIONS = ['10', '20', '50'];
 
+export const DIRECTION_FILTER_OPTIONS = [
+  { value: 'ALL', label: 'Gọi đi & Gọi đến' },
+  { value: 'outbound', label: 'Gọi đi (Outbound)' },
+  { value: 'inbound', label: 'Gọi đến (Inbound)' },
+];
+
 export const CALL_STATUS_FILTER_OPTIONS = [
   { value: 'ALL', label: 'Tất cả kết quả' },
   { value: 'ANSWER', label: 'ANSWER (Bắt máy)' },
@@ -72,14 +90,26 @@ export const HAPPY_CALL_FILTER_OPTIONS = [
 
 export const AI_STATUS_FILTER_OPTIONS = [
   { value: 'ALL', label: 'Tất cả trạng thái' },
+  { value: 'DONE', label: 'DONE (Hoàn thành)' },
   { value: 'PENDING', label: 'PENDING (Chờ)' },
   { value: 'PROCESSING', label: 'PROCESSING (Đang chạy)' },
-  { value: 'DONE', label: 'DONE (Hoàn thành)' },
+  { value: 'WAITING_RECORDING', label: 'Chờ ghi âm' },
+  { value: 'SKIPPED', label: 'Chưa phân tích / Bỏ qua' },
   { value: 'FAILED', label: 'FAILED (Lỗi)' },
 ];
 
 export function createDefaultOmicallDateRange(): [Dayjs, Dayjs] {
   return [dayjs().subtract(OMICALL_DEFAULT_LOOKBACK_DAYS, 'day'), dayjs()];
+}
+
+export function resolveDisplayCallTime(record: Pick<OmicallLogRow, 'timeStartCall' | 'createdAt'>): string {
+  if (record.timeStartCall) {
+    const dt = new Date(record.timeStartCall);
+    if (!Number.isNaN(dt.getTime()) && dt.getUTCFullYear() >= 2020) {
+      return record.timeStartCall;
+    }
+  }
+  return record.createdAt;
 }
 
 export function formatOmicallDuration(secs: number): string {
@@ -118,7 +148,9 @@ export function getAiStatusDescriptor(status: string): StatusTagDescriptor {
     case 'FAILED':
       return { status: 'error', label: 'FAILED' };
     case 'WAITING_RECORDING':
-      return { status: 'orange', label: 'WAITING RECORDING' };
+      return { status: 'orange', label: 'CHỜ GHI ÂM' };
+    case 'SKIPPED':
+      return { status: 'default', label: 'CHƯA PHÂN TÍCH' };
     default:
       return { status: 'default', label: 'PENDING' };
   }
@@ -127,7 +159,7 @@ export function getAiStatusDescriptor(status: string): StatusTagDescriptor {
 export function getHappyStatusDescriptor(status: string): StatusTagDescriptor {
   switch (status) {
     case 'APPROVED':
-      return { status: 'success', label: 'ĐỒNG Ý', emphasized: true };
+      return { status: 'success', label: 'ĐẠT HAPPY CALL', emphasized: true };
     case 'REJECTED':
       return { status: 'error', label: 'TỪ CHỐI', emphasized: true };
     case 'PENDING_APPROVAL':

@@ -3,7 +3,7 @@
 import React from 'react';
 import { Divider } from 'antd';
 import { RefreshCw } from 'lucide-react';
-import { AppIcon, StatusTag } from '~/components/ui';
+import { AppIcon, StatusTag, type StatusType } from '~/components/ui';
 import { formatCallDuration, getSentimentStatus, isCallAnalyzing, parseLaughTimestamps } from './callLogModalHelpers';
 import type { ResolvedCallLog } from './callLogModalTypes';
 
@@ -12,6 +12,26 @@ export interface CallAiAnalysisPanelProps {
   resolvedLog: ResolvedCallLog | null;
   isDark: boolean;
   audioRef: React.RefObject<HTMLAudioElement | null>;
+}
+
+function resolveHappyCallDisplay(resolvedLog: ResolvedCallLog): { status: StatusType; label: string } {
+  const hcStatus = String(resolvedLog.happyCallStatus || 'NONE').toUpperCase();
+  if (hcStatus === 'APPROVED') {
+    const reasonText =
+      resolvedLog.happyCallReason === 'auto_laughter_30s'
+        ? ' (≥30s + Tiếng cười)'
+        : resolvedLog.happyCallReason === 'auto_180s'
+          ? ' (≥180s)'
+          : '';
+    return { status: 'success', label: `✨ Đạt Happy Call${reasonText}` };
+  }
+  if (hcStatus === 'PENDING_APPROVAL') {
+    return { status: 'warning', label: '⏳ Chờ QA duyệt Happy Call' };
+  }
+  if (hcStatus === 'REJECTED') {
+    return { status: 'error', label: 'Từ chối Happy Call' };
+  }
+  return { status: 'default', label: 'Chưa đạt Happy Call' };
 }
 
 export const CallAiAnalysisPanel: React.FC<CallAiAnalysisPanelProps> = ({
@@ -23,6 +43,10 @@ export const CallAiAnalysisPanel: React.FC<CallAiAnalysisPanelProps> = ({
   const analyzing = isCallAnalyzing(resolvedLog);
   const laughs = parseLaughTimestamps(resolvedLog?.laughTimestamps);
   const score = resolvedLog?.customerSatisfactionScore || 0;
+  const talkSeconds = resolvedLog?.billSec && resolvedLog.billSec > 0 ? resolvedLog.billSec : callDuration;
+  const qaTags = Array.isArray(resolvedLog?.qaTags) ? resolvedLog.qaTags : [];
+  const hasComplaint = Boolean(resolvedLog?.hasComplaint || qaTags.some((t) => t.toLowerCase().includes('khiếu nại')));
+  const happyCallInfo = resolvedLog ? resolveHappyCallDisplay(resolvedLog) : null;
 
   return (
     <div className="my-4">
@@ -38,7 +62,7 @@ export const CallAiAnalysisPanel: React.FC<CallAiAnalysisPanelProps> = ({
             <span className="font-bold">🤖 AI đang phân tích cuộc gọi ngầm...</span>
           </div>
           <span className={`text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-            Booker có thể ghi chú và bấm lưu luôn mà không cần chờ.
+            Bạn có thể ghi chú và bấm lưu luôn mà không cần chờ.
           </span>
         </div>
       ) : resolvedLog?.analysisStatus === 'DONE' ? (
@@ -47,6 +71,44 @@ export const CallAiAnalysisPanel: React.FC<CallAiAnalysisPanelProps> = ({
             isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-100/60 border-zinc-200'
           }`}
         >
+          {/* Happy Call Badge + Call Type / Complaint Tags */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {happyCallInfo && (
+                <StatusTag
+                  status={happyCallInfo.status}
+                  label={happyCallInfo.label}
+                  className="font-bold text-[10px] px-2 py-0.5"
+                />
+              )}
+              {resolvedLog.callType && (
+                <StatusTag
+                  status={resolvedLog.callType === 'CSKH' ? 'processing' : 'default'}
+                  label={resolvedLog.callType === 'CSKH' ? 'CSKH' : resolvedLog.callType}
+                  className="font-semibold text-[10px] px-1.5 py-0.5"
+                />
+              )}
+              {qaTags
+                .filter((tag) => tag.toUpperCase() !== String(resolvedLog.callType || '').toUpperCase())
+                .map((tag) => (
+                  <StatusTag
+                    key={tag}
+                    status={tag.toLowerCase().includes('khiếu nại') ? 'error' : 'default'}
+                    label={tag}
+                    className="text-[10px] px-1.5 py-0.5"
+                  />
+                ))}
+            </div>
+
+            {hasComplaint && (
+              <StatusTag
+                status="error"
+                label="⚠️ Phát hiện phản ánh / khiếu nại"
+                className="font-bold text-[10px] px-2 py-0.5"
+              />
+            )}
+          </div>
+
           {/* Laughter & CSAT Score */}
           <div className="flex items-center justify-between gap-2">
             <div>
@@ -60,7 +122,7 @@ export const CallAiAnalysisPanel: React.FC<CallAiAnalysisPanelProps> = ({
                 <span
                   className={`text-[10px] ml-1 font-bold tabular-nums ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}
                 >
-                  ({score}/5) - Thời lượng: {formatCallDuration(callDuration)}
+                  ({score}/5) - Đàm thoại: {formatCallDuration(talkSeconds)}
                 </span>
               </div>
             </div>
@@ -78,7 +140,7 @@ export const CallAiAnalysisPanel: React.FC<CallAiAnalysisPanelProps> = ({
           {/* Satisfaction Analysis Detail */}
           {resolvedLog.satisfactionAnalysis && (
             <div
-              className={`text-[10.5px] border-t pt-2 ${
+              className={`text-[10.5px] border-t pt-2 whitespace-pre-line ${
                 isDark ? 'border-zinc-800 text-zinc-400' : 'border-zinc-200 text-zinc-600'
               }`}
             >
@@ -135,6 +197,24 @@ export const CallAiAnalysisPanel: React.FC<CallAiAnalysisPanelProps> = ({
               <audio ref={audioRef} src={resolvedLog.recordingUrl} controls className="w-full h-7 mt-1 outline-none" />
             </div>
           )}
+        </div>
+      ) : resolvedLog?.analysisStatus === 'SKIPPED' ? (
+        <div
+          className={`p-3 rounded-lg border text-xs flex flex-col gap-1 items-center justify-center text-center ${
+            isDark ? 'bg-zinc-900/60 border-zinc-800 text-zinc-400' : 'bg-zinc-100/60 border-zinc-200 text-zinc-600'
+          }`}
+        >
+          <span>Cuộc gọi chưa kết nối hoặc chưa có file ghi âm để AI phân tích.</span>
+        </div>
+      ) : resolvedLog?.analysisStatus === 'TIMEOUT' ? (
+        <div
+          className={`p-3 rounded-lg border text-xs flex flex-col gap-1 items-center justify-center text-center ${
+            isDark
+              ? 'bg-amber-950/30 border-amber-500/20 text-amber-300'
+              : 'bg-amber-50 border-amber-200 text-amber-800'
+          }`}
+        >
+          <span>⏳ {resolvedLog.analysisError || 'Chưa nhận được kết quả phân tích từ OmiCall/AI.'}</span>
         </div>
       ) : resolvedLog?.analysisStatus === 'FAILED' ? (
         <div

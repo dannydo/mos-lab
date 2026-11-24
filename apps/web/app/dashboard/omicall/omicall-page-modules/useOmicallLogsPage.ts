@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Dayjs } from 'dayjs';
 import { Form, message } from 'antd';
+import { isAdminOrSuperAdminRole, type UserRole } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import {
   createDefaultOmicallDateRange,
@@ -22,27 +23,38 @@ interface ApiErrorPayload {
   };
 }
 
+const QA_REVIEWER_ROLES = new Set(['admin', 'super_admin', 'manager', 'qa', 'qc', 'qa_qc']);
+
 /**
- * Manages auth context, OmiCall call log filters/pagination, extension config CRUD, and QA drawer state.
+ * Manages auth context, OmiCall call log filters/pagination, inline playback,
+ * on-demand AI re-analysis, historical sync, extension config CRUD, and QA drawer state.
  */
 export function useOmicallLogsPage() {
   const [currentUser, setCurrentUser] = useState<OmicallStoredUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [canReviewQa, setCanReviewQa] = useState(false);
 
   const [activeTab, setActiveTab] = useState('logs');
 
   const [logs, setLogs] = useState<OmicallLogRow[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalLogs, setTotalLogs] = useState(0);
 
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(() => createDefaultOmicallDateRange());
+  const [directionFilter, setDirectionFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [happyFilter, setHappyFilter] = useState<string>('ALL');
   const [aiFilter, setAiFilter] = useState<string>('ALL');
   const [staffFilter, setStaffFilter] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [onlyWithRecording, setOnlyWithRecording] = useState<boolean>(false);
   const [staffList, setStaffList] = useState<OmicallStaffSummary[]>([]);
+
+  const [playingLogId, setPlayingLogId] = useState<number | null>(null);
+  const [reanalyzingLogId, setReanalyzingLogId] = useState<number | null>(null);
+  const [syncingLogs, setSyncingLogs] = useState(false);
 
   const [configs, setConfigs] = useState<OmicallConfigRow[]>([]);
   const [loadingConfigs, setLoadingConfigs] = useState(false);
@@ -57,12 +69,14 @@ export function useOmicallLogsPage() {
   const logsRequestIdRef = useRef(0);
   const staffRequestIdRef = useRef(0);
   const configsRequestIdRef = useRef(0);
+  const reanalyzeRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
     () => () => {
       logsRequestIdRef.current += 1;
       staffRequestIdRef.current += 1;
       configsRequestIdRef.current += 1;
+      if (reanalyzeRefreshTimerRef.current) clearTimeout(reanalyzeRefreshTimerRef.current);
     },
     []
   );
@@ -73,7 +87,9 @@ export function useOmicallLogsPage() {
       try {
         const user = JSON.parse(stored) as OmicallStoredUser;
         setCurrentUser(user);
-        setIsAdmin(user.role === 'admin');
+        const adminFlag = isAdminOrSuperAdminRole(user.role as UserRole);
+        setIsAdmin(adminFlag);
+        setCanReviewQa(adminFlag || QA_REVIEWER_ROLES.has(String(user.role || '').toLowerCase()));
       } catch (err) {
         console.error('[OmicallLogsPage] Failed to parse stored user:', err);
       }
@@ -101,7 +117,6 @@ export function useOmicallLogsPage() {
       const params: Record<string, unknown> = {
         page: currentPage,
         limit: pageSize,
-        direction: 'outbound',
       };
 
       if (dateRange && dateRange[0] && dateRange[1]) {
@@ -109,22 +124,13 @@ export function useOmicallLogsPage() {
         params.endDate = dateRange[1].format('YYYY-MM-DD');
       }
 
-      if (statusFilter !== 'ALL') {
-        params.status = statusFilter;
-      }
-
-      if (happyFilter !== 'ALL') {
-        params.happyCallStatus = happyFilter;
-      }
-
-      if (aiFilter !== 'ALL') {
-        params.analysisStatus = aiFilter;
-      }
-
-      // If user is admin, allow filtering by selected staff. Otherwise, backend restricts to current user.
-      if (isAdmin && staffFilter !== 'ALL') {
-        params.staffId = Number(staffFilter);
-      }
+      if (directionFilter !== 'ALL') params.direction = directionFilter;
+      if (statusFilter !== 'ALL') params.status = statusFilter;
+      if (happyFilter !== 'ALL') params.happyCallStatus = happyFilter;
+      if (aiFilter !== 'ALL') params.analysisStatus = aiFilter;
+      if (onlyWithRecording) params.hasRecording = 'true';
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (canReviewQa && staffFilter !== 'ALL') params.staffId = Number(staffFilter);
 
       const data = (await apiClient.omicall.listLogs(params)) as OmicallLogsApiResponse;
       if (requestId !== logsRequestIdRef.current) return;
@@ -141,7 +147,19 @@ export function useOmicallLogsPage() {
         setLoadingLogs(false);
       }
     }
-  }, [currentPage, pageSize, dateRange, statusFilter, happyFilter, aiFilter, staffFilter, isAdmin]);
+  }, [
+    currentPage,
+    pageSize,
+    dateRange,
+    directionFilter,
+    statusFilter,
+    happyFilter,
+    aiFilter,
+    onlyWithRecording,
+    searchQuery,
+    staffFilter,
+    canReviewQa,
+  ]);
 
   const fetchConfigs = useCallback(async () => {
     if (!isAdmin) return;
@@ -167,12 +185,10 @@ export function useOmicallLogsPage() {
   useEffect(() => {
     if (currentUser) {
       fetchLogs();
-      if (isAdmin) {
-        fetchStaffList();
-        fetchConfigs();
-      }
+      if (canReviewQa) fetchStaffList();
+      if (isAdmin) fetchConfigs();
     }
-  }, [currentUser, fetchLogs, fetchStaffList, fetchConfigs, isAdmin]);
+  }, [currentUser, fetchLogs, fetchStaffList, fetchConfigs, isAdmin, canReviewQa]);
 
   const handleTabChange = useCallback(
     (key: string) => {
@@ -192,18 +208,69 @@ export function useOmicallLogsPage() {
   }, []);
 
   const handleSearchLogs = useCallback(() => {
-    setCurrentPage(1);
-    fetchLogs();
-  }, [fetchLogs]);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    } else {
+      fetchLogs();
+    }
+  }, [currentPage, fetchLogs]);
 
   const handleResetFilters = useCallback(() => {
     setDateRange(createDefaultOmicallDateRange());
+    setDirectionFilter('ALL');
     setStatusFilter('ALL');
     setHappyFilter('ALL');
     setAiFilter('ALL');
     setStaffFilter('ALL');
+    setSearchQuery('');
+    setOnlyWithRecording(false);
+    setPlayingLogId(null);
     setCurrentPage(1);
   }, []);
+
+  const handleTogglePlay = useCallback((logId: number) => {
+    setPlayingLogId((prev) => (prev === logId ? null : logId));
+  }, []);
+
+  const handleReanalyze = useCallback(
+    async (logId: number) => {
+      try {
+        setReanalyzingLogId(logId);
+        await apiClient.omicall.reanalyzeLog(logId);
+        message.success('Đã gửi cuộc gọi cho AI phân tích Happy Call. Bảng sẽ tự làm mới sau vài giây.');
+        await fetchLogs();
+        if (reanalyzeRefreshTimerRef.current) clearTimeout(reanalyzeRefreshTimerRef.current);
+        reanalyzeRefreshTimerRef.current = setTimeout(() => {
+          void fetchLogs();
+        }, 6500);
+      } catch (err) {
+        message.error((err as ApiErrorPayload)?.response?.data?.message || 'Không thể chạy phân tích AI');
+      } finally {
+        setReanalyzingLogId(null);
+      }
+    },
+    [fetchLogs]
+  );
+
+  const handleSyncFromOmicall = useCallback(async () => {
+    try {
+      setSyncingLogs(true);
+      const res = (await apiClient.omicall.syncLogs({ days: 14, autoAnalyze: false })) as {
+        imported?: number;
+        updated?: number;
+        withRecording?: number;
+      };
+      message.success(
+        `Đã đồng bộ OmiCall: thêm mới ${res.imported || 0}, cập nhật ${res.updated || 0} (${res.withRecording || 0} cuộc có ghi âm).`
+      );
+      setCurrentPage(1);
+      await fetchLogs();
+    } catch (err) {
+      message.error((err as ApiErrorPayload)?.response?.data?.message || 'Đồng bộ OmiCall thất bại');
+    } finally {
+      setSyncingLogs(false);
+    }
+  }, [fetchLogs]);
 
   const handleCopyUuid = useCallback((uuid: string) => {
     navigator.clipboard.writeText(uuid);
@@ -286,6 +353,7 @@ export function useOmicallLogsPage() {
 
   return {
     isAdmin,
+    canReviewQa,
     activeTab,
     logs,
     loadingLogs,
@@ -294,6 +362,8 @@ export function useOmicallLogsPage() {
     totalLogs,
     dateRange,
     setDateRange,
+    directionFilter,
+    setDirectionFilter,
     statusFilter,
     setStatusFilter,
     happyFilter,
@@ -302,7 +372,14 @@ export function useOmicallLogsPage() {
     setAiFilter,
     staffFilter,
     setStaffFilter,
+    searchQuery,
+    setSearchQuery,
+    onlyWithRecording,
+    setOnlyWithRecording,
     staffList,
+    playingLogId,
+    reanalyzingLogId,
+    syncingLogs,
     configs,
     loadingConfigs,
     configModalOpen,
@@ -316,6 +393,9 @@ export function useOmicallLogsPage() {
     handlePageChange,
     handleSearchLogs,
     handleResetFilters,
+    handleTogglePlay,
+    handleReanalyze,
+    handleSyncFromOmicall,
     handleCopyUuid,
     openQADrawer,
     closeQADrawer,

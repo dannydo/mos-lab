@@ -18,6 +18,7 @@ const QAPlayerDrawer = dynamic(() => import('../../../components/QAPlayerDrawer'
 export default function OmicallLogsPage() {
   const {
     isAdmin,
+    canReviewQa,
     activeTab,
     logs,
     loadingLogs,
@@ -26,6 +27,8 @@ export default function OmicallLogsPage() {
     totalLogs,
     dateRange,
     setDateRange,
+    directionFilter,
+    setDirectionFilter,
     statusFilter,
     setStatusFilter,
     happyFilter,
@@ -34,7 +37,14 @@ export default function OmicallLogsPage() {
     setAiFilter,
     staffFilter,
     setStaffFilter,
+    searchQuery,
+    setSearchQuery,
+    onlyWithRecording,
+    setOnlyWithRecording,
     staffList,
+    playingLogId,
+    reanalyzingLogId,
+    syncingLogs,
     configs,
     loadingConfigs,
     configModalOpen,
@@ -48,6 +58,9 @@ export default function OmicallLogsPage() {
     handlePageChange,
     handleSearchLogs,
     handleResetFilters,
+    handleTogglePlay,
+    handleReanalyze,
+    handleSyncFromOmicall,
     handleCopyUuid,
     openQADrawer,
     closeQADrawer,
@@ -60,10 +73,15 @@ export default function OmicallLogsPage() {
   const logsColumns = useMemo(
     () =>
       buildOmicallLogsColumns({
+        playingLogId,
+        reanalyzingLogId,
+        canReviewQa,
         onCopyUuid: handleCopyUuid,
+        onTogglePlay: handleTogglePlay,
+        onReanalyze: handleReanalyze,
         onOpenQaDrawer: openQADrawer,
       }),
-    [handleCopyUuid, openQADrawer]
+    [playingLogId, reanalyzingLogId, canReviewQa, handleCopyUuid, handleTogglePlay, handleReanalyze, openQADrawer]
   );
 
   const configsColumns = useMemo(
@@ -79,7 +97,7 @@ export default function OmicallLogsPage() {
     <div className="responsive-page responsive-workspace omicall-page">
       <PageHeader
         title={<span className="text-[var(--color-primary)]">Lịch sử &amp; Thẩm định OmiCall</span>}
-        subtitle="Quản lý chất lượng các cuộc gọi, phát hiện tiếng cười tự động bằng AI và phê duyệt Happy Call."
+        subtitle="Xem, nghe lại trực tiếp file ghi âm cuộc gọi OmiCall, phân tích AI theo CSKH / Telesales và phê duyệt Happy Call."
       />
 
       <SectionCard bodyPadding={20}>
@@ -98,8 +116,11 @@ export default function OmicallLogsPage() {
               children: (
                 <OmicallLogsTabContent
                   isAdmin={isAdmin}
+                  canReviewQa={canReviewQa}
                   dateRange={dateRange}
                   onDateRangeChange={setDateRange}
+                  directionFilter={directionFilter}
+                  onDirectionFilterChange={setDirectionFilter}
                   statusFilter={statusFilter}
                   onStatusFilterChange={setStatusFilter}
                   happyFilter={happyFilter}
@@ -108,9 +129,15 @@ export default function OmicallLogsPage() {
                   onAiFilterChange={setAiFilter}
                   staffFilter={staffFilter}
                   onStaffFilterChange={setStaffFilter}
+                  searchQuery={searchQuery}
+                  onSearchQueryChange={setSearchQuery}
+                  onlyWithRecording={onlyWithRecording}
+                  onOnlyWithRecordingChange={setOnlyWithRecording}
                   staffList={staffList}
+                  syncingLogs={syncingLogs}
                   onSearch={handleSearchLogs}
                   onReset={handleResetFilters}
+                  onSync={handleSyncFromOmicall}
                   columns={logsColumns}
                   logs={logs}
                   loadingLogs={loadingLogs}
