@@ -1,3 +1,5 @@
+import { VN_PHONE_INLINE_PATTERN } from '../utils/omicall-dial-helpers';
+
 export interface RichTextTableTheme {
   wrapper: string;
   thead: string;
@@ -117,7 +119,8 @@ export function toCaseInsensitivePattern(str: string): string {
     .join('');
 }
 
-export function buildInlineRegexSource(staffPattern: string): string {
+export function buildInlineRegexSource(staffPattern: string, enablePhoneLinks = false): string {
+  const phoneBranch = enablePhoneLinks ? `|${VN_PHONE_INLINE_PATTERN}` : '';
   return (
     `(<[bB][rR]\\s*\\/?>)|` +
     `(<[sS][pP][aA][nN]\\s+[^>]*>[\\s\\S]+?<\\/[sS][pP][aA][nN]>)|` +
@@ -143,7 +146,8 @@ export function buildInlineRegexSource(staffPattern: string): string {
     `(\\$([^\\$\\s\\n](?:[^\\$\\n]*?[^\\$\\s\\n])?)\\$)|` +
     `(@\\s*(?:[aA][iI]|[cC][oO][pP][iI][lL][oO][tT]|[mM][aA][iI]|[aA][lL][lL]|[mM]ọi\\s+[nN]gười|[mM]oi\\s+[nN]guoi)(?=\\s|[.,!?:;]|$))` +
     `${staffPattern}|` +
-    `(@[\\p{L}0-9_]+(?:\\s*[\\p{Extended_Pictographic}\\uFE0F\\u200D]+)?(?=\\s|[.,!?:;]|$))`
+    `(@[\\p{L}0-9_]+(?:\\s*[\\p{Extended_Pictographic}\\uFE0F\\u200D]+)?(?=\\s|[.,!?:;]|$))` +
+    `${phoneBranch}`
   );
 }
 

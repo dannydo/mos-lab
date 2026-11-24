@@ -51,6 +51,7 @@ function ChatPageContent() {
                 const merged = { ...(prev || {}), ...freshUser };
                 try {
                   window.localStorage.setItem('mos_user', JSON.stringify(merged));
+                  window.dispatchEvent(new Event('mos_user_updated'));
                 } catch {}
                 return merged;
               });

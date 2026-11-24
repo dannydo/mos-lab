@@ -2,9 +2,11 @@
 
 import React, { useCallback, useContext, useMemo } from 'react';
 import type { SafeAny } from '@mos-lab/shared';
+import { useOmiCall } from '../../context/OmiCallContext';
 import { MosChatContext } from './context/MosChatContext';
 import { parseInlineRichTextNodes } from './rich-text/parseInlineRichText';
 import { renderRichTextBlocks } from './rich-text/renderRichTextBlocks';
+import { dispatchOpenMosChatOmiCallDialer } from './utils/omicall-dial-helpers';
 import {
   buildInlineRegexSource,
   buildKnownMultiWordStaffNames,
@@ -40,6 +42,8 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
     currentUser,
     onQuoteClick,
   }) => {
+    const { canAccessOmiCall } = useOmiCall();
+
     const knownMultiWordStaffNames = useMemo(
       () => buildKnownMultiWordStaffNames(staffDirectory, memberNicknames),
       [staffDirectory, memberNicknames]
@@ -51,17 +55,27 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
         : '';
     }, [knownMultiWordStaffNames]);
 
-    const inlineRegexSource = useMemo(() => buildInlineRegexSource(staffPattern), [staffPattern]);
+    const inlineRegexSource = useMemo(
+      () => buildInlineRegexSource(staffPattern, canAccessOmiCall),
+      [staffPattern, canAccessOmiCall]
+    );
+
+    const onDialPhone = useMemo(() => {
+      if (!canAccessOmiCall) return undefined;
+      return (phone: string) => {
+        dispatchOpenMosChatOmiCallDialer({ phone });
+      };
+    }, [canAccessOmiCall]);
 
     const parseInlineRichText = useCallback(
       (text: string, keyPrefix = 'inline', depth = 0): React.ReactNode[] =>
         parseInlineRichTextNodes(
           text,
-          { inlineRegexSource, isMe, isDark, currentUser, memberNicknames },
+          { inlineRegexSource, isMe, isDark, currentUser, memberNicknames, onDialPhone },
           keyPrefix,
           depth
         ),
-      [inlineRegexSource, isMe, isDark, currentUser, memberNicknames]
+      [inlineRegexSource, isMe, isDark, currentUser, memberNicknames, onDialPhone]
     );
 
     const renderedContent = useMemo(

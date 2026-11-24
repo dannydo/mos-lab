@@ -14,6 +14,10 @@ declare global {
 
 export type CallState = 'idle' | 'confirming' | 'ringing' | 'incoming' | 'connected' | 'analyzing' | 'wrapup';
 
+export interface MakeCallOptions {
+  autoEnableAdmin?: boolean;
+}
+
 export interface CurrentCall {
   phone: string;
   name: string;
@@ -34,7 +38,14 @@ export interface OmiCallContextType {
   callState: CallState;
   callDuration: number;
   currentCall: CurrentCall | null;
-  makeCall: (phone: string, name?: string, customerId?: number, avatar?: string, planId?: number) => Promise<void>;
+  makeCall: (
+    phone: string,
+    name?: string,
+    customerId?: number,
+    avatar?: string,
+    planId?: number,
+    options?: MakeCallOptions
+  ) => Promise<void>;
   executeCall: () => Promise<void>;
   cancelConfirm: () => void;
   answerCall: () => void;

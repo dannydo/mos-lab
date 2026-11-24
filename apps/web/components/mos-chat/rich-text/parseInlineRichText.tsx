@@ -1,7 +1,8 @@
 import React from 'react';
-import { AtSign, ExternalLink } from 'lucide-react';
+import { AtSign, ExternalLink, PhoneCall } from 'lucide-react';
 import { parseGoogleWorkspaceUrl, removeVietnameseTones, type SafeAny } from '@mos-lab/shared';
 import { MosChatMathBlock, MosChatMathInline, isMathValid } from '../MosChatMathBlock';
+import { isValidDialablePhone } from '../utils/omicall-dial-helpers';
 import { MosChatGoogleSmartChip } from './MosChatGoogleSmartChip';
 import { decodeHtmlEntities } from './richTextUtils';
 
@@ -11,6 +12,7 @@ export interface InlineRichTextContext {
   isDark: boolean;
   currentUser: SafeAny;
   memberNicknames?: Record<string, string>;
+  onDialPhone?: (phone: string) => void;
 }
 
 /**
@@ -26,8 +28,9 @@ export function parseInlineRichTextNodes(
   if (!text) return [];
   if (depth > 5) return [decodeHtmlEntities(text)];
 
-  // Siêu tối ưu plain text: nếu không chứa ký tự định dạng đặc biệt, trả về ngay
-  if (!/[<*~`$@\[]|https?:\/\//.test(text)) {
+  // Siêu tối ưu plain text: nếu không chứa ký tự định dạng đặc biệt hoặc SĐT, trả về ngay
+  const mayContainPhone = Boolean(ctx.onDialPhone) && /(?:\+?84|0)[235789]/.test(text);
+  if (!mayContainPhone && !/[<*~`$@\[]|https?:\/\//.test(text)) {
     return [decodeHtmlEntities(text)];
   }
 
@@ -398,6 +401,30 @@ export function parseInlineRichTextNodes(
           <AtSign size={10} className="shrink-0 opacity-80" />
           <span>{isAi && cleanTag === 'ai' ? 'AI' : isAi && cleanTag === 'mai' ? 'MAI' : rawTag}</span>
         </span>
+      );
+    }
+    // 23. Số điện thoại Việt Nam (khi OmiCall được bật)
+    else if (ctx.onDialPhone && !/^[@<*~`$\[]|^https?:\/\//i.test(fullMatch) && isValidDialablePhone(fullMatch)) {
+      const dialHandler = ctx.onDialPhone;
+      elements.push(
+        <button
+          key={key}
+          type="button"
+          data-testid="mos-chat-inline-phone-btn"
+          title="Gọi qua OmiCall"
+          onClick={(e) => {
+            e.stopPropagation();
+            dialHandler(fullMatch);
+          }}
+          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[12px] font-mono font-semibold tabular-nums cursor-pointer transition-colors align-baseline border ${
+            isDark
+              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35 hover:bg-emerald-500/25'
+              : 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
+          }`}
+        >
+          <PhoneCall size={11} className="shrink-0" />
+          <span>{fullMatch}</span>
+        </button>
       );
     } else {
       elements.push(decodeHtmlEntities(fullMatch));

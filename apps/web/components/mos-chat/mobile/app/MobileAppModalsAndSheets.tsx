@@ -24,6 +24,7 @@ import { MosChatForwardModal } from '../../components/MosChatForwardModal';
 import { MosChatPushNotificationModal } from '../../components/MosChatPushNotificationModal';
 import { MosChatVoiceCallWidget } from '../../components/MosChatVoiceCallWidget';
 import { MosChatGoogleWorkspaceDrawer } from '../../components/MosChatGoogleWorkspaceDrawer';
+import { MosChatOmiCallDialerModal } from '../../modals/MosChatOmiCallDialerModal';
 import { UnifiedProfileSheet } from '../../../profile/UnifiedProfileSheet';
 import { MosChatMobileActionSheet } from '../MosChatMobileActionSheet';
 import { MosChatMobileReactionSheet } from '../MosChatMobileReactionSheet';
@@ -501,6 +502,8 @@ export const MobileAppModalsAndSheets: React.FC<MobileAppModalsAndSheetsProps> =
           void sendMessage(`✨ **Phân tích AI (${docTitle}):**\n\n${replyText}`);
         }}
       />
+
+      <MosChatOmiCallDialerModal isDark={isDark} currentUser={currentUser} />
     </>
   );
 };

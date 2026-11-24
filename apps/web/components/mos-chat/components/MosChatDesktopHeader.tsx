@@ -16,6 +16,7 @@ import {
   Minimize2,
   PanelRightOpen,
   Phone,
+  PhoneCall,
   Pin,
   Search,
   Settings,
@@ -23,9 +24,11 @@ import {
   X,
 } from 'lucide-react';
 import type { MosChatConversation, MosChatTaskItem, SafeAny } from '@mos-lab/shared';
+import { useOmiCall } from '../../../context/OmiCallContext';
 import { HeaderNotificationCenter } from '../../notification-center/HeaderNotificationCenter';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 import type { MosChatActiveSubtab } from '../types/mos-chat-types';
+import { dispatchOpenMosChatOmiCallDialer } from '../utils/omicall-dial-helpers';
 import { MosChatHeaderOverflowMenu, type MosChatHeaderOverflowMenuProps } from './MosChatHeaderOverflowMenu';
 
 export interface MosChatDesktopHeaderProps extends MosChatHeaderOverflowMenuProps {
@@ -107,6 +110,7 @@ export const MosChatDesktopHeader: React.FC<MosChatDesktopHeaderProps> = (props)
     persistPersonalLayout,
     onClose,
   } = props;
+  const { canAccessOmiCall, isRegistered: omicallRegistered, callState: omicallCallState } = useOmiCall();
 
   return (
     <div
@@ -341,6 +345,33 @@ export const MosChatDesktopHeader: React.FC<MosChatDesktopHeaderProps> = (props)
               }}
             >
               <Phone size={14} />
+            </button>
+          </Tooltip>
+        )}
+
+        {canAccessOmiCall && (
+          <Tooltip title="Gọi số điện thoại qua OmiCall">
+            <button
+              type="button"
+              data-testid="mos-chat-header-omicall-btn"
+              aria-label="Gọi số điện thoại qua OmiCall"
+              onClick={() => dispatchOpenMosChatOmiCallDialer()}
+              className="relative w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors"
+              style={{
+                background: omicallCallState !== 'idle' ? 'rgba(244, 63, 94, 0.16)' : 'rgba(212, 168, 75, 0.14)',
+                border: `1px solid ${
+                  omicallCallState !== 'idle' ? 'rgba(244, 63, 94, 0.45)' : 'rgba(212, 168, 75, 0.35)'
+                }`,
+                color: omicallCallState !== 'idle' ? '#f43f5e' : '#d4a84b',
+              }}
+            >
+              <PhoneCall size={14} />
+              {omicallRegistered && omicallCallState === 'idle' && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500"
+                  aria-hidden="true"
+                />
+              )}
             </button>
           </Tooltip>
         )}

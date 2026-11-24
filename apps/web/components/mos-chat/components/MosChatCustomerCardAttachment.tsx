@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useContext } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, PhoneCall } from 'lucide-react';
 import { message as antdMessage, Tooltip, Avatar } from 'antd';
 import type { MosChatCustomerCard } from '@mos-lab/shared';
+import { useOmiCall } from '../../../context/OmiCallContext';
 import { useTheme } from '../../../context/ThemeContext';
 import { MosChatContext } from '../context/MosChatContext';
+import { isValidDialablePhone, normalizeVietnamDialPhone } from '../utils/omicall-dial-helpers';
 
 export interface MosChatCustomerCardAttachmentProps {
   card: MosChatCustomerCard;
@@ -23,7 +25,9 @@ export const MosChatCustomerCardAttachment: React.FC<MosChatCustomerCardAttachme
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
   const chatContext = useContext(MosChatContext);
+  const { canAccessOmiCall, makeCall } = useOmiCall();
   const handleOpen = onOpenCustomer || chatContext?.openCustomerDetail;
+  const canDialCardPhone = canAccessOmiCall && isValidDialablePhone(card.phone);
 
   const resolveCustomerId = (): number | undefined => {
     if (typeof card.customerId === 'number' && !isNaN(card.customerId) && card.customerId > 0) {
@@ -118,16 +122,42 @@ export const MosChatCustomerCardAttachment: React.FC<MosChatCustomerCardAttachme
         </div>
       </div>
 
-      <Tooltip title="Mở hồ sơ khách hàng">
-        <button
-          type="button"
-          aria-label="Mở hồ sơ khách hàng"
-          onClick={handleClick}
-          className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer bg-slate-900/70 border border-slate-700/70 text-slate-300 hover:text-amber-400 active:scale-95 transition-all shadow-sm"
-        >
-          <ExternalLink size={14} />
-        </button>
-      </Tooltip>
+      <div className="flex items-center gap-1.5 shrink-0">
+        {canDialCardPhone && card.phone && (
+          <Tooltip title="Gọi khách hàng qua OmiCall">
+            <button
+              type="button"
+              data-testid="mos-chat-customer-card-omicall-btn"
+              aria-label="Gọi khách hàng qua OmiCall"
+              onClick={(e) => {
+                e.stopPropagation();
+                void makeCall(
+                  normalizeVietnamDialPhone(card.phone!),
+                  card.name,
+                  resolveCustomerId(),
+                  card.avatarUrl || undefined,
+                  undefined,
+                  { autoEnableAdmin: true }
+                );
+              }}
+              className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 active:scale-95 transition-all shadow-sm"
+            >
+              <PhoneCall size={14} />
+            </button>
+          </Tooltip>
+        )}
+
+        <Tooltip title="Mở hồ sơ khách hàng">
+          <button
+            type="button"
+            aria-label="Mở hồ sơ khách hàng"
+            onClick={handleClick}
+            className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer bg-slate-900/70 border border-slate-700/70 text-slate-300 hover:text-amber-400 active:scale-95 transition-all shadow-sm"
+          >
+            <ExternalLink size={14} />
+          </button>
+        </Tooltip>
+      </div>
     </div>
   );
 };

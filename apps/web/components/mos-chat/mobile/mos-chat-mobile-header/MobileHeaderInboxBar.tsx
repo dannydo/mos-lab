@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
-import { MoreHorizontal, SquarePen, X } from 'lucide-react';
+import { MoreHorizontal, PhoneCall, SquarePen, X } from 'lucide-react';
 import type { MosChatPresenceStatus, SafeAny } from '@mos-lab/shared';
+import { useOmiCall } from '~/context/OmiCallContext';
 import MosAppLauncher from '../../../layout/MosAppLauncher';
 import type { MosChatSidebarFilter } from '../../types/mos-chat-types';
+import { dispatchOpenMosChatOmiCallDialer } from '../../utils/omicall-dial-helpers';
 import { formatUnreadBadgeCount } from './mobileHeaderTypes';
 import { MobileInboxOverflowMenu } from './MobileInboxOverflowMenu';
 
@@ -53,6 +55,8 @@ export const MobileHeaderInboxBar: React.FC<MobileHeaderInboxBarProps> = ({
   onOpenNewDm,
   onClose,
 }) => {
+  const { canAccessOmiCall, callState } = useOmiCall();
+
   return (
     <header className="sticky top-0 z-40 bg-[var(--mos-surface)]/90 backdrop-blur-xl border-b border-[var(--mos-surface-border)] shadow-xs flex flex-col select-none">
       <div className="px-3 pt-[max(env(safe-area-inset-top),8px)] pb-2 min-h-[44px] flex items-center justify-between gap-2">
@@ -123,8 +127,24 @@ export const MobileHeaderInboxBar: React.FC<MobileHeaderInboxBarProps> = ({
           </h1>
         </div>
 
-        {/* Right: [📝 Compose] + Optional [✕ Close] */}
-        <div className="w-20 flex items-center justify-end gap-1.5 shrink-0">
+        {/* Right: [📞 OmiCall] + [📝 Compose] + Optional [✕ Close] */}
+        <div className="min-w-[76px] flex items-center justify-end gap-1.5 shrink-0">
+          {canAccessOmiCall && (
+            <button
+              type="button"
+              data-testid="mos-chat-mobile-inbox-omicall-btn"
+              onClick={() => dispatchOpenMosChatOmiCallDialer()}
+              className={`w-8 h-8 rounded-full border active:scale-95 transition-all flex items-center justify-center cursor-pointer ${
+                callState !== 'idle'
+                  ? 'bg-rose-500/15 border-rose-500/40 text-rose-400'
+                  : 'bg-[var(--mos-surface-muted)] border-[var(--mos-surface-border)] text-amber-500 hover:opacity-85'
+              }`}
+              aria-label="Gọi số điện thoại qua OmiCall"
+              title="Gọi số điện thoại qua OmiCall"
+            >
+              <PhoneCall className="w-4 h-4" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onOpenNewDm?.()}

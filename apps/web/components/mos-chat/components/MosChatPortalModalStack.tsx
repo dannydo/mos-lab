@@ -33,6 +33,7 @@ import { MosChatAiSessionsModal } from './MosChatAiSessionsModal';
 import { MosChatForwardModal } from './MosChatForwardModal';
 import { MosChatModals } from './MosChatModals';
 import { MosChatNotificationSettingsModal } from './MosChatNotificationSettings';
+import { MosChatOmiCallDialerModal } from '../modals/MosChatOmiCallDialerModal';
 import { MosChatReactionUsersModal } from './MosChatReactionUsersModal';
 import { MosChatSearchModal } from './MosChatSearchModal';
 
@@ -403,5 +404,7 @@ export const MosChatPortalModalStack: React.FC<MosChatPortalModalStackProps> = (
         />
       </ErrorBoundary>
     )}
+
+    <MosChatOmiCallDialerModal isDark={isDark} currentUser={currentUser} />
   </>
 );

@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Bell, BellRing, CheckSquare, FolderOpen, Palette, Pin, Search, UserPlus, X } from 'lucide-react';
+import { Bell, BellRing, CheckSquare, FolderOpen, Palette, PhoneCall, Pin, Search, UserPlus, X } from 'lucide-react';
 import type { MosChatConversation } from '@mos-lab/shared';
+import { useOmiCall } from '~/context/OmiCallContext';
 import { AI_COPILOT_CONV_ID } from '../../constants/chat-constants';
 import type { MosChatActiveSubtab } from '../../types/mos-chat-types';
+import { dispatchOpenMosChatOmiCallDialer } from '../../utils/omicall-dial-helpers';
 import { getHeaderCountBadgeClass, getPushStatusBadgeClass } from './mobileHeaderTypes';
 
 export interface MobileRoomOverflowMenuProps {
@@ -48,6 +50,8 @@ export const MobileRoomOverflowMenu: React.FC<MobileRoomOverflowMenuProps> = ({
   onOpenPushSettings,
   onClose,
 }) => {
+  const { canAccessOmiCall } = useOmiCall();
+
   return (
     <>
       {/* Backdrop to close More Menu on outside tap */}
@@ -97,6 +101,22 @@ export const MobileRoomOverflowMenu: React.FC<MobileRoomOverflowMenuProps> = ({
           >
             <Search className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
             <span className="flex-1">Tìm kiếm tin nhắn</span>
+          </button>
+        )}
+
+        {canAccessOmiCall && (
+          <button
+            type="button"
+            data-testid="mos-chat-mobile-room-menu-omicall"
+            onClick={() => {
+              onCloseMenu();
+              dispatchOpenMosChatOmiCallDialer();
+            }}
+            className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-[var(--mos-surface-muted)] text-left text-xs font-medium transition-colors cursor-pointer"
+            aria-label="Gọi số điện thoại qua OmiCall"
+          >
+            <PhoneCall className={`w-4 h-4 shrink-0 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+            <span className="flex-1">Gọi SĐT qua OmiCall</span>
           </button>
         )}
 

@@ -1,7 +1,7 @@
 import { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { message, notification } from 'antd';
 import { cleanupOmiCallMediaBridge } from './mediaBridge';
-import { CallState, CurrentCall } from './types';
+import { CallState, CurrentCall, MakeCallOptions } from './types';
 import { playRingback, stopRingback, stopRingtone } from './useAudioManager';
 import {
   clearIncomingNotification,
@@ -20,6 +20,7 @@ interface UseOmiCallActionsParams {
   canAccessOmiCall: boolean;
   isAdmin: boolean;
   adminOmiCallEnabled: boolean;
+  setAdminOmiCallEnabled?: (enabled: boolean) => void;
   isTabMuted: boolean;
   isSimulated: boolean;
   isRegistered: boolean;
@@ -49,6 +50,7 @@ export function useOmiCallActions({
   canAccessOmiCall,
   isAdmin,
   adminOmiCallEnabled,
+  setAdminOmiCallEnabled,
   isTabMuted,
   isSimulated,
   isRegistered,
@@ -71,21 +73,39 @@ export function useOmiCallActions({
   setCallLogCustomerInfo,
   setIsCallLogModalOpen,
 }: UseOmiCallActionsParams) {
-  const makeCall = async (phone: string, name?: string, customerId?: number, avatar?: string, planId?: number) => {
+  const makeCall = async (
+    phone: string,
+    name?: string,
+    customerId?: number,
+    avatar?: string,
+    planId?: number,
+    options?: MakeCallOptions
+  ) => {
     if (!canAccessOmiCall) {
       message.warning('Chỉ bộ phận Growth & Booking mới có quyền thực hiện cuộc gọi tổng đài.');
       return;
     }
     if (isAdmin && !adminOmiCallEnabled) {
-      message.info('Vui lòng bật công cụ OmiCall trong menu cá nhân trước khi thực hiện cuộc gọi.');
-      return;
+      if (options?.autoEnableAdmin && setAdminOmiCallEnabled) {
+        setAdminOmiCallEnabled(true);
+      } else {
+        message.info('Vui lòng bật công cụ OmiCall trong menu cá nhân trước khi thực hiện cuộc gọi.');
+        return;
+      }
     }
     if (isTabMuted) {
       message.warning('Có cuộc gọi đang diễn ra trên một tab khác.');
       return;
     }
 
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    let cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (/^84[35789]\d{8}$/.test(cleanPhone) || /^842\d{9}$/.test(cleanPhone)) {
+      cleanPhone = `0${cleanPhone.slice(2)}`;
+    }
+    if (cleanPhone.length < 4) {
+      message.warning('Số điện thoại không hợp lệ.');
+      return;
+    }
 
     setCallState('confirming');
     setOmicallReadyState(true);
