@@ -245,11 +245,21 @@ export async function analyzeLogRecord(fastify: FastifyInstance, log: SafeAny) {
   for (let i = 0; i < models.length; i++) {
     const model = models[i];
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
-    const res = await axios.post(geminiUrl, requestBody, {
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 60_000,
-      validateStatus: () => true,
-    });
+    let res: SafeAny;
+    try {
+      res = await axios.post(geminiUrl, requestBody, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 45_000,
+        validateStatus: () => true,
+      });
+    } catch (reqErr: SafeAny) {
+      const errMsg = `Gemini (${model}) request error (${reqErr?.message || String(reqErr)})`;
+      if (i < models.length - 1) {
+        fastify.log.warn(`[Analyzer] ${errMsg}; retrying fallback model ${models[i + 1]}`);
+        continue;
+      }
+      throw new Error(errMsg, { cause: reqErr });
+    }
 
     if (res.status >= 200 && res.status < 300) {
       geminiData = res.data;
