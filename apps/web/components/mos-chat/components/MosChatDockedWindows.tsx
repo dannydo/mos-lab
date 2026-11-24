@@ -46,6 +46,8 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
     accentBorder,
     accentContrast,
     isDark = true,
+    currentUser,
+    staffDirectory,
     token,
     renderUserAvatarNode,
     isConversationParticipantOnline,
@@ -159,6 +161,9 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
               <DockedWindowHeader
                 cid={cid}
                 conv={conv}
+                currentUser={currentUser}
+                staffDirectory={staffDirectory}
+                isDark={isDark}
                 isCollapsed={isCollapsed}
                 isDockPinned={isDockPinned}
                 isDockManualUnread={isDockManualUnread}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AtSign, ExternalLink } from 'lucide-react';
+import { AtSign, ExternalLink, PhoneCall } from 'lucide-react';
 import { parseGoogleWorkspaceUrl, removeVietnameseTones, type SafeAny } from '@mos-lab/shared';
 import { MosChatMathBlock, MosChatMathInline, isMathValid } from '../MosChatMathBlock';
 import { MosChatGoogleSmartChip } from './MosChatGoogleSmartChip';
@@ -11,6 +11,62 @@ export interface InlineRichTextContext {
   isDark: boolean;
   currentUser: SafeAny;
   memberNicknames?: Record<string, string>;
+  onOmiCallPhone?: (phone: string) => void;
+}
+
+const INLINE_VN_PHONE_REGEX = /(?<![\d/+-])((?:\+?84|0)(?:[35789]\d{8}|2\d{8,9})|1[89]00\d{4,6})(?!\d)/g;
+
+function renderTextWithCallablePhones(
+  plainText: string,
+  keyPrefix: string,
+  isDark: boolean,
+  onOmiCallPhone?: (phone: string) => void
+): React.ReactNode[] {
+  if (!onOmiCallPhone || !plainText) {
+    return [plainText];
+  }
+
+  INLINE_VN_PHONE_REGEX.lastIndex = 0;
+  const nodes: React.ReactNode[] = [];
+  let lastIdx = 0;
+  let phoneMatch: RegExpExecArray | null;
+  let count = 0;
+
+  while ((phoneMatch = INLINE_VN_PHONE_REGEX.exec(plainText)) !== null) {
+    if (phoneMatch.index > lastIdx) {
+      nodes.push(plainText.substring(lastIdx, phoneMatch.index));
+    }
+    const rawPhone = phoneMatch[1];
+    nodes.push(
+      <button
+        key={`${keyPrefix}-tel-${count++}`}
+        type="button"
+        data-testid="mos-chat-inline-phone-call"
+        title={`Gọi OmiCall: ${rawPhone}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onOmiCallPhone(rawPhone);
+        }}
+        className={`inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md font-mono font-semibold tabular-nums cursor-pointer transition-colors align-baseline ${
+          isDark
+            ? 'bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 border border-amber-500/35'
+            : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-300'
+        }`}
+      >
+        <PhoneCall size={11} className="shrink-0" />
+        <span>{rawPhone}</span>
+      </button>
+    );
+    lastIdx = INLINE_VN_PHONE_REGEX.lastIndex;
+  }
+
+  if (nodes.length === 0) {
+    return [plainText];
+  }
+  if (lastIdx < plainText.length) {
+    nodes.push(plainText.substring(lastIdx));
+  }
+  return nodes;
 }
 
 /**
@@ -26,9 +82,12 @@ export function parseInlineRichTextNodes(
   if (!text) return [];
   if (depth > 5) return [decodeHtmlEntities(text)];
 
-  // Siêu tối ưu plain text: nếu không chứa ký tự định dạng đặc biệt, trả về ngay
+  // Siêu tối ưu plain text: nếu không chứa ký tự định dạng đặc biệt, trả về ngay (vẫn link hóa SĐT nếu có onOmiCallPhone)
   if (!/[<*~`$@\[]|https?:\/\//.test(text)) {
-    return [decodeHtmlEntities(text)];
+    const decoded = decodeHtmlEntities(text);
+    return ctx.onOmiCallPhone
+      ? renderTextWithCallablePhones(decoded, keyPrefix, ctx.isDark, ctx.onOmiCallPhone)
+      : [decoded];
   }
 
   const { inlineRegexSource, isMe, isDark, currentUser, memberNicknames } = ctx;
@@ -43,7 +102,10 @@ export function parseInlineRichTextNodes(
 
   while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      elements.push(decodeHtmlEntities(text.substring(lastIndex, match.index)));
+      const plainPrefix = decodeHtmlEntities(text.substring(lastIndex, match.index));
+      elements.push(
+        ...renderTextWithCallablePhones(plainPrefix, `${keyPrefix}-pre-${lastIndex}`, isDark, ctx.onOmiCallPhone)
+      );
     }
 
     const fullMatch = match[0];
@@ -400,14 +462,16 @@ export function parseInlineRichTextNodes(
         </span>
       );
     } else {
-      elements.push(decodeHtmlEntities(fullMatch));
+      const plainMatch = decodeHtmlEntities(fullMatch);
+      elements.push(...renderTextWithCallablePhones(plainMatch, `${key}-m`, isDark, ctx.onOmiCallPhone));
     }
 
     lastIndex = regex.lastIndex;
   }
 
   if (lastIndex < text.length) {
-    elements.push(decodeHtmlEntities(text.substring(lastIndex)));
+    const plainTail = decodeHtmlEntities(text.substring(lastIndex));
+    elements.push(...renderTextWithCallablePhones(plainTail, `${keyPrefix}-tail`, isDark, ctx.onOmiCallPhone));
   }
 
   return elements.length > 0 ? elements : [decodeHtmlEntities(text)];

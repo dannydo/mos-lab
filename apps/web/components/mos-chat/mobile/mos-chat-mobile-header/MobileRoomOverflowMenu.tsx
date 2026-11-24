@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
-import { Bell, BellRing, CheckSquare, FolderOpen, Palette, Pin, Search, UserPlus, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, BellRing, CheckSquare, FolderOpen, Palette, PhoneCall, Pin, Search, UserPlus, X } from 'lucide-react';
 import type { MosChatConversation } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID } from '../../constants/chat-constants';
 import type { MosChatActiveSubtab } from '../../types/mos-chat-types';
+import { normalizeDialablePhone, type DmOmiCallTarget } from '../../utils/resolveDmOmiCallTarget';
 import { getHeaderCountBadgeClass, getPushStatusBadgeClass } from './mobileHeaderTypes';
 
 export interface MobileRoomOverflowMenuProps {
@@ -18,6 +19,9 @@ export interface MobileRoomOverflowMenuProps {
   pinnedCount: number;
   filesCount: number;
   isPushSubscribed: boolean;
+  canOmiCall?: boolean;
+  omiCallTarget?: DmOmiCallTarget | null;
+  onCallOmiCallPhone?: (phone: string, label: string, avatar?: string | null) => void;
   onCloseMenu: () => void;
   onSetActiveSubtab: (tab: MosChatActiveSubtab) => void;
   onTogglePinConversation: (convId: string) => void;
@@ -39,6 +43,9 @@ export const MobileRoomOverflowMenu: React.FC<MobileRoomOverflowMenuProps> = ({
   pinnedCount,
   filesCount,
   isPushSubscribed,
+  canOmiCall = false,
+  omiCallTarget,
+  onCallOmiCallPhone,
   onCloseMenu,
   onSetActiveSubtab,
   onTogglePinConversation,
@@ -48,6 +55,18 @@ export const MobileRoomOverflowMenu: React.FC<MobileRoomOverflowMenuProps> = ({
   onOpenPushSettings,
   onClose,
 }) => {
+  const [customPhone, setCustomPhone] = useState('');
+
+  const handleDialCustomMobile = () => {
+    if (!onCallOmiCallPhone) return;
+    const cleanPhone = normalizeDialablePhone(customPhone);
+    if (!cleanPhone) return;
+    const label = omiCallTarget ? `${omiCallTarget.displayName} (${cleanPhone})` : cleanPhone;
+    setCustomPhone('');
+    onCloseMenu();
+    onCallOmiCallPhone(cleanPhone, label, omiCallTarget?.avatarUrl);
+  };
+
   return (
     <>
       {/* Backdrop to close More Menu on outside tap */}
@@ -62,6 +81,68 @@ export const MobileRoomOverflowMenu: React.FC<MobileRoomOverflowMenuProps> = ({
             : 'hidden'
         }
       >
+        {canOmiCall &&
+          omiCallTarget &&
+          onCallOmiCallPhone &&
+          omiCallTarget.phones.map((phone, idx) => (
+            <button
+              key={phone}
+              type="button"
+              onClick={() => {
+                onCloseMenu();
+                onCallOmiCallPhone(phone, omiCallTarget.displayName, omiCallTarget.avatarUrl);
+              }}
+              className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-[var(--mos-surface-muted)] text-left text-xs font-medium transition-colors cursor-pointer"
+              aria-label={`Gọi OmiCall qua số ${phone}`}
+            >
+              <PhoneCall className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="flex-1">{idx === 0 ? 'Gọi OmiCall' : 'Gọi OmiCall (Số phụ)'}</span>
+              <span
+                className={`inline-flex items-center justify-center leading-none py-0.5 px-2 rounded-full text-[10.5px] font-bold tabular-nums ${getHeaderCountBadgeClass(
+                  'amber',
+                  isDark
+                )}`}
+              >
+                {phone}
+              </span>
+            </button>
+          ))}
+
+        {canOmiCall && onCallOmiCallPhone && (
+          <div
+            className="px-3.5 py-2 border-b border-[var(--mos-surface-border)] space-y-1.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-amber-500">
+              <PhoneCall className="w-3.5 h-3.5 shrink-0" />
+              <span>Gọi bất kỳ SĐT nào</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="tel"
+                value={customPhone}
+                onChange={(e) => setCustomPhone(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleDialCustomMobile();
+                  }
+                }}
+                placeholder="Nhập SĐT..."
+                className="flex-1 min-w-0 px-2 py-1 rounded-lg text-xs border border-[var(--mos-surface-border)] bg-[var(--mos-surface-muted)] text-[var(--mos-text)] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleDialCustomMobile}
+                disabled={!normalizeDialablePhone(customPhone)}
+                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 disabled:opacity-40 cursor-pointer shrink-0"
+              >
+                Gọi
+              </button>
+            </div>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={() => {

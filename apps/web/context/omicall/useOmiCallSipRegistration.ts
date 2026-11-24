@@ -18,6 +18,8 @@ interface UseOmiCallSipRegistrationParams {
   token: string | null;
   shouldInit: boolean;
   isSdkReadyRef: MutableRefObject<boolean>;
+  isRegisteredRef: MutableRefObject<boolean>;
+  sipConfigRef: MutableRefObject<SafeAny>;
   pendingOutboundCallRef: MutableRefObject<(() => Promise<void>) | null>;
   callStateRef: MutableRefObject<CallState>;
   currentCallRef: MutableRefObject<CurrentCall | null>;
@@ -39,6 +41,8 @@ export function useOmiCallSipRegistration({
   token,
   shouldInit,
   isSdkReadyRef,
+  isRegisteredRef,
+  sipConfigRef,
   pendingOutboundCallRef,
   callStateRef,
   currentCallRef,
@@ -102,6 +106,7 @@ export function useOmiCallSipRegistration({
           const config = localSipConfig || (await apiClient.omicall.getSipConfig());
           if (config) {
             localSipConfig = config;
+            sipConfigRef.current = config;
             await window.OMICallSDK.register({
               sipRealm: config.sipRealm,
               sipUser: config.sipUser,
@@ -121,6 +126,7 @@ export function useOmiCallSipRegistration({
       setLastRegisterEvent(data);
       if (data?.status === 'connected') {
         isRegisteredLocal = true;
+        isRegisteredRef.current = true;
         retryCount = 0;
         if (retryTimer) {
           clearTimeout(retryTimer);
@@ -143,6 +149,7 @@ export function useOmiCallSipRegistration({
       }
       if (data?.status === 'disconnect') {
         isRegisteredLocal = false;
+        isRegisteredRef.current = false;
         setIsRegistered(false);
         if (pendingOutboundCallRef.current) {
           message.destroy('omicall_queue_msg');
@@ -235,11 +242,11 @@ export function useOmiCallSipRegistration({
         setCurrentCall((prev) => (prev ? { ...prev, callUuid: data.callUuid || data.call_uuid } : null));
       }
 
-      // Auto-open global CallLogModal
+      // Auto-open global CallLogModal only for customer calls (not internal staff calls)
       const activeCallDetail = currentCallRef.current;
-      if (activeCallDetail) {
+      if (activeCallDetail?.legacyUserId) {
         setCallLogCustomerInfo({
-          legacyUserId: activeCallDetail.legacyUserId || 0,
+          legacyUserId: activeCallDetail.legacyUserId,
           customerName: activeCallDetail.name || 'Khách hàng',
           planId: activeCallDetail.planId || null,
         });
@@ -251,26 +258,36 @@ export function useOmiCallSipRegistration({
       }
     };
 
-    // Register event listeners immediately if SDK is available
-    if (window.OMICallSDK) {
+    const attachSdkListeners = () => {
+      if (!window.OMICallSDK) return;
       try {
+        window.OMICallSDK.off?.('register', handleRegister);
+        window.OMICallSDK.off?.('invite', handleInvite);
+        window.OMICallSDK.off?.('ringing', handleRinging);
+        window.OMICallSDK.off?.('accepted', handleAccepted);
+        window.OMICallSDK.off?.('ended', handleEnded);
         window.OMICallSDK.on('register', handleRegister);
         window.OMICallSDK.on('invite', handleInvite);
         window.OMICallSDK.on('ringing', handleRinging);
         window.OMICallSDK.on('accepted', handleAccepted);
         window.OMICallSDK.on('ended', handleEnded);
       } catch (e) {
-        console.error('[OmiCallContext] Failed to attach listeners early:', e);
+        console.error('[OmiCallContext] Failed to attach listeners:', e);
       }
-    }
+    };
+
+    // Register event listeners immediately if SDK is available
+    attachSdkListeners();
 
     const initAndRegister = async () => {
       try {
         console.log('[OmiCallContext] Starting initAndRegister with token...');
+        isRegisteredRef.current = false;
         setIsRegistered(false);
         setIsSimulated(false);
 
         const config = (await apiClient.omicall.getSipConfig()) as SafeAny;
+        sipConfigRef.current = config;
         setSipConfig(config);
         localSipConfig = config;
         setIsSimulated(false);
@@ -280,18 +297,12 @@ export function useOmiCallSipRegistration({
         // Initialize SDK singleton only once
         if (!(window as SafeAny).__omicall_initialized || !isSdkReadyRef.current) {
           initOmiCallSdk();
-
-          // Re-attach listeners now that SDK init is finished to ensure registration events bind properly
-          try {
-            window.OMICallSDK.on('register', handleRegister);
-            window.OMICallSDK.on('invite', handleInvite);
-            window.OMICallSDK.on('ringing', handleRinging);
-            window.OMICallSDK.on('accepted', handleAccepted);
-            window.OMICallSDK.on('ended', handleEnded);
-          } catch (_e) {}
         } else {
           console.log('[OmiCallContext] OmiCall SDK singleton already initialized. Skipping init.');
         }
+
+        // Always attach listeners even when initOmiCallSdk already ran on script.onload
+        attachSdkListeners();
 
         // Request Microphone permission before registering device
         try {
@@ -349,11 +360,17 @@ export function useOmiCallSipRegistration({
         if (currentState === 'online') {
           console.log('[OmiCallContext] Already online via auto-reconnect! Skipping manual register.');
           isRegisteredLocal = true;
+          isRegisteredRef.current = true;
           setIsRegistered(true);
           setIsSimulated(false);
           if (registrationTimeout) {
             clearTimeout(registrationTimeout);
             registrationTimeout = null;
+          }
+          if (pendingOutboundCallRef.current) {
+            const queuedCall = pendingOutboundCallRef.current;
+            pendingOutboundCallRef.current = null;
+            void queuedCall();
           }
           return;
         }
@@ -419,7 +436,11 @@ export function useOmiCallSipRegistration({
     const runInitOnce = () => {
       if (!active || initStarted) return;
       initStarted = true;
-      // Wait 4500ms on mount/bootstrap to let page fetches finish, layout hydrate, and SDK stabilize
+      // Execute immediately if user explicitly initiated an outbound call; otherwise wait for dashboard hydration
+      if (callStateRef.current !== 'idle') {
+        void initAndRegister();
+        return;
+      }
       setTimeout(() => {
         if (active) {
           void initAndRegister();

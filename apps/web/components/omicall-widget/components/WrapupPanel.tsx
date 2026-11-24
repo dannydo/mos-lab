@@ -63,13 +63,17 @@ export const WrapupPanel: React.FC<WrapupPanelProps> = ({
         style={{ background: subBg, borderColor }}
       >
         <p className="font-semibold" style={{ color: textColor }}>
-          Khách hàng: {currentCall?.name || 'Khách hàng'}
+          {currentCall?.legacyUserId ? 'Khách hàng' : 'Người nhận'}: {currentCall?.name || 'Khách hàng'}
         </p>
-        <p>Vui lòng hoàn thành ghi nhận lịch sử cuộc gọi trong bảng hiển thị trên màn hình chính của bạn.</p>
+        {currentCall?.legacyUserId ? (
+          <p>Vui lòng hoàn thành ghi nhận lịch sử cuộc gọi trong bảng hiển thị trên màn hình chính của bạn.</p>
+        ) : (
+          <p>Cuộc gọi OmiCall đã kết thúc. Bấm Đóng cuộc gọi để thu gọn tổng đài.</p>
+        )}
       </div>
 
       <Space direction="vertical" className="w-full pt-2">
-        {!isCallLogModalOpen && (
+        {Boolean(currentCall?.legacyUserId) && !isCallLogModalOpen && (
           <Button
             type="primary"
             icon={<RollbackOutlined />}

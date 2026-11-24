@@ -32,6 +32,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const syncUser = () => {
       setCurrentUser(getCurrentStoredUser());
+      setToken(localStorage.getItem('mos_token'));
     };
     window.addEventListener('storage', syncUser);
     window.addEventListener('mos_user_updated', syncUser);
@@ -62,8 +63,16 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   const pendingOutboundCallRef = useRef<(() => Promise<void>) | null>(null);
   const [sdkError, setSdkErrors] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
+  const isRegisteredRef = useRef(false);
+  useEffect(() => {
+    isRegisteredRef.current = isRegistered;
+  }, [isRegistered]);
   const [sipConfig, setSipConfig] = useState<SafeAny>(null);
-  const [token] = useState<string | null>(() => {
+  const sipConfigRef = useRef<SafeAny>(null);
+  useEffect(() => {
+    sipConfigRef.current = sipConfig;
+  }, [sipConfig]);
+  const [token, setToken] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('mos_token');
     }
@@ -350,6 +359,8 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     token,
     shouldInit,
     isSdkReadyRef,
+    isRegisteredRef,
+    sipConfigRef,
     pendingOutboundCallRef,
     callStateRef,
     currentCallRef,
@@ -370,10 +381,13 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       canAccessOmiCall,
       isAdmin,
       adminOmiCallEnabled,
+      setAdminOmiCallEnabled,
       isTabMuted,
       isSimulated,
       isRegistered,
+      isRegisteredRef,
       sipConfig,
+      sipConfigRef,
       currentCall,
       isHeld,
       isSdkReadyRef,

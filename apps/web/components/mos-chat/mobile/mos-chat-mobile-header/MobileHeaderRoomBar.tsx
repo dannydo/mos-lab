@@ -1,10 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ChevronLeft, MoreHorizontal, Phone, RefreshCw } from 'lucide-react';
 import type { MosChatConversation, MosChatStaffMember } from '@mos-lab/shared';
+import { useOmiCall } from '~/context/OmiCallContext';
 import { AdaptiveModal } from '~/components/ui';
 import type { MosChatActiveSubtab } from '../../types/mos-chat-types';
+import { resolveDmOmiCallTarget } from '../../utils/resolveDmOmiCallTarget';
 import { formatUnreadBadgeCount } from './mobileHeaderTypes';
 import { MobileRoomHeaderIdentity } from './MobileRoomHeaderIdentity';
 import { MobileRoomOverflowMenu } from './MobileRoomOverflowMenu';
@@ -79,6 +81,12 @@ export const MobileHeaderRoomBar: React.FC<MobileHeaderRoomBarProps> = ({
   onOpenPushSettings,
   onClose,
 }) => {
+  const { makeCall, canAccessOmiCall, isAdmin } = useOmiCall();
+  const omiCallTarget = useMemo(
+    () => (canAccessOmiCall && isAdmin ? resolveDmOmiCallTarget(activeConversation, staffDirectory) : null),
+    [canAccessOmiCall, isAdmin, activeConversation, staffDirectory]
+  );
+
   return (
     <header className="sticky top-0 z-40 bg-[var(--mos-surface)]/90 backdrop-blur-xl border-b border-[var(--mos-surface-border)] shadow-xs flex flex-col select-none">
       <div className="px-3 pt-[max(env(safe-area-inset-top),10px)] pb-2 min-h-[44px] flex items-center justify-between gap-2">
@@ -174,6 +182,14 @@ export const MobileHeaderRoomBar: React.FC<MobileHeaderRoomBarProps> = ({
             pinnedCount={pinnedCount}
             filesCount={filesCount}
             isPushSubscribed={isPushSubscribed}
+            canOmiCall={canAccessOmiCall && isAdmin}
+            omiCallTarget={omiCallTarget}
+            onCallOmiCallPhone={
+              canAccessOmiCall && isAdmin
+                ? (phone, label, avatar) =>
+                    void makeCall(phone, label, undefined, avatar || undefined, undefined, { autoEnableAdmin: true })
+                : undefined
+            }
             onCloseMenu={onCloseMoreMenu}
             onSetActiveSubtab={onSetActiveSubtab}
             onTogglePinConversation={onTogglePinConversation}

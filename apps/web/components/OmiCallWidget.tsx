@@ -337,6 +337,7 @@ export default function OmiCallWidget() {
             currentCall={currentCall}
             callDuration={callDuration}
             isSimulated={isSimulated}
+            simulationReason={lastRegisterEvent?.message}
             isMuted={isMuted}
             isHeld={isHeld}
             descColor={descColor}

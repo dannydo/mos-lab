@@ -3,13 +3,17 @@
 import React from 'react';
 import { ChevronLeft, Hash, Mail, MailOpen, Maximize2, Minus, Phone, Pin, Smartphone, X } from 'lucide-react';
 import { Tooltip } from 'antd';
-import type { MosChatConversation, SafeAny } from '@mos-lab/shared';
+import type { MosChatConversation, MosChatStaffMember, SafeAny } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../../constants/chat-constants';
+import { MosChatOmiCallPopover } from '../MosChatOmiCallPopover';
 import type { MosChatDockPreset } from './dockedWindowTypes';
 
 interface DockedWindowHeaderProps {
   cid: string;
   conv: MosChatConversation;
+  currentUser?: SafeAny;
+  staffDirectory?: MosChatStaffMember[];
+  isDark?: boolean;
   isCollapsed: boolean;
   isDockPinned: boolean;
   isDockManualUnread: boolean;
@@ -43,6 +47,9 @@ interface DockedWindowHeaderProps {
 export const DockedWindowHeader: React.FC<DockedWindowHeaderProps> = ({
   cid,
   conv,
+  currentUser,
+  staffDirectory,
+  isDark = true,
   isCollapsed,
   isDockPinned,
   isDockManualUnread,
@@ -189,6 +196,15 @@ export const DockedWindowHeader: React.FC<DockedWindowHeaderProps> = ({
               </button>
             </Tooltip>
           )}
+
+          <MosChatOmiCallPopover
+            activeConversation={conv}
+            staffDirectory={staffDirectory}
+            currentUser={currentUser}
+            isDark={isDark}
+            compact={true}
+            testId="mos-chat-dock-omicall-btn"
+          />
 
           <Tooltip
             title={`Đổi kích thước iPhone (Hiện tại: ${currentPreset.toUpperCase()} - ${currentWidth}×${currentHeight}px)`}

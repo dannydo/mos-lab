@@ -24,7 +24,11 @@ import {
   normalizeAccessConfig,
   buildDefaultUserSidebarPrefs,
 } from '../chat-state-defaults.js';
-import { loadStaffDirectoryCached, getMemoryStaffFetchedAt } from '../chat-staff-directory.service.js';
+import {
+  loadStaffDirectoryCached,
+  getMemoryStaffFetchedAt,
+  sanitizeStaffDirectoryForViewer,
+} from '../chat-staff-directory.service.js';
 import {
   loadChatState,
   saveUserSidebarPrefs,
@@ -118,6 +122,8 @@ export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
           userPrefs.hiddenIds = (userPrefs.hiddenIds || []).filter((id) => !pinnedSet.has(id));
         }
 
+        const viewerStaffDirectory = sanitizeStaffDirectoryForViewer(staffDirectory, user);
+
         // Zero-DB, lightweight short-circuit when conversations/tasks unchanged (still returns fresh staffDirectory presence!)
         if (!missionMutated && clientVersion > 0 && clientVersion === version) {
           return {
@@ -125,7 +131,7 @@ export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
             unchanged: true,
             conversations: [],
             tasks: [],
-            staffDirectory,
+            staffDirectory: viewerStaffDirectory,
             accessConfig,
             canAccessChat,
             userPrefs,
@@ -170,7 +176,7 @@ export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
           unchanged: false,
           conversations: userConversations,
           tasks: userTasks,
-          staffDirectory,
+          staffDirectory: viewerStaffDirectory,
           accessConfig,
           canAccessChat,
           userPrefs,

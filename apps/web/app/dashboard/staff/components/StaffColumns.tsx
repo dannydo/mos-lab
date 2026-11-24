@@ -153,14 +153,31 @@ export const getStaffColumns = ({
               <CopyPhoneButton phone={record.phone} size="xs" />
             </div>
           ) : null}
+          {Array.isArray(record.extraPhones) &&
+            record.extraPhones.map((extraPhone) => (
+              <div key={extraPhone} className="mt-0.5 flex items-center gap-1.5">
+                <PhoneOutlined className="text-amber-500" />
+                <Text type="secondary" className="text-xs">
+                  {extraPhone}
+                </Text>
+                <CopyPhoneButton phone={extraPhone} size="xs" />
+              </div>
+            ))}
           {record.email ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: record.phone ? '4px' : '0' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginTop: record.phone || (record.extraPhones && record.extraPhones.length > 0) ? '4px' : '0',
+              }}
+            >
               <MailOutlined style={{ color: '#888' }} />
               <Text type="secondary" style={{ fontSize: '12px' }}>
                 {record.email}
               </Text>
             </div>
-          ) : record.phone ? null : (
+          ) : record.phone || (record.extraPhones && record.extraPhones.length > 0) ? null : (
             <Text type="secondary" italic style={{ fontSize: '12px' }}>
               Chưa cập nhật
             </Text>

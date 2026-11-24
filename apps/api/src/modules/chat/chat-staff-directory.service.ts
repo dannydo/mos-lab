@@ -1,11 +1,38 @@
 import type { FastifyInstance } from 'fastify';
-import type { MosChatStaffMember } from '@mos-lab/shared';
+import { isCanonicalSuperAdminIdentity, isSuperAdminRole, type MosChatStaffMember } from '@mos-lab/shared';
+import type { JwtUserPayload } from '../../middlewares/auth.js';
+import { loadStaffExtraPhonesMap, mergeStaffPhones } from '../staff/staff-extra-phones.service.js';
 import { STAFF_DIRECTORY_CACHE_TTL_MS } from './chat-state-defaults.js';
+
+export function canViewerSeeStaffPhonesForOmiCall(user?: JwtUserPayload): boolean {
+  if (!user) return false;
+  return (
+    isSuperAdminRole(user.role) ||
+    isCanonicalSuperAdminIdentity({
+      username: user.username,
+      email: (user as { email?: string | null }).email,
+    })
+  );
+}
+
+export function sanitizeStaffDirectoryForViewer(
+  staffDirectory: MosChatStaffMember[],
+  user?: JwtUserPayload
+): MosChatStaffMember[] {
+  if (canViewerSeeStaffPhonesForOmiCall(user)) {
+    return staffDirectory;
+  }
+  return staffDirectory.map(({ phone: _omitPhone, phones: _omitPhones, ...rest }) => rest);
+}
 
 let memoryStaffCache: {
   staffDirectory: MosChatStaffMember[];
   fetchedAt: number;
 } | null = null;
+
+export function invalidateStaffDirectoryCache(): void {
+  memoryStaffCache = null;
+}
 
 const loadStaffInFlightByFastify = new WeakMap<FastifyInstance, Promise<MosChatStaffMember[]>>();
 
@@ -24,7 +51,7 @@ export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promis
   }
 
   const staffPromise = (async () => {
-    const [rawStaff, activeTeamMembers] = await Promise.all([
+    const [rawStaff, activeTeamMembers, extraPhonesMap] = await Promise.all([
       fastify.prisma.crm.crmStaff.findMany({
         where: { isActive: true },
         select: {
@@ -33,6 +60,7 @@ export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promis
           displayName: true,
           role: true,
           avatarUrl: true,
+          phone: true,
           lastActiveAt: true,
           legacyStaffId: true,
         },
@@ -54,6 +82,7 @@ export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promis
           },
         })
         .catch(() => []),
+      loadStaffExtraPhonesMap(fastify).catch(() => ({}) as Record<string, string[]>),
     ]);
 
     // Fallback to legacy user_profile avatar for staff who haven't uploaded a custom CRM avatar yet
@@ -143,6 +172,7 @@ export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promis
       }
 
       const fallbackLegacyAvatar = s.legacyStaffId ? legacyAvatarMap.get(Number(s.legacyStaffId)) || null : null;
+      const phones = mergeStaffPhones(s.phone, extraPhonesMap[String(s.id)]);
 
       return {
         id: s.id,
@@ -150,6 +180,8 @@ export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promis
         displayName: s.displayName || s.username,
         role: s.role,
         avatarUrl: s.avatarUrl || fallbackLegacyAvatar,
+        phone: phones[0] || null,
+        phones,
         isOnline: Boolean(s.lastActiveAt && nowMs - new Date(s.lastActiveAt).getTime() < 5 * 60 * 1000),
         departmentCodes: Array.from(deptSet),
         teamCodes: Array.from(teamSet),

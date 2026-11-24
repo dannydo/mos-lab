@@ -1,7 +1,7 @@
 import { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { message, notification } from 'antd';
 import { cleanupOmiCallMediaBridge } from './mediaBridge';
-import { CallState, CurrentCall } from './types';
+import { CallState, CurrentCall, type MakeCallOptions } from './types';
 import { playRingback, stopRingback, stopRingtone } from './useAudioManager';
 import {
   clearIncomingNotification,
@@ -20,10 +20,13 @@ interface UseOmiCallActionsParams {
   canAccessOmiCall: boolean;
   isAdmin: boolean;
   adminOmiCallEnabled: boolean;
+  setAdminOmiCallEnabled: (enabled: boolean) => void;
   isTabMuted: boolean;
   isSimulated: boolean;
   isRegistered: boolean;
+  isRegisteredRef: MutableRefObject<boolean>;
   sipConfig: SafeAny;
+  sipConfigRef: MutableRefObject<SafeAny>;
   currentCall: CurrentCall | null;
   isHeld: boolean;
   isSdkReadyRef: MutableRefObject<boolean>;
@@ -49,10 +52,13 @@ export function useOmiCallActions({
   canAccessOmiCall,
   isAdmin,
   adminOmiCallEnabled,
+  setAdminOmiCallEnabled,
   isTabMuted,
   isSimulated,
   isRegistered,
+  isRegisteredRef,
   sipConfig,
+  sipConfigRef,
   currentCall,
   isHeld,
   isSdkReadyRef,
@@ -71,14 +77,25 @@ export function useOmiCallActions({
   setCallLogCustomerInfo,
   setIsCallLogModalOpen,
 }: UseOmiCallActionsParams) {
-  const makeCall = async (phone: string, name?: string, customerId?: number, avatar?: string, planId?: number) => {
+  const makeCall = async (
+    phone: string,
+    name?: string,
+    customerId?: number,
+    avatar?: string,
+    planId?: number,
+    options?: MakeCallOptions
+  ) => {
     if (!canAccessOmiCall) {
       message.warning('Chỉ bộ phận Growth & Booking mới có quyền thực hiện cuộc gọi tổng đài.');
       return;
     }
     if (isAdmin && !adminOmiCallEnabled) {
-      message.info('Vui lòng bật công cụ OmiCall trong menu cá nhân trước khi thực hiện cuộc gọi.');
-      return;
+      if (options?.autoEnableAdmin) {
+        setAdminOmiCallEnabled(true);
+      } else {
+        message.info('Vui lòng bật công cụ OmiCall trong menu cá nhân trước khi thực hiện cuộc gọi.');
+        return;
+      }
     }
     if (isTabMuted) {
       message.warning('Có cuộc gọi đang diễn ra trên một tab khác.');
@@ -101,8 +118,9 @@ export function useOmiCallActions({
   };
 
   const executeCall = async () => {
-    if (!currentCall) return;
-    const { phone: cleanPhone, name, legacyUserId: customerId, avatar } = currentCall;
+    const activeCallTarget = currentCallRef.current || currentCall;
+    if (!activeCallTarget) return;
+    const { phone: cleanPhone, name, legacyUserId: customerId, avatar } = activeCallTarget;
 
     if (isSimulated) {
       console.log(`[OmiCallContext] Simulating outbound call to ${cleanPhone}...`);
@@ -143,8 +161,9 @@ export function useOmiCallActions({
     const isReady = isSdkReadyRef.current && (window as SafeAny).__omicall_initialized;
     const sbState = window.OMICallSDK?.getSbState?.();
     const isConnecting = sbState === 'connecting';
+    const isCurrentlyRegistered = isRegistered || isRegisteredRef.current || sbState === 'online';
 
-    if (!window.OMICallSDK || !isReady || !isRegistered || isConnecting) {
+    if (!window.OMICallSDK || !isReady || !isCurrentlyRegistered || isConnecting) {
       if (window.OMICallSDK && !isReady) {
         initOmiCallSdk();
       }
@@ -190,7 +209,8 @@ export function useOmiCallActions({
         return;
       }
 
-      const hotlineNumber = sipConfig?.phoneNumber || '0328703439';
+      const activeSipConfig = sipConfigRef.current || sipConfig;
+      const hotlineNumber = activeSipConfig?.phoneNumber || '02866810755';
       const omicallCall = await window.OMICallSDK.makeCall(cleanPhone, {
         sipNumber: { number: hotlineNumber },
         userData: JSON.stringify({
@@ -304,11 +324,11 @@ export function useOmiCallActions({
       setCallState('wrapup');
       stopRingback();
 
-      // Auto-open global CallLogModal for simulated calls
+      // Auto-open global CallLogModal only for customer calls (not internal staff calls)
       const activeCallDetail = currentCallRef.current;
-      if (activeCallDetail) {
+      if (activeCallDetail?.legacyUserId) {
         setCallLogCustomerInfo({
-          legacyUserId: activeCallDetail.legacyUserId || 0,
+          legacyUserId: activeCallDetail.legacyUserId,
           customerName: activeCallDetail.name || 'Khách hàng',
           planId: activeCallDetail.planId || null,
         });

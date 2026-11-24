@@ -22,11 +22,12 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import type { MosChatConversation, MosChatTaskItem, SafeAny } from '@mos-lab/shared';
+import type { MosChatConversation, MosChatStaffMember, MosChatTaskItem, SafeAny } from '@mos-lab/shared';
 import { HeaderNotificationCenter } from '../../notification-center/HeaderNotificationCenter';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 import type { MosChatActiveSubtab } from '../types/mos-chat-types';
 import { MosChatHeaderOverflowMenu, type MosChatHeaderOverflowMenuProps } from './MosChatHeaderOverflowMenu';
+import { MosChatOmiCallPopover } from './MosChatOmiCallPopover';
 
 export interface MosChatDesktopHeaderProps extends MosChatHeaderOverflowMenuProps {
   isDark: boolean;
@@ -35,6 +36,7 @@ export interface MosChatDesktopHeaderProps extends MosChatHeaderOverflowMenuProp
   surfaceRaised: string;
   borderColor: string;
   currentUser: SafeAny;
+  staffDirectory?: MosChatStaffMember[];
   activeSubtab: MosChatActiveSubtab;
   setActiveSubtab: React.Dispatch<React.SetStateAction<MosChatActiveSubtab>>;
   setMobileActiveView: React.Dispatch<React.SetStateAction<'inbox' | 'conversation' | 'thread'>>;
@@ -78,6 +80,7 @@ export const MosChatDesktopHeader: React.FC<MosChatDesktopHeaderProps> = (props)
     surfaceRaised,
     borderColor,
     currentUser,
+    staffDirectory,
     activeConversation,
     activeSubtab,
     setActiveSubtab,
@@ -344,6 +347,14 @@ export const MosChatDesktopHeader: React.FC<MosChatDesktopHeaderProps> = (props)
             </button>
           </Tooltip>
         )}
+
+        <MosChatOmiCallPopover
+          activeConversation={activeConversation}
+          staffDirectory={staffDirectory}
+          currentUser={currentUser}
+          isDark={isDark}
+          testId="mos-chat-header-omicall-btn"
+        />
 
         <Tooltip title="Tìm kiếm tin nhắn (⌘K)">
           <button

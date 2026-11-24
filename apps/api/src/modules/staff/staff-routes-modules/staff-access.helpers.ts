@@ -9,6 +9,7 @@ export interface CreateStaffInput {
   isActive?: boolean;
   email?: string | null;
   phone?: string | null;
+  extraPhones?: string[] | string | null;
   joinedAt?: string | null;
   birthDate?: string | null;
   gender?: string | null;

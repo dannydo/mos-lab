@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { isHrOrAdminRole, OnlineStaffPresenceItem, SafeAny, TELESALES_EXECUTIVE_STANDARDS } from '@mos-lab/shared';
 import { requireAuth } from '../../../middlewares/auth.js';
+import { loadStaffExtraPhonesMap } from '../staff-extra-phones.service.js';
 import { getManagedStaffIdsForManager, maskStaffSensitiveData } from './staff-access.helpers.js';
 
 export function registerStaffReadRoutes(fastify: FastifyInstance) {
@@ -68,18 +69,29 @@ export function registerStaffReadRoutes(fastify: FastifyInstance) {
         selectFields.bankAccountNumber = true;
       }
 
-      const rawStaffList = await fastify.prisma.crm.crmStaff.findMany({
-        where: whereClause,
-        orderBy: { createdAt: 'desc' },
-        select: selectFields,
-      });
+      const [rawStaffList, extraPhonesMap] = await Promise.all([
+        fastify.prisma.crm.crmStaff.findMany({
+          where: whereClause,
+          orderBy: { createdAt: 'desc' },
+          select: selectFields,
+        }),
+        selectFields.phone
+          ? loadStaffExtraPhonesMap(fastify).catch(() => ({}) as Record<string, string[]>)
+          : Promise.resolve({} as Record<string, string[]>),
+      ]);
 
       let managedStaffIds: Set<number> | undefined;
       if (currentUser.role === 'manager') {
         managedStaffIds = await getManagedStaffIdsForManager(fastify, currentUser.id);
       }
 
-      return rawStaffList.map((s) => maskStaffSensitiveData(s, currentUser, managedStaffIds));
+      return rawStaffList.map((s) => {
+        const masked = maskStaffSensitiveData(s, currentUser, managedStaffIds);
+        if (selectFields.phone) {
+          return { ...masked, extraPhones: extraPhonesMap[String(s.id)] || [] };
+        }
+        return masked;
+      });
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Fetch staff error:');
       return reply.status(500).send({
