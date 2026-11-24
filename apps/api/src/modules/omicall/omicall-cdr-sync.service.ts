@@ -1,5 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { triggerImmediateAnalysis } from './analyzer.js';
+import { resolveSingleCallStoreId } from './omicall-branch.service.js';
+import { consumePendingSelfAssessment, generateStaffCoachingFeedback } from './omicall-coaching.service.js';
 import { resolveMatchingOmiCallIntent } from './omicall-call-intent.service.js';
 import { parseOmicallWebhookPayload, type ParsedOmicallWebhookPayload } from './webhook-parser.js';
 
@@ -78,7 +80,14 @@ export async function upsertOmicallCdrRecord(
     }),
     fastify.prisma.crm.crmOmicallLog.findUnique({
       where: { callUuid },
-      select: { id: true, analysisStatus: true, recordingUrl: true, staffId: true },
+      select: {
+        id: true,
+        analysisStatus: true,
+        recordingUrl: true,
+        staffId: true,
+        storeId: true,
+        staffSelfSatisfactionScore: true,
+      },
     }),
   ]);
 
@@ -122,6 +131,18 @@ export async function upsertOmicallCdrRecord(
       staffId = matchedCallLog.staffId;
     }
   }
+
+  const resolvedStoreId =
+    existingOmicallLog?.storeId ?? (await resolveSingleCallStoreId(fastify, { legacyUserId, staffId }));
+
+  const pendingSelfAssessment =
+    existingOmicallLog?.staffSelfSatisfactionScore == null
+      ? consumePendingSelfAssessment({
+          staffId,
+          customerPhone,
+          callUuid,
+        })
+      : null;
 
   let initialAnalysisStatus = 'SKIPPED';
   if (autoAnalyze) {
@@ -168,6 +189,14 @@ export async function upsertOmicallCdrRecord(
       ...(staffId ? { staffId } : {}),
       ...(legacyUserId ? { legacyUserId } : {}),
       ...(callLogId ? { callLogId } : {}),
+      ...(resolvedStoreId && !existingOmicallLog?.storeId ? { storeId: resolvedStoreId } : {}),
+      ...(pendingSelfAssessment
+        ? {
+            staffSelfSatisfactionScore: pendingSelfAssessment.score,
+            staffSelfNote: pendingSelfAssessment.note,
+            staffSelfRatedAt: new Date(pendingSelfAssessment.ratedAt),
+          }
+        : {}),
       ...updateAnalysisFields,
       ...(recordingUrl ? { recordingUrl } : {}),
     },
@@ -185,12 +214,31 @@ export async function upsertOmicallCdrRecord(
       staffId,
       legacyUserId,
       callLogId,
+      storeId: resolvedStoreId,
+      ...(pendingSelfAssessment
+        ? {
+            staffSelfSatisfactionScore: pendingSelfAssessment.score,
+            staffSelfNote: pendingSelfAssessment.note,
+            staffSelfRatedAt: new Date(pendingSelfAssessment.ratedAt),
+          }
+        : {}),
       analysisStatus: initialAnalysisStatus,
       ...(preserveTimestamp && timeStartCall && timeStartCall.getUTCFullYear() >= 2020
         ? { createdAt: timeStartCall }
         : {}),
     },
-    select: { id: true, callLogId: true, analysisStatus: true },
+    select: {
+      id: true,
+      callLogId: true,
+      analysisStatus: true,
+      staffSelfSatisfactionScore: true,
+      staffSelfNote: true,
+      customerSatisfactionScore: true,
+      customerSentiment: true,
+      happyCallStatus: true,
+      satisfactionAnalysis: true,
+      transcript: true,
+    },
   });
 
   if (log.callLogId) {
@@ -206,6 +254,21 @@ export async function upsertOmicallCdrRecord(
       .catch((err) => {
         fastify.log.error(err, `Failed to update durationSec for CallLog ${log.callLogId}`);
       });
+  }
+
+  if (pendingSelfAssessment && log.analysisStatus === 'DONE' && log.staffSelfSatisfactionScore) {
+    void generateStaffCoachingFeedback(fastify, {
+      id: log.id,
+      staffSelfSatisfactionScore: log.staffSelfSatisfactionScore,
+      staffSelfNote: log.staffSelfNote ?? null,
+      customerSatisfactionScore: log.customerSatisfactionScore ?? null,
+      customerSentiment: log.customerSentiment ?? null,
+      happyCallStatus: log.happyCallStatus ?? 'NONE',
+      satisfactionAnalysis: log.satisfactionAnalysis ?? null,
+      transcript: log.transcript ?? null,
+    }).catch((err) => {
+      fastify.log.warn(err, `Coaching feedback generation failed for log ${log.id}`);
+    });
   }
 
   if (autoAnalyze && log.analysisStatus === 'PENDING') {

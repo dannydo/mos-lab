@@ -2,9 +2,13 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Drawer, Spin, theme, message, Row, Col } from 'antd';
+import { isAdminOrSuperAdminRole, type UserRole } from '@mos-lab/shared';
+import { Lock } from 'lucide-react';
+import { AppIcon, StatusTag } from '~/components/ui';
 import { useTheme } from '../context/ThemeContext';
 import { apiClient } from '../lib/api-client';
 import { getViewportSize } from '../hooks/useResponsiveTier';
+import { StaffSelfAssessmentCard } from './omicall/StaffSelfAssessmentCard';
 
 // Custom Hook
 import useAudioPlayer from './qa-player/useAudioPlayer';
@@ -30,6 +34,26 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
   const [loading, setLoading] = useState(false);
   const [logDetails, setLogDetails] = useState<SafeAny>(null);
   const detailsRequestIdRef = useRef(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [canReviewQa, setCanReviewQa] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('mos_user');
+      if (raw) {
+        const parsed = JSON.parse(raw) as { role?: string };
+        const adminFlag = isAdminOrSuperAdminRole(parsed.role as UserRole);
+        setIsAdmin(adminFlag);
+        setCanReviewQa(
+          adminFlag ||
+            ['admin', 'super_admin', 'manager', 'qa', 'qc', 'qa_qc'].includes(String(parsed.role || '').toLowerCase())
+        );
+      }
+    } catch {
+      setIsAdmin(false);
+      setCanReviewQa(false);
+    }
+  }, []);
 
   useEffect(
     () => () => {
@@ -45,6 +69,10 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
   const [qaScore, setQaScore] = useState<number>(0);
   const [qaTags, setQaTags] = useState<string[]>([]);
   const [qaChecklist, setQaChecklist] = useState<Record<string, boolean>>({});
+  const [adminSatisfactionScore, setAdminSatisfactionScore] = useState<number>(0);
+  const [adminNote, setAdminNote] = useState<string>('');
+  const [managerSatisfactionScore, setManagerSatisfactionScore] = useState<number>(0);
+  const [managerNote, setManagerNote] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
 
   // Resizable Drawer Width (persists on F5)
@@ -126,6 +154,10 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
       setQaScore(data.qaScore || 0);
       setQaTags(data.qaTags || []);
       setQaChecklist(data.qaChecklist || {});
+      setAdminSatisfactionScore(data.adminSatisfactionScore || 0);
+      setAdminNote(data.adminNote || '');
+      setManagerSatisfactionScore(data.managerSatisfactionScore || 0);
+      setManagerNote(data.managerNote || '');
     } catch (err) {
       if (requestId !== detailsRequestIdRef.current) return;
 
@@ -167,6 +199,15 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
         qaScore: qaScore || null,
         qaTags: qaTags || [],
         qaChecklist: qaChecklist || {},
+        ...(isAdmin
+          ? {
+              adminSatisfactionScore: adminSatisfactionScore || null,
+              adminNote: adminNote || null,
+            }
+          : {
+              managerSatisfactionScore: managerSatisfactionScore || null,
+              managerNote: managerNote || null,
+            }),
       })) as SafeAny;
       message.success('Cập nhật kết quả thẩm định QA thành công!');
       if (onVerifySuccess) {
@@ -179,6 +220,14 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
       setQaScore(data.qaScore || 0);
       setQaTags(data.qaTags || []);
       setQaChecklist(data.qaChecklist || {});
+      setAdminSatisfactionScore(data.adminSatisfactionScore || 0);
+      setAdminNote(data.adminNote || '');
+      setManagerSatisfactionScore(data.managerSatisfactionScore || 0);
+      setManagerNote(data.managerNote || '');
+      setAdminSatisfactionScore(data.adminSatisfactionScore || 0);
+      setAdminNote(data.adminNote || '');
+      setManagerSatisfactionScore(data.managerSatisfactionScore || 0);
+      setManagerNote(data.managerNote || '');
     } catch (err) {
       console.error('[QAPlayerDrawer] Failed to verify log:', err);
       message.error((err as SafeAny).response?.data?.message || 'Thẩm định cuộc gọi thất bại');
@@ -201,7 +250,13 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
     }
   }, [logDetails?.laughTimestamps]);
 
-  const isEvaluationDisabled = !logDetails?.recordingUrl || !logDetails?.transcript;
+  const isEvaluationDisabled = !logDetails?.recordingUrl;
+  const isLockedForStaff = Boolean(logDetails?.aiLockedUntilSelfRated);
+
+  const handleSelfAssessmentUnlocked = (updatedLog: SafeAny) => {
+    setLogDetails((prev: SafeAny) => ({ ...(prev || {}), ...updatedLog, aiLockedUntilSelfRated: false }));
+    onVerifySuccess?.();
+  };
 
   return (
     <Drawer
@@ -265,39 +320,138 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
                 logDetails={logDetails}
               />
 
-              <TranscriptChat
-                logDetails={logDetails}
-                currentTime={currentTime}
-                themeMode={themeMode}
-                token={token}
-                laughList={laughList}
-                seekTo={seekTo}
-              />
+              {isLockedForStaff ? (
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center gap-2 rounded-xl border border-[var(--mos-surface-border)] bg-[var(--mos-surface-muted)] p-3.5 text-xs text-[var(--mos-text-secondary)]">
+                    <AppIcon icon={Lock} size={15} className="shrink-0 text-[var(--color-warning)]" />
+                    <span>
+                      Transcript và đánh giá từ AI đang được ẩn tạm thời. Hãy tự đánh giá mức độ hài lòng của khách hàng
+                      bên dưới để mở khóa và nhận AI Coaching.
+                    </span>
+                  </div>
+                  <StaffSelfAssessmentCard
+                    logId={logDetails.id}
+                    callUuid={logDetails.callUuid}
+                    phone={logDetails.destinationNumber || logDetails.sourceNumber}
+                    aiLockedUntilSelfRated={logDetails.aiLockedUntilSelfRated}
+                    analysisStatus={logDetails.analysisStatus}
+                    staffSelfSatisfactionScore={logDetails.staffSelfSatisfactionScore}
+                    staffSelfNote={logDetails.staffSelfNote}
+                    staffAiCoachingFeedback={logDetails.staffAiCoachingFeedback}
+                    customerSatisfactionScore={logDetails.customerSatisfactionScore}
+                    canReviewQa={canReviewQa}
+                    isDark={themeMode === 'dark'}
+                    onSubmitted={handleSelfAssessmentUnlocked}
+                  />
+                </div>
+              ) : (
+                <>
+                  <TranscriptChat
+                    logDetails={logDetails}
+                    currentTime={currentTime}
+                    themeMode={themeMode}
+                    token={token}
+                    laughList={laughList}
+                    seekTo={seekTo}
+                  />
 
-              <AISatisfactionPanel logDetails={logDetails} themeMode={themeMode} token={token} />
+                  <AISatisfactionPanel logDetails={logDetails} themeMode={themeMode} token={token} />
+
+                  <div className="mt-4">
+                    <StaffSelfAssessmentCard
+                      logId={logDetails.id}
+                      callUuid={logDetails.callUuid}
+                      phone={logDetails.destinationNumber || logDetails.sourceNumber}
+                      aiLockedUntilSelfRated={logDetails.aiLockedUntilSelfRated}
+                      analysisStatus={logDetails.analysisStatus}
+                      staffSelfSatisfactionScore={logDetails.staffSelfSatisfactionScore}
+                      staffSelfNote={logDetails.staffSelfNote}
+                      staffAiCoachingFeedback={logDetails.staffAiCoachingFeedback}
+                      customerSatisfactionScore={logDetails.customerSatisfactionScore}
+                      canReviewQa={canReviewQa}
+                      isDark={themeMode === 'dark'}
+                      onSubmitted={handleSelfAssessmentUnlocked}
+                    />
+                  </div>
+                </>
+              )}
             </Col>
 
-            {/* RIGHT COLUMN: QA EVALUATION FORM (40%) */}
+            {/* RIGHT COLUMN: QA EVALUATION FORM OR READ-ONLY SUMMARY (40%) */}
             <Col xs={24} lg={10}>
-              <QAEvaluationForm
-                happyCallStatus={happyCallStatus}
-                setHappyCallStatus={setHappyCallStatus}
-                happyCallReason={happyCallReason}
-                setHappyCallReason={setHappyCallReason}
-                qaNotes={qaNotes}
-                setQaNotes={setQaNotes}
-                qaScore={qaScore}
-                setQaScore={setQaScore}
-                qaTags={qaTags}
-                setQaTags={setQaTags}
-                qaChecklist={qaChecklist}
-                setQaChecklist={setQaChecklist}
-                submitting={submitting}
-                handleVerifySubmit={handleVerifySubmit}
-                themeMode={themeMode}
-                token={token}
-                disabled={isEvaluationDisabled}
-              />
+              {canReviewQa ? (
+                <QAEvaluationForm
+                  happyCallStatus={happyCallStatus}
+                  setHappyCallStatus={setHappyCallStatus}
+                  happyCallReason={happyCallReason}
+                  setHappyCallReason={setHappyCallReason}
+                  qaNotes={qaNotes}
+                  setQaNotes={setQaNotes}
+                  qaScore={qaScore}
+                  setQaScore={setQaScore}
+                  qaTags={qaTags}
+                  setQaTags={setQaTags}
+                  qaChecklist={qaChecklist}
+                  setQaChecklist={setQaChecklist}
+                  submitting={submitting}
+                  handleVerifySubmit={handleVerifySubmit}
+                  themeMode={themeMode}
+                  token={token}
+                  disabled={isEvaluationDisabled}
+                  isAdmin={isAdmin}
+                  adminSatisfactionScore={adminSatisfactionScore}
+                  setAdminSatisfactionScore={setAdminSatisfactionScore}
+                  adminNote={adminNote}
+                  setAdminNote={setAdminNote}
+                  adminReviewedByName={logDetails.adminReviewedByName}
+                  managerSatisfactionScore={managerSatisfactionScore}
+                  setManagerSatisfactionScore={setManagerSatisfactionScore}
+                  managerNote={managerNote}
+                  setManagerNote={setManagerNote}
+                  managerReviewedByName={logDetails.managerReviewedByName}
+                  staffSelfSatisfactionScore={logDetails.staffSelfSatisfactionScore}
+                  staffSelfNote={logDetails.staffSelfNote}
+                  aiSatisfactionScore={logDetails.customerSatisfactionScore}
+                />
+              ) : (
+                <div className="rounded-2xl border border-[var(--mos-surface-border)] bg-[var(--mos-surface-card)] p-4 text-xs space-y-3">
+                  <div className="text-sm font-bold text-[var(--mos-text-primary)]">
+                    Đánh giá từ Quản lý &amp; Admin
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 tabular-nums">
+                    <StatusTag
+                      status={managerSatisfactionScore ? 'purple' : 'default'}
+                      label={
+                        managerSatisfactionScore
+                          ? `Quản lý/QA: ${managerSatisfactionScore}/5 ★`
+                          : 'Quản lý/QA: Chưa chấm'
+                      }
+                    />
+                    <StatusTag
+                      status={adminSatisfactionScore ? 'orange' : 'default'}
+                      label={adminSatisfactionScore ? `Admin: ${adminSatisfactionScore}/5 ★` : 'Admin: Chưa chấm'}
+                    />
+                  </div>
+                  {managerNote && (
+                    <div className="rounded-lg border border-[var(--mos-surface-border)] bg-[var(--mos-surface-muted)] p-2.5">
+                      <div className="font-semibold text-[var(--mos-text-secondary)]">Ghi chú Quản lý/QA:</div>
+                      <div className="mt-1 text-[var(--mos-text-primary)]">{managerNote}</div>
+                    </div>
+                  )}
+                  {adminNote && (
+                    <div className="rounded-lg border border-[var(--mos-surface-border)] bg-[var(--mos-surface-muted)] p-2.5">
+                      <div className="font-semibold text-[var(--mos-text-secondary)]">Ghi chú Admin:</div>
+                      <div className="mt-1 text-[var(--mos-text-primary)]">{adminNote}</div>
+                    </div>
+                  )}
+                  {qaNotes && (
+                    <div className="rounded-lg border border-[var(--mos-surface-border)] bg-[var(--mos-surface-muted)] p-2.5">
+                      <div className="font-semibold text-[var(--mos-text-secondary)]">Nhận xét thẩm định QA:</div>
+                      <div className="mt-1 text-[var(--mos-text-primary)]">{qaNotes}</div>
+                    </div>
+                  )}
+                </div>
+              )}
             </Col>
           </Row>
         </div>

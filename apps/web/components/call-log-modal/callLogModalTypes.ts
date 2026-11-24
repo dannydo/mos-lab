@@ -60,6 +60,10 @@ export interface ResolvedCallLog {
   callType?: 'CSKH' | 'TELESALES' | 'OTHER' | null;
   hasComplaint?: boolean;
   recordingUrl?: string | null;
+  aiLockedUntilSelfRated?: boolean;
+  staffSelfSatisfactionScore?: number | null;
+  staffSelfNote?: string | null;
+  staffAiCoachingFeedback?: string | null;
 }
 
 export interface CallLogSubmitPayload {

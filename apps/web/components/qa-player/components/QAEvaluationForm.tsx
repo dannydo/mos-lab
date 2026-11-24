@@ -3,6 +3,7 @@
 import React from 'react';
 import { Card, Form, Radio, Select, Input, Button, Rate, Checkbox, Space, Alert } from 'antd';
 import { CheckOutlined, CloseOutlined, FormOutlined, TagOutlined, StarOutlined } from '@ant-design/icons';
+import { StatusTag } from '~/components/ui';
 
 interface QAEvaluationFormProps {
   happyCallStatus: string;
@@ -22,6 +23,20 @@ interface QAEvaluationFormProps {
   themeMode: 'light' | 'dark';
   token: SafeAny;
   disabled?: boolean;
+  isAdmin?: boolean;
+  adminSatisfactionScore?: number;
+  setAdminSatisfactionScore?: (score: number) => void;
+  adminNote?: string;
+  setAdminNote?: (note: string) => void;
+  adminReviewedByName?: string | null;
+  managerSatisfactionScore?: number;
+  setManagerSatisfactionScore?: (score: number) => void;
+  managerNote?: string;
+  setManagerNote?: (note: string) => void;
+  managerReviewedByName?: string | null;
+  staffSelfSatisfactionScore?: number | null;
+  staffSelfNote?: string | null;
+  aiSatisfactionScore?: number | null;
 }
 
 const CHECKLIST_ITEMS = [
@@ -64,7 +79,30 @@ export const QAEvaluationForm: React.FC<QAEvaluationFormProps> = ({
   themeMode,
   token,
   disabled = false,
+  isAdmin = false,
+  adminSatisfactionScore = 0,
+  setAdminSatisfactionScore,
+  adminNote = '',
+  setAdminNote,
+  adminReviewedByName = null,
+  managerSatisfactionScore = 0,
+  setManagerSatisfactionScore,
+  managerNote = '',
+  setManagerNote,
+  managerReviewedByName = null,
+  staffSelfSatisfactionScore = null,
+  staffSelfNote = null,
+  aiSatisfactionScore = null,
 }) => {
+  const activeRoleScore = isAdmin ? adminSatisfactionScore : managerSatisfactionScore;
+  const setActiveRoleScore = isAdmin ? setAdminSatisfactionScore : setManagerSatisfactionScore;
+  const activeRoleNote = isAdmin ? adminNote : managerNote;
+  const setActiveRoleNote = isAdmin ? setAdminNote : setManagerNote;
+
+  const handleRoleScoreChange = (val: number) => {
+    setActiveRoleScore?.(val);
+    setQaScore(val);
+  };
   const handleCheckboxChange = (key: string, checked: boolean) => {
     if (disabled) return;
     setQaChecklist({
@@ -91,35 +129,92 @@ export const QAEvaluationForm: React.FC<QAEvaluationFormProps> = ({
         <div className="mb-4">
           <Alert
             message="Không thể đánh giá"
-            description="Cuộc gọi này chưa có file ghi âm hoặc dữ liệu hội thoại từ OmiCall để thực hiện thẩm định."
+            description="Cuộc gọi này chưa có file ghi âm từ OmiCall để thực hiện thẩm định."
             type="warning"
             showIcon
           />
         </div>
       )}
 
+      {/* 4-Source Satisfaction Cross-Check Strip */}
+      <div className="mb-4 rounded-xl border border-[var(--mos-surface-border)] bg-[var(--mos-surface-muted)] p-3 text-xs space-y-1.5">
+        <div className="font-semibold text-[var(--mos-text-secondary)]">Đối chiếu điểm hài lòng (4 nguồn):</div>
+        <div className="flex flex-wrap items-center gap-1.5 tabular-nums">
+          <StatusTag status="default" label={aiSatisfactionScore ? `AI: ${aiSatisfactionScore}★` : 'AI: Chưa có'} />
+          <StatusTag
+            status={staffSelfSatisfactionScore ? 'processing' : 'default'}
+            label={staffSelfSatisfactionScore ? `Nhân viên: ${staffSelfSatisfactionScore}★` : 'Nhân viên: Chưa chấm'}
+          />
+          <StatusTag
+            status={managerSatisfactionScore ? 'purple' : 'default'}
+            label={
+              managerSatisfactionScore
+                ? `Quản lý${managerReviewedByName ? ` (${managerReviewedByName})` : ''}: ${managerSatisfactionScore}★`
+                : 'Quản lý: Chưa chấm'
+            }
+          />
+          <StatusTag
+            status={adminSatisfactionScore ? 'orange' : 'default'}
+            label={
+              adminSatisfactionScore
+                ? `Admin${adminReviewedByName ? ` (${adminReviewedByName})` : ''}: ${adminSatisfactionScore}★`
+                : 'Admin: Chưa chấm'
+            }
+          />
+        </div>
+        {staffSelfNote && (
+          <div className="text-[11px] text-[var(--mos-text-secondary)]">
+            <strong>Ghi chú NV tự chấm:</strong> {staffSelfNote}
+          </div>
+        )}
+      </div>
+
       <Form layout="vertical">
-        {/* Manager Score Rating */}
+        {/* Role-specific Independent Satisfaction Rating */}
         <Form.Item
           label={
             <span className="font-semibold flex items-center gap-1.5">
               <StarOutlined />
-              Điểm đánh giá của quản lý (1-5 sao):
+              {isAdmin ? 'Đánh giá hài lòng của Admin (1–5 sao):' : 'Đánh giá hài lòng của Quản lý / QA (1–5 sao):'}
             </span>
           }
         >
           <div className="flex items-center gap-3">
             <Rate
-              value={qaScore || 0}
-              onChange={setQaScore}
+              value={activeRoleScore || qaScore || 0}
+              onChange={handleRoleScoreChange}
               style={{ fontSize: 24, color: '#fadb14' }}
               disabled={disabled || submitting}
             />
-            {qaScore > 0 && (
-              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">({qaScore} sao)</span>
+            {(activeRoleScore || qaScore) > 0 && (
+              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                ({activeRoleScore || qaScore} sao)
+              </span>
             )}
           </div>
         </Form.Item>
+
+        {setActiveRoleNote && (
+          <Form.Item
+            label={
+              <span className="font-semibold">
+                {isAdmin ? 'Ghi chú đánh giá riêng của Admin:' : 'Ghi chú đánh giá của Quản lý / QA:'}
+              </span>
+            }
+          >
+            <Input.TextArea
+              rows={2}
+              value={activeRoleNote}
+              onChange={(e) => setActiveRoleNote(e.target.value)}
+              placeholder={
+                isAdmin
+                  ? 'Nhận xét của Admin về mức độ hài lòng của khách...'
+                  : 'Nhận xét của Quản lý/QA về cuộc gọi...'
+              }
+              disabled={disabled || submitting}
+            />
+          </Form.Item>
+        )}
 
         {/* QA Criteria Checklist */}
         <Form.Item label={<span className="font-semibold">Tiêu chí thẩm định cuộc gọi:</span>} className="mb-6">

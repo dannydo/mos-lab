@@ -39,6 +39,8 @@ export function useCallLogModal({
   const [loading, setLoading] = useState(false);
   const [callResult, setCallResult] = useState<CallResult>('ANSWERED');
   const [outcome, setOutcome] = useState<CallOutcome>('PENDING');
+  const [unlockedLogOverride, setUnlockedLogOverride] = useState<ResolvedCallLog | null>(null);
+  const [canReviewQa, setCanReviewQa] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isSubmittingRef = useRef(false);
   const noteInputRef = useRef<TextAreaRef | null>(null);
@@ -53,7 +55,18 @@ export function useCallLogModal({
     resolvedLog: rawResolvedLog,
   } = useOmiCall();
 
-  const resolvedLog = (rawResolvedLog ?? null) as ResolvedCallLog | null;
+  const baseResolvedLog = (rawResolvedLog ?? null) as ResolvedCallLog | null;
+  const resolvedLog: ResolvedCallLog | null = unlockedLogOverride
+    ? {
+        ...(baseResolvedLog || {}),
+        ...unlockedLogOverride,
+        // Keep fresh AI fields if background poll finishes after staff self-rated
+        analysisStatus:
+          baseResolvedLog?.analysisStatus === 'DONE' && unlockedLogOverride.analysisStatus !== 'DONE'
+            ? baseResolvedLog.analysisStatus
+            : (unlockedLogOverride.analysisStatus ?? baseResolvedLog?.analysisStatus),
+      }
+    : baseResolvedLog;
   const visible = propVisible !== undefined ? propVisible : isCallLogModalOpen;
   const onCancel = propOnCancel || closeCallLogModal;
   const onSuccess = propOnSuccess || (() => {});
@@ -92,7 +105,22 @@ export function useCallLogModal({
   useEffect(() => {
     const justOpened = visible && !prevVisibleRef.current;
     prevVisibleRef.current = visible;
+    if (!visible) {
+      setUnlockedLogOverride(null);
+      return;
+    }
     if (!justOpened) return;
+    setUnlockedLogOverride(null);
+    try {
+      const stored = localStorage.getItem('mos_user');
+      if (stored) {
+        const parsed = JSON.parse(stored) as { role?: string };
+        const role = String(parsed.role || '').toLowerCase();
+        setCanReviewQa(['admin', 'super_admin', 'manager', 'qa', 'qc', 'qa_qc'].includes(role));
+      }
+    } catch {
+      setCanReviewQa(false);
+    }
     form.resetFields();
     const defaults = resolveInitialCallDefaults(activeCall, resolvedLog, callDuration);
     const savedNoteDraft = readSessionDraft<string>(noteDraftKey);
@@ -272,6 +300,10 @@ export function useCallLogModal({
     );
   };
 
+  const handleSelfAssessmentSubmitted = useCallback((updatedLog: ResolvedCallLog) => {
+    setUnlockedLogOverride(updatedLog);
+  }, []);
+
   return {
     form,
     isDark,
@@ -282,10 +314,12 @@ export function useCallLogModal({
     customerName,
     callDuration,
     resolvedLog,
+    canReviewQa,
     callResult,
     outcome,
     audioRef,
     noteInputRef,
+    handleSelfAssessmentSubmitted,
     handleQuickAction,
     handleFinish,
     handleApplyQuickNotePreset,

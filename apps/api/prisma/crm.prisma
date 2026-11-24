@@ -490,6 +490,7 @@ model CrmOmicallLog {
   staffId      Int? @map("staff_id") // matched CRM staff
   legacyUserId Int? @map("legacy_user_id") // matched customer
   callLogId    Int? @map("call_log_id") // linked CrmCallLog (notes/tags)
+  storeId      Int? @map("store_id") // resolved branch (customer latest booking/profile -> staff fallback)
 
   // AI Analysis
   analysisStatus     String  @default("PENDING") @map("analysis_status") @db.VarChar(20)
@@ -503,10 +504,29 @@ model CrmOmicallLog {
   // JSON: [{"start":12.5,"end":14.2,"speaker":"agent"|"customer","confidence":0.92}, ...]
   transcript         String? @db.LongText
 
-  // Customer Satisfaction (CSAT) Evaluation Fields
+  // Customer Satisfaction (CSAT) Evaluation Fields (AI)
   customerSatisfactionScore Int?    @map("customer_satisfaction_score")
   customerSentiment         String? @map("customer_sentiment") @db.VarChar(20)
   satisfactionAnalysis      String? @map("satisfaction_analysis") @db.Text
+
+  // Staff Blind Self-Assessment & AI Coaching Comparison
+  staffSelfSatisfactionScore Int?      @map("staff_self_satisfaction_score")
+  staffSelfNote              String?   @map("staff_self_note") @db.Text
+  staffSelfRatedAt           DateTime? @map("staff_self_rated_at") @db.DateTime(0)
+  staffAiCoachingFeedback    String?   @map("staff_ai_coaching_feedback") @db.Text
+  staffAiCoachingAt          DateTime? @map("staff_ai_coaching_at") @db.DateTime(0)
+
+  // Manager / QA Independent Satisfaction Rating
+  managerSatisfactionScore Int?      @map("manager_satisfaction_score")
+  managerReviewedBy        Int?      @map("manager_reviewed_by")
+  managerReviewedAt        DateTime? @map("manager_reviewed_at") @db.DateTime(0)
+  managerNote              String?   @map("manager_note") @db.Text
+
+  // Admin Independent Satisfaction Rating
+  adminSatisfactionScore Int?      @map("admin_satisfaction_score")
+  adminReviewedBy        Int?      @map("admin_reviewed_by")
+  adminReviewedAt        DateTime? @map("admin_reviewed_at") @db.DateTime(0)
+  adminNote              String?   @map("admin_note") @db.Text
 
   // Happy Call Status (thay thế isHappyCall boolean)
   happyCallStatus String  @default("NONE") @map("happy_call_status") @db.VarChar(20)
@@ -529,6 +549,11 @@ model CrmOmicallLog {
 
   @@index([staffId])
   @@index([legacyUserId])
+  @@index([storeId])
+  @@index([customerSatisfactionScore])
+  @@index([staffSelfSatisfactionScore])
+  @@index([managerSatisfactionScore])
+  @@index([adminSatisfactionScore])
   @@index([analysisStatus])
   @@index([happyCallStatus])
   @@index([createdAt])

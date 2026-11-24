@@ -37,6 +37,7 @@ export function getAnalyzerGeminiModels(): string[] {
     'gemini-2.5-flash',
     'gemini-3.5-flash-lite',
     'gemini-3.5-flash',
+    'gemini-flash-lite-latest',
   ];
   return Array.from(new Set(candidates.filter(Boolean)));
 }

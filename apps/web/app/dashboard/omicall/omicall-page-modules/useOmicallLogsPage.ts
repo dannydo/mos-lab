@@ -1,13 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import { Form, message } from 'antd';
 import { isAdminOrSuperAdminRole, type UserRole } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import {
   createDefaultOmicallDateRange,
+  EMPTY_OMICALL_SUMMARY,
+  type OmicallBranchSummary,
   type OmicallConfigRow,
+  type OmicallDailySummary,
+  type OmicallDateMode,
   type OmicallExtensionFormValues,
   type OmicallLogRow,
   type OmicallLogsApiResponse,
@@ -46,22 +50,31 @@ export function useOmicallLogsPage(options: UseOmicallLogsPageOptions = {}) {
   const [activeTab, setActiveTab] = useState('logs');
 
   const [logs, setLogs] = useState<OmicallLogRow[]>([]);
+  const [branches, setBranches] = useState<OmicallBranchSummary[]>([]);
+  const [summary, setSummary] = useState<OmicallDailySummary>(EMPTY_OMICALL_SUMMARY);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [totalLogs, setTotalLogs] = useState(0);
 
+  const [dateMode, setDateMode] = useState<OmicallDateMode>('day');
+  const [selectedDate, setSelectedDate] = useState<Dayjs>(() => dayjs());
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(() => createDefaultOmicallDateRange());
   const [dateRangeDirty, setDateRangeDirty] = useState(false);
   const [legacyUserIdFilter, setLegacyUserIdFilter] = useState<number | null>(initialLegacyUserId);
   const [customerFilterLabel, setCustomerFilterLabel] = useState<string>(initialCustomerName);
+  const [branchFilter, setBranchFilter] = useState<string>('ALL');
   const [directionFilter, setDirectionFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [happyFilter, setHappyFilter] = useState<string>('ALL');
   const [aiFilter, setAiFilter] = useState<string>('ALL');
+  const [aiSatisfactionFilter, setAiSatisfactionFilter] = useState<string>('ALL');
+  const [ratingSourceFilter, setRatingSourceFilter] = useState<string>('ANY');
+  const [ratingLevelFilter, setRatingLevelFilter] = useState<string>('ALL');
   const [staffFilter, setStaffFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>(initialSearch);
   const [onlyWithRecording, setOnlyWithRecording] = useState<boolean>(false);
+  const [hasComplaintOnly, setHasComplaintOnly] = useState<boolean>(false);
   const [staffList, setStaffList] = useState<OmicallStaffSummary[]>([]);
 
   const [playingLogId, setPlayingLogId] = useState<number | null>(null);
@@ -122,6 +135,17 @@ export function useOmicallLogsPage(options: UseOmicallLogsPageOptions = {}) {
     }
   }, []);
 
+  const fetchBranches = useCallback(async () => {
+    try {
+      const data = await apiClient.omicall.listBranches();
+      if (Array.isArray(data?.branches)) {
+        setBranches(data.branches);
+      }
+    } catch (err) {
+      console.error('[OmicallLogsPage] Failed to fetch branches:', err);
+    }
+  }, []);
+
   const fetchLogs = useCallback(async () => {
     const requestId = ++logsRequestIdRef.current;
     setLoadingLogs(true);
@@ -134,16 +158,27 @@ export function useOmicallLogsPage(options: UseOmicallLogsPageOptions = {}) {
       if (legacyUserIdFilter) {
         params.legacyUserId = legacyUserIdFilter;
       }
-      if ((!legacyUserIdFilter || dateRangeDirty) && dateRange && dateRange[0] && dateRange[1]) {
-        params.startDate = dateRange[0].format('YYYY-MM-DD');
-        params.endDate = dateRange[1].format('YYYY-MM-DD');
+      if (!legacyUserIdFilter || dateRangeDirty) {
+        if (dateMode === 'day') {
+          const dayStr = selectedDate.format('YYYY-MM-DD');
+          params.startDate = dayStr;
+          params.endDate = dayStr;
+        } else if (dateRange && dateRange[0] && dateRange[1]) {
+          params.startDate = dateRange[0].format('YYYY-MM-DD');
+          params.endDate = dateRange[1].format('YYYY-MM-DD');
+        }
       }
 
+      if (branchFilter !== 'ALL') params.storeId = branchFilter;
       if (directionFilter !== 'ALL') params.direction = directionFilter;
       if (statusFilter !== 'ALL') params.status = statusFilter;
       if (happyFilter !== 'ALL') params.happyCallStatus = happyFilter;
       if (aiFilter !== 'ALL') params.analysisStatus = aiFilter;
+      if (aiSatisfactionFilter !== 'ALL') params.aiSatisfaction = aiSatisfactionFilter;
+      if (ratingSourceFilter !== 'ANY') params.ratingSource = ratingSourceFilter;
+      if (ratingLevelFilter !== 'ALL') params.ratingLevel = ratingLevelFilter;
       if (onlyWithRecording) params.hasRecording = 'true';
+      if (hasComplaintOnly) params.hasComplaint = 'true';
       if (searchQuery.trim()) params.search = searchQuery.trim();
       if (canReviewQa && staffFilter !== 'ALL') params.staffId = Number(staffFilter);
 
@@ -151,6 +186,10 @@ export function useOmicallLogsPage(options: UseOmicallLogsPageOptions = {}) {
       if (requestId !== logsRequestIdRef.current) return;
 
       setLogs(data.logs || []);
+      if (Array.isArray(data.branches) && data.branches.length > 0) {
+        setBranches(data.branches);
+      }
+      setSummary(data.summary || EMPTY_OMICALL_SUMMARY);
       setTotalLogs(data.pagination?.total || data.total || 0);
     } catch (err) {
       if (requestId !== logsRequestIdRef.current) return;
@@ -167,12 +206,19 @@ export function useOmicallLogsPage(options: UseOmicallLogsPageOptions = {}) {
     pageSize,
     legacyUserIdFilter,
     dateRangeDirty,
+    dateMode,
+    selectedDate,
     dateRange,
+    branchFilter,
     directionFilter,
     statusFilter,
     happyFilter,
     aiFilter,
+    aiSatisfactionFilter,
+    ratingSourceFilter,
+    ratingLevelFilter,
     onlyWithRecording,
+    hasComplaintOnly,
     searchQuery,
     staffFilter,
     canReviewQa,
@@ -202,19 +248,103 @@ export function useOmicallLogsPage(options: UseOmicallLogsPageOptions = {}) {
   useEffect(() => {
     if (currentUser) {
       fetchLogs();
+      fetchBranches();
       if (canReviewQa) fetchStaffList();
       if (isAdmin) fetchConfigs();
     }
-  }, [currentUser, fetchLogs, fetchStaffList, fetchConfigs, isAdmin, canReviewQa]);
+  }, [currentUser, fetchLogs, fetchBranches, fetchStaffList, fetchConfigs, isAdmin, canReviewQa]);
 
   const handleDateRangeChange = useCallback((dates: [Dayjs, Dayjs]) => {
+    setDateMode('range');
     setDateRange(dates);
     setDateRangeDirty(true);
+    setCurrentPage(1);
   }, []);
+
+  const handleDateModeChange = useCallback((mode: OmicallDateMode) => {
+    setDateMode(mode);
+    setDateRangeDirty(true);
+    setCurrentPage(1);
+  }, []);
+
+  const handleSelectDate = useCallback((date: Dayjs) => {
+    setDateMode('day');
+    setSelectedDate(date);
+    setDateRangeDirty(true);
+    setCurrentPage(1);
+  }, []);
+
+  const handlePrevDay = useCallback(() => {
+    setDateMode('day');
+    setSelectedDate((prev) => prev.subtract(1, 'day'));
+    setDateRangeDirty(true);
+    setCurrentPage(1);
+  }, []);
+
+  const handleNextDay = useCallback(() => {
+    setDateMode('day');
+    setSelectedDate((prev) => {
+      const next = prev.add(1, 'day');
+      return next.isAfter(dayjs(), 'day') ? dayjs() : next;
+    });
+    setDateRangeDirty(true);
+    setCurrentPage(1);
+  }, []);
+
+  const handleToday = useCallback(() => {
+    setDateMode('day');
+    setSelectedDate(dayjs());
+    setDateRangeDirty(true);
+    setCurrentPage(1);
+  }, []);
+
+  const clearSubFilters = useCallback(() => {
+    setDirectionFilter('ALL');
+    setStatusFilter('ALL');
+    setHappyFilter('ALL');
+    setAiFilter('ALL');
+    setAiSatisfactionFilter('ALL');
+    setRatingSourceFilter('ANY');
+    setRatingLevelFilter('ALL');
+    setHasComplaintOnly(false);
+    setCurrentPage(1);
+  }, []);
+
+  const handleQuickFilterAll = useCallback(() => {
+    clearSubFilters();
+  }, [clearSubFilters]);
+
+  const handleQuickFilterAnswered = useCallback(() => {
+    clearSubFilters();
+    setStatusFilter('ANSWER');
+  }, [clearSubFilters]);
+
+  const handleQuickFilterHappyApproved = useCallback(() => {
+    clearSubFilters();
+    setHappyFilter('APPROVED');
+  }, [clearSubFilters]);
+
+  const handleQuickFilterHappyPending = useCallback(() => {
+    clearSubFilters();
+    setHappyFilter('PENDING_APPROVAL');
+  }, [clearSubFilters]);
+
+  const handleQuickFilterComplaints = useCallback(() => {
+    clearSubFilters();
+    setHasComplaintOnly(true);
+  }, [clearSubFilters]);
+
+  const handleQuickFilterMismatch = useCallback(() => {
+    clearSubFilters();
+    setRatingSourceFilter('STAFF');
+    setRatingLevelFilter('AI_MISMATCH');
+  }, [clearSubFilters]);
 
   const handleClearCustomerFilter = useCallback(() => {
     setLegacyUserIdFilter(null);
     setCustomerFilterLabel('');
+    setDateMode('day');
+    setSelectedDate(dayjs());
     setDateRange(createDefaultOmicallDateRange());
     setDateRangeDirty(false);
     setCurrentPage(1);
@@ -246,17 +376,24 @@ export function useOmicallLogsPage(options: UseOmicallLogsPageOptions = {}) {
   }, [currentPage, fetchLogs]);
 
   const handleResetFilters = useCallback(() => {
+    setDateMode('day');
+    setSelectedDate(dayjs());
     setDateRange(createDefaultOmicallDateRange());
     setDateRangeDirty(false);
     setLegacyUserIdFilter(null);
     setCustomerFilterLabel('');
+    setBranchFilter('ALL');
     setDirectionFilter('ALL');
     setStatusFilter('ALL');
     setHappyFilter('ALL');
     setAiFilter('ALL');
+    setAiSatisfactionFilter('ALL');
+    setRatingSourceFilter('ANY');
+    setRatingLevelFilter('ALL');
     setStaffFilter('ALL');
     setSearchQuery('');
     setOnlyWithRecording(false);
+    setHasComplaintOnly(false);
     setPlayingLogId(null);
     setCurrentPage(1);
   }, []);
@@ -389,15 +526,32 @@ export function useOmicallLogsPage(options: UseOmicallLogsPageOptions = {}) {
     canReviewQa,
     activeTab,
     logs,
+    branches,
+    summary,
     loadingLogs,
     currentPage,
     pageSize,
     totalLogs,
+    dateMode,
+    selectedDate,
     dateRange,
+    handleDateModeChange,
+    handleSelectDate,
+    handlePrevDay,
+    handleNextDay,
+    handleToday,
     handleDateRangeChange,
+    handleQuickFilterAll,
+    handleQuickFilterAnswered,
+    handleQuickFilterHappyApproved,
+    handleQuickFilterHappyPending,
+    handleQuickFilterComplaints,
+    handleQuickFilterMismatch,
     legacyUserIdFilter,
     customerFilterLabel,
     handleClearCustomerFilter,
+    branchFilter,
+    setBranchFilter,
     directionFilter,
     setDirectionFilter,
     statusFilter,
@@ -406,12 +560,20 @@ export function useOmicallLogsPage(options: UseOmicallLogsPageOptions = {}) {
     setHappyFilter,
     aiFilter,
     setAiFilter,
+    aiSatisfactionFilter,
+    setAiSatisfactionFilter,
+    ratingSourceFilter,
+    setRatingSourceFilter,
+    ratingLevelFilter,
+    setRatingLevelFilter,
     staffFilter,
     setStaffFilter,
     searchQuery,
     setSearchQuery,
     onlyWithRecording,
     setOnlyWithRecording,
+    hasComplaintOnly,
+    setHasComplaintOnly,
     staffList,
     playingLogId,
     reanalyzingLogId,
