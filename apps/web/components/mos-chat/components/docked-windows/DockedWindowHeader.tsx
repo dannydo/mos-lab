@@ -1,15 +1,31 @@
 'use client';
 
-import React from 'react';
-import { ChevronLeft, Hash, Mail, MailOpen, Maximize2, Minus, Phone, Pin, Smartphone, X } from 'lucide-react';
+import React, { useMemo } from 'react';
+import {
+  ChevronLeft,
+  Hash,
+  Mail,
+  MailOpen,
+  Maximize2,
+  Minus,
+  Phone,
+  PhoneCall,
+  Pin,
+  Smartphone,
+  X,
+} from 'lucide-react';
 import { Tooltip } from 'antd';
-import type { MosChatConversation, SafeAny } from '@mos-lab/shared';
+import type { MosChatConversation, MosChatStaffMember, SafeAny } from '@mos-lab/shared';
+import { useOmiCall } from '../../../../context/OmiCallContext';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../../constants/chat-constants';
+import { resolveDmOmiCallTarget } from '../../utils/resolveDmOmiCallTarget';
 import type { MosChatDockPreset } from './dockedWindowTypes';
 
 interface DockedWindowHeaderProps {
   cid: string;
   conv: MosChatConversation;
+  currentUser?: SafeAny;
+  staffDirectory?: MosChatStaffMember[];
   isCollapsed: boolean;
   isDockPinned: boolean;
   isDockManualUnread: boolean;
@@ -43,6 +59,8 @@ interface DockedWindowHeaderProps {
 export const DockedWindowHeader: React.FC<DockedWindowHeaderProps> = ({
   cid,
   conv,
+  currentUser,
+  staffDirectory,
   isCollapsed,
   isDockPinned,
   isDockManualUnread,
@@ -72,6 +90,12 @@ export const DockedWindowHeader: React.FC<DockedWindowHeaderProps> = ({
   onCloseDock,
   onSelectTab,
 }) => {
+  const { makeCall, canAccessOmiCall, isAdmin } = useOmiCall();
+  const omiCallTarget = useMemo(
+    () => resolveDmOmiCallTarget(conv, staffDirectory, currentUser),
+    [conv, staffDirectory, currentUser]
+  );
+
   return (
     <>
       {/* ================= RESIZE HANDLES (TOP & LEFT) ================= */}
@@ -186,6 +210,29 @@ export const DockedWindowHeader: React.FC<DockedWindowHeaderProps> = ({
                 className="w-6 h-6 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors hover:bg-emerald-500/15 text-emerald-400"
               >
                 <Phone size={12} />
+              </button>
+            </Tooltip>
+          )}
+
+          {canAccessOmiCall && isAdmin && omiCallTarget && (
+            <Tooltip title={`Gọi OmiCall tới ${omiCallTarget.displayName} (${omiCallTarget.phone})`}>
+              <button
+                type="button"
+                data-testid="mos-chat-dock-omicall-btn"
+                aria-label="Gọi OmiCall qua số điện thoại"
+                onClick={() =>
+                  void makeCall(
+                    omiCallTarget.phone,
+                    omiCallTarget.displayName,
+                    undefined,
+                    omiCallTarget.avatarUrl || undefined,
+                    undefined,
+                    { autoEnableAdmin: true }
+                  )
+                }
+                className="w-6 h-6 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors hover:bg-amber-500/15 text-amber-500"
+              >
+                <PhoneCall size={12} />
               </button>
             </Tooltip>
           )}

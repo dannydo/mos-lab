@@ -2,6 +2,7 @@ import type React from 'react';
 import type {
   MosChatConversation,
   MosChatMessage,
+  MosChatStaffMember,
   MosChatTaskItem,
   MosChatThreadReply,
   SafeAny,
@@ -51,6 +52,7 @@ export interface MosChatDockedWindowsProps {
   accentContrast: string;
   isDark?: boolean;
   currentUser?: SafeAny;
+  staffDirectory?: MosChatStaffMember[];
   token: SafeAny;
   renderUserAvatarNode: (opts: SafeAny) => React.ReactNode;
   isConversationParticipantOnline: (conv: MosChatConversation) => boolean;

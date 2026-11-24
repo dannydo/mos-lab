@@ -1,6 +1,28 @@
 import type { FastifyInstance } from 'fastify';
-import type { MosChatStaffMember } from '@mos-lab/shared';
+import { isCanonicalSuperAdminIdentity, isSuperAdminRole, type MosChatStaffMember } from '@mos-lab/shared';
+import type { JwtUserPayload } from '../../middlewares/auth.js';
 import { STAFF_DIRECTORY_CACHE_TTL_MS } from './chat-state-defaults.js';
+
+export function canViewerSeeStaffPhonesForOmiCall(user?: JwtUserPayload): boolean {
+  if (!user) return false;
+  return (
+    isSuperAdminRole(user.role) ||
+    isCanonicalSuperAdminIdentity({
+      username: user.username,
+      email: (user as { email?: string | null }).email,
+    })
+  );
+}
+
+export function sanitizeStaffDirectoryForViewer(
+  staffDirectory: MosChatStaffMember[],
+  user?: JwtUserPayload
+): MosChatStaffMember[] {
+  if (canViewerSeeStaffPhonesForOmiCall(user)) {
+    return staffDirectory;
+  }
+  return staffDirectory.map(({ phone: _omit, ...rest }) => rest);
+}
 
 let memoryStaffCache: {
   staffDirectory: MosChatStaffMember[];
@@ -33,6 +55,7 @@ export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promis
           displayName: true,
           role: true,
           avatarUrl: true,
+          phone: true,
           lastActiveAt: true,
           legacyStaffId: true,
         },
@@ -150,6 +173,7 @@ export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promis
         displayName: s.displayName || s.username,
         role: s.role,
         avatarUrl: s.avatarUrl || fallbackLegacyAvatar,
+        phone: s.phone ? String(s.phone).trim() || null : null,
         isOnline: Boolean(s.lastActiveAt && nowMs - new Date(s.lastActiveAt).getTime() < 5 * 60 * 1000),
         departmentCodes: Array.from(deptSet),
         teamCodes: Array.from(teamSet),

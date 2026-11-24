@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Bell, BellRing, CheckSquare, FolderOpen, Palette, Pin, Search, UserPlus, X } from 'lucide-react';
+import { Bell, BellRing, CheckSquare, FolderOpen, Palette, PhoneCall, Pin, Search, UserPlus, X } from 'lucide-react';
 import type { MosChatConversation } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID } from '../../constants/chat-constants';
 import type { MosChatActiveSubtab } from '../../types/mos-chat-types';
+import type { DmOmiCallTarget } from '../../utils/resolveDmOmiCallTarget';
 import { getHeaderCountBadgeClass, getPushStatusBadgeClass } from './mobileHeaderTypes';
 
 export interface MobileRoomOverflowMenuProps {
@@ -18,6 +19,8 @@ export interface MobileRoomOverflowMenuProps {
   pinnedCount: number;
   filesCount: number;
   isPushSubscribed: boolean;
+  omiCallTarget?: DmOmiCallTarget | null;
+  onStartOmiCall?: () => void;
   onCloseMenu: () => void;
   onSetActiveSubtab: (tab: MosChatActiveSubtab) => void;
   onTogglePinConversation: (convId: string) => void;
@@ -39,6 +42,8 @@ export const MobileRoomOverflowMenu: React.FC<MobileRoomOverflowMenuProps> = ({
   pinnedCount,
   filesCount,
   isPushSubscribed,
+  omiCallTarget,
+  onStartOmiCall,
   onCloseMenu,
   onSetActiveSubtab,
   onTogglePinConversation,
@@ -62,6 +67,29 @@ export const MobileRoomOverflowMenu: React.FC<MobileRoomOverflowMenuProps> = ({
             : 'hidden'
         }
       >
+        {omiCallTarget && onStartOmiCall && (
+          <button
+            type="button"
+            onClick={() => {
+              onCloseMenu();
+              onStartOmiCall();
+            }}
+            className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-[var(--mos-surface-muted)] text-left text-xs font-medium transition-colors cursor-pointer"
+            aria-label="Gọi OmiCall qua số điện thoại"
+          >
+            <PhoneCall className="w-4 h-4 text-amber-500 shrink-0" />
+            <span className="flex-1">Gọi OmiCall</span>
+            <span
+              className={`inline-flex items-center justify-center leading-none py-0.5 px-2 rounded-full text-[10.5px] font-bold tabular-nums ${getHeaderCountBadgeClass(
+                'amber',
+                isDark
+              )}`}
+            >
+              {omiCallTarget.phone}
+            </span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => {

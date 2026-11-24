@@ -370,6 +370,7 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
       canAccessOmiCall,
       isAdmin,
       adminOmiCallEnabled,
+      setAdminOmiCallEnabled,
       isTabMuted,
       isSimulated,
       isRegistered,

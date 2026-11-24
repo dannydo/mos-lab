@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { GlobalToken } from 'antd';
-import type { MosChatConversation, MosChatTaskItem, SafeAny } from '@mos-lab/shared';
+import type { MosChatConversation, MosChatStaffMember, MosChatTaskItem, SafeAny } from '@mos-lab/shared';
 import type { usePortalAttachmentsAndPaste } from '../hooks/usePortalAttachmentsAndPaste';
 import type { usePortalAvatarAndPresence } from '../hooks/usePortalAvatarAndPresence';
 import type { usePortalBootstrapAndRealtime } from '../hooks/usePortalBootstrapAndRealtime';
@@ -37,6 +37,7 @@ export interface MosChatDesktopOverlaysProps {
   accentContrast: string;
   currentUser?: SafeAny;
   conversations: MosChatConversation[];
+  staffDirectory?: MosChatStaffMember[];
   tasks: MosChatTaskItem[];
   onToggle: () => void;
   layout: ReturnType<typeof usePortalLayoutAndResize>;
@@ -71,6 +72,7 @@ export const MosChatDesktopOverlays: React.FC<MosChatDesktopOverlaysProps> = ({
   accentContrast,
   currentUser,
   conversations,
+  staffDirectory,
   tasks,
   onToggle,
   layout,
@@ -114,6 +116,7 @@ export const MosChatDesktopOverlays: React.FC<MosChatDesktopOverlaysProps> = ({
       accentContrast={accentContrast}
       isDark={isDark}
       currentUser={currentUser}
+      staffDirectory={staffDirectory}
       token={token}
       renderUserAvatarNode={avatarPresence.renderUserAvatarNode}
       isConversationParticipantOnline={avatarPresence.isConversationParticipantOnline}
