@@ -33,6 +33,7 @@ export interface OmicallLogRow {
   laughCount: number;
   customerSatisfactionScore?: number | null;
   customerSentiment?: string | null;
+  satisfactionAnalysis?: string | null;
   happyCallStatus: string;
   happyCallReason?: string | null;
   qaTags?: string[];

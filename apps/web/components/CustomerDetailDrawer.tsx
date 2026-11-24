@@ -109,6 +109,10 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     bookingWizardOpen,
   } = state;
 
+  const canViewOmicallQa = ['admin', 'super_admin', 'manager', 'qa', 'qc', 'qa_qc'].includes(
+    String(currentUser?.role || '').toLowerCase()
+  );
+
   return (
     <AdaptiveDrawer
       intent="detail"
@@ -124,6 +128,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
             isMaskedRole={isMaskedRole}
             canMakeCall={canMakeCall}
             isManagerOrAdmin={isManagerOrAdmin}
+            canViewOmicallQa={canViewOmicallQa}
             restoreLoading={restoreLoading}
             deleteLoading={deleteLoading}
             legacyProfileUrl={legacyProfileUrl}

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { Tabs } from 'antd';
-import { Mic, Settings } from 'lucide-react';
+import React, { Suspense, useMemo } from 'react';
+import { Button, Tabs } from 'antd';
+import { Mic, Settings, UserRound, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import { AppIcon, PageHeader, SectionCard } from '~/components/ui';
 import { OmicallConfigModal } from './omicall-page-modules/OmicallConfigModal';
 import { OmicallConfigsTabContent } from './omicall-page-modules/OmicallConfigsTabContent';
@@ -15,7 +16,19 @@ const QAPlayerDrawer = dynamic(() => import('../../../components/QAPlayerDrawer'
   ssr: false,
 });
 
-export default function OmicallLogsPage() {
+function parsePositiveIntParam(raw: string | null): number | null {
+  if (!raw) return null;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function OmicallLogsPageContent() {
+  const searchParams = useSearchParams();
+  const initialLegacyUserId = parsePositiveIntParam(searchParams.get('legacyUserId'));
+  const initialLogId = parsePositiveIntParam(searchParams.get('logId'));
+  const initialCustomerName = searchParams.get('customerName') || '';
+  const initialSearch = searchParams.get('search') || '';
+
   const {
     isAdmin,
     canReviewQa,
@@ -26,7 +39,10 @@ export default function OmicallLogsPage() {
     pageSize,
     totalLogs,
     dateRange,
-    setDateRange,
+    handleDateRangeChange,
+    legacyUserIdFilter,
+    customerFilterLabel,
+    handleClearCustomerFilter,
     directionFilter,
     setDirectionFilter,
     statusFilter,
@@ -68,7 +84,12 @@ export default function OmicallLogsPage() {
     closeConfigModal,
     handleSaveConfig,
     handleDeleteConfig,
-  } = useOmicallLogsPage();
+  } = useOmicallLogsPage({
+    initialLegacyUserId,
+    initialCustomerName,
+    initialSearch,
+    initialLogId,
+  });
 
   const logsColumns = useMemo(
     () =>
@@ -100,6 +121,21 @@ export default function OmicallLogsPage() {
         subtitle="Xem, nghe lại trực tiếp file ghi âm cuộc gọi OmiCall, phân tích AI theo CSKH / Telesales và phê duyệt Happy Call."
       />
 
+      {legacyUserIdFilter && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs">
+          <div className="flex items-center gap-2 font-medium text-[var(--mos-text-primary)]">
+            <AppIcon icon={UserRound} size={15} className="text-amber-500" />
+            <span>
+              Đang lọc toàn bộ ghi âm OmiCall của khách hàng:{' '}
+              <strong>{customerFilterLabel || `KH #${legacyUserIdFilter}`}</strong>
+            </span>
+          </div>
+          <Button size="small" icon={<AppIcon icon={X} size={13} />} onClick={handleClearCustomerFilter}>
+            Xem tất cả khách hàng
+          </Button>
+        </div>
+      )}
+
       <SectionCard bodyPadding={20}>
         <Tabs
           activeKey={activeTab}
@@ -118,7 +154,7 @@ export default function OmicallLogsPage() {
                   isAdmin={isAdmin}
                   canReviewQa={canReviewQa}
                   dateRange={dateRange}
-                  onDateRangeChange={setDateRange}
+                  onDateRangeChange={handleDateRangeChange}
                   directionFilter={directionFilter}
                   onDirectionFilterChange={setDirectionFilter}
                   statusFilter={statusFilter}
@@ -188,5 +224,13 @@ export default function OmicallLogsPage() {
         onVerifySuccess={fetchLogs}
       />
     </div>
+  );
+}
+
+export default function OmicallLogsPage() {
+  return (
+    <Suspense fallback={null}>
+      <OmicallLogsPageContent />
+    </Suspense>
   );
 }

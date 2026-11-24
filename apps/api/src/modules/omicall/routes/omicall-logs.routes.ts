@@ -1,90 +1,38 @@
 import type { FastifyInstance } from 'fastify';
-import { isAdminOrSuperAdminRole, type UserRole } from '@mos-lab/shared';
-import { Prisma } from '../../../generated/crm-client/index.js';
 import { requireAuth, requireRole, type JwtUserPayload } from '../../../middlewares/auth.js';
 import { fetchRecentOmiCallCdrs, fetchRecordingUrl, triggerImmediateAnalysis } from '../analyzer.js';
+import { recordOmiCallIntent } from '../omicall-call-intent.service.js';
 import { upsertOmicallCdrBatch } from '../omicall-cdr-sync.service.js';
-
-const QA_REVIEWER_ROLES = new Set<string>(['admin', 'super_admin', 'manager', 'qa', 'qc', 'qa_qc']);
-
-function safeJsonParseArray(raw: string | null | undefined): SafeAny[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function safeJsonParseObject(raw: string | null | undefined): Record<string, boolean> {
-  if (!raw) return {};
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, boolean>) : {};
-  } catch {
-    return {};
-  }
-}
-
-function mapStatusToDisposition(status: string | null | undefined): 'ANSWERED' | 'BUSY' | 'FAILED' | 'NO_ANSWER' {
-  const normalized = String(status || '').toUpperCase();
-  if (normalized === 'ANSWER' || normalized === 'ANSWERED') return 'ANSWERED';
-  if (normalized === 'BUSY') return 'BUSY';
-  if (normalized === 'CANCEL' || normalized === 'FAILED') return 'FAILED';
-  return 'NO_ANSWER';
-}
-
-function deriveCallMetaFromTags(tags: string[]): { callType: 'CSKH' | 'TELESALES' | null; hasComplaint: boolean } {
-  const lowerTags = new Set(tags.map((t) => String(t).trim().toLowerCase()));
-  const callType = lowerTags.has('cskh') ? 'CSKH' : lowerTags.has('telesales') ? 'TELESALES' : null;
-  const hasComplaint = lowerTags.has('khiếu nại') || lowerTags.has('khieu nai');
-  return { callType, hasComplaint };
-}
-
-function parseFilterDateBoundary(rawDate: string, bound: 'start' | 'end'): Date {
-  const trimmed = rawDate.trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    const suffix = bound === 'start' ? 'T00:00:00.000+07:00' : 'T23:59:59.999+07:00';
-    return new Date(`${trimmed}${suffix}`);
-  }
-  return new Date(trimmed);
-}
-
-async function resolveViewerExtensionScope(
-  fastify: FastifyInstance,
-  user: JwtUserPayload
-): Promise<{ isAdmin: boolean; isQaReviewer: boolean; allowedStaffIds: number[]; hasExtension: boolean }> {
-  const roleStr = String(user.role || '').toLowerCase();
-  const isAdmin = isAdminOrSuperAdminRole(user.role as UserRole);
-  const isQaReviewer = isAdmin || QA_REVIEWER_ROLES.has(roleStr);
-
-  const callerConfig = await fastify.prisma.crm.crmOmicallConfig.findFirst({
-    where: { staffId: user.id },
-    select: { extension: true },
-  });
-
-  let allowedStaffIds = [user.id];
-  if (callerConfig?.extension) {
-    const sharedConfigs = await fastify.prisma.crm.crmOmicallConfig.findMany({
-      where: { extension: callerConfig.extension },
-      select: { staffId: true },
-    });
-    const ids = sharedConfigs.map((c) => c.staffId);
-    if (ids.length > 0) {
-      allowedStaffIds = Array.from(new Set([user.id, ...ids]));
-    }
-  }
-
-  return {
-    isAdmin,
-    isQaReviewer,
-    allowedStaffIds,
-    hasExtension: Boolean(callerConfig?.extension),
-  };
-}
+import {
+  deriveCallMetaFromTags,
+  listOmicallLogsForViewer,
+  mapStatusToDisposition,
+  resolveViewerExtensionScope,
+  safeJsonParseArray,
+  safeJsonParseObject,
+  type ListOmicallLogsQuery,
+} from '../omicall-logs-query.service.js';
 
 export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
+  // POST /api/omicall/call-intent
+  // Records the initiating CRM staff member before OmiCall CDR webhook fires on a shared extension
+  fastify.post('/omicall/call-intent', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as JwtUserPayload;
+    const body = (request.body || {}) as { phone?: string; extension?: string; callUuid?: string };
+    if (!body.phone && !body.callUuid) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'phone or callUuid is required' });
+    }
+
+    recordOmiCallIntent({
+      staffId: user.id,
+      phone: body.phone || '',
+      extension: body.extension || null,
+      callUuid: body.callUuid || null,
+    });
+
+    return { success: true };
+  });
+
   // GET /api/omicall/logs/latest
   // Resolves the caller's most recent OmiCall log during post-call wrapup
   fastify.get('/omicall/logs/latest', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -221,37 +169,12 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
   });
 
   // GET /api/omicall/logs
-  // List OmiCall logs with full search, direction, recording, AI, Happy Call, and date filtering
+  // List OmiCall logs with date, direction, phone search, and Customer Profile (legacyUserId) filters
   fastify.get('/omicall/logs', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as JwtUserPayload;
-    const {
-      page = '1',
-      limit = '10',
-      staffId,
-      status,
-      happyCallStatus,
-      analysisStatus,
-      direction,
-      search,
-      hasRecording,
-      startDate,
-      endDate,
-    } = request.query as {
-      page?: string;
-      limit?: string;
-      staffId?: string;
-      status?: string;
-      happyCallStatus?: string;
-      analysisStatus?: string;
-      direction?: string;
-      search?: string;
-      hasRecording?: string;
-      startDate?: string;
-      endDate?: string;
-    };
-
-    const parsedPage = Number.parseInt(page, 10);
-    const take = Number.parseInt(limit, 10);
+    const query = request.query as ListOmicallLogsQuery;
+    const parsedPage = Number.parseInt(query.page || '1', 10);
+    const take = Number.parseInt(query.limit || '10', 10);
 
     if (!Number.isSafeInteger(parsedPage) || parsedPage < 1 || !Number.isSafeInteger(take) || take < 1 || take > 100) {
       return reply
@@ -259,107 +182,16 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
         .send({ error: 'Bad Request', message: 'page and limit (1..100) must be positive integers' });
     }
 
-    const skip = (parsedPage - 1) * take;
-
     try {
       const scope = await resolveViewerExtensionScope(fastify, user);
-      const where: Prisma.CrmOmicallLogWhereInput = {};
-
-      if (scope.isQaReviewer) {
-        if (staffId) where.staffId = parseInt(staffId, 10);
-      } else {
-        where.staffId = { in: scope.allowedStaffIds };
+      if (query.legacyUserId && !scope.isQaReviewer) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Chỉ Admin, Manager hoặc QA mới có quyền xem ghi âm OmiCall theo hồ sơ khách hàng.',
+        });
       }
 
-      if (status) where.status = status;
-      if (happyCallStatus) where.happyCallStatus = happyCallStatus;
-      if (analysisStatus) where.analysisStatus = analysisStatus;
-      if (direction && direction !== 'ALL') where.direction = direction;
-      if (hasRecording === 'true') where.recordingUrl = { not: null };
-
-      if (startDate || endDate) {
-        where.createdAt = {};
-        if (startDate) where.createdAt.gte = parseFilterDateBoundary(startDate, 'start');
-        if (endDate) where.createdAt.lte = parseFilterDateBoundary(endDate, 'end');
-      }
-
-      const trimmedSearch = search?.trim() || '';
-      if (trimmedSearch) {
-        const cleanDigits = trimmedSearch.replace(/\D/g, '');
-        const phoneSuffix = cleanDigits.length > 9 ? cleanDigits.slice(-9) : cleanDigits;
-        const searchConditions: Prisma.CrmOmicallLogWhereInput[] = [
-          { destinationNumber: { contains: trimmedSearch } },
-          { sourceNumber: { contains: trimmedSearch } },
-          { callUuid: { contains: trimmedSearch } },
-        ];
-        if (phoneSuffix && phoneSuffix !== trimmedSearch) {
-          searchConditions.push(
-            { destinationNumber: { contains: phoneSuffix } },
-            { sourceNumber: { contains: phoneSuffix } }
-          );
-        }
-        where.OR = searchConditions;
-      }
-
-      const [logs, total] = await Promise.all([
-        fastify.prisma.crm.crmOmicallLog.findMany({
-          where,
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take,
-        }),
-        fastify.prisma.crm.crmOmicallLog.count({ where }),
-      ]);
-
-      const foundStaffIds = Array.from(new Set(logs.map((l) => l.staffId).filter((id): id is number => id !== null)));
-      const foundUserIds = Array.from(
-        new Set(logs.map((l) => l.legacyUserId).filter((id): id is number => id !== null))
-      );
-
-      const [staffList, customerList] = await Promise.all([
-        foundStaffIds.length > 0
-          ? fastify.prisma.crm.crmStaff.findMany({
-              where: { id: { in: foundStaffIds } },
-              select: { id: true, displayName: true },
-            })
-          : Promise.resolve([]),
-        foundUserIds.length > 0
-          ? fastify.prisma.legacy.user_profile.findMany({
-              where: { user_id: { in: foundUserIds } },
-              select: { user_id: true, full_name: true, first_name: true, last_name: true },
-            })
-          : Promise.resolve([]),
-      ]);
-
-      const staffMap = new Map(staffList.map((s) => [s.id, s.displayName]));
-      const customerMap = new Map(
-        customerList.map((c) => [
-          c.user_id,
-          c.full_name || `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Khách hàng',
-        ])
-      );
-
-      const formattedLogs = logs.map((log) => {
-        const qaTags = safeJsonParseArray(log.qaTags).map(String);
-        const { callType, hasComplaint } = deriveCallMetaFromTags(qaTags);
-        return {
-          ...log,
-          laughTimestamps: safeJsonParseArray(log.laughTimestamps),
-          qaTags,
-          qaChecklist: safeJsonParseObject(log.qaChecklist),
-          callType,
-          hasComplaint,
-          staffName: log.staffId ? staffMap.get(log.staffId) || null : null,
-          customerName: log.legacyUserId ? customerMap.get(log.legacyUserId) || null : null,
-        };
-      });
-
-      return {
-        logs: formattedLogs,
-        total,
-        page: parsedPage,
-        limit: take,
-      };
+      return await listOmicallLogsForViewer(fastify, scope, query, { page: parsedPage, take });
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get OmiCall logs error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
@@ -367,7 +199,6 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
   });
 
   // GET /api/omicall/logs/:id/play
-  // Get details of a single call for the audio player (requireAuth)
   fastify.get('/omicall/logs/:id/play', { preHandler: [requireAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const logId = parseInt(id, 10);
@@ -377,10 +208,7 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
     }
 
     try {
-      const log = await fastify.prisma.crm.crmOmicallLog.findUnique({
-        where: { id: logId },
-      });
-
+      const log = await fastify.prisma.crm.crmOmicallLog.findUnique({ where: { id: logId } });
       if (!log) {
         return reply.status(404).send({ error: 'Not Found', message: 'Log not found' });
       }
@@ -399,11 +227,6 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
             })
           : Promise.resolve(null),
       ]);
-      const staffName = staff?.displayName ?? null;
-      const staffAvatarUrl = staff?.avatarUrl ?? null;
-      const customerName = customer
-        ? customer.full_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
-        : null;
       const qaTags = safeJsonParseArray(log.qaTags).map(String);
       const { callType, hasComplaint } = deriveCallMetaFromTags(qaTags);
 
@@ -415,9 +238,11 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
         qaChecklist: safeJsonParseObject(log.qaChecklist),
         callType,
         hasComplaint,
-        staffName,
-        staffAvatarUrl,
-        customerName,
+        staffName: staff?.displayName ?? null,
+        staffAvatarUrl: staff?.avatarUrl ?? null,
+        customerName: customer
+          ? customer.full_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+          : null,
       };
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Play call error:');
@@ -426,7 +251,6 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
   });
 
   // POST /api/omicall/logs/:id/reanalyze
-  // Triggers on-demand Gemini Happy Call / QA analysis for an existing recorded call
   fastify.post(
     '/omicall/logs/:id/reanalyze',
     { preHandler: [requireAuth, requireRole(['admin', 'manager', 'qa', 'qc', 'qa_qc'])] },
@@ -468,11 +292,7 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
         });
         triggerImmediateAnalysis(fastify, log.id);
 
-        return {
-          success: true,
-          logId: log.id,
-          analysisStatus: 'PENDING',
-        };
+        return { success: true, logId: log.id, analysisStatus: 'PENDING' };
       } catch (error: SafeAny) {
         fastify.log.error(error as Error, 'Reanalyze call log error:');
         return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
@@ -481,28 +301,21 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
   );
 
   // POST /api/omicall/logs/sync
-  // Pulls recent CDRs from OmiCall API (does not auto-burn Gemini quota unless autoAnalyze=true)
   fastify.post('/omicall/logs/sync', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
     const body = (request.body || {}) as { days?: number; autoAnalyze?: boolean };
     const rawDays = Number(body.days);
     const days = Number.isFinite(rawDays) ? Math.min(30, Math.max(1, Math.round(rawDays))) : 14;
-    const autoAnalyze = Boolean(body.autoAnalyze);
 
     try {
       const toDate = Date.now() + 60_000;
       const fromDate = toDate - days * 24 * 60 * 60 * 1000;
       const items = await fetchRecentOmiCallCdrs({ fromDate, toDate, page: 1, size: 100 });
       const summary = await upsertOmicallCdrBatch(fastify, items, {
-        autoAnalyze,
+        autoAnalyze: Boolean(body.autoAnalyze),
         preserveTimestampOnCreate: true,
       });
 
-      return {
-        success: true,
-        fetched: items.length,
-        days,
-        ...summary,
-      };
+      return { success: true, fetched: items.length, days, ...summary };
     } catch (error: SafeAny) {
       const msg = (error as SafeAny)?.message || 'Không thể đồng bộ dữ liệu từ OmiCall.';
       const isConfigOrKeyErr = msg.includes('OMICALL_API_KEY') || msg.includes('API Key');
@@ -514,7 +327,6 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
   });
 
   // POST /api/omicall/logs/import-cdr
-  // Backfills normalized/raw OmiCall CDR items into mOS without requiring OMICALL_API_KEY
   fastify.post(
     '/omicall/logs/import-cdr',
     { preHandler: [requireAuth, requireRole(['admin'])] },
@@ -532,10 +344,7 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
           autoAnalyze: Boolean(body.autoAnalyze),
           preserveTimestampOnCreate: true,
         });
-        return {
-          success: true,
-          ...summary,
-        };
+        return { success: true, ...summary };
       } catch (error: SafeAny) {
         fastify.log.error(error as Error, 'Import OmiCall CDR batch error:');
         return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
@@ -544,7 +353,6 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
   );
 
   // POST /api/omicall/logs/:id/verify
-  // QA verification endpoint (Admin or Manager only)
   fastify.post(
     '/omicall/logs/:id/verify',
     { preHandler: [requireAuth, requireRole(['admin', 'manager', 'qa', 'qc', 'qa_qc'])] },
@@ -580,10 +388,7 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
       const user = request.user as { id: number };
 
       try {
-        const log = await fastify.prisma.crm.crmOmicallLog.findUnique({
-          where: { id: logId },
-        });
-
+        const log = await fastify.prisma.crm.crmOmicallLog.findUnique({ where: { id: logId } });
         if (!log) {
           return reply.status(404).send({ error: 'Not Found', message: 'Log not found' });
         }

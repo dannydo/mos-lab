@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Tag, Space, Button, Skeleton } from 'antd';
+import { CustomerOmicallRecordingsSection } from './CustomerOmicallRecordingsSection';
 
 interface CallsTabProps {
   calls: SafeAny[];
@@ -9,10 +10,22 @@ interface CallsTabProps {
   loading?: boolean;
   hasMore?: boolean;
   onLoadMore?: () => void;
+  customerId?: number;
+  customerName?: string;
+  canViewOmicallQa?: boolean;
 }
 
 export const CallsTab: React.FC<CallsTabProps> = React.memo(
-  ({ calls, themeMode, loading = false, hasMore = false, onLoadMore }) => {
+  ({
+    calls,
+    themeMode,
+    loading = false,
+    hasMore = false,
+    onLoadMore,
+    customerId,
+    customerName,
+    canViewOmicallQa = false,
+  }) => {
     return (
       <div
         className="custom-scrollbar"
@@ -22,6 +35,10 @@ export const CallsTab: React.FC<CallsTabProps> = React.memo(
           padding: '10px 4px 10px 10px',
         }}
       >
+        {canViewOmicallQa && customerId ? (
+          <CustomerOmicallRecordingsSection customerId={customerId} customerName={customerName} themeMode={themeMode} />
+        ) : null}
+
         {calls.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {calls.map((c: SafeAny) => {
