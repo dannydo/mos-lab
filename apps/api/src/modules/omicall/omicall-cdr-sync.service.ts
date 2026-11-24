@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { triggerImmediateAnalysis } from './analyzer.js';
+import { resolveMatchingOmiCallIntent } from './omicall-call-intent.service.js';
 import { parseOmicallWebhookPayload, type ParsedOmicallWebhookPayload } from './webhook-parser.js';
 
 export interface UpsertOmicallCdrResult {
@@ -83,9 +84,17 @@ export async function upsertOmicallCdrRecord(
 
   const extensionStaffIds = extensionConfigs.map((c) => c.staffId);
   const legacyUserId = contact?.user_id ?? null;
+  const intentStaffId = autoAnalyze
+    ? resolveMatchingOmiCallIntent({
+        extension: extensionToMatch,
+        customerPhone,
+        callUuid,
+      })
+    : null;
 
   let callLogId: number | null = existingCallLog?.id ?? null;
-  let staffId: number | null = existingCallLog?.staffId ?? existingOmicallLog?.staffId ?? extensionStaffIds[0] ?? null;
+  let staffId: number | null =
+    existingCallLog?.staffId ?? intentStaffId ?? existingOmicallLog?.staffId ?? extensionStaffIds[0] ?? null;
 
   // If no explicit call log matched callUuid yet, try +/- 10 min match on legacyUserId
   // preferring staff IDs mapped to the dialed extension (fixes shared extension 110).

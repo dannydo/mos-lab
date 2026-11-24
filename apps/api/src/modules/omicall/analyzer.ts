@@ -177,11 +177,17 @@ export async function fetchRecordingUrl(fastify: FastifyInstance, callUuid: stri
   }
 }
 
-function isRetryableGeminiRateError(status: number, bodyData: SafeAny): boolean {
-  if (status === 429 || status === 503) return true;
+function isRetryableGeminiModelError(status: number, bodyData: SafeAny): boolean {
+  if (status === 429 || status === 503 || status === 404) return true;
   const errStatus = String(bodyData?.error?.status || '').toUpperCase();
   const errMsg = String(bodyData?.error?.message || '').toUpperCase();
-  return errStatus === 'RESOURCE_EXHAUSTED' || errMsg.includes('RESOURCE_EXHAUSTED');
+  return (
+    errStatus === 'RESOURCE_EXHAUSTED' ||
+    errStatus === 'NOT_FOUND' ||
+    errMsg.includes('RESOURCE_EXHAUSTED') ||
+    errMsg.includes('NO LONGER AVAILABLE') ||
+    errMsg.includes('NOT FOUND')
+  );
 }
 
 /**
@@ -252,7 +258,7 @@ export async function analyzeLogRecord(fastify: FastifyInstance, log: SafeAny) {
 
     const bodyMsg = res.data?.error?.message || `HTTP ${res.status}`;
     const errMsg = `Gemini (${model}): ${bodyMsg}`;
-    if (isRetryableGeminiRateError(res.status, res.data) && i < models.length - 1) {
+    if (isRetryableGeminiModelError(res.status, res.data) && i < models.length - 1) {
       fastify.log.warn(`[Analyzer] ${errMsg}; retrying fallback model ${models[i + 1]}`);
       continue;
     }

@@ -1,5 +1,6 @@
 import { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { message, notification } from 'antd';
+import { apiClient } from '../../lib/api-client';
 import { cleanupOmiCallMediaBridge } from './mediaBridge';
 import { CallState, CurrentCall, type MakeCallOptions } from './types';
 import { playRingback, stopRingback, stopRingtone } from './useAudioManager';
@@ -211,12 +212,27 @@ export function useOmiCallActions({
 
       const activeSipConfig = sipConfigRef.current || sipConfig;
       const hotlineNumber = activeSipConfig?.phoneNumber || '02866810755';
+      void apiClient.omicall
+        ?.recordCallIntent?.({
+          phone: cleanPhone,
+          extension: activeSipConfig?.extension || undefined,
+        })
+        ?.catch?.(() => {});
       const omicallCall = await window.OMICallSDK.makeCall(cleanPhone, {
         sipNumber: { number: hotlineNumber },
         userData: JSON.stringify({
           customerName: name || 'Khách hàng',
         }),
       });
+      if (omicallCall?.uuid) {
+        void apiClient.omicall
+          ?.recordCallIntent?.({
+            phone: cleanPhone,
+            extension: activeSipConfig?.extension || undefined,
+            callUuid: omicallCall.uuid,
+          })
+          ?.catch?.(() => {});
+      }
 
       if (!omicallCall) {
         preparedMicrophonePatch?.release();

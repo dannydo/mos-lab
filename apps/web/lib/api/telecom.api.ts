@@ -12,6 +12,10 @@ export const telecomApi = {
       const response = await api.get('/omicall/logs/latest', { params });
       return response.data;
     },
+    recordCallIntent: async (data: { phone: string; extension?: string; callUuid?: string }): Promise<unknown> => {
+      const response = await api.post('/omicall/call-intent', data);
+      return response.data;
+    },
     listLogs: async (params: Record<string, unknown>): Promise<unknown> => {
       const response = await api.get('/omicall/logs', { params });
       return response.data;

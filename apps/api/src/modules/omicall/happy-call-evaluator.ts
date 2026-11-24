@@ -32,7 +32,12 @@ export interface EvaluatedHappyCallOutcome {
  */
 export function getAnalyzerGeminiModels(): string[] {
   const configured = (process.env.OMICALL_GEMINI_MODEL || '').trim();
-  const candidates = [configured || 'gemini-2.5-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+  const candidates = [
+    configured || 'gemini-2.5-flash',
+    'gemini-2.5-flash',
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+  ];
   return Array.from(new Set(candidates.filter(Boolean)));
 }
 

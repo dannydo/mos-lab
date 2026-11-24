@@ -12190,6 +12190,20 @@
       }
     },
     {
+      "id": "route:POST:/api/omicall/call-intent",
+      "type": "FastifyRoute",
+      "label": "POST /api/omicall/call-intent",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/omicall/call-intent",
+        "module": "omicall",
+        "handler": "inlineHandler",
+        "line": 19
+      }
+    },
+    {
       "id": "route:GET:/api/omicall/logs/latest",
       "type": "FastifyRoute",
       "label": "GET /api/omicall/logs/latest",
@@ -12200,7 +12214,7 @@
         "path": "/api/omicall/logs/latest",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 90
+        "line": 38
       }
     },
     {
@@ -12214,7 +12228,7 @@
         "path": "/api/omicall/logs",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 228
+        "line": 173
       }
     },
     {
@@ -12228,7 +12242,7 @@
         "path": "/api/omicall/logs/:id/play",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 372
+        "line": 202
       }
     },
     {
@@ -12242,7 +12256,7 @@
         "path": "/api/omicall/logs/:id/reanalyze",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 431
+        "line": 254
       }
     },
     {
@@ -12256,7 +12270,7 @@
         "path": "/api/omicall/logs/sync",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 486
+        "line": 304
       }
     },
     {
@@ -12270,7 +12284,7 @@
         "path": "/api/omicall/logs/import-cdr",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 519
+        "line": 330
       }
     },
     {
@@ -12284,7 +12298,7 @@
         "path": "/api/omicall/logs/:id/verify",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 549
+        "line": 356
       }
     },
     {
@@ -36338,6 +36352,18 @@
       }
     },
     {
+      "id": "uicomp:CustomerOmicallRecordingsSection",
+      "type": "UIComponent",
+      "label": "<CustomerOmicallRecordingsSection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/components/CustomerOmicallRecordingsSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CustomerOmicallRecordingsSection",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:EditCustomerModal",
       "type": "UIComponent",
       "label": "<EditCustomerModal />",
@@ -36454,6 +36480,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "TipHistoryModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:CustomerOmicallRecordingsSection.test",
+      "type": "UIComponent",
+      "label": "<CustomerOmicallRecordingsSection.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/components/__tests__/CustomerOmicallRecordingsSection.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CustomerOmicallRecordingsSection.test",
         "isPrimitive": false
       }
     },
@@ -52686,8 +52724,8 @@
       "filePath": "apps/api/src/modules/omicall/analyzer.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6386,
-        "lineCount": 176,
+        "sizeBytes": 6476,
+        "lineCount": 184,
         "ext": ".ts"
       }
     },
@@ -52699,8 +52737,8 @@
       "filePath": "apps/api/src/modules/omicall/analyzer.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15577,
-        "lineCount": 468,
+        "sizeBytes": 15700,
+        "lineCount": 473,
         "ext": ".ts"
       }
     },
@@ -52712,7 +52750,7 @@
       "filePath": "apps/api/src/modules/omicall/happy-call-evaluator.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9793,
+        "sizeBytes": 9813,
         "lineCount": 215,
         "ext": ".ts"
       }
@@ -52731,6 +52769,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/omicall/omicall-call-intent.service.ts",
+      "type": "File",
+      "label": "omicall-call-intent.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/omicall/omicall-call-intent.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2978,
+        "lineCount": 104,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/omicall/omicall-call-intent.test.ts",
+      "type": "File",
+      "label": "omicall-call-intent.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/omicall/omicall-call-intent.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5236,
+        "lineCount": 165,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/omicall/omicall-cdr-sync.service.ts",
       "type": "File",
       "label": "omicall-cdr-sync.service.ts",
@@ -52738,8 +52802,8 @@
       "filePath": "apps/api/src/modules/omicall/omicall-cdr-sync.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7600,
-        "lineCount": 247,
+        "sizeBytes": 7860,
+        "lineCount": 254,
         "ext": ".ts"
       }
     },
@@ -52753,6 +52817,19 @@
       "metadata": {
         "sizeBytes": 2453,
         "lineCount": 73,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/omicall/omicall-logs-query.service.ts",
+      "type": "File",
+      "label": "omicall-logs-query.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/omicall/omicall-logs-query.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8566,
+        "lineCount": 246,
         "ext": ".ts"
       }
     },
@@ -52777,8 +52854,8 @@
       "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23625,
-        "lineCount": 646,
+        "sizeBytes": 17246,
+        "lineCount": 450,
         "ext": ".ts"
       }
     },
@@ -52816,8 +52893,8 @@
       "filePath": "apps/api/src/modules/omicall/webhook-parser.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8021,
-        "lineCount": 229,
+        "sizeBytes": 8001,
+        "lineCount": 227,
         "ext": ".ts"
       }
     },
@@ -66245,7 +66322,7 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/omicallColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11683,
+        "sizeBytes": 11705,
         "lineCount": 360,
         "ext": ".tsx"
       }
@@ -66258,8 +66335,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/omicallPageTypes.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5201,
-        "lineCount": 171,
+        "sizeBytes": 5241,
+        "lineCount": 172,
         "ext": ".ts"
       }
     },
@@ -66271,8 +66348,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/useOmicallLogsPage.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13009,
-        "lineCount": 408,
+        "sizeBytes": 14371,
+        "lineCount": 444,
         "ext": ".ts"
       }
     },
@@ -66284,8 +66361,8 @@
       "filePath": "apps/web/app/dashboard/omicall/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6034,
-        "lineCount": 193,
+        "sizeBytes": 7749,
+        "lineCount": 237,
         "ext": ".tsx"
       }
     },
@@ -74942,8 +75019,8 @@
       "filePath": "apps/web/lib/api/telecom.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6487,
-        "lineCount": 171,
+        "sizeBytes": 6707,
+        "lineCount": 175,
         "ext": ".ts"
       }
     },
@@ -83296,6 +83373,13 @@
     {
       "id": "edge:route:GET:/api/omicall/diagnostic:ws:apps/api",
       "source": "route:GET:/api/omicall/diagnostic",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/omicall/call-intent:ws:apps/api",
+      "source": "route:POST:/api/omicall/call-intent",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -98386,6 +98470,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:CustomerOmicallRecordingsSection:ws:apps/web",
+      "source": "uicomp:CustomerOmicallRecordingsSection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CustomerOmicallRecordingsSection:token:color:primary",
+      "source": "uicomp:CustomerOmicallRecordingsSection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:EditCustomerModal:ws:apps/web",
       "source": "uicomp:EditCustomerModal",
       "target": "ws:apps/web",
@@ -98521,6 +98619,20 @@
     {
       "id": "edge:uicomp:TipHistoryModal:token:color:primary",
       "source": "uicomp:TipHistoryModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CustomerOmicallRecordingsSection.test:ws:apps/web",
+      "source": "uicomp:CustomerOmicallRecordingsSection.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CustomerOmicallRecordingsSection.test:token:color:primary",
+      "source": "uicomp:CustomerOmicallRecordingsSection.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -110811,15 +110923,15 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
+      "id": "edge:file:apps/api/src/modules/omicall/omicall-logs-query.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/omicall/omicall-logs-query.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
     },
     {
-      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -121619,6 +121731,41 @@
       "label": "READS_LEGACY_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/omicall/omicall-logs-query.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/omicall/omicall-logs-query.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/omicall/omicall-logs-query.service.ts:prisma:crm:CrmOmicallLog",
+      "source": "file:apps/api/src/modules/omicall/omicall-logs-query.service.ts",
+      "target": "prisma:crm:CrmOmicallLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/omicall/omicall-logs-query.service.ts:prisma:crm:CrmOmicallConfig",
+      "source": "file:apps/api/src/modules/omicall/omicall-logs-query.service.ts",
+      "target": "prisma:crm:CrmOmicallConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/omicall/omicall-logs-query.service.ts:prisma:legacy:user_contact",
+      "source": "file:apps/api/src/modules/omicall/omicall-logs-query.service.ts",
+      "target": "prisma:legacy:user_contact",
+      "type": "QUERIES_MODEL",
+      "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/omicall/omicall-logs-query.service.ts:prisma:legacy:user_profile",
+      "source": "file:apps/api/src/modules/omicall/omicall-logs-query.service.ts",
+      "target": "prisma:legacy:user_profile",
+      "type": "QUERIES_MODEL",
+      "label": "READS_LEGACY_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts:prisma:crm:CrmStaff",
       "source": "file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "target": "prisma:crm:CrmStaff",
@@ -121643,13 +121790,6 @@
       "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts:prisma:crm:CrmOmicallLog",
       "source": "file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
       "target": "prisma:crm:CrmOmicallLog",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts:prisma:crm:CrmOmicallConfig",
-      "source": "file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
-      "target": "prisma:crm:CrmOmicallConfig",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -131525,28 +131665,28 @@
     }
   ],
   "stats": {
-    "totalNodes": 6025,
-    "totalEdges": 7705,
+    "totalNodes": 6031,
+    "totalEdges": 7714,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
-      "FastifyRoute": 784,
+      "FastifyRoute": 785,
       "Component": 66,
       "SharedType": 1586,
       "DesignToken": 12,
-      "UIComponent": 794,
-      "File": 2597
+      "UIComponent": 796,
+      "File": 2600
     },
     "edgeTypeCounts": {
       "EXPORTS": 1781,
-      "HANDLES_ROUTE": 784,
-      "RENDERS": 860,
-      "USES_TOKEN": 796,
+      "HANDLES_ROUTE": 785,
+      "RENDERS": 862,
+      "USES_TOKEN": 798,
       "IMPORTS": 1574,
-      "QUERIES_MODEL": 607,
+      "QUERIES_MODEL": 611,
       "API_CALL": 1303
     },
-    "fastifyRouteCount": 784,
+    "fastifyRouteCount": 785,
     "prismaModelCount": 183,
     "nextPageCount": 66,
     "sharedTypeCount": 1586
@@ -135980,6 +136120,13 @@
       "method": "GET",
       "path": "/api/omicall/diagnostic",
       "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "omicall"
+    },
+    {
+      "method": "POST",
+      "path": "/api/omicall/call-intent",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "omicall"
     },

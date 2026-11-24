@@ -3,7 +3,7 @@
 import React from 'react';
 import dayjs from 'dayjs';
 import { Avatar, Button, Popconfirm, Space, Tooltip } from 'antd';
-import { ExternalLink, FilePenLine, Pencil, Phone, Trash2, Undo2, User } from 'lucide-react';
+import { ExternalLink, FilePenLine, Mic, Pencil, Phone, Trash2, Undo2, User } from 'lucide-react';
 import { maskPhoneNumber } from '@mos-lab/shared';
 import { CopyPhoneButton, StatusTag } from '~/components/ui';
 import CalendarPlusIcon from '../icons/CalendarPlusIcon';
@@ -15,6 +15,7 @@ export interface CustomerDetailHeaderProps {
   isMaskedRole: boolean;
   canMakeCall: boolean;
   isManagerOrAdmin: boolean;
+  canViewOmicallQa?: boolean;
   restoreLoading: boolean;
   deleteLoading: boolean;
   legacyProfileUrl: string;
@@ -34,6 +35,7 @@ export const CustomerDetailHeader: React.FC<CustomerDetailHeaderProps> = ({
   isMaskedRole,
   canMakeCall,
   isManagerOrAdmin,
+  canViewOmicallQa = false,
   restoreLoading,
   deleteLoading,
   legacyProfileUrl,
@@ -261,6 +263,27 @@ export const CustomerDetailHeader: React.FC<CustomerDetailHeaderProps> = ({
             onClick={onOpenBookingWizard}
           />
         </Tooltip>
+
+        {canViewOmicallQa && customer?.id && (
+          <Tooltip title="Nghe ghi âm & AI OmiCall của khách hàng">
+            <a
+              href={`/dashboard/omicall?legacyUserId=${customer.id}${
+                customer.name ? `&customerName=${encodeURIComponent(customer.name)}` : ''
+              }`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Nghe ghi âm & AI OmiCall của khách hàng"
+              className={`customer-detail-action inline-flex h-8 items-center gap-1 rounded-md border px-2 text-xs font-semibold transition-colors ${
+                isDark
+                  ? 'border-amber-500/40 bg-amber-500/15 text-amber-400 hover:bg-amber-500/25'
+                  : 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+              }`}
+            >
+              <Mic className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Ghi âm &amp; AI</span>
+            </a>
+          </Tooltip>
+        )}
       </Space>
     </div>
   );

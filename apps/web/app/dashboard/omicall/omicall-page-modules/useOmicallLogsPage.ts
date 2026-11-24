@@ -23,13 +23,22 @@ interface ApiErrorPayload {
   };
 }
 
+export interface UseOmicallLogsPageOptions {
+  initialLegacyUserId?: number | null;
+  initialCustomerName?: string;
+  initialSearch?: string;
+  initialLogId?: number | null;
+}
+
 const QA_REVIEWER_ROLES = new Set(['admin', 'super_admin', 'manager', 'qa', 'qc', 'qa_qc']);
 
 /**
  * Manages auth context, OmiCall call log filters/pagination, inline playback,
  * on-demand AI re-analysis, historical sync, extension config CRUD, and QA drawer state.
  */
-export function useOmicallLogsPage() {
+export function useOmicallLogsPage(options: UseOmicallLogsPageOptions = {}) {
+  const { initialLegacyUserId = null, initialCustomerName = '', initialSearch = '', initialLogId = null } = options;
+
   const [currentUser, setCurrentUser] = useState<OmicallStoredUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [canReviewQa, setCanReviewQa] = useState(false);
@@ -43,12 +52,15 @@ export function useOmicallLogsPage() {
   const [totalLogs, setTotalLogs] = useState(0);
 
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(() => createDefaultOmicallDateRange());
+  const [dateRangeDirty, setDateRangeDirty] = useState(false);
+  const [legacyUserIdFilter, setLegacyUserIdFilter] = useState<number | null>(initialLegacyUserId);
+  const [customerFilterLabel, setCustomerFilterLabel] = useState<string>(initialCustomerName);
   const [directionFilter, setDirectionFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [happyFilter, setHappyFilter] = useState<string>('ALL');
   const [aiFilter, setAiFilter] = useState<string>('ALL');
   const [staffFilter, setStaffFilter] = useState<string>('ALL');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>(initialSearch);
   const [onlyWithRecording, setOnlyWithRecording] = useState<boolean>(false);
   const [staffList, setStaffList] = useState<OmicallStaffSummary[]>([]);
 
@@ -63,8 +75,8 @@ export function useOmicallLogsPage() {
   const [selectedStaffForConfig, setSelectedStaffForConfig] = useState<OmicallConfigRow | null>(null);
   const [submittingConfig, setSubmittingConfig] = useState(false);
 
-  const [qaDrawerOpen, setQaDrawerOpen] = useState(false);
-  const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
+  const [qaDrawerOpen, setQaDrawerOpen] = useState(Boolean(initialLogId));
+  const [selectedLogId, setSelectedLogId] = useState<number | null>(initialLogId);
 
   const logsRequestIdRef = useRef(0);
   const staffRequestIdRef = useRef(0);
@@ -119,7 +131,10 @@ export function useOmicallLogsPage() {
         limit: pageSize,
       };
 
-      if (dateRange && dateRange[0] && dateRange[1]) {
+      if (legacyUserIdFilter) {
+        params.legacyUserId = legacyUserIdFilter;
+      }
+      if ((!legacyUserIdFilter || dateRangeDirty) && dateRange && dateRange[0] && dateRange[1]) {
         params.startDate = dateRange[0].format('YYYY-MM-DD');
         params.endDate = dateRange[1].format('YYYY-MM-DD');
       }
@@ -150,6 +165,8 @@ export function useOmicallLogsPage() {
   }, [
     currentPage,
     pageSize,
+    legacyUserIdFilter,
+    dateRangeDirty,
     dateRange,
     directionFilter,
     statusFilter,
@@ -190,6 +207,19 @@ export function useOmicallLogsPage() {
     }
   }, [currentUser, fetchLogs, fetchStaffList, fetchConfigs, isAdmin, canReviewQa]);
 
+  const handleDateRangeChange = useCallback((dates: [Dayjs, Dayjs]) => {
+    setDateRange(dates);
+    setDateRangeDirty(true);
+  }, []);
+
+  const handleClearCustomerFilter = useCallback(() => {
+    setLegacyUserIdFilter(null);
+    setCustomerFilterLabel('');
+    setDateRange(createDefaultOmicallDateRange());
+    setDateRangeDirty(false);
+    setCurrentPage(1);
+  }, []);
+
   const handleTabChange = useCallback(
     (key: string) => {
       setActiveTab(key);
@@ -217,6 +247,9 @@ export function useOmicallLogsPage() {
 
   const handleResetFilters = useCallback(() => {
     setDateRange(createDefaultOmicallDateRange());
+    setDateRangeDirty(false);
+    setLegacyUserIdFilter(null);
+    setCustomerFilterLabel('');
     setDirectionFilter('ALL');
     setStatusFilter('ALL');
     setHappyFilter('ALL');
@@ -361,7 +394,10 @@ export function useOmicallLogsPage() {
     pageSize,
     totalLogs,
     dateRange,
-    setDateRange,
+    handleDateRangeChange,
+    legacyUserIdFilter,
+    customerFilterLabel,
+    handleClearCustomerFilter,
     directionFilter,
     setDirectionFilter,
     statusFilter,

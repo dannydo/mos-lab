@@ -108,6 +108,9 @@ export const CustomerDetailBody: React.FC<CustomerDetailBodyProps> = ({
 }) => {
   const isDark = themeMode === 'dark';
   const mutedTextClass = isDark ? 'text-slate-300' : 'text-slate-600';
+  const canViewOmicallQa = ['admin', 'super_admin', 'manager', 'qa', 'qc', 'qa_qc'].includes(
+    String(currentUser?.role || '').toLowerCase()
+  );
 
   const resolvedBookings = tabDataMap?.['bookings']?.items || bookings || [];
   const resolvedNotes = tabDataMap?.['notes']?.items || notes || [];
@@ -314,6 +317,9 @@ export const CustomerDetailBody: React.FC<CustomerDetailBodyProps> = ({
                           loading={tabDataMap?.['calls']?.loading}
                           hasMore={tabDataMap?.['calls']?.hasMore}
                           onLoadMore={() => onFetchTabData('calls', (tabDataMap?.['calls']?.page || 1) + 1, true)}
+                          customerId={customer?.id}
+                          customerName={customer?.name}
+                          canViewOmicallQa={canViewOmicallQa}
                         />
                       ),
                     },
