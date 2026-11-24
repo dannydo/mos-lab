@@ -385,7 +385,7 @@
         "dbSource": "crm",
         "modelName": "CrmOmicallLog",
         "tableName": "CrmOmicallLog",
-        "fieldCount": 21,
+        "fieldCount": 22,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -12200,7 +12200,7 @@
         "path": "/api/omicall/call-intent",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 19
+        "line": 22
       }
     },
     {
@@ -12214,7 +12214,7 @@
         "path": "/api/omicall/logs/latest",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 38
+        "line": 41
       }
     },
     {
@@ -12228,7 +12228,7 @@
         "path": "/api/omicall/logs",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 173
+        "line": 205
       }
     },
     {
@@ -12242,7 +12242,7 @@
         "path": "/api/omicall/logs/:id/play",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 202
+        "line": 234
       }
     },
     {
@@ -12256,7 +12256,7 @@
         "path": "/api/omicall/logs/:id/reanalyze",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 254
+        "line": 320
       }
     },
     {
@@ -12270,7 +12270,7 @@
         "path": "/api/omicall/logs/sync",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 304
+        "line": 370
       }
     },
     {
@@ -12284,7 +12284,7 @@
         "path": "/api/omicall/logs/import-cdr",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 330
+        "line": 396
       }
     },
     {
@@ -12298,7 +12298,49 @@
         "path": "/api/omicall/logs/:id/verify",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 356
+        "line": 422
+      }
+    },
+    {
+      "id": "route:GET:/api/omicall/branches",
+      "type": "FastifyRoute",
+      "label": "GET /api/omicall/branches",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-rating.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/omicall/branches",
+        "module": "omicall",
+        "handler": "inlineHandler",
+        "line": 86
+      }
+    },
+    {
+      "id": "route:POST:/api/omicall/logs/:id/self-assessment",
+      "type": "FastifyRoute",
+      "label": "POST /api/omicall/logs/:id/self-assessment",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-rating.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/omicall/logs/:id/self-assessment",
+        "module": "omicall",
+        "handler": "inlineHandler",
+        "line": 98
+      }
+    },
+    {
+      "id": "route:POST:/api/omicall/self-assessment-intent",
+      "type": "FastifyRoute",
+      "label": "POST /api/omicall/self-assessment-intent",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-rating.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/omicall/self-assessment-intent",
+        "module": "omicall",
+        "handler": "inlineHandler",
+        "line": 149
       }
     },
     {
@@ -41932,6 +41974,30 @@
       }
     },
     {
+      "id": "uicomp:StaffSelfAssessmentCard",
+      "type": "UIComponent",
+      "label": "<StaffSelfAssessmentCard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/omicall/StaffSelfAssessmentCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "StaffSelfAssessmentCard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:StaffSelfAssessmentCard.test",
+      "type": "UIComponent",
+      "label": "<StaffSelfAssessmentCard.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/omicall/__tests__/StaffSelfAssessmentCard.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "StaffSelfAssessmentCard.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:OmiCallHeaderControl",
       "type": "UIComponent",
       "label": "<OmiCallHeaderControl />",
@@ -43936,8 +44002,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14826611,
-        "lineCount": 326540,
+        "sizeBytes": 14846981,
+        "lineCount": 326958,
         "ext": ".ts"
       }
     },
@@ -52724,8 +52790,8 @@
       "filePath": "apps/api/src/modules/omicall/analyzer.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6476,
-        "lineCount": 184,
+        "sizeBytes": 6544,
+        "lineCount": 186,
         "ext": ".ts"
       }
     },
@@ -52737,8 +52803,8 @@
       "filePath": "apps/api/src/modules/omicall/analyzer.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15700,
-        "lineCount": 473,
+        "sizeBytes": 15205,
+        "lineCount": 452,
         "ext": ".ts"
       }
     },
@@ -52750,8 +52816,8 @@
       "filePath": "apps/api/src/modules/omicall/happy-call-evaluator.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9813,
-        "lineCount": 215,
+        "sizeBytes": 9866,
+        "lineCount": 221,
         "ext": ".ts"
       }
     },
@@ -52765,6 +52831,19 @@
       "metadata": {
         "sizeBytes": 1271,
         "lineCount": 32,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/omicall/omicall-branch.service.ts",
+      "type": "File",
+      "label": "omicall-branch.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/omicall/omicall-branch.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10130,
+        "lineCount": 299,
         "ext": ".ts"
       }
     },
@@ -52789,8 +52868,8 @@
       "filePath": "apps/api/src/modules/omicall/omicall-call-intent.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5236,
-        "lineCount": 165,
+        "sizeBytes": 5301,
+        "lineCount": 179,
         "ext": ".ts"
       }
     },
@@ -52802,8 +52881,8 @@
       "filePath": "apps/api/src/modules/omicall/omicall-cdr-sync.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7860,
-        "lineCount": 254,
+        "sizeBytes": 10093,
+        "lineCount": 317,
         "ext": ".ts"
       }
     },
@@ -52821,6 +52900,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/omicall/omicall-coaching.service.ts",
+      "type": "File",
+      "label": "omicall-coaching.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/omicall/omicall-coaching.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10617,
+        "lineCount": 289,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/omicall/omicall-logs-query.service.ts",
       "type": "File",
       "label": "omicall-logs-query.service.ts",
@@ -52828,8 +52920,21 @@
       "filePath": "apps/api/src/modules/omicall/omicall-logs-query.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8566,
-        "lineCount": 246,
+        "sizeBytes": 18602,
+        "lineCount": 517,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/omicall/omicall-satisfaction.test.ts",
+      "type": "File",
+      "label": "omicall-satisfaction.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/omicall/omicall-satisfaction.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9871,
+        "lineCount": 270,
         "ext": ".ts"
       }
     },
@@ -52854,8 +52959,21 @@
       "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17246,
-        "lineCount": 450,
+        "sizeBytes": 25567,
+        "lineCount": 619,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/omicall/routes/omicall-rating.routes.ts",
+      "type": "File",
+      "label": "omicall-rating.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-rating.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9190,
+        "lineCount": 233,
         "ext": ".ts"
       }
     },
@@ -52880,8 +52998,8 @@
       "filePath": "apps/api/src/modules/omicall/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 473,
-        "lineCount": 11,
+        "sizeBytes": 594,
+        "lineCount": 13,
         "ext": ".ts"
       }
     },
@@ -66263,6 +66381,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/omicall/__tests__/OmicallDailyHeaderBar.test.tsx",
+      "type": "File",
+      "label": "OmicallDailyHeaderBar.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/omicall/__tests__/OmicallDailyHeaderBar.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2704,
+        "lineCount": 72,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallConfigModal.tsx",
       "type": "File",
       "label": "OmicallConfigModal.tsx",
@@ -66289,6 +66420,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallDailyHeaderBar.tsx",
+      "type": "File",
+      "label": "OmicallDailyHeaderBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallDailyHeaderBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8995,
+        "lineCount": 226,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsFiltersToolbar.tsx",
       "type": "File",
       "label": "OmicallLogsFiltersToolbar.tsx",
@@ -66296,8 +66440,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsFiltersToolbar.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5831,
-        "lineCount": 183,
+        "sizeBytes": 7804,
+        "lineCount": 236,
         "ext": ".tsx"
       }
     },
@@ -66309,8 +66453,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsTabContent.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3357,
-        "lineCount": 121,
+        "sizeBytes": 6189,
+        "lineCount": 208,
         "ext": ".tsx"
       }
     },
@@ -66322,8 +66466,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/omicallColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11705,
-        "lineCount": 360,
+        "sizeBytes": 14676,
+        "lineCount": 433,
         "ext": ".tsx"
       }
     },
@@ -66335,8 +66479,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/omicallPageTypes.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5241,
-        "lineCount": 172,
+        "sizeBytes": 8003,
+        "lineCount": 253,
         "ext": ".ts"
       }
     },
@@ -66348,8 +66492,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/useOmicallLogsPage.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14371,
-        "lineCount": 444,
+        "sizeBytes": 19438,
+        "lineCount": 606,
         "ext": ".ts"
       }
     },
@@ -66361,8 +66505,8 @@
       "filePath": "apps/web/app/dashboard/omicall/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7749,
-        "lineCount": 237,
+        "sizeBytes": 9789,
+        "lineCount": 287,
         "ext": ".tsx"
       }
     },
@@ -75019,8 +75163,8 @@
       "filePath": "apps/web/lib/api/telecom.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6707,
-        "lineCount": 175,
+        "sizeBytes": 7401,
+        "lineCount": 192,
         "ext": ".ts"
       }
     },
@@ -83429,6 +83573,27 @@
     {
       "id": "edge:route:POST:/api/omicall/logs/:id/verify:ws:apps/api",
       "source": "route:POST:/api/omicall/logs/:id/verify",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/omicall/branches:ws:apps/api",
+      "source": "route:GET:/api/omicall/branches",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/omicall/logs/:id/self-assessment:ws:apps/api",
+      "source": "route:POST:/api/omicall/logs/:id/self-assessment",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/omicall/self-assessment-intent:ws:apps/api",
+      "source": "route:POST:/api/omicall/self-assessment-intent",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -104980,6 +105145,34 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:StaffSelfAssessmentCard:ws:apps/web",
+      "source": "uicomp:StaffSelfAssessmentCard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:StaffSelfAssessmentCard:token:color:primary",
+      "source": "uicomp:StaffSelfAssessmentCard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:StaffSelfAssessmentCard.test:ws:apps/web",
+      "source": "uicomp:StaffSelfAssessmentCard.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:StaffSelfAssessmentCard.test:token:color:primary",
+      "source": "uicomp:StaffSelfAssessmentCard.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:OmiCallHeaderControl:ws:apps/web",
       "source": "uicomp:OmiCallHeaderControl",
       "target": "ws:apps/web",
@@ -110930,8 +111123,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/omicall/omicall-satisfaction.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/omicall/omicall-satisfaction.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -121731,6 +121938,13 @@
       "label": "READS_LEGACY_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/omicall/omicall-coaching.service.ts:prisma:crm:CrmOmicallLog",
+      "source": "file:apps/api/src/modules/omicall/omicall-coaching.service.ts",
+      "target": "prisma:crm:CrmOmicallLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/omicall/omicall-logs-query.service.ts:prisma:crm:CrmStaff",
       "source": "file:apps/api/src/modules/omicall/omicall-logs-query.service.ts",
       "target": "prisma:crm:CrmStaff",
@@ -121799,6 +122013,13 @@
       "target": "prisma:legacy:user_profile",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/omicall/routes/omicall-rating.routes.ts:prisma:crm:CrmOmicallLog",
+      "source": "file:apps/api/src/modules/omicall/routes/omicall-rating.routes.ts",
+      "target": "prisma:crm:CrmOmicallLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/payroll-ledger/cc-native-pilot-cohort.service.ts:prisma:crm:CrmConfig",
@@ -123771,6 +123992,20 @@
       "id": "edge:page:/chat:route:GET:/api/menu-access/inspect",
       "source": "page:/chat",
       "target": "route:GET:/api/menu-access/inspect",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/omicall/logs/:id/self-assessment",
+      "source": "page:/chat",
+      "target": "route:POST:/api/omicall/logs/:id/self-assessment",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:POST:/api/omicall/self-assessment-intent",
+      "source": "page:/chat",
+      "target": "route:POST:/api/omicall/self-assessment-intent",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -127135,6 +127370,20 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/omicall/logs/:id/self-assessment",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/omicall/logs/:id/self-assessment",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/omicall/self-assessment-intent",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/omicall/self-assessment-intent",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/pilot/media/:filename",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/pilot/media/:filename",
@@ -130075,6 +130324,20 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/omicall/logs/:id/self-assessment",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/omicall/logs/:id/self-assessment",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/omicall/self-assessment-intent",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/omicall/self-assessment-intent",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/pilot/media/:filename",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:GET:/api/pilot/media/:filename",
@@ -131489,6 +131752,20 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/wings-garden:route:POST:/api/omicall/logs/:id/self-assessment",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/omicall/logs/:id/self-assessment",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:POST:/api/omicall/self-assessment-intent",
+      "source": "page:/wings-garden",
+      "target": "route:POST:/api/omicall/self-assessment-intent",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/wings-garden:route:GET:/api/pilot/media/:filename",
       "source": "page:/wings-garden",
       "target": "route:GET:/api/pilot/media/:filename",
@@ -131665,28 +131942,28 @@
     }
   ],
   "stats": {
-    "totalNodes": 6031,
-    "totalEdges": 7714,
+    "totalNodes": 6042,
+    "totalEdges": 7733,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
-      "FastifyRoute": 785,
+      "FastifyRoute": 788,
       "Component": 66,
       "SharedType": 1586,
       "DesignToken": 12,
-      "UIComponent": 796,
-      "File": 2600
+      "UIComponent": 798,
+      "File": 2606
     },
     "edgeTypeCounts": {
       "EXPORTS": 1781,
-      "HANDLES_ROUTE": 785,
-      "RENDERS": 862,
-      "USES_TOKEN": 798,
-      "IMPORTS": 1574,
-      "QUERIES_MODEL": 611,
-      "API_CALL": 1303
+      "HANDLES_ROUTE": 788,
+      "RENDERS": 864,
+      "USES_TOKEN": 800,
+      "IMPORTS": 1576,
+      "QUERIES_MODEL": 613,
+      "API_CALL": 1311
     },
-    "fastifyRouteCount": 785,
+    "fastifyRouteCount": 788,
     "prismaModelCount": 183,
     "nextPageCount": 66,
     "sharedTypeCount": 1586
@@ -136180,6 +136457,27 @@
       "moduleName": "omicall"
     },
     {
+      "method": "GET",
+      "path": "/api/omicall/branches",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-rating.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "omicall"
+    },
+    {
+      "method": "POST",
+      "path": "/api/omicall/logs/:id/self-assessment",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-rating.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "omicall"
+    },
+    {
+      "method": "POST",
+      "path": "/api/omicall/self-assessment-intent",
+      "filePath": "apps/api/src/modules/omicall/routes/omicall-rating.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "omicall"
+    },
+    {
       "method": "POST",
       "path": "/api/omicall/webhook",
       "filePath": "apps/api/src/modules/omicall/routes/omicall-webhook.routes.ts",
@@ -137364,7 +137662,7 @@
       "dbSource": "crm",
       "modelName": "CrmOmicallLog",
       "tableName": "CrmOmicallLog",
-      "fieldCount": 21,
+      "fieldCount": 22,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

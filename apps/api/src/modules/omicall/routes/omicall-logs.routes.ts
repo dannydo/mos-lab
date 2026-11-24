@@ -1,8 +1,11 @@
 import type { FastifyInstance } from 'fastify';
+import { isAdminOrSuperAdminRole, type UserRole } from '@mos-lab/shared';
 import { requireAuth, requireRole, type JwtUserPayload } from '../../../middlewares/auth.js';
 import { fetchRecentOmiCallCdrs, fetchRecordingUrl, triggerImmediateAnalysis } from '../analyzer.js';
+import { resolveCallStoreIds } from '../omicall-branch.service.js';
 import { recordOmiCallIntent } from '../omicall-call-intent.service.js';
 import { upsertOmicallCdrBatch } from '../omicall-cdr-sync.service.js';
+import { redactLogForViewer } from '../omicall-coaching.service.js';
 import {
   deriveCallMetaFromTags,
   listOmicallLogsForViewer,
@@ -74,6 +77,16 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
         qaScore: true,
         staffId: true,
         legacyUserId: true,
+        storeId: true,
+        staffSelfSatisfactionScore: true,
+        staffSelfNote: true,
+        staffSelfRatedAt: true,
+        staffAiCoachingFeedback: true,
+        staffAiCoachingAt: true,
+        managerSatisfactionScore: true,
+        managerNote: true,
+        adminSatisfactionScore: true,
+        adminNote: true,
       } as const;
 
       let log: SafeAny = null;
@@ -133,35 +146,54 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
 
       const qaTags = safeJsonParseArray(log.qaTags).map(String);
       const { callType, hasComplaint } = deriveCallMetaFromTags(qaTags);
+      const branchResolution = await resolveCallStoreIds(fastify, [
+        { id: log.id, storeId: log.storeId, legacyUserId: log.legacyUserId, staffId: log.staffId },
+      ]);
+      const resolvedStoreId = branchResolution.storeIdByLogId.get(log.id) ?? log.storeId ?? null;
+      const resolvedStoreName = resolvedStoreId ? (branchResolution.storeNameById.get(resolvedStoreId) ?? null) : null;
 
-      return {
-        id: log.id,
-        callUuid: log.callUuid,
-        status: log.status,
-        disposition: mapStatusToDisposition(log.status),
-        duration: log.duration,
-        billSec: log.billSec,
-        recordingUrl: log.recordingUrl,
-        happyCallStatus: log.happyCallStatus,
-        happyCallReason: log.happyCallReason,
-        analysisStatus: log.analysisStatus,
-        analysisError: log.analysisError,
-        laughCount: log.laughCount,
-        laughCountAgent: log.laughCountAgent,
-        laughCountCustomer: log.laughCountCustomer,
-        laughTimestamps: safeJsonParseArray(log.laughTimestamps),
-        customerSatisfactionScore: log.customerSatisfactionScore,
-        customerSentiment: log.customerSentiment,
-        satisfactionAnalysis: log.satisfactionAnalysis,
-        transcript: log.transcript,
-        qaChecklist: safeJsonParseObject(log.qaChecklist),
-        qaTags,
-        qaScore: log.qaScore,
-        callType,
-        hasComplaint,
-        customerName,
-        legacyUserId: log.legacyUserId,
-      };
+      return redactLogForViewer(
+        {
+          id: log.id,
+          callUuid: log.callUuid,
+          status: log.status,
+          disposition: mapStatusToDisposition(log.status),
+          duration: log.duration,
+          billSec: log.billSec,
+          recordingUrl: log.recordingUrl,
+          happyCallStatus: log.happyCallStatus,
+          happyCallReason: log.happyCallReason,
+          analysisStatus: log.analysisStatus,
+          analysisError: log.analysisError,
+          laughCount: log.laughCount,
+          laughCountAgent: log.laughCountAgent,
+          laughCountCustomer: log.laughCountCustomer,
+          laughTimestamps: safeJsonParseArray(log.laughTimestamps),
+          customerSatisfactionScore: log.customerSatisfactionScore,
+          customerSentiment: log.customerSentiment,
+          satisfactionAnalysis: log.satisfactionAnalysis,
+          transcript: log.transcript,
+          qaChecklist: safeJsonParseObject(log.qaChecklist),
+          qaTags,
+          qaScore: log.qaScore,
+          callType,
+          hasComplaint,
+          customerName,
+          legacyUserId: log.legacyUserId,
+          storeId: resolvedStoreId,
+          storeName: resolvedStoreName,
+          staffSelfSatisfactionScore: log.staffSelfSatisfactionScore ?? null,
+          staffSelfNote: log.staffSelfNote ?? null,
+          staffSelfRatedAt: log.staffSelfRatedAt ?? null,
+          staffAiCoachingFeedback: log.staffAiCoachingFeedback ?? null,
+          staffAiCoachingAt: log.staffAiCoachingAt ?? null,
+          managerSatisfactionScore: log.managerSatisfactionScore ?? null,
+          managerNote: log.managerNote ?? null,
+          adminSatisfactionScore: log.adminSatisfactionScore ?? null,
+          adminNote: log.adminNote ?? null,
+        },
+        scope
+      );
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get latest log error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
@@ -200,6 +232,7 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
 
   // GET /api/omicall/logs/:id/play
   fastify.get('/omicall/logs/:id/play', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = request.user as JwtUserPayload;
     const { id } = request.params as { id: string };
     const logId = parseInt(id, 10);
 
@@ -208,42 +241,77 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
     }
 
     try {
-      const log = await fastify.prisma.crm.crmOmicallLog.findUnique({ where: { id: logId } });
+      const [log, scope] = await Promise.all([
+        fastify.prisma.crm.crmOmicallLog.findUnique({ where: { id: logId } }),
+        resolveViewerExtensionScope(fastify, user),
+      ]);
       if (!log) {
         return reply.status(404).send({ error: 'Not Found', message: 'Log not found' });
       }
 
-      const [staff, customer] = await Promise.all([
-        log.staffId
-          ? fastify.prisma.crm.crmStaff.findUnique({
-              where: { id: log.staffId },
-              select: { displayName: true, avatarUrl: true },
+      const canAccess = scope.isQaReviewer || log.staffId === null || scope.allowedStaffIds.includes(log.staffId);
+      if (!canAccess) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Bạn không có quyền xem chi tiết cuộc gọi của nhân viên khác.',
+        });
+      }
+
+      const staffIdsToFetch = Array.from(
+        new Set(
+          [log.staffId, log.managerReviewedBy, log.adminReviewedBy].filter(
+            (sid): sid is number => sid !== null && sid !== undefined
+          )
+        )
+      );
+
+      const [staffRows, customer, branchResolution] = await Promise.all([
+        staffIdsToFetch.length > 0
+          ? fastify.prisma.crm.crmStaff.findMany({
+              where: { id: { in: staffIdsToFetch } },
+              select: { id: true, displayName: true, avatarUrl: true },
             })
-          : Promise.resolve(null),
+          : Promise.resolve([]),
         log.legacyUserId
           ? fastify.prisma.legacy.user_profile.findFirst({
               where: { user_id: log.legacyUserId },
               select: { full_name: true, first_name: true, last_name: true },
             })
           : Promise.resolve(null),
+        resolveCallStoreIds(fastify, [
+          { id: log.id, storeId: log.storeId, legacyUserId: log.legacyUserId, staffId: log.staffId },
+        ]),
       ]);
+      const staffMap = new Map(staffRows.map((s) => [s.id, s]));
+      const callerStaff = log.staffId ? staffMap.get(log.staffId) : undefined;
+      const resolvedStoreId = branchResolution.storeIdByLogId.get(log.id) ?? log.storeId ?? null;
+      const resolvedStoreName = resolvedStoreId ? (branchResolution.storeNameById.get(resolvedStoreId) ?? null) : null;
       const qaTags = safeJsonParseArray(log.qaTags).map(String);
       const { callType, hasComplaint } = deriveCallMetaFromTags(qaTags);
 
-      return {
-        ...log,
-        laughTimestamps: safeJsonParseArray(log.laughTimestamps),
-        qaLaughVerifications: safeJsonParseArray(log.qaLaughVerifications),
-        qaTags,
-        qaChecklist: safeJsonParseObject(log.qaChecklist),
-        callType,
-        hasComplaint,
-        staffName: staff?.displayName ?? null,
-        staffAvatarUrl: staff?.avatarUrl ?? null,
-        customerName: customer
-          ? customer.full_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
-          : null,
-      };
+      return redactLogForViewer(
+        {
+          ...log,
+          storeId: resolvedStoreId,
+          storeName: resolvedStoreName,
+          laughTimestamps: safeJsonParseArray(log.laughTimestamps),
+          qaLaughVerifications: safeJsonParseArray(log.qaLaughVerifications),
+          qaTags,
+          qaChecklist: safeJsonParseObject(log.qaChecklist),
+          callType,
+          hasComplaint,
+          staffName: callerStaff?.displayName ?? null,
+          staffAvatarUrl: callerStaff?.avatarUrl ?? null,
+          managerReviewedByName: log.managerReviewedBy
+            ? (staffMap.get(log.managerReviewedBy)?.displayName ?? null)
+            : null,
+          adminReviewedByName: log.adminReviewedBy ? (staffMap.get(log.adminReviewedBy)?.displayName ?? null) : null,
+          customerName: customer
+            ? customer.full_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+            : null,
+        },
+        scope
+      );
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Play call error:');
       return reply.status(500).send({ error: 'Internal Server Error', message: (error as SafeAny).message });
@@ -368,6 +436,10 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
         qaScore: reqScore,
         qaTags: reqTags,
         qaChecklist: reqChecklist,
+        adminSatisfactionScore: reqAdminScore,
+        adminNote: reqAdminNote,
+        managerSatisfactionScore: reqManagerScore,
+        managerNote: reqManagerNote,
       } = request.body as {
         action?: 'approve' | 'reject';
         laughVerifications?: SafeAny;
@@ -378,6 +450,10 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
         qaScore?: number | null;
         qaTags?: string[] | null;
         qaChecklist?: Record<string, boolean> | null;
+        adminSatisfactionScore?: number | null;
+        adminNote?: string | null;
+        managerSatisfactionScore?: number | null;
+        managerNote?: string | null;
       };
 
       const logId = parseInt(id, 10);
@@ -385,7 +461,8 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
         return reply.status(400).send({ error: 'Bad Request', message: 'Invalid log id' });
       }
 
-      const user = request.user as { id: number };
+      const user = request.user as JwtUserPayload;
+      const isAdmin = isAdminOrSuperAdminRole(user.role as UserRole);
 
       try {
         const log = await fastify.prisma.crm.crmOmicallLog.findUnique({ where: { id: logId } });
@@ -416,6 +493,61 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
           qaNotes = reqNotes !== undefined ? reqNotes : log.qaNotes;
         }
 
+        const now = new Date();
+        const roleUpdateData: Record<string, unknown> = {};
+        const normalizeScore = (val: number | null | undefined): number | null | undefined => {
+          if (val === undefined) return undefined;
+          if (val === null || val === 0) return null;
+          const n = Number(val);
+          return Number.isInteger(n) && n >= 1 && n <= 5 ? n : undefined;
+        };
+
+        const parsedAdminScore = normalizeScore(reqAdminScore);
+        const parsedManagerScore = normalizeScore(reqManagerScore);
+        const parsedLegacyQaScore = normalizeScore(reqScore);
+
+        if (isAdmin) {
+          const nextAdminScore =
+            parsedAdminScore !== undefined
+              ? parsedAdminScore
+              : parsedManagerScore === undefined && parsedLegacyQaScore !== undefined
+                ? parsedLegacyQaScore
+                : undefined;
+          if (nextAdminScore !== undefined || reqAdminNote !== undefined) {
+            roleUpdateData.adminSatisfactionScore =
+              nextAdminScore !== undefined ? nextAdminScore : log.adminSatisfactionScore;
+            roleUpdateData.adminNote =
+              reqAdminNote !== undefined
+                ? reqAdminNote || null
+                : reqNotes !== undefined
+                  ? reqNotes || null
+                  : log.adminNote;
+            roleUpdateData.adminReviewedBy = user.id;
+            roleUpdateData.adminReviewedAt = now;
+          }
+          if (parsedManagerScore !== undefined || reqManagerNote !== undefined) {
+            roleUpdateData.managerSatisfactionScore =
+              parsedManagerScore !== undefined ? parsedManagerScore : log.managerSatisfactionScore;
+            roleUpdateData.managerNote = reqManagerNote !== undefined ? reqManagerNote || null : log.managerNote;
+            roleUpdateData.managerReviewedBy = user.id;
+            roleUpdateData.managerReviewedAt = now;
+          }
+        } else {
+          const nextManagerScore = parsedManagerScore !== undefined ? parsedManagerScore : parsedLegacyQaScore;
+          if (nextManagerScore !== undefined || reqManagerNote !== undefined || reqNotes !== undefined) {
+            roleUpdateData.managerSatisfactionScore =
+              nextManagerScore !== undefined ? nextManagerScore : log.managerSatisfactionScore;
+            roleUpdateData.managerNote =
+              reqManagerNote !== undefined
+                ? reqManagerNote || null
+                : reqNotes !== undefined
+                  ? reqNotes || null
+                  : log.managerNote;
+            roleUpdateData.managerReviewedBy = user.id;
+            roleUpdateData.managerReviewedAt = now;
+          }
+        }
+
         const updated = await fastify.prisma.crm.crmOmicallLog.update({
           where: { id: logId },
           data: {
@@ -423,22 +555,67 @@ export function registerOmicallLogRoutes(fastify: FastifyInstance): void {
             happyCallReason,
             qaVerified: true,
             qaVerifiedBy: user.id,
-            qaVerifiedAt: new Date(),
+            qaVerifiedAt: now,
             qaLaughVerifications: qaLaughVerifications || log.qaLaughVerifications,
             qaNotes: qaNotes || null,
             qaScore: reqScore !== undefined ? reqScore : log.qaScore,
             qaTags: reqTags !== undefined ? (reqTags ? JSON.stringify(reqTags) : null) : log.qaTags,
             qaChecklist:
               reqChecklist !== undefined ? (reqChecklist ? JSON.stringify(reqChecklist) : null) : log.qaChecklist,
+            ...roleUpdateData,
           },
         });
 
+        const staffIds = Array.from(
+          new Set(
+            [updated.staffId, updated.managerReviewedBy, updated.adminReviewedBy].filter(
+              (sid): sid is number => sid !== null && sid !== undefined
+            )
+          )
+        );
+        const [staffRows, branchResolution] = await Promise.all([
+          staffIds.length > 0
+            ? fastify.prisma.crm.crmStaff.findMany({
+                where: { id: { in: staffIds } },
+                select: { id: true, displayName: true, avatarUrl: true },
+              })
+            : Promise.resolve([]),
+          resolveCallStoreIds(fastify, [
+            {
+              id: updated.id,
+              storeId: updated.storeId,
+              legacyUserId: updated.legacyUserId,
+              staffId: updated.staffId,
+            },
+          ]),
+        ]);
+        const staffMap = new Map(staffRows.map((s) => [s.id, s]));
+        const resolvedStoreId = branchResolution.storeIdByLogId.get(updated.id) ?? updated.storeId ?? null;
+        const resolvedStoreName = resolvedStoreId
+          ? (branchResolution.storeNameById.get(resolvedStoreId) ?? null)
+          : null;
+        const parsedTags = safeJsonParseArray(updated.qaTags).map(String);
+        const { callType, hasComplaint } = deriveCallMetaFromTags(parsedTags);
+
         return {
           ...updated,
+          storeId: resolvedStoreId,
+          storeName: resolvedStoreName,
+          aiLockedUntilSelfRated: false,
           laughTimestamps: safeJsonParseArray(updated.laughTimestamps),
           qaLaughVerifications: safeJsonParseArray(updated.qaLaughVerifications),
-          qaTags: safeJsonParseArray(updated.qaTags),
+          qaTags: parsedTags,
           qaChecklist: safeJsonParseObject(updated.qaChecklist),
+          callType,
+          hasComplaint,
+          staffName: updated.staffId ? (staffMap.get(updated.staffId)?.displayName ?? null) : null,
+          staffAvatarUrl: updated.staffId ? (staffMap.get(updated.staffId)?.avatarUrl ?? null) : null,
+          managerReviewedByName: updated.managerReviewedBy
+            ? (staffMap.get(updated.managerReviewedBy)?.displayName ?? null)
+            : null,
+          adminReviewedByName: updated.adminReviewedBy
+            ? (staffMap.get(updated.adminReviewedBy)?.displayName ?? null)
+            : null,
         };
       } catch (error: SafeAny) {
         fastify.log.error(error as Error, 'Verify call log error:');

@@ -25,10 +25,12 @@ export default function CallLogModal(props: CallLogModalProps) {
     customerName,
     callDuration,
     resolvedLog,
+    canReviewQa,
     callResult,
     outcome,
     audioRef,
     noteInputRef,
+    handleSelfAssessmentSubmitted,
     handleQuickAction,
     handleFinish,
     handleApplyQuickNotePreset,
@@ -66,6 +68,10 @@ export default function CallLogModal(props: CallLogModalProps) {
           resolvedLog={resolvedLog}
           isDark={isDark}
           audioRef={audioRef}
+          callUuid={activeCall.callUuid || resolvedLog?.callUuid || null}
+          phone={activeCall.phone || null}
+          canReviewQa={canReviewQa}
+          onSelfAssessmentSubmitted={handleSelfAssessmentSubmitted}
         />
       )}
 

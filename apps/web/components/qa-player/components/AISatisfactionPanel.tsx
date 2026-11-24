@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Card, Typography, Rate, Tag, Divider } from 'antd';
-import { RobotOutlined, SmileOutlined, MessageOutlined } from '@ant-design/icons';
+import { Card, Typography, Rate, Divider } from 'antd';
+import { RobotOutlined, MessageOutlined } from '@ant-design/icons';
+import { StatusTag } from '~/components/ui';
 
 const { Text, Paragraph } = Typography;
 
@@ -49,10 +50,13 @@ export const AISatisfactionPanel: React.FC<AISatisfactionPanelProps> = ({ logDet
         borderRadius: '16px',
       }}
       title={
-        <span className="font-bold text-base flex items-center gap-2">
-          <RobotOutlined style={{ color: token.colorPrimary }} />
-          Đánh giá từ Trợ lý AI (Gemini)
-        </span>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="font-bold text-base flex items-center gap-2">
+            <RobotOutlined style={{ color: token.colorPrimary }} />
+            Đánh giá từ Trợ lý AI (Gemini)
+          </span>
+          {logDetails?.storeName && <StatusTag status="processing" label={`Chi nhánh: ${logDetails.storeName}`} />}
+        </div>
       }
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">

@@ -34,15 +34,32 @@ function OmicallLogsPageContent() {
     canReviewQa,
     activeTab,
     logs,
+    branches,
+    summary,
     loadingLogs,
     currentPage,
     pageSize,
     totalLogs,
+    dateMode,
+    selectedDate,
     dateRange,
+    handleDateModeChange,
+    handleSelectDate,
+    handlePrevDay,
+    handleNextDay,
+    handleToday,
     handleDateRangeChange,
+    handleQuickFilterAll,
+    handleQuickFilterAnswered,
+    handleQuickFilterHappyApproved,
+    handleQuickFilterHappyPending,
+    handleQuickFilterComplaints,
+    handleQuickFilterMismatch,
     legacyUserIdFilter,
     customerFilterLabel,
     handleClearCustomerFilter,
+    branchFilter,
+    setBranchFilter,
     directionFilter,
     setDirectionFilter,
     statusFilter,
@@ -51,12 +68,20 @@ function OmicallLogsPageContent() {
     setHappyFilter,
     aiFilter,
     setAiFilter,
+    aiSatisfactionFilter,
+    setAiSatisfactionFilter,
+    ratingSourceFilter,
+    setRatingSourceFilter,
+    ratingLevelFilter,
+    setRatingLevelFilter,
     staffFilter,
     setStaffFilter,
     searchQuery,
     setSearchQuery,
     onlyWithRecording,
     setOnlyWithRecording,
+    hasComplaintOnly,
+    setHasComplaintOnly,
     staffList,
     playingLogId,
     reanalyzingLogId,
@@ -117,8 +142,8 @@ function OmicallLogsPageContent() {
   return (
     <div className="responsive-page responsive-workspace omicall-page">
       <PageHeader
-        title={<span className="text-[var(--color-primary)]">Lịch sử &amp; Thẩm định OmiCall</span>}
-        subtitle="Xem, nghe lại trực tiếp file ghi âm cuộc gọi OmiCall, phân tích AI theo CSKH / Telesales và phê duyệt Happy Call."
+        title={<span className="text-[var(--color-primary)]">Trung tâm Cuộc gọi &amp; Thẩm định OmiCall</span>}
+        subtitle="Xem cuộc gọi từng ngày, lọc chi nhánh &amp; nhân viên, duyệt Happy Call, đối chiếu 4 nguồn đánh giá &amp; AI Coaching."
       />
 
       {legacyUserIdFilter && (
@@ -153,8 +178,25 @@ function OmicallLogsPageContent() {
                 <OmicallLogsTabContent
                   isAdmin={isAdmin}
                   canReviewQa={canReviewQa}
+                  dateMode={dateMode}
+                  selectedDate={selectedDate}
                   dateRange={dateRange}
+                  summary={summary}
+                  onDateModeChange={handleDateModeChange}
+                  onSelectDate={handleSelectDate}
+                  onPrevDay={handlePrevDay}
+                  onNextDay={handleNextDay}
+                  onToday={handleToday}
                   onDateRangeChange={handleDateRangeChange}
+                  onQuickFilterAll={handleQuickFilterAll}
+                  onQuickFilterAnswered={handleQuickFilterAnswered}
+                  onQuickFilterHappyApproved={handleQuickFilterHappyApproved}
+                  onQuickFilterHappyPending={handleQuickFilterHappyPending}
+                  onQuickFilterComplaints={handleQuickFilterComplaints}
+                  onQuickFilterMismatch={handleQuickFilterMismatch}
+                  branchFilter={branchFilter}
+                  onBranchFilterChange={setBranchFilter}
+                  branches={branches}
                   directionFilter={directionFilter}
                   onDirectionFilterChange={setDirectionFilter}
                   statusFilter={statusFilter}
@@ -163,12 +205,20 @@ function OmicallLogsPageContent() {
                   onHappyFilterChange={setHappyFilter}
                   aiFilter={aiFilter}
                   onAiFilterChange={setAiFilter}
+                  aiSatisfactionFilter={aiSatisfactionFilter}
+                  onAiSatisfactionFilterChange={setAiSatisfactionFilter}
+                  ratingSourceFilter={ratingSourceFilter}
+                  onRatingSourceFilterChange={setRatingSourceFilter}
+                  ratingLevelFilter={ratingLevelFilter}
+                  onRatingLevelFilterChange={setRatingLevelFilter}
                   staffFilter={staffFilter}
                   onStaffFilterChange={setStaffFilter}
                   searchQuery={searchQuery}
                   onSearchQueryChange={setSearchQuery}
                   onlyWithRecording={onlyWithRecording}
                   onOnlyWithRecordingChange={setOnlyWithRecording}
+                  hasComplaintOnly={hasComplaintOnly}
+                  onHasComplaintOnlyChange={setHasComplaintOnly}
                   staffList={staffList}
                   syncingLogs={syncingLogs}
                   onSearch={handleSearchLogs}

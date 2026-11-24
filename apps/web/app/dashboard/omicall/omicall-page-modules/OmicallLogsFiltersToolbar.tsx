@@ -1,26 +1,28 @@
 'use client';
 
 import React from 'react';
-import { Button, Checkbox, DatePicker, Input, Select, Space } from 'antd';
-import type { Dayjs } from 'dayjs';
+import { Button, Checkbox, Input, Select, Space } from 'antd';
 import { RefreshCw, RotateCcw, Search } from 'lucide-react';
 import { vietnameseSearchFilter } from '@mos-lab/shared';
 import { AppIcon } from '~/components/ui';
 import {
+  AI_SATISFACTION_FILTER_OPTIONS,
   AI_STATUS_FILTER_OPTIONS,
   CALL_STATUS_FILTER_OPTIONS,
   DIRECTION_FILTER_OPTIONS,
   HAPPY_CALL_FILTER_OPTIONS,
+  RATING_LEVEL_OPTIONS,
+  RATING_SOURCE_OPTIONS,
+  type OmicallBranchSummary,
   type OmicallStaffSummary,
 } from './omicallPageTypes';
-
-const { RangePicker } = DatePicker;
 
 export interface OmicallLogsFiltersToolbarProps {
   isAdmin: boolean;
   canReviewQa: boolean;
-  dateRange: [Dayjs, Dayjs];
-  onDateRangeChange: (dates: [Dayjs, Dayjs]) => void;
+  branchFilter: string;
+  onBranchFilterChange: (value: string) => void;
+  branches: OmicallBranchSummary[];
   directionFilter: string;
   onDirectionFilterChange: (value: string) => void;
   statusFilter: string;
@@ -29,12 +31,20 @@ export interface OmicallLogsFiltersToolbarProps {
   onHappyFilterChange: (value: string) => void;
   aiFilter: string;
   onAiFilterChange: (value: string) => void;
+  aiSatisfactionFilter: string;
+  onAiSatisfactionFilterChange: (value: string) => void;
+  ratingSourceFilter: string;
+  onRatingSourceFilterChange: (value: string) => void;
+  ratingLevelFilter: string;
+  onRatingLevelFilterChange: (value: string) => void;
   staffFilter: string;
   onStaffFilterChange: (value: string) => void;
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
   onlyWithRecording: boolean;
   onOnlyWithRecordingChange: (checked: boolean) => void;
+  hasComplaintOnly: boolean;
+  onHasComplaintOnlyChange: (checked: boolean) => void;
   staffList: OmicallStaffSummary[];
   syncingLogs: boolean;
   onSearch: () => void;
@@ -45,8 +55,9 @@ export interface OmicallLogsFiltersToolbarProps {
 export function OmicallLogsFiltersToolbar({
   isAdmin,
   canReviewQa,
-  dateRange,
-  onDateRangeChange,
+  branchFilter,
+  onBranchFilterChange,
+  branches,
   directionFilter,
   onDirectionFilterChange,
   statusFilter,
@@ -55,12 +66,20 @@ export function OmicallLogsFiltersToolbar({
   onHappyFilterChange,
   aiFilter,
   onAiFilterChange,
+  aiSatisfactionFilter,
+  onAiSatisfactionFilterChange,
+  ratingSourceFilter,
+  onRatingSourceFilterChange,
+  ratingLevelFilter,
+  onRatingLevelFilterChange,
   staffFilter,
   onStaffFilterChange,
   searchQuery,
   onSearchQueryChange,
   onlyWithRecording,
   onOnlyWithRecordingChange,
+  hasComplaintOnly,
+  onHasComplaintOnlyChange,
   staffList,
   syncingLogs,
   onSearch,
@@ -68,7 +87,7 @@ export function OmicallLogsFiltersToolbar({
   onSync,
 }: OmicallLogsFiltersToolbarProps) {
   return (
-    <div className="mb-6 flex flex-wrap items-end gap-4 rounded-lg border border-[var(--mos-surface-border)] bg-[var(--mos-surface-muted)] p-4">
+    <div className="mb-6 flex flex-wrap items-end gap-3.5 rounded-lg border border-[var(--mos-surface-border)] bg-[var(--mos-surface-muted)] p-4">
       <div className="flex flex-col gap-1">
         <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Tìm SĐT / Call UUID:</span>
         <Input
@@ -77,30 +96,48 @@ export function OmicallLogsFiltersToolbar({
           onPressEnter={onSearch}
           allowClear
           placeholder="Nhập SĐT hoặc UUID..."
-          className="w-full sm:w-[210px]"
+          className="w-full sm:w-[195px]"
         />
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Khoảng thời gian:</span>
-        <RangePicker
-          value={dateRange}
-          onChange={(dates) => {
-            if (dates && dates[0] && dates[1]) {
-              onDateRangeChange([dates[0], dates[1]]);
-            }
-          }}
-          format="DD/MM/YYYY"
-          className="w-full sm:w-[250px]"
+        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Chi nhánh:</span>
+        <Select
+          value={branchFilter}
+          onChange={onBranchFilterChange}
+          className="w-full sm:w-[175px]"
+          showSearch
+          filterOption={vietnameseSearchFilter}
+          options={[
+            { value: 'ALL', label: 'Tất cả chi nhánh' },
+            ...branches.map((branch) => ({ value: branch.id.toString(), label: branch.name })),
+          ]}
         />
       </div>
+
+      {canReviewQa && (
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Nhân viên:</span>
+          <Select
+            value={staffFilter}
+            onChange={onStaffFilterChange}
+            className="w-full sm:w-[175px]"
+            showSearch
+            filterOption={vietnameseSearchFilter}
+            options={[
+              { value: 'ALL', label: 'Tất cả nhân viên' },
+              ...staffList.map((staff) => ({ value: staff.id.toString(), label: staff.displayName })),
+            ]}
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-1">
         <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Chiều gọi:</span>
         <Select
           value={directionFilter}
           onChange={onDirectionFilterChange}
-          className="w-full sm:w-[165px]"
+          className="w-full sm:w-[155px]"
           options={DIRECTION_FILTER_OPTIONS}
         />
       </div>
@@ -116,7 +153,7 @@ export function OmicallLogsFiltersToolbar({
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Trạng thái Happy Call:</span>
+        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Happy Call:</span>
         <Select
           value={happyFilter}
           onChange={onHappyFilterChange}
@@ -126,35 +163,51 @@ export function OmicallLogsFiltersToolbar({
       </div>
 
       <div className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Hài lòng (AI):</span>
+        <Select
+          value={aiSatisfactionFilter}
+          onChange={onAiSatisfactionFilterChange}
+          className="w-full sm:w-[180px]"
+          options={AI_SATISFACTION_FILTER_OPTIONS}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Nguồn đánh giá:</span>
+        <Select
+          value={ratingSourceFilter}
+          onChange={onRatingSourceFilterChange}
+          className="w-full sm:w-[190px]"
+          options={RATING_SOURCE_OPTIONS}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Mức hài lòng đánh giá:</span>
+        <Select
+          value={ratingLevelFilter}
+          onChange={onRatingLevelFilterChange}
+          className="w-full sm:w-[195px]"
+          options={RATING_LEVEL_OPTIONS}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
         <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Trạng thái AI:</span>
         <Select
           value={aiFilter}
           onChange={onAiFilterChange}
-          className="w-full sm:w-[170px]"
+          className="w-full sm:w-[160px]"
           options={AI_STATUS_FILTER_OPTIONS}
         />
       </div>
 
-      {canReviewQa && (
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Nhân viên:</span>
-          <Select
-            value={staffFilter}
-            onChange={onStaffFilterChange}
-            className="w-full sm:w-[170px]"
-            showSearch
-            filterOption={vietnameseSearchFilter}
-            options={[
-              { value: 'ALL', label: 'Tất cả nhân viên' },
-              ...staffList.map((staff) => ({ value: staff.id.toString(), label: staff.displayName })),
-            ]}
-          />
-        </div>
-      )}
-
-      <div className="pb-1">
+      <div className="flex flex-wrap items-center gap-3 pb-1">
         <Checkbox checked={onlyWithRecording} onChange={(e) => onOnlyWithRecordingChange(e.target.checked)}>
-          Chỉ hiện cuộc có ghi âm
+          Có ghi âm
+        </Checkbox>
+        <Checkbox checked={hasComplaintOnly} onChange={(e) => onHasComplaintOnlyChange(e.target.checked)}>
+          Chỉ khiếu nại
         </Checkbox>
       </div>
 

@@ -10,6 +10,7 @@ import {
   type OmCallType,
   type QaChecklistKey,
 } from './happy-call-evaluator.js';
+import { generateStaffCoachingFeedback, requestGeminiWithFallback } from './omicall-coaching.service.js';
 
 export {
   evaluateHappyCallResult,
@@ -177,19 +178,6 @@ export async function fetchRecordingUrl(fastify: FastifyInstance, callUuid: stri
   }
 }
 
-function isRetryableGeminiModelError(status: number, bodyData: SafeAny): boolean {
-  if (status === 429 || status === 503 || status === 404) return true;
-  const errStatus = String(bodyData?.error?.status || '').toUpperCase();
-  const errMsg = String(bodyData?.error?.message || '').toUpperCase();
-  return (
-    errStatus === 'RESOURCE_EXHAUSTED' ||
-    errStatus === 'NOT_FOUND' ||
-    errMsg.includes('RESOURCE_EXHAUSTED') ||
-    errMsg.includes('NO LONGER AVAILABLE') ||
-    errMsg.includes('NOT FOUND')
-  );
-}
-
 /**
  * Downloads audio recording, calls Gemini API (with 429 model fallback) to extract
  * laughter details, CSAT, CSKH/Telesales QA checklist & complaint alerts, then calculates Happy Call status.
@@ -239,41 +227,7 @@ export async function analyzeLogRecord(fastify: FastifyInstance, log: SafeAny) {
     },
   };
 
-  const models = getAnalyzerGeminiModels();
-  let geminiData: SafeAny = null;
-
-  for (let i = 0; i < models.length; i++) {
-    const model = models[i];
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
-    let res: SafeAny;
-    try {
-      res = await axios.post(geminiUrl, requestBody, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 45_000,
-        validateStatus: () => true,
-      });
-    } catch (reqErr: SafeAny) {
-      const errMsg = `Gemini (${model}) request error (${reqErr?.message || String(reqErr)})`;
-      if (i < models.length - 1) {
-        fastify.log.warn(`[Analyzer] ${errMsg}; retrying fallback model ${models[i + 1]}`);
-        continue;
-      }
-      throw new Error(errMsg, { cause: reqErr });
-    }
-
-    if (res.status >= 200 && res.status < 300) {
-      geminiData = res.data;
-      break;
-    }
-
-    const bodyMsg = res.data?.error?.message || `HTTP ${res.status}`;
-    const errMsg = `Gemini (${model}): ${bodyMsg}`;
-    if (isRetryableGeminiModelError(res.status, res.data) && i < models.length - 1) {
-      fastify.log.warn(`[Analyzer] ${errMsg}; retrying fallback model ${models[i + 1]}`);
-      continue;
-    }
-    throw new Error(errMsg);
-  }
+  const geminiData = await requestGeminiWithFallback(fastify, geminiApiKey, requestBody, 45_000);
 
   const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!rawText) {
@@ -289,7 +243,7 @@ export async function analyzeLogRecord(fastify: FastifyInstance, log: SafeAny) {
     existingQaScore: log.qaScore,
   });
 
-  await fastify.prisma.crm.crmOmicallLog.update({
+  const updated = await fastify.prisma.crm.crmOmicallLog.update({
     where: { id: log.id },
     data: {
       laughCount: aiResult.laugh_count,
@@ -313,6 +267,21 @@ export async function analyzeLogRecord(fastify: FastifyInstance, log: SafeAny) {
       analysisError: null,
     },
   });
+
+  if (updated?.staffSelfSatisfactionScore && !updated.staffAiCoachingFeedback) {
+    void generateStaffCoachingFeedback(fastify, {
+      id: updated.id,
+      staffSelfSatisfactionScore: updated.staffSelfSatisfactionScore,
+      staffSelfNote: updated.staffSelfNote ?? null,
+      customerSatisfactionScore: updated.customerSatisfactionScore ?? null,
+      customerSentiment: updated.customerSentiment ?? null,
+      happyCallStatus: updated.happyCallStatus,
+      satisfactionAnalysis: updated.satisfactionAnalysis ?? null,
+      transcript: updated.transcript ?? null,
+    }).catch((err) => {
+      fastify.log.warn(err, `[Coaching] Deferred coaching generation failed for log #${updated.id}`);
+    });
+  }
 }
 
 /**

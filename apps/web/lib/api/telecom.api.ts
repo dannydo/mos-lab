@@ -53,6 +53,23 @@ export const telecomApi = {
       const response = await api.post(`/omicall/logs/${id}/verify`, data);
       return response.data;
     },
+    listBranches: async (): Promise<{ branches: Array<{ id: number; name: string }> }> => {
+      const response = await api.get('/omicall/branches');
+      return response.data;
+    },
+    submitSelfAssessment: async (id: number, data: { score: number; note?: string }): Promise<unknown> => {
+      const response = await api.post(`/omicall/logs/${id}/self-assessment`, data);
+      return response.data;
+    },
+    submitSelfAssessmentIntent: async (data: {
+      phone?: string;
+      callUuid?: string;
+      score: number;
+      note?: string;
+    }): Promise<unknown> => {
+      const response = await api.post('/omicall/self-assessment-intent', data);
+      return response.data;
+    },
   },
   dashboard: {
     getToday: async (params?: Record<string, unknown>): Promise<DashboardTodayResponse> => {

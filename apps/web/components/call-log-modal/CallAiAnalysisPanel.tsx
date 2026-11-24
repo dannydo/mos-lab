@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { Divider } from 'antd';
-import { RefreshCw } from 'lucide-react';
+import { Lock, RefreshCw } from 'lucide-react';
 import { AppIcon, StatusTag, type StatusType } from '~/components/ui';
+import { StaffSelfAssessmentCard } from '../omicall/StaffSelfAssessmentCard';
 import { formatCallDuration, getSentimentStatus, isCallAnalyzing, parseLaughTimestamps } from './callLogModalHelpers';
 import type { ResolvedCallLog } from './callLogModalTypes';
 
@@ -12,6 +13,10 @@ export interface CallAiAnalysisPanelProps {
   resolvedLog: ResolvedCallLog | null;
   isDark: boolean;
   audioRef: React.RefObject<HTMLAudioElement | null>;
+  callUuid?: string | null;
+  phone?: string | null;
+  canReviewQa?: boolean;
+  onSelfAssessmentSubmitted?: (updatedLog: SafeAny) => void;
 }
 
 function resolveHappyCallDisplay(resolvedLog: ResolvedCallLog): { status: StatusType; label: string } {
@@ -39,6 +44,10 @@ export const CallAiAnalysisPanel: React.FC<CallAiAnalysisPanelProps> = ({
   resolvedLog,
   isDark,
   audioRef,
+  callUuid,
+  phone,
+  canReviewQa = false,
+  onSelfAssessmentSubmitted,
 }) => {
   const analyzing = isCallAnalyzing(resolvedLog);
   const laughs = parseLaughTimestamps(resolvedLog?.laughTimestamps);
@@ -47,15 +56,46 @@ export const CallAiAnalysisPanel: React.FC<CallAiAnalysisPanelProps> = ({
   const qaTags = Array.isArray(resolvedLog?.qaTags) ? resolvedLog.qaTags : [];
   const hasComplaint = Boolean(resolvedLog?.hasComplaint || qaTags.some((t) => t.toLowerCase().includes('khiếu nại')));
   const happyCallInfo = resolvedLog ? resolveHappyCallDisplay(resolvedLog) : null;
+  const showSelfAssessmentCard = Boolean(
+    phone || callUuid || resolvedLog?.aiLockedUntilSelfRated || resolvedLog?.staffSelfSatisfactionScore
+  );
 
   return (
-    <div className="my-4">
+    <div className="my-4 space-y-3">
       <Divider className={`my-3.5 ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`} />
       <div className={`mb-2 text-xs font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
         KẾT QUẢ CUỘC GỌI OMICALL &amp; PHÂN TÍCH AI:
       </div>
 
-      {analyzing ? (
+      {showSelfAssessmentCard && (
+        <StaffSelfAssessmentCard
+          logId={resolvedLog?.id ?? null}
+          callUuid={callUuid ?? resolvedLog?.callUuid ?? null}
+          phone={phone ?? null}
+          aiLockedUntilSelfRated={resolvedLog?.aiLockedUntilSelfRated}
+          analysisStatus={resolvedLog?.analysisStatus ?? null}
+          staffSelfSatisfactionScore={resolvedLog?.staffSelfSatisfactionScore ?? null}
+          staffSelfNote={resolvedLog?.staffSelfNote ?? null}
+          staffAiCoachingFeedback={resolvedLog?.staffAiCoachingFeedback ?? null}
+          customerSatisfactionScore={resolvedLog?.customerSatisfactionScore ?? null}
+          canReviewQa={canReviewQa}
+          isDark={isDark}
+          onSubmitted={onSelfAssessmentSubmitted}
+        />
+      )}
+
+      {resolvedLog?.aiLockedUntilSelfRated ? (
+        <div
+          className={`p-3 rounded-lg border text-xs flex items-center gap-2 ${
+            isDark ? 'bg-zinc-900/60 border-zinc-800 text-zinc-300' : 'bg-zinc-100/80 border-zinc-200 text-zinc-700'
+          }`}
+        >
+          <AppIcon icon={Lock} size={14} className="shrink-0 text-amber-500" />
+          <span>
+            Hoàn tất tự đánh giá ở trên để mở khóa điểm hài lòng AI, trạng thái Happy Call và góp ý AI Coaching.
+          </span>
+        </div>
+      ) : analyzing ? (
         <div className="p-3 rounded-lg border border-amber-500/15 bg-amber-500/[0.04] text-xs flex flex-col gap-1 items-center justify-center text-amber-500 text-center">
           <div className="flex items-center gap-2">
             <AppIcon icon={RefreshCw} size={13} className="animate-spin" />

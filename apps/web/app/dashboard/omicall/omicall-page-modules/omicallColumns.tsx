@@ -99,16 +99,26 @@ export function buildOmicallLogsColumns({
       ),
     },
     {
-      title: 'Nhân viên',
+      title: 'Nhân viên / Chi nhánh',
       dataIndex: 'staffName',
       key: 'staffName',
-      width: 145,
+      width: 170,
       render: (_: unknown, record: OmicallLogRow) => {
         const display = record.staffName || record.staff?.displayName;
-        if (display) return <strong className="text-xs">{display}</strong>;
-        if (record.staffId)
-          return <span className="text-xs text-[var(--mos-text-secondary)]">Staff #{record.staffId}</span>;
-        return <span className="text-xs text-[var(--mos-text-secondary)]">Chưa gán</span>;
+        return (
+          <div className="flex flex-col gap-0.5">
+            {display ? (
+              <strong className="text-xs">{display}</strong>
+            ) : record.staffId ? (
+              <span className="text-xs text-[var(--mos-text-secondary)]">Staff #{record.staffId}</span>
+            ) : (
+              <span className="text-xs text-[var(--mos-text-secondary)]">Chưa gán</span>
+            )}
+            {record.storeName && (
+              <span className="text-[11px] font-medium text-[var(--color-info)]">{record.storeName}</span>
+            )}
+          </div>
+        );
       },
     },
     {
@@ -192,8 +202,22 @@ export function buildOmicallLogsColumns({
     {
       title: 'Phân tích AI & Happy Call',
       key: 'analysisAndHappy',
-      width: 230,
+      width: 215,
       render: (_: unknown, record: OmicallLogRow) => {
+        if (record.aiLockedUntilSelfRated) {
+          return (
+            <div className="flex flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-1">
+                {renderAIStatus(record.analysisStatus)}
+                <StatusTag status="warning" label="🔒 Chờ NV tự chấm" />
+              </div>
+              <span className="text-[11px] text-[var(--mos-text-secondary)]">
+                Tự đánh giá để mở khóa Happy Call &amp; AI Coaching
+              </span>
+            </div>
+          );
+        }
+
         const tags = Array.isArray(record.qaTags) ? record.qaTags : [];
         return (
           <div className="flex flex-col gap-1">
@@ -202,11 +226,6 @@ export function buildOmicallLogsColumns({
               {record.analysisStatus === 'DONE' && renderHappyStatus(record.happyCallStatus)}
             </div>
             <div className="flex flex-wrap items-center gap-1 text-[11px]">
-              {record.customerSatisfactionScore ? (
-                <span className="font-semibold tabular-nums text-[var(--color-warning)]">
-                  ★ {record.customerSatisfactionScore}/5
-                </span>
-              ) : null}
               {record.laughCount > 0 ? (
                 <StatusTag
                   status="purple"
@@ -227,10 +246,66 @@ export function buildOmicallLogsColumns({
       },
     },
     {
+      title: 'Hài lòng (4 nguồn)',
+      key: 'satisfactionSources',
+      width: 195,
+      render: (_: unknown, record: OmicallLogRow) => {
+        const ai = record.aiLockedUntilSelfRated ? null : (record.customerSatisfactionScore ?? null);
+        const nv = record.staffSelfSatisfactionScore ?? null;
+        const ql = record.managerSatisfactionScore ?? null;
+        const ad = record.adminSatisfactionScore ?? null;
+        const hasMismatch = ai !== null && nv !== null && Math.abs(ai - nv) >= 2;
+
+        if (record.aiLockedUntilSelfRated) {
+          return <StatusTag status="warning" label="🔒 Tự đánh giá để xem" />;
+        }
+
+        const hasAny = ai !== null || nv !== null || ql !== null || ad !== null;
+        if (!hasAny) {
+          return <span className="text-xs text-[var(--mos-text-secondary)]">Chưa có đánh giá</span>;
+        }
+
+        return (
+          <div className="flex flex-wrap items-center gap-1 text-[11px] tabular-nums">
+            {ai !== null && (
+              <Tooltip title="Đánh giá từ AI (Gemini)">
+                <span>
+                  <StatusTag status={ai >= 4 ? 'success' : ai === 3 ? 'default' : 'error'} label={`AI ${ai}★`} />
+                </span>
+              </Tooltip>
+            )}
+            {nv !== null && (
+              <Tooltip title={record.staffSelfNote ? `NV tự chấm: ${record.staffSelfNote}` : 'Nhân viên tự đánh giá'}>
+                <span>
+                  <StatusTag status={hasMismatch ? 'warning' : 'processing'} label={`NV ${nv}★`} />
+                </span>
+              </Tooltip>
+            )}
+            {ql !== null && (
+              <Tooltip
+                title={record.managerReviewedByName ? `Quản lý/QA: ${record.managerReviewedByName}` : 'Quản lý/QA'}
+              >
+                <span>
+                  <StatusTag status="purple" label={`QL ${ql}★`} />
+                </span>
+              </Tooltip>
+            )}
+            {ad !== null && (
+              <Tooltip title={record.adminReviewedByName ? `Admin: ${record.adminReviewedByName}` : 'Admin đánh giá'}>
+                <span>
+                  <StatusTag status="orange" label={`AD ${ad}★`} />
+                </span>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
+    },
+    {
       title: 'Hành động',
       key: 'actions',
       align: 'center' as const,
-      width: 205,
+      width: 210,
       render: (_: unknown, record: OmicallLogRow) => (
         <Space size={6}>
           {canReviewQa && record.recordingUrl && (
@@ -250,7 +325,7 @@ export function buildOmicallLogsColumns({
             onClick={() => onOpenQaDrawer(record.id)}
             className="font-medium"
           >
-            Chi tiết &amp; QA
+            {record.aiLockedUntilSelfRated ? 'Tự đánh giá' : 'Chi tiết & QA'}
           </Button>
         </Space>
       ),
