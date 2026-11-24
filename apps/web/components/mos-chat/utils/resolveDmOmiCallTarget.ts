@@ -5,18 +5,43 @@ export interface DmOmiCallTarget {
   staffId?: number;
   displayName: string;
   phone: string;
+  phones: string[];
   avatarUrl?: string | null;
 }
 
 /**
- * Resolves the outbound OmiCall target (staff phone & profile) for a 1-1 DM conversation.
- * Returns null for spaces, AI Copilot, self-DMs, or staff without a valid dialable phone number.
+ * Strips formatting characters to digits and converts leading Vietnam +84 / 84 prefix to 0.
+ * Returns empty string if the result has fewer than 8 digits.
  */
-export function resolveDmOmiCallTarget(
+export function normalizeDialablePhone(raw: string): string {
+  const digits = String(raw || '').replace(/[^0-9]/g, '');
+  if (!digits) return '';
+  const localDigits = digits.startsWith('84') && digits.length >= 10 ? `0${digits.slice(2)}` : digits;
+  return localDigits.length >= 8 ? localDigits : '';
+}
+
+export function extractDialablePhones(phone?: string | null, phones?: string[] | null): string[] {
+  const candidates = [phone, ...(Array.isArray(phones) ? phones : [])];
+  const seenDigits = new Set<string>();
+  const out: string[] = [];
+
+  for (const item of candidates) {
+    if (typeof item !== 'string') continue;
+    const trimmed = item.trim();
+    if (!trimmed) continue;
+    const norm = normalizeDialablePhone(trimmed);
+    if (!norm || seenDigits.has(norm)) continue;
+    seenDigits.add(norm);
+    out.push(trimmed);
+  }
+  return out;
+}
+
+export function resolveDmPeerStaff(
   conv: MosChatConversation | null | undefined,
   staffDirectory: MosChatStaffMember[] | undefined,
   currentUser?: SafeAny
-): DmOmiCallTarget | null {
+): MosChatStaffMember | null {
   if (!conv || conv.type !== 'dm') return null;
   if (conv.id === AI_COPILOT_CONV_ID || conv.isSelf || conv.id.startsWith('dm-self-')) {
     return null;
@@ -64,16 +89,29 @@ export function resolveDmOmiCallTarget(
     }
   }
 
-  const rawPhone = typeof peer?.phone === 'string' ? peer.phone.trim() : '';
-  if (!peer || !rawPhone) return null;
+  return peer || null;
+}
 
-  const digitsOnly = rawPhone.replace(/[^0-9]/g, '');
-  if (digitsOnly.length < 8) return null;
+/**
+ * Resolves the outbound OmiCall target (staff phones & profile) for a 1-1 DM conversation.
+ * Returns null for spaces, AI Copilot, self-DMs, or staff without a valid dialable phone number.
+ */
+export function resolveDmOmiCallTarget(
+  conv: MosChatConversation | null | undefined,
+  staffDirectory: MosChatStaffMember[] | undefined,
+  currentUser?: SafeAny
+): DmOmiCallTarget | null {
+  const peer = resolveDmPeerStaff(conv, staffDirectory, currentUser);
+  if (!peer || !conv) return null;
+
+  const validPhones = extractDialablePhones(peer.phone, peer.phones);
+  if (validPhones.length === 0) return null;
 
   return {
     staffId: peer.id,
     displayName: peer.displayName || conv.name,
-    phone: rawPhone,
+    phone: validPhones[0],
+    phones: validPhones,
     avatarUrl: peer.avatarUrl || conv.avatar || null,
   };
 }

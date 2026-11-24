@@ -182,18 +182,12 @@ export const MobileHeaderRoomBar: React.FC<MobileHeaderRoomBarProps> = ({
             pinnedCount={pinnedCount}
             filesCount={filesCount}
             isPushSubscribed={isPushSubscribed}
+            canOmiCall={canAccessOmiCall && isAdmin}
             omiCallTarget={omiCallTarget}
-            onStartOmiCall={
-              omiCallTarget
-                ? () =>
-                    void makeCall(
-                      omiCallTarget.phone,
-                      omiCallTarget.displayName,
-                      undefined,
-                      omiCallTarget.avatarUrl || undefined,
-                      undefined,
-                      { autoEnableAdmin: true }
-                    )
+            onCallOmiCallPhone={
+              canAccessOmiCall && isAdmin
+                ? (phone, label, avatar) =>
+                    void makeCall(phone, label, undefined, avatar || undefined, undefined, { autoEnableAdmin: true })
                 : undefined
             }
             onCloseMenu={onCloseMoreMenu}

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useContext, useMemo } from 'react';
 import type { SafeAny } from '@mos-lab/shared';
+import { useOmiCall } from '../../context/OmiCallContext';
 import { MosChatContext } from './context/MosChatContext';
 import { parseInlineRichTextNodes } from './rich-text/parseInlineRichText';
 import { renderRichTextBlocks } from './rich-text/renderRichTextBlocks';
@@ -11,6 +12,7 @@ import {
   decodeHtmlEntities,
   toCaseInsensitivePattern,
 } from './rich-text/richTextUtils';
+import { normalizeDialablePhone } from './utils/resolveDmOmiCallTarget';
 
 export { decodeHtmlEntities };
 
@@ -24,6 +26,8 @@ export interface MosChatRichTextProps {
   currentUser?: SafeAny;
   /** Callback khi user click vào blockquote — dùng để scroll về message gốc */
   onQuoteClick?: (senderName: string, quotedContent: string) => void;
+  /** Callback gọi OmiCall khi click SĐT trong nội dung tin nhắn */
+  onOmiCallPhone?: (phone: string) => void;
 }
 
 /**
@@ -39,6 +43,7 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
     memberNicknames,
     currentUser,
     onQuoteClick,
+    onOmiCallPhone,
   }) => {
     const knownMultiWordStaffNames = useMemo(
       () => buildKnownMultiWordStaffNames(staffDirectory, memberNicknames),
@@ -57,11 +62,11 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
       (text: string, keyPrefix = 'inline', depth = 0): React.ReactNode[] =>
         parseInlineRichTextNodes(
           text,
-          { inlineRegexSource, isMe, isDark, currentUser, memberNicknames },
+          { inlineRegexSource, isMe, isDark, currentUser, memberNicknames, onOmiCallPhone },
           keyPrefix,
           depth
         ),
-      [inlineRegexSource, isMe, isDark, currentUser, memberNicknames]
+      [inlineRegexSource, isMe, isDark, currentUser, memberNicknames, onOmiCallPhone]
     );
 
     const renderedContent = useMemo(
@@ -111,10 +116,23 @@ const MosChatRichTextWithContext: React.FC<MosChatRichTextProps> = (props) => {
 };
 
 export const MosChatRichText: React.FC<MosChatRichTextProps> = React.memo((props) => {
+  const { makeCall, canAccessOmiCall, isAdmin } = useOmiCall();
+  const handleInlinePhoneCall = useCallback(
+    (rawPhone: string) => {
+      const clean = normalizeDialablePhone(rawPhone);
+      if (!clean) return;
+      void makeCall(clean, clean, undefined, undefined, undefined, { autoEnableAdmin: true });
+    },
+    [makeCall]
+  );
+
+  const effectiveOnOmiCallPhone =
+    props.onOmiCallPhone ?? (canAccessOmiCall && isAdmin ? handleInlinePhoneCall : undefined);
+
   if (props.staffDirectory !== undefined && props.currentUser !== undefined && props.memberNicknames !== undefined) {
-    return <MosChatRichTextPure {...props} />;
+    return <MosChatRichTextPure {...props} onOmiCallPhone={effectiveOnOmiCallPhone} />;
   }
-  return <MosChatRichTextWithContext {...props} />;
+  return <MosChatRichTextWithContext {...props} onOmiCallPhone={effectiveOnOmiCallPhone} />;
 });
 
 MosChatRichText.displayName = 'MosChatRichText';

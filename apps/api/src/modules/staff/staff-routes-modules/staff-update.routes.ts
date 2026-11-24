@@ -2,6 +2,8 @@ import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
 import { isHrOrAdminRole, SafeAny } from '@mos-lab/shared';
 import { requireAuth } from '../../../middlewares/auth.js';
+import { invalidateStaffDirectoryCache } from '../../chat/chat-staff-directory.service.js';
+import { saveStaffExtraPhonesForStaff } from '../staff-extra-phones.service.js';
 import { type CreateStaffInput, getManagedStaffIdsForManager, mayManageSuperAdmin } from './staff-access.helpers.js';
 
 interface SensitiveAuditEntry {
@@ -75,6 +77,7 @@ export function registerStaffUpdateRoutes(fastify: FastifyInstance) {
       isActive,
       email,
       phone,
+      extraPhones,
       joinedAt,
       birthDate,
       gender,
@@ -263,6 +266,15 @@ export function registerStaffUpdateRoutes(fastify: FastifyInstance) {
         where: { id: targetId },
         data: updateData,
       });
+
+      if (extraPhones !== undefined) {
+        const primaryAfter = phone !== undefined ? (updateData.phone as string | null) : existingStaff.phone;
+        await saveStaffExtraPhonesForStaff(fastify, targetId, extraPhones, primaryAfter);
+      }
+
+      if (phone !== undefined || extraPhones !== undefined) {
+        invalidateStaffDirectoryCache();
+      }
 
       // Write audits if any sensitive fields changed
       if (sensitiveAudits.length > 0) {

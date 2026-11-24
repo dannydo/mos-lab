@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import type { MosChatConversation, MosChatStaffMember } from '@mos-lab/shared';
 import { resolveDmOmiCallTarget } from '../utils/resolveDmOmiCallTarget';
 import { MosChatDesktopHeader, type MosChatDesktopHeaderProps } from '../components/MosChatDesktopHeader';
+import { MosChatRichTextPure } from '../MosChatRichText';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 
 const mockOmiCallState = vi.hoisted(() => ({
@@ -31,6 +32,7 @@ const staffDirectory: MosChatStaffMember[] = [
     displayName: 'Danny Do',
     role: 'super_admin',
     phone: '0901111222',
+    phones: ['0901111222'],
     avatarUrl: 'https://cdn.wingslashes.com/danny.jpg',
   },
   {
@@ -38,7 +40,8 @@ const staffDirectory: MosChatStaffMember[] = [
     username: 'han.huynh@wingslashes.com',
     displayName: 'Bảo Hân',
     role: 'admin',
-    phone: '0908888999',
+    phone: '0702610128',
+    phones: ['0702610128', '0989062401'],
     avatarUrl: 'https://cdn.wingslashes.com/han.jpg',
   },
   {
@@ -60,7 +63,7 @@ const staffDirectory: MosChatStaffMember[] = [
 const currentUser = { id: 1, username: 'danhdo@gmail.com', role: 'super_admin' };
 
 describe('resolveDmOmiCallTarget', () => {
-  it('resolves peer phone by participantStaffId', () => {
+  it('resolves multiple peer phones by participantStaffId', () => {
     const conv: MosChatConversation = {
       id: 'dm-1-13',
       type: 'dm',
@@ -75,7 +78,8 @@ describe('resolveDmOmiCallTarget', () => {
     expect(resolveDmOmiCallTarget(conv, staffDirectory, currentUser)).toEqual({
       staffId: 13,
       displayName: 'Bảo Hân',
-      phone: '0908888999',
+      phone: '0702610128',
+      phones: ['0702610128', '0989062401'],
       avatarUrl: 'https://cdn.wingslashes.com/han.jpg',
     });
   });
@@ -92,7 +96,7 @@ describe('resolveDmOmiCallTarget', () => {
       updatedAt: '2026-11-24T10:00:00Z',
     };
 
-    expect(resolveDmOmiCallTarget(conv, staffDirectory, currentUser)?.phone).toBe('0908888999');
+    expect(resolveDmOmiCallTarget(conv, staffDirectory, currentUser)?.phones).toEqual(['0702610128', '0989062401']);
   });
 
   it('falls back to case-insensitive displayName or username match when IDs are missing', () => {
@@ -106,7 +110,7 @@ describe('resolveDmOmiCallTarget', () => {
       updatedAt: '2026-11-24T10:00:00Z',
     };
 
-    expect(resolveDmOmiCallTarget(conv, staffDirectory, currentUser)?.phone).toBe('0908888999');
+    expect(resolveDmOmiCallTarget(conv, staffDirectory, currentUser)?.phone).toBe('0702610128');
   });
 
   it('returns null for spaces, AI Copilot, self-DMs, missing phone, or invalid short phone', () => {
@@ -159,7 +163,7 @@ describe('resolveDmOmiCallTarget', () => {
   });
 });
 
-describe('MosChatDesktopHeader DM OmiCall button', () => {
+describe('MosChatDesktopHeader universal OmiCall dialer popover', () => {
   const dmConv: MosChatConversation = {
     id: 'dm-1-13',
     type: 'dm',
@@ -248,19 +252,55 @@ describe('MosChatDesktopHeader DM OmiCall button', () => {
     mockOmiCallState.isAdmin = true;
   });
 
-  it('renders OmiCall button for authorized Admin in 1-1 DM and triggers makeCall with autoEnableAdmin', () => {
+  it('lists all phones for Bảo Hân in DM popover and calls the selected number', async () => {
     render(<MosChatDesktopHeader {...buildHeaderProps()} />);
 
     const btn = screen.getByTestId('mos-chat-header-omicall-btn');
-    expect(btn).toBeTruthy();
-
     fireEvent.click(btn);
+
+    expect(await screen.findByText('0702610128')).toBeTruthy();
+    expect(screen.getByText('0989062401')).toBeTruthy();
+
+    const dialButtons = screen.getAllByTestId('mos-chat-omicall-number-btn');
+    expect(dialButtons.length).toBe(2);
+
+    fireEvent.click(dialButtons[1]);
     expect(mockOmiCallState.makeCall).toHaveBeenCalledTimes(1);
     expect(mockOmiCallState.makeCall).toHaveBeenCalledWith(
-      '0908888999',
+      '0989062401',
       'Bảo Hân',
       undefined,
       'https://cdn.wingslashes.com/han.jpg',
+      undefined,
+      { autoEnableAdmin: true }
+    );
+  });
+
+  it('allows dialing any custom phone number from a Space room', async () => {
+    const spaceConv: MosChatConversation = {
+      id: 'space-core-team',
+      type: 'space',
+      name: 'core-team',
+      color: '#d4a84b',
+      messages: [],
+      unreadCount: 0,
+      updatedAt: '2026-11-24T10:00:00Z',
+    };
+
+    render(<MosChatDesktopHeader {...buildHeaderProps({ activeConversation: spaceConv })} />);
+
+    fireEvent.click(screen.getByTestId('mos-chat-header-omicall-btn'));
+
+    const customInput = await screen.findByTestId('mos-chat-omicall-custom-input');
+    fireEvent.change(customInput, { target: { value: '0989 062 401' } });
+    fireEvent.click(screen.getByTestId('mos-chat-omicall-custom-dial-btn'));
+
+    expect(mockOmiCallState.makeCall).toHaveBeenCalledTimes(1);
+    expect(mockOmiCallState.makeCall).toHaveBeenCalledWith(
+      '0989062401',
+      '0989062401',
+      undefined,
+      undefined,
       undefined,
       { autoEnableAdmin: true }
     );
@@ -275,5 +315,31 @@ describe('MosChatDesktopHeader DM OmiCall button', () => {
     mockOmiCallState.isAdmin = false;
     rerender(<MosChatDesktopHeader {...buildHeaderProps()} />);
     expect(screen.queryByTestId('mos-chat-header-omicall-btn')).toBeNull();
+  });
+});
+
+describe('MosChatRichTextPure inline clickable phone numbers', () => {
+  it('renders clickable OmiCall button for Vietnamese phone numbers when onOmiCallPhone is passed', () => {
+    const onOmiCallPhone = vi.fn();
+    render(
+      <MosChatRichTextPure
+        content="Số mới của Bảo Hân là 0989062401 nhé"
+        isDark={true}
+        onOmiCallPhone={onOmiCallPhone}
+      />
+    );
+
+    const inlinePhoneBtn = screen.getByTestId('mos-chat-inline-phone-call');
+    expect(inlinePhoneBtn.textContent).toContain('0989062401');
+
+    fireEvent.click(inlinePhoneBtn);
+    expect(onOmiCallPhone).toHaveBeenCalledTimes(1);
+    expect(onOmiCallPhone).toHaveBeenCalledWith('0989062401');
+  });
+
+  it('leaves plain phone numbers unchanged when onOmiCallPhone is omitted', () => {
+    render(<MosChatRichTextPure content="Số mới của Bảo Hân là 0989062401 nhé" isDark={true} />);
+    expect(screen.queryByTestId('mos-chat-inline-phone-call')).toBeNull();
+    expect(screen.getByText(/0989062401/)).toBeTruthy();
   });
 });

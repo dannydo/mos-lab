@@ -12172,7 +12172,7 @@
         "path": "/api/omicall/config/:staffId",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 153
+        "line": 169
       }
     },
     {
@@ -12186,7 +12186,7 @@
         "path": "/api/omicall/diagnostic",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 178
+        "line": 194
       }
     },
     {
@@ -13656,7 +13656,7 @@
         "path": "/api/staff",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 8
+        "line": 9
       }
     },
     {
@@ -13670,7 +13670,7 @@
         "path": "/api/staff/online-presence",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 93
+        "line": 105
       }
     },
     {
@@ -13684,7 +13684,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 137
+        "line": 149
       }
     },
     {
@@ -13698,7 +13698,7 @@
         "path": "/api/staff/:id/audit-logs",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 217
+        "line": 229
       }
     },
     {
@@ -13712,7 +13712,7 @@
         "path": "/api/staff/roles/telesales-profile",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 271
+        "line": 283
       }
     },
     {
@@ -13726,7 +13726,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 46
+        "line": 48
       }
     },
     {
@@ -38528,6 +38528,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatOmiCallPopover",
+      "type": "UIComponent",
+      "label": "<MosChatOmiCallPopover />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MosChatOmiCallPopover.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatOmiCallPopover",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatPinnedBanner",
       "type": "UIComponent",
       "label": "<MosChatPinnedBanner />",
@@ -47212,8 +47224,8 @@
       "filePath": "apps/api/src/modules/chat/chat-staff-directory.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7105,
-        "lineCount": 197,
+        "sizeBytes": 7483,
+        "lineCount": 205,
         "ext": ".ts"
       }
     },
@@ -47225,8 +47237,8 @@
       "filePath": "apps/api/src/modules/chat/chat-staff-phone-privacy.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2712,
-        "lineCount": 98,
+        "sizeBytes": 3475,
+        "lineCount": 110,
         "ext": ".ts"
       }
     },
@@ -52659,8 +52671,8 @@
       "filePath": "apps/api/src/modules/omicall/routes/omicall-config.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7835,
-        "lineCount": 206,
+        "sizeBytes": 8488,
+        "lineCount": 222,
         "ext": ".ts"
       }
     },
@@ -53835,6 +53847,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/staff/staff-extra-phones.service.ts",
+      "type": "File",
+      "label": "staff-extra-phones.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/staff/staff-extra-phones.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2804,
+        "lineCount": 87,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/staff/staff-hr.test.ts",
       "type": "File",
       "label": "staff-hr.test.ts",
@@ -53855,8 +53880,8 @@
       "filePath": "apps/api/src/modules/staff/staff-routes-modules/staff-access.helpers.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3417,
-        "lineCount": 121,
+        "sizeBytes": 3459,
+        "lineCount": 122,
         "ext": ".ts"
       }
     },
@@ -53946,8 +53971,8 @@
       "filePath": "apps/api/src/modules/staff/staff-routes-modules/staff-read.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9461,
-        "lineCount": 275,
+        "sizeBytes": 9956,
+        "lineCount": 287,
         "ext": ".ts"
       }
     },
@@ -53959,8 +53984,8 @@
       "filePath": "apps/api/src/modules/staff/staff-routes-modules/staff-update.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11064,
-        "lineCount": 300,
+        "sizeBytes": 11616,
+        "lineCount": 312,
         "ext": ".ts"
       }
     },
@@ -68610,8 +68635,8 @@
       "filePath": "apps/web/app/dashboard/staff/components/StaffColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17807,
-        "lineCount": 522,
+        "sizeBytes": 18488,
+        "lineCount": 539,
         "ext": ".tsx"
       }
     },
@@ -76007,8 +76032,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 13454,
-        "lineCount": 408,
+        "sizeBytes": 13480,
+        "lineCount": 409,
         "ext": ".ts"
       }
     },
@@ -76774,8 +76799,8 @@
       "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12700,
-        "lineCount": 445,
+        "sizeBytes": 12721,
+        "lineCount": 446,
         "ext": ".ts"
       }
     },
@@ -100825,6 +100850,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatOmiCallPopover:ws:apps/web",
+      "source": "uicomp:MosChatOmiCallPopover",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatOmiCallPopover:token:color:primary",
+      "source": "uicomp:MosChatOmiCallPopover",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatPinnedBanner:ws:apps/web",
       "source": "uicomp:MosChatPinnedBanner",
       "target": "ws:apps/web",
@@ -121762,6 +121801,13 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/staff/staff-extra-phones.service.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/staff/staff-extra-phones.service.ts",
+      "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/staff/staff-routes-modules/staff-access.helpers.ts:prisma:crm:CrmTeamMember",
       "source": "file:apps/api/src/modules/staff/staff-routes-modules/staff-access.helpers.ts",
       "target": "prisma:crm:CrmTeamMember",
@@ -131304,8 +131350,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 6014,
-    "totalEdges": 7694,
+    "totalNodes": 6016,
+    "totalEdges": 7697,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -131313,16 +131359,16 @@
       "Component": 66,
       "SharedType": 1586,
       "DesignToken": 12,
-      "UIComponent": 792,
-      "File": 2591
+      "UIComponent": 793,
+      "File": 2592
     },
     "edgeTypeCounts": {
       "EXPORTS": 1781,
       "HANDLES_ROUTE": 781,
-      "RENDERS": 858,
-      "USES_TOKEN": 794,
+      "RENDERS": 859,
+      "USES_TOKEN": 795,
       "IMPORTS": 1572,
-      "QUERIES_MODEL": 605,
+      "QUERIES_MODEL": 606,
       "API_CALL": 1303
     },
     "fastifyRouteCount": 781,

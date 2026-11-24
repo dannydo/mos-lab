@@ -163,6 +163,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                 conv={conv}
                 currentUser={currentUser}
                 staffDirectory={staffDirectory}
+                isDark={isDark}
                 isCollapsed={isCollapsed}
                 isDockPinned={isDockPinned}
                 isDockManualUnread={isDockManualUnread}

@@ -304,6 +304,7 @@ export interface Staff {
   // HR System Extensions
   email?: string | null;
   phone?: string | null;
+  extraPhones?: string[];
   joinedAt?: string | null;
   birthDate?: string | null;
   gender?: string | null;

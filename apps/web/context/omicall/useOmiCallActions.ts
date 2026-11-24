@@ -210,7 +210,7 @@ export function useOmiCallActions({
       }
 
       const activeSipConfig = sipConfigRef.current || sipConfig;
-      const hotlineNumber = activeSipConfig?.phoneNumber || '0328703439';
+      const hotlineNumber = activeSipConfig?.phoneNumber || '02866810755';
       const omicallCall = await window.OMICallSDK.makeCall(cleanPhone, {
         sipNumber: { number: hotlineNumber },
         userData: JSON.stringify({

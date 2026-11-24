@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Tooltip, type GlobalToken } from 'antd';
 import {
   AlarmClock,
@@ -16,7 +16,6 @@ import {
   Minimize2,
   PanelRightOpen,
   Phone,
-  PhoneCall,
   Pin,
   Search,
   Settings,
@@ -24,12 +23,11 @@ import {
   X,
 } from 'lucide-react';
 import type { MosChatConversation, MosChatStaffMember, MosChatTaskItem, SafeAny } from '@mos-lab/shared';
-import { useOmiCall } from '../../../context/OmiCallContext';
 import { HeaderNotificationCenter } from '../../notification-center/HeaderNotificationCenter';
 import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 import type { MosChatActiveSubtab } from '../types/mos-chat-types';
-import { resolveDmOmiCallTarget } from '../utils/resolveDmOmiCallTarget';
 import { MosChatHeaderOverflowMenu, type MosChatHeaderOverflowMenuProps } from './MosChatHeaderOverflowMenu';
+import { MosChatOmiCallPopover } from './MosChatOmiCallPopover';
 
 export interface MosChatDesktopHeaderProps extends MosChatHeaderOverflowMenuProps {
   isDark: boolean;
@@ -112,12 +110,6 @@ export const MosChatDesktopHeader: React.FC<MosChatDesktopHeaderProps> = (props)
     persistPersonalLayout,
     onClose,
   } = props;
-
-  const { makeCall, canAccessOmiCall, isAdmin } = useOmiCall();
-  const omiCallTarget = useMemo(
-    () => resolveDmOmiCallTarget(activeConversation, staffDirectory, currentUser),
-    [activeConversation, staffDirectory, currentUser]
-  );
 
   return (
     <div
@@ -356,33 +348,13 @@ export const MosChatDesktopHeader: React.FC<MosChatDesktopHeaderProps> = (props)
           </Tooltip>
         )}
 
-        {canAccessOmiCall && isAdmin && omiCallTarget && (
-          <Tooltip title={`Gọi OmiCall tới ${omiCallTarget.displayName} (${omiCallTarget.phone})`}>
-            <button
-              type="button"
-              data-testid="mos-chat-header-omicall-btn"
-              aria-label="Gọi OmiCall qua số điện thoại"
-              onClick={() =>
-                void makeCall(
-                  omiCallTarget.phone,
-                  omiCallTarget.displayName,
-                  undefined,
-                  omiCallTarget.avatarUrl || undefined,
-                  undefined,
-                  { autoEnableAdmin: true }
-                )
-              }
-              className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors hover:opacity-90"
-              style={{
-                background: 'rgba(245, 158, 11, 0.12)',
-                border: '1px solid rgba(245, 158, 11, 0.35)',
-                color: '#f59e0b',
-              }}
-            >
-              <PhoneCall size={14} />
-            </button>
-          </Tooltip>
-        )}
+        <MosChatOmiCallPopover
+          activeConversation={activeConversation}
+          staffDirectory={staffDirectory}
+          currentUser={currentUser}
+          isDark={isDark}
+          testId="mos-chat-header-omicall-btn"
+        />
 
         <Tooltip title="Tìm kiếm tin nhắn (⌘K)">
           <button
