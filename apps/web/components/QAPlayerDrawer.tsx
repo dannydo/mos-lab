@@ -7,7 +7,7 @@ import { Lock } from 'lucide-react';
 import { AppIcon, StatusTag } from '~/components/ui';
 import { useTheme } from '../context/ThemeContext';
 import { apiClient } from '../lib/api-client';
-import { getViewportSize } from '../hooks/useResponsiveTier';
+import { getViewportSize, useResponsiveTier } from '../hooks/useResponsiveTier';
 import { StaffSelfAssessmentCard } from './omicall/StaffSelfAssessmentCard';
 
 // Custom Hook
@@ -252,6 +252,8 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
 
   const isEvaluationDisabled = !logDetails?.recordingUrl;
   const isLockedForStaff = Boolean(logDetails?.aiLockedUntilSelfRated);
+  const tier = useResponsiveTier();
+  const isMobileDrawer = tier === 'mobile';
 
   const handleSelfAssessmentUnlocked = (updatedLog: SafeAny) => {
     setLogDetails((prev: SafeAny) => ({ ...(prev || {}), ...updatedLog, aiLockedUntilSelfRated: false }));
@@ -261,7 +263,7 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
   return (
     <Drawer
       title={null} // custom header design inside the drawer content
-      width={drawerWidth}
+      width={isMobileDrawer ? '100%' : drawerWidth}
       onClose={onClose}
       open={open}
       destroyOnHidden
@@ -269,14 +271,16 @@ export const QAPlayerDrawer: React.FC<QAPlayerDrawerProps> = ({ open, omicallLog
         background: themeMode === 'dark' ? '#111827' : '#f9f9f9',
         color: token.colorText,
       }}
-      styles={{ body: { padding: '20px', position: 'relative' } }}
+      styles={{ body: { padding: isMobileDrawer ? '12px' : '20px', position: 'relative' } }}
     >
-      {/* Absolute positioned Drag handle on the left edge */}
-      <div
-        onMouseDown={handleMouseDown}
-        className="absolute top-0 left-0 bottom-0 w-[5px] cursor-col-resize hover:bg-[#D4A84B]/40 active:bg-[#D4A84B] transition-colors duration-150 z-[9999]"
-        title="Kéo để thay đổi kích thước"
-      />
+      {/* Absolute positioned Drag handle on the left edge (desktop only) */}
+      {!isMobileDrawer && (
+        <div
+          onMouseDown={handleMouseDown}
+          className="absolute top-0 left-0 bottom-0 w-[5px] cursor-col-resize hover:bg-[#D4A84B]/40 active:bg-[#D4A84B] transition-colors duration-150 z-[9999]"
+          title="Kéo để thay đổi kích thước"
+        />
+      )}
 
       {loading ? (
         <div className="flex flex-col justify-center items-center h-64 gap-3">

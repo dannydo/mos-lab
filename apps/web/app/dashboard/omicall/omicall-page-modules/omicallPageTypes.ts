@@ -5,6 +5,12 @@ import type { StatusType } from '~/components/ui';
 export type OmicallTabKey = 'logs' | 'configs';
 export type OmicallDateMode = 'day' | 'range';
 
+export interface OmicallFilterChip {
+  key: string;
+  label: string;
+  onRemove: () => void;
+}
+
 export type OmicallStaffSummary = Pick<Staff, 'id' | 'displayName'>;
 
 export interface OmicallBranchSummary {
@@ -249,4 +255,86 @@ export function getHappyStatusDescriptor(status: string): StatusTagDescriptor {
     default:
       return { status: 'default', label: 'CHƯA XÉT' };
   }
+}
+
+export function buildOmicallFilterChips(params: {
+  branchFilter: string;
+  branches: OmicallBranchSummary[];
+  staffFilter: string;
+  staffList: OmicallStaffSummary[];
+  happyFilter: string;
+  statusFilter: string;
+  directionFilter: string;
+  aiFilter: string;
+  aiSatisfactionFilter: string;
+  ratingSourceFilter: string;
+  ratingLevelFilter: string;
+  onlyWithRecording: boolean;
+  hasComplaintOnly: boolean;
+  searchQuery: string;
+  onClearBranch: () => void;
+  onClearStaff: () => void;
+  onClearHappy: () => void;
+  onClearStatus: () => void;
+  onClearDirection: () => void;
+  onClearAi: () => void;
+  onClearAiSatisfaction: () => void;
+  onClearRating: () => void;
+  onClearRecording: () => void;
+  onClearComplaint: () => void;
+  onClearSearch: () => void;
+}): OmicallFilterChip[] {
+  const chips: OmicallFilterChip[] = [];
+
+  if (params.searchQuery.trim()) {
+    chips.push({ key: 'search', label: `Tìm: ${params.searchQuery.trim()}`, onRemove: params.onClearSearch });
+  }
+  if (params.branchFilter !== 'ALL') {
+    const name = params.branches.find((b) => String(b.id) === params.branchFilter)?.name || `#${params.branchFilter}`;
+    chips.push({ key: 'branch', label: `CN: ${name}`, onRemove: params.onClearBranch });
+  }
+  if (params.staffFilter !== 'ALL') {
+    const name =
+      params.staffList.find((s) => String(s.id) === params.staffFilter)?.displayName || `#${params.staffFilter}`;
+    chips.push({ key: 'staff', label: `NV: ${name}`, onRemove: params.onClearStaff });
+  }
+  if (params.happyFilter !== 'ALL') {
+    const label = HAPPY_CALL_FILTER_OPTIONS.find((o) => o.value === params.happyFilter)?.label || params.happyFilter;
+    chips.push({ key: 'happy', label: `HC: ${label}`, onRemove: params.onClearHappy });
+  }
+  if (params.statusFilter !== 'ALL') {
+    const label = CALL_STATUS_FILTER_OPTIONS.find((o) => o.value === params.statusFilter)?.label || params.statusFilter;
+    chips.push({ key: 'status', label, onRemove: params.onClearStatus });
+  }
+  if (params.directionFilter !== 'ALL') {
+    const label =
+      DIRECTION_FILTER_OPTIONS.find((o) => o.value === params.directionFilter)?.label || params.directionFilter;
+    chips.push({ key: 'direction', label, onRemove: params.onClearDirection });
+  }
+  if (params.aiSatisfactionFilter !== 'ALL') {
+    const label =
+      AI_SATISFACTION_FILTER_OPTIONS.find((o) => o.value === params.aiSatisfactionFilter)?.label ||
+      params.aiSatisfactionFilter;
+    chips.push({ key: 'aiSat', label: `AI: ${label}`, onRemove: params.onClearAiSatisfaction });
+  }
+  if (params.ratingSourceFilter !== 'ANY' || params.ratingLevelFilter !== 'ALL') {
+    const src = RATING_SOURCE_OPTIONS.find((o) => o.value === params.ratingSourceFilter)?.label || 'Đánh giá';
+    const lvl =
+      params.ratingLevelFilter !== 'ALL'
+        ? RATING_LEVEL_OPTIONS.find((o) => o.value === params.ratingLevelFilter)?.label || params.ratingLevelFilter
+        : 'Đã chấm';
+    chips.push({ key: 'rating', label: `${src}: ${lvl}`, onRemove: params.onClearRating });
+  }
+  if (params.aiFilter !== 'ALL') {
+    const label = AI_STATUS_FILTER_OPTIONS.find((o) => o.value === params.aiFilter)?.label || params.aiFilter;
+    chips.push({ key: 'ai', label: `AI: ${label}`, onRemove: params.onClearAi });
+  }
+  if (params.onlyWithRecording) {
+    chips.push({ key: 'rec', label: 'Có ghi âm', onRemove: params.onClearRecording });
+  }
+  if (params.hasComplaintOnly) {
+    chips.push({ key: 'complaint', label: 'Chỉ khiếu nại', onRemove: params.onClearComplaint });
+  }
+
+  return chips;
 }

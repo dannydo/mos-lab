@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Button, Checkbox, Input, Select, Space } from 'antd';
-import { RefreshCw, RotateCcw, Search } from 'lucide-react';
+import { Button, Checkbox, Select } from 'antd';
+import { RotateCcw, Check } from 'lucide-react';
 import { vietnameseSearchFilter } from '@mos-lab/shared';
 import { AppIcon } from '~/components/ui';
 import {
@@ -18,8 +18,8 @@ import {
 } from './omicallPageTypes';
 
 export interface OmicallLogsFiltersToolbarProps {
-  isAdmin: boolean;
   canReviewQa: boolean;
+  isMobile?: boolean;
   branchFilter: string;
   onBranchFilterChange: (value: string) => void;
   branches: OmicallBranchSummary[];
@@ -39,22 +39,18 @@ export interface OmicallLogsFiltersToolbarProps {
   onRatingLevelFilterChange: (value: string) => void;
   staffFilter: string;
   onStaffFilterChange: (value: string) => void;
-  searchQuery: string;
-  onSearchQueryChange: (value: string) => void;
   onlyWithRecording: boolean;
   onOnlyWithRecordingChange: (checked: boolean) => void;
   hasComplaintOnly: boolean;
   onHasComplaintOnlyChange: (checked: boolean) => void;
   staffList: OmicallStaffSummary[];
-  syncingLogs: boolean;
-  onSearch: () => void;
   onReset: () => void;
-  onSync: () => void;
+  onApply?: () => void;
 }
 
 export function OmicallLogsFiltersToolbar({
-  isAdmin,
   canReviewQa,
+  isMobile = false,
   branchFilter,
   onBranchFilterChange,
   branches,
@@ -74,161 +70,130 @@ export function OmicallLogsFiltersToolbar({
   onRatingLevelFilterChange,
   staffFilter,
   onStaffFilterChange,
-  searchQuery,
-  onSearchQueryChange,
   onlyWithRecording,
   onOnlyWithRecordingChange,
   hasComplaintOnly,
   onHasComplaintOnlyChange,
   staffList,
-  syncingLogs,
-  onSearch,
   onReset,
-  onSync,
+  onApply,
 }: OmicallLogsFiltersToolbarProps) {
   return (
-    <div className="mb-6 flex flex-wrap items-end gap-3.5 rounded-lg border border-[var(--mos-surface-border)] bg-[var(--mos-surface-muted)] p-4">
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Tìm SĐT / Call UUID:</span>
-        <Input
-          value={searchQuery}
-          onChange={(e) => onSearchQueryChange(e.target.value)}
-          onPressEnter={onSearch}
-          allowClear
-          placeholder="Nhập SĐT hoặc UUID..."
-          className="w-full sm:w-[195px]"
-        />
-      </div>
+    <div className={isMobile ? 'flex flex-col gap-3' : 'w-[420px] flex flex-col gap-3'}>
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        {isMobile && (
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-medium text-[var(--mos-text-secondary)]">Chi nhánh</span>
+            <Select
+              size="small"
+              value={branchFilter}
+              onChange={onBranchFilterChange}
+              showSearch
+              filterOption={vietnameseSearchFilter}
+              options={[
+                { value: 'ALL', label: 'Tất cả chi nhánh' },
+                ...branches.map((branch) => ({ value: branch.id.toString(), label: branch.name })),
+              ]}
+            />
+          </div>
+        )}
 
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Chi nhánh:</span>
-        <Select
-          value={branchFilter}
-          onChange={onBranchFilterChange}
-          className="w-full sm:w-[175px]"
-          showSearch
-          filterOption={vietnameseSearchFilter}
-          options={[
-            { value: 'ALL', label: 'Tất cả chi nhánh' },
-            ...branches.map((branch) => ({ value: branch.id.toString(), label: branch.name })),
-          ]}
-        />
-      </div>
+        {isMobile && canReviewQa && (
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-medium text-[var(--mos-text-secondary)]">Nhân viên</span>
+            <Select
+              size="small"
+              value={staffFilter}
+              onChange={onStaffFilterChange}
+              showSearch
+              filterOption={vietnameseSearchFilter}
+              options={[
+                { value: 'ALL', label: 'Tất cả nhân viên' },
+                ...staffList.map((staff) => ({ value: staff.id.toString(), label: staff.displayName })),
+              ]}
+            />
+          </div>
+        )}
 
-      {canReviewQa && (
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Nhân viên:</span>
+          <span className="text-[11px] font-medium text-[var(--mos-text-secondary)]">Happy Call</span>
+          <Select size="small" value={happyFilter} onChange={onHappyFilterChange} options={HAPPY_CALL_FILTER_OPTIONS} />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-medium text-[var(--mos-text-secondary)]">Hài lòng (AI)</span>
           <Select
-            value={staffFilter}
-            onChange={onStaffFilterChange}
-            className="w-full sm:w-[175px]"
-            showSearch
-            filterOption={vietnameseSearchFilter}
-            options={[
-              { value: 'ALL', label: 'Tất cả nhân viên' },
-              ...staffList.map((staff) => ({ value: staff.id.toString(), label: staff.displayName })),
-            ]}
+            size="small"
+            value={aiSatisfactionFilter}
+            onChange={onAiSatisfactionFilterChange}
+            options={AI_SATISFACTION_FILTER_OPTIONS}
           />
         </div>
-      )}
 
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Chiều gọi:</span>
-        <Select
-          value={directionFilter}
-          onChange={onDirectionFilterChange}
-          className="w-full sm:w-[155px]"
-          options={DIRECTION_FILTER_OPTIONS}
-        />
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-medium text-[var(--mos-text-secondary)]">Nguồn đánh giá</span>
+          <Select
+            size="small"
+            value={ratingSourceFilter}
+            onChange={onRatingSourceFilterChange}
+            options={RATING_SOURCE_OPTIONS}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-medium text-[var(--mos-text-secondary)]">Mức đánh giá</span>
+          <Select
+            size="small"
+            value={ratingLevelFilter}
+            onChange={onRatingLevelFilterChange}
+            options={RATING_LEVEL_OPTIONS}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-medium text-[var(--mos-text-secondary)]">Kết quả</span>
+          <Select
+            size="small"
+            value={statusFilter}
+            onChange={onStatusFilterChange}
+            options={CALL_STATUS_FILTER_OPTIONS}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-medium text-[var(--mos-text-secondary)]">Chiều gọi</span>
+          <Select
+            size="small"
+            value={directionFilter}
+            onChange={onDirectionFilterChange}
+            options={DIRECTION_FILTER_OPTIONS}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1 sm:col-span-2">
+          <span className="text-[11px] font-medium text-[var(--mos-text-secondary)]">Trạng thái phân tích AI</span>
+          <Select size="small" value={aiFilter} onChange={onAiFilterChange} options={AI_STATUS_FILTER_OPTIONS} />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Kết quả cuộc gọi:</span>
-        <Select
-          value={statusFilter}
-          onChange={onStatusFilterChange}
-          className="w-full sm:w-[140px]"
-          options={CALL_STATUS_FILTER_OPTIONS}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Happy Call:</span>
-        <Select
-          value={happyFilter}
-          onChange={onHappyFilterChange}
-          className="w-full sm:w-[150px]"
-          options={HAPPY_CALL_FILTER_OPTIONS}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Hài lòng (AI):</span>
-        <Select
-          value={aiSatisfactionFilter}
-          onChange={onAiSatisfactionFilterChange}
-          className="w-full sm:w-[180px]"
-          options={AI_SATISFACTION_FILTER_OPTIONS}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Nguồn đánh giá:</span>
-        <Select
-          value={ratingSourceFilter}
-          onChange={onRatingSourceFilterChange}
-          className="w-full sm:w-[190px]"
-          options={RATING_SOURCE_OPTIONS}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Mức hài lòng đánh giá:</span>
-        <Select
-          value={ratingLevelFilter}
-          onChange={onRatingLevelFilterChange}
-          className="w-full sm:w-[195px]"
-          options={RATING_LEVEL_OPTIONS}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-[var(--mos-text-secondary)]">Trạng thái AI:</span>
-        <Select
-          value={aiFilter}
-          onChange={onAiFilterChange}
-          className="w-full sm:w-[160px]"
-          options={AI_STATUS_FILTER_OPTIONS}
-        />
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 pb-1">
+      <div className="flex flex-wrap items-center gap-4 border-t border-[var(--mos-surface-border)] pt-2.5">
         <Checkbox checked={onlyWithRecording} onChange={(e) => onOnlyWithRecordingChange(e.target.checked)}>
-          Có ghi âm
+          <span className="text-xs">Chỉ hiện cuộc có ghi âm</span>
         </Checkbox>
         <Checkbox checked={hasComplaintOnly} onChange={(e) => onHasComplaintOnlyChange(e.target.checked)}>
-          Chỉ khiếu nại
+          <span className="text-xs">Chỉ hiện khiếu nại</span>
         </Checkbox>
       </div>
 
-      <div className="ml-auto flex items-center">
-        <Space wrap>
-          <Button type="primary" icon={<AppIcon icon={Search} size={14} />} onClick={onSearch}>
-            Tìm kiếm
+      <div className="flex items-center justify-end gap-2 border-t border-[var(--mos-surface-border)] pt-2.5">
+        <Button size="small" icon={<AppIcon icon={RotateCcw} size={13} />} onClick={onReset}>
+          Đặt lại
+        </Button>
+        {onApply && (
+          <Button type="primary" size="small" icon={<AppIcon icon={Check} size={13} />} onClick={onApply}>
+            Xong
           </Button>
-          <Button icon={<AppIcon icon={RotateCcw} size={14} />} onClick={onReset}>
-            Lọc lại
-          </Button>
-          {isAdmin && (
-            <Button
-              icon={<AppIcon icon={RefreshCw} size={14} className={syncingLogs ? 'animate-spin' : ''} />}
-              loading={syncingLogs}
-              onClick={onSync}
-            >
-              Đồng bộ OmiCall
-            </Button>
-          )}
-        </Space>
+        )}
       </div>
     </div>
   );

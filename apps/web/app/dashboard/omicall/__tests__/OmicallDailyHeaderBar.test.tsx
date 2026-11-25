@@ -6,20 +6,53 @@ import { OmicallDailyHeaderBar } from '../omicall-page-modules/OmicallDailyHeade
 
 describe('OmicallDailyHeaderBar', () => {
   const baseProps = {
+    isAdmin: true,
+    canReviewQa: true,
+    isMobile: false,
     dateMode: 'day' as const,
     selectedDate: dayjs(),
     dateRange: [dayjs().subtract(7, 'day'), dayjs()] as [dayjs.Dayjs, dayjs.Dayjs],
     summary: {
-      totalCalls: 42,
-      answeredCalls: 28,
-      happyCallsApproved: 6,
-      happyCallsPending: 2,
+      totalCalls: 19,
+      answeredCalls: 2,
+      happyCallsApproved: 1,
+      happyCallsPending: 0,
       complaintCalls: 1,
-      aiDoneCalls: 25,
-      staffSelfRatedCalls: 19,
+      aiDoneCalls: 2,
+      staffSelfRatedCalls: 9,
       mismatchCalls: 3,
     },
-    canReviewQa: true,
+    searchQuery: '',
+    onSearchQueryChange: vi.fn(),
+    onSearch: vi.fn(),
+    branchFilter: 'ALL',
+    onBranchFilterChange: vi.fn(),
+    branches: [{ id: 1, name: 'CMT8' }],
+    staffFilter: 'ALL',
+    onStaffFilterChange: vi.fn(),
+    staffList: [{ id: 4, displayName: 'Tâm Nguyễn' }],
+    directionFilter: 'ALL',
+    onDirectionFilterChange: vi.fn(),
+    statusFilter: 'ALL',
+    onStatusFilterChange: vi.fn(),
+    happyFilter: 'ALL',
+    onHappyFilterChange: vi.fn(),
+    aiFilter: 'ALL',
+    onAiFilterChange: vi.fn(),
+    aiSatisfactionFilter: 'ALL',
+    onAiSatisfactionFilterChange: vi.fn(),
+    ratingSourceFilter: 'ANY',
+    onRatingSourceFilterChange: vi.fn(),
+    ratingLevelFilter: 'ALL',
+    onRatingLevelFilterChange: vi.fn(),
+    onlyWithRecording: false,
+    onOnlyWithRecordingChange: vi.fn(),
+    hasComplaintOnly: false,
+    onHasComplaintOnlyChange: vi.fn(),
+    activeChips: [],
+    syncingLogs: false,
+    onSync: vi.fn(),
+    onReset: vi.fn(),
     onDateModeChange: vi.fn(),
     onSelectDate: vi.fn(),
     onPrevDay: vi.fn(),
@@ -34,16 +67,16 @@ describe('OmicallDailyHeaderBar', () => {
     onQuickFilterMismatch: vi.fn(),
   };
 
-  it('disables next-day and Hôm nay buttons when viewing today, and triggers day step + KPI clicks', () => {
+  it('renders minimalist Command Bar with Hero Happy Call pill, disables Next/Today on today, and fires quick filters', () => {
     render(<OmicallDailyHeaderBar {...baseProps} />);
 
-    expect(screen.getByText('42')).toBeInTheDocument();
-    expect(screen.getByText('28')).toBeInTheDocument();
-    expect(screen.getByText('(3 lệch ≥2★)')).toBeInTheDocument();
+    expect(screen.getByText('19')).toBeInTheDocument();
+    expect(screen.getByText('Happy Call')).toBeInTheDocument();
+    expect(screen.getByText('(3!)')).toBeInTheDocument();
 
     const prevBtn = screen.getByRole('button', { name: 'Ngày trước' });
     const nextBtn = screen.getByRole('button', { name: 'Ngày sau' });
-    const todayBtn = screen.getByRole('button', { name: 'Hôm nay' });
+    const todayBtn = screen.getByRole('button', { name: /Hôm nay/ });
 
     expect(prevBtn).not.toBeDisabled();
     expect(nextBtn).toBeDisabled();
@@ -52,20 +85,29 @@ describe('OmicallDailyHeaderBar', () => {
     fireEvent.click(prevBtn);
     expect(baseProps.onPrevDay).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByText('Đạt Happy Call').closest('button')!);
+    fireEvent.click(screen.getByText('Happy Call').closest('button')!);
     expect(baseProps.onQuickFilterHappyApproved).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByText('Khiếu nại (AI)').closest('button')!);
-    expect(baseProps.onQuickFilterComplaints).toHaveBeenCalledTimes(1);
-
-    fireEvent.click(screen.getByText('NV tự chấm / Lệch AI').closest('button')!);
+    fireEvent.click(screen.getByText('(3!)').closest('button')!);
     expect(baseProps.onQuickFilterMismatch).toHaveBeenCalledTimes(1);
   });
 
-  it('enables next-day and Hôm nay buttons when viewing an earlier date', () => {
-    render(<OmicallDailyHeaderBar {...baseProps} selectedDate={dayjs().subtract(2, 'day')} />);
+  it('enables Next Day & Today on earlier dates and renders removable active filter chips', () => {
+    const onRemoveChip = vi.fn();
+    render(
+      <OmicallDailyHeaderBar
+        {...baseProps}
+        selectedDate={dayjs().subtract(1, 'day')}
+        happyFilter="APPROVED"
+        activeChips={[{ key: 'hc', label: 'HC: Đạt Happy Call', onRemove: onRemoveChip }]}
+      />
+    );
 
     expect(screen.getByRole('button', { name: 'Ngày sau' })).not.toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Hôm nay' })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /Hôm nay/ })).not.toBeDisabled();
+
+    const chip = screen.getByText('HC: Đạt Happy Call').closest('button')!;
+    fireEvent.click(chip);
+    expect(onRemoveChip).toHaveBeenCalledTimes(1);
   });
 });

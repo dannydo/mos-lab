@@ -10,6 +10,7 @@ import { OmicallConfigModal } from './omicall-page-modules/OmicallConfigModal';
 import { OmicallConfigsTabContent } from './omicall-page-modules/OmicallConfigsTabContent';
 import { OmicallLogsTabContent } from './omicall-page-modules/OmicallLogsTabContent';
 import { buildOmicallConfigsColumns, buildOmicallLogsColumns } from './omicall-page-modules/omicallColumns';
+import { buildOmicallFilterChips } from './omicall-page-modules/omicallPageTypes';
 import { useOmicallLogsPage } from './omicall-page-modules/useOmicallLogsPage';
 
 const QAPlayerDrawer = dynamic(() => import('../../../components/QAPlayerDrawer').then((m) => m.QAPlayerDrawer), {
@@ -119,6 +120,7 @@ function OmicallLogsPageContent() {
   const logsColumns = useMemo(
     () =>
       buildOmicallLogsColumns({
+        dateMode,
         playingLogId,
         reanalyzingLogId,
         canReviewQa,
@@ -127,7 +129,78 @@ function OmicallLogsPageContent() {
         onReanalyze: handleReanalyze,
         onOpenQaDrawer: openQADrawer,
       }),
-    [playingLogId, reanalyzingLogId, canReviewQa, handleCopyUuid, handleTogglePlay, handleReanalyze, openQADrawer]
+    [
+      dateMode,
+      playingLogId,
+      reanalyzingLogId,
+      canReviewQa,
+      handleCopyUuid,
+      handleTogglePlay,
+      handleReanalyze,
+      openQADrawer,
+    ]
+  );
+
+  const activeChips = useMemo(
+    () =>
+      buildOmicallFilterChips({
+        branchFilter,
+        branches,
+        staffFilter,
+        staffList,
+        happyFilter,
+        statusFilter,
+        directionFilter,
+        aiFilter,
+        aiSatisfactionFilter,
+        ratingSourceFilter,
+        ratingLevelFilter,
+        onlyWithRecording,
+        hasComplaintOnly,
+        searchQuery,
+        onClearBranch: () => setBranchFilter('ALL'),
+        onClearStaff: () => setStaffFilter('ALL'),
+        onClearHappy: () => setHappyFilter('ALL'),
+        onClearStatus: () => setStatusFilter('ALL'),
+        onClearDirection: () => setDirectionFilter('ALL'),
+        onClearAi: () => setAiFilter('ALL'),
+        onClearAiSatisfaction: () => setAiSatisfactionFilter('ALL'),
+        onClearRating: () => {
+          setRatingSourceFilter('ANY');
+          setRatingLevelFilter('ALL');
+        },
+        onClearRecording: () => setOnlyWithRecording(false),
+        onClearComplaint: () => setHasComplaintOnly(false),
+        onClearSearch: () => setSearchQuery(''),
+      }),
+    [
+      branchFilter,
+      branches,
+      staffFilter,
+      staffList,
+      happyFilter,
+      statusFilter,
+      directionFilter,
+      aiFilter,
+      aiSatisfactionFilter,
+      ratingSourceFilter,
+      ratingLevelFilter,
+      onlyWithRecording,
+      hasComplaintOnly,
+      searchQuery,
+      setBranchFilter,
+      setStaffFilter,
+      setHappyFilter,
+      setStatusFilter,
+      setDirectionFilter,
+      setAiFilter,
+      setAiSatisfactionFilter,
+      setRatingSourceFilter,
+      setRatingLevelFilter,
+      setOnlyWithRecording,
+      setHasComplaintOnly,
+      setSearchQuery,
+    ]
   );
 
   const configsColumns = useMemo(
@@ -139,123 +212,126 @@ function OmicallLogsPageContent() {
     [handleOpenConfigModal, handleDeleteConfig]
   );
 
+  const logsTabNode = (
+    <OmicallLogsTabContent
+      isAdmin={isAdmin}
+      canReviewQa={canReviewQa}
+      dateMode={dateMode}
+      selectedDate={selectedDate}
+      dateRange={dateRange}
+      summary={summary}
+      onDateModeChange={handleDateModeChange}
+      onSelectDate={handleSelectDate}
+      onPrevDay={handlePrevDay}
+      onNextDay={handleNextDay}
+      onToday={handleToday}
+      onDateRangeChange={handleDateRangeChange}
+      onQuickFilterAll={handleQuickFilterAll}
+      onQuickFilterAnswered={handleQuickFilterAnswered}
+      onQuickFilterHappyApproved={handleQuickFilterHappyApproved}
+      onQuickFilterHappyPending={handleQuickFilterHappyPending}
+      onQuickFilterComplaints={handleQuickFilterComplaints}
+      onQuickFilterMismatch={handleQuickFilterMismatch}
+      branchFilter={branchFilter}
+      onBranchFilterChange={setBranchFilter}
+      branches={branches}
+      directionFilter={directionFilter}
+      onDirectionFilterChange={setDirectionFilter}
+      statusFilter={statusFilter}
+      onStatusFilterChange={setStatusFilter}
+      happyFilter={happyFilter}
+      onHappyFilterChange={setHappyFilter}
+      aiFilter={aiFilter}
+      onAiFilterChange={setAiFilter}
+      aiSatisfactionFilter={aiSatisfactionFilter}
+      onAiSatisfactionFilterChange={setAiSatisfactionFilter}
+      ratingSourceFilter={ratingSourceFilter}
+      onRatingSourceFilterChange={setRatingSourceFilter}
+      ratingLevelFilter={ratingLevelFilter}
+      onRatingLevelFilterChange={setRatingLevelFilter}
+      staffFilter={staffFilter}
+      onStaffFilterChange={setStaffFilter}
+      searchQuery={searchQuery}
+      onSearchQueryChange={setSearchQuery}
+      onlyWithRecording={onlyWithRecording}
+      onOnlyWithRecordingChange={setOnlyWithRecording}
+      hasComplaintOnly={hasComplaintOnly}
+      onHasComplaintOnlyChange={setHasComplaintOnly}
+      activeChips={activeChips}
+      staffList={staffList}
+      syncingLogs={syncingLogs}
+      onSearch={handleSearchLogs}
+      onReset={handleResetFilters}
+      onSync={handleSyncFromOmicall}
+      columns={logsColumns}
+      logs={logs}
+      loadingLogs={loadingLogs}
+      playingLogId={playingLogId}
+      onTogglePlay={handleTogglePlay}
+      onOpenQaDrawer={openQADrawer}
+      currentPage={currentPage}
+      pageSize={pageSize}
+      totalLogs={totalLogs}
+      onPageChange={handlePageChange}
+    />
+  );
+
   return (
     <div className="responsive-page responsive-workspace omicall-page">
-      <PageHeader
-        title={<span className="text-[var(--color-primary)]">Trung tâm Cuộc gọi &amp; Thẩm định OmiCall</span>}
-        subtitle="Xem cuộc gọi từng ngày, lọc chi nhánh &amp; nhân viên, duyệt Happy Call, đối chiếu 4 nguồn đánh giá &amp; AI Coaching."
-      />
+      <PageHeader title={<span className="text-[var(--color-primary)]">OmiCall · Happy Call</span>} />
 
       {legacyUserIdFilter && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs">
           <div className="flex items-center gap-2 font-medium text-[var(--mos-text-primary)]">
-            <AppIcon icon={UserRound} size={15} className="text-amber-500" />
+            <AppIcon icon={UserRound} size={14} className="text-amber-500" />
             <span>
-              Đang lọc toàn bộ ghi âm OmiCall của khách hàng:{' '}
-              <strong>{customerFilterLabel || `KH #${legacyUserIdFilter}`}</strong>
+              Khách hàng: <strong>{customerFilterLabel || `KH #${legacyUserIdFilter}`}</strong>
             </span>
           </div>
           <Button size="small" icon={<AppIcon icon={X} size={13} />} onClick={handleClearCustomerFilter}>
-            Xem tất cả khách hàng
+            Tất cả KH
           </Button>
         </div>
       )}
 
-      <SectionCard bodyPadding={20}>
-        <Tabs
-          activeKey={activeTab}
-          onChange={handleTabChange}
-          items={[
-            {
-              key: 'logs',
-              label: (
-                <span className="inline-flex items-center gap-1.5">
-                  <AppIcon icon={Mic} size={15} />
-                  Lịch sử cuộc gọi OmiCall
-                </span>
-              ),
-              children: (
-                <OmicallLogsTabContent
-                  isAdmin={isAdmin}
-                  canReviewQa={canReviewQa}
-                  dateMode={dateMode}
-                  selectedDate={selectedDate}
-                  dateRange={dateRange}
-                  summary={summary}
-                  onDateModeChange={handleDateModeChange}
-                  onSelectDate={handleSelectDate}
-                  onPrevDay={handlePrevDay}
-                  onNextDay={handleNextDay}
-                  onToday={handleToday}
-                  onDateRangeChange={handleDateRangeChange}
-                  onQuickFilterAll={handleQuickFilterAll}
-                  onQuickFilterAnswered={handleQuickFilterAnswered}
-                  onQuickFilterHappyApproved={handleQuickFilterHappyApproved}
-                  onQuickFilterHappyPending={handleQuickFilterHappyPending}
-                  onQuickFilterComplaints={handleQuickFilterComplaints}
-                  onQuickFilterMismatch={handleQuickFilterMismatch}
-                  branchFilter={branchFilter}
-                  onBranchFilterChange={setBranchFilter}
-                  branches={branches}
-                  directionFilter={directionFilter}
-                  onDirectionFilterChange={setDirectionFilter}
-                  statusFilter={statusFilter}
-                  onStatusFilterChange={setStatusFilter}
-                  happyFilter={happyFilter}
-                  onHappyFilterChange={setHappyFilter}
-                  aiFilter={aiFilter}
-                  onAiFilterChange={setAiFilter}
-                  aiSatisfactionFilter={aiSatisfactionFilter}
-                  onAiSatisfactionFilterChange={setAiSatisfactionFilter}
-                  ratingSourceFilter={ratingSourceFilter}
-                  onRatingSourceFilterChange={setRatingSourceFilter}
-                  ratingLevelFilter={ratingLevelFilter}
-                  onRatingLevelFilterChange={setRatingLevelFilter}
-                  staffFilter={staffFilter}
-                  onStaffFilterChange={setStaffFilter}
-                  searchQuery={searchQuery}
-                  onSearchQueryChange={setSearchQuery}
-                  onlyWithRecording={onlyWithRecording}
-                  onOnlyWithRecordingChange={setOnlyWithRecording}
-                  hasComplaintOnly={hasComplaintOnly}
-                  onHasComplaintOnlyChange={setHasComplaintOnly}
-                  staffList={staffList}
-                  syncingLogs={syncingLogs}
-                  onSearch={handleSearchLogs}
-                  onReset={handleResetFilters}
-                  onSync={handleSyncFromOmicall}
-                  columns={logsColumns}
-                  logs={logs}
-                  loadingLogs={loadingLogs}
-                  currentPage={currentPage}
-                  pageSize={pageSize}
-                  totalLogs={totalLogs}
-                  onPageChange={handlePageChange}
-                />
-              ),
-            },
-            ...(isAdmin
-              ? [
-                  {
-                    key: 'configs',
-                    label: (
-                      <span className="inline-flex items-center gap-1.5">
-                        <AppIcon icon={Settings} size={15} />
-                        Cấu hình Extension nhân viên
-                      </span>
-                    ),
-                    children: (
-                      <OmicallConfigsTabContent
-                        columns={configsColumns}
-                        configs={configs}
-                        loadingConfigs={loadingConfigs}
-                      />
-                    ),
-                  },
-                ]
-              : []),
-          ]}
-        />
+      <SectionCard bodyPadding={16}>
+        {isAdmin ? (
+          <Tabs
+            activeKey={activeTab}
+            onChange={handleTabChange}
+            size="small"
+            items={[
+              {
+                key: 'logs',
+                label: (
+                  <span className="inline-flex items-center gap-1.5">
+                    <AppIcon icon={Mic} size={14} />
+                    Cuộc gọi &amp; Happy Call
+                  </span>
+                ),
+                children: logsTabNode,
+              },
+              {
+                key: 'configs',
+                label: (
+                  <span className="inline-flex items-center gap-1.5">
+                    <AppIcon icon={Settings} size={14} />
+                    Extension
+                  </span>
+                ),
+                children: (
+                  <OmicallConfigsTabContent
+                    columns={configsColumns}
+                    configs={configs}
+                    loadingConfigs={loadingConfigs}
+                  />
+                ),
+              },
+            ]}
+          />
+        ) : (
+          logsTabNode
+        )}
       </SectionCard>
 
       <OmicallConfigModal

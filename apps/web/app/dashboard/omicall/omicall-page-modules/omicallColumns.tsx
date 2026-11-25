@@ -3,52 +3,34 @@
 import React from 'react';
 import { Button, Popconfirm, Space, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { Copy, Eye, Loader2, Pencil, Smile, Sparkles, Trash2, Volume2 } from 'lucide-react';
-import { AppIcon, StatusTag } from '~/components/ui';
+import dayjs from 'dayjs';
 import {
-  formatCallUuidPreview,
+  Copy,
+  Eye,
+  Lock,
+  MapPin,
+  Pencil,
+  PhoneIncoming,
+  PhoneOutgoing,
+  Play,
+  Sparkles,
+  Square,
+  Trash2,
+} from 'lucide-react';
+import { AppIcon, StatusTag } from '~/components/ui';
+import { isAnsweredOrRecordedCall, OmicallFourSourceBadges, OmicallHappyCallCell } from './OmicallRatingChips';
+import {
   formatOmicallDuration,
-  getAiStatusDescriptor,
-  getCallStatusDescriptor,
-  getHappyStatusDescriptor,
   resolveDisplayCallTime,
   type OmicallConfigRow,
+  type OmicallDateMode,
   type OmicallLogRow,
 } from './omicallPageTypes';
 
 const { Text } = Typography;
 
-export function renderCallStatus(status: string): React.ReactNode {
-  const descriptor = getCallStatusDescriptor(status);
-  return <StatusTag status={descriptor.status} label={descriptor.label} />;
-}
-
-export function renderAIStatus(status: string): React.ReactNode {
-  const descriptor = getAiStatusDescriptor(status);
-  if (descriptor.isProcessing) {
-    return (
-      <StatusTag
-        status={descriptor.status}
-        icon={<AppIcon icon={Loader2} size={12} className="animate-spin" />}
-        label={descriptor.label}
-      />
-    );
-  }
-  return <StatusTag status={descriptor.status} label={descriptor.label} />;
-}
-
-export function renderHappyStatus(status: string): React.ReactNode {
-  const descriptor = getHappyStatusDescriptor(status);
-  return (
-    <StatusTag
-      status={descriptor.status}
-      label={descriptor.label}
-      className={descriptor.emphasized ? 'font-bold' : ''}
-    />
-  );
-}
-
 interface BuildOmicallLogsColumnsOptions {
+  dateMode: OmicallDateMode;
   playingLogId: number | null;
   reanalyzingLogId: number | null;
   canReviewQa: boolean;
@@ -59,6 +41,7 @@ interface BuildOmicallLogsColumnsOptions {
 }
 
 export function buildOmicallLogsColumns({
+  dateMode,
   playingLogId,
   reanalyzingLogId,
   canReviewQa,
@@ -69,266 +52,211 @@ export function buildOmicallLogsColumns({
 }: BuildOmicallLogsColumnsOptions): ColumnsType<OmicallLogRow> {
   return [
     {
-      title: 'Mã cuộc gọi',
-      dataIndex: 'callUuid',
-      key: 'callUuid',
-      width: 170,
-      render: (uuid: string) => (
-        <Space size={4}>
-          <Tooltip title={uuid}>
-            <Text className="font-mono text-xs font-medium tabular-nums">{formatCallUuidPreview(uuid)}</Text>
-          </Tooltip>
-          <Button
-            icon={<AppIcon icon={Copy} size={13} />}
-            type="text"
-            size="small"
-            aria-label="Sao chép Call UUID"
-            onClick={() => onCopyUuid(uuid)}
-            className="text-[var(--mos-text-secondary)]"
-          />
-        </Space>
-      ),
-    },
-    {
-      title: 'Thời gian gọi',
+      title: 'Giờ',
       dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 155,
-      render: (_: string, record: OmicallLogRow) => (
-        <span className="text-xs tabular-nums">{new Date(resolveDisplayCallTime(record)).toLocaleString('vi-VN')}</span>
-      ),
-    },
-    {
-      title: 'Nhân viên / Chi nhánh',
-      dataIndex: 'staffName',
-      key: 'staffName',
-      width: 170,
-      render: (_: unknown, record: OmicallLogRow) => {
-        const display = record.staffName || record.staff?.displayName;
+      key: 'time',
+      width: 90,
+      render: (_: string, record: OmicallLogRow) => {
+        const dt = dayjs(resolveDisplayCallTime(record));
+        const timeLabel = dateMode === 'day' ? dt.format('HH:mm') : dt.format('DD/MM HH:mm');
         return (
-          <div className="flex flex-col gap-0.5">
-            {display ? (
-              <strong className="text-xs">{display}</strong>
-            ) : record.staffId ? (
-              <span className="text-xs text-[var(--mos-text-secondary)]">Staff #{record.staffId}</span>
-            ) : (
-              <span className="text-xs text-[var(--mos-text-secondary)]">Chưa gán</span>
-            )}
-            {record.storeName && (
-              <span className="text-[11px] font-medium text-[var(--color-info)]">{record.storeName}</span>
-            )}
-          </div>
+          <Tooltip title={`${dt.format('HH:mm:ss DD/MM/YYYY')} · UUID: ${record.callUuid}`}>
+            <div className="group inline-flex items-center gap-1 text-xs tabular-nums text-[var(--mos-text-secondary)]">
+              <span className="font-medium text-[var(--mos-text-primary)]">{timeLabel}</span>
+              <button
+                type="button"
+                aria-label="Sao chép Call UUID"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopyUuid(record.callUuid);
+                }}
+                className="cursor-pointer opacity-0 transition-opacity group-hover:opacity-100 text-[var(--mos-text-secondary)] hover:text-[var(--color-primary)]"
+              >
+                <AppIcon icon={Copy} size={11} />
+              </button>
+            </div>
+          </Tooltip>
         );
       },
     },
     {
-      title: 'Khách hàng / Chiều gọi',
+      title: 'Khách hàng',
       dataIndex: 'destinationNumber',
-      key: 'customerPhone',
-      width: 195,
+      key: 'customer',
+      width: 205,
       render: (_: string, record: OmicallLogRow) => {
         const isInbound = String(record.direction || '').toLowerCase() === 'inbound';
         const phone = isInbound ? record.sourceNumber || record.destinationNumber : record.destinationNumber;
+        const answered = isAnsweredOrRecordedCall(record);
         return (
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-1.5">
-              <StatusTag
-                status={isInbound ? 'processing' : 'default'}
-                label={isInbound ? 'Gọi đến' : 'Gọi đi'}
-                className="text-[10px]"
-              />
-              <span className="font-medium text-xs tabular-nums text-[var(--color-primary)]">
-                {phone || 'Không rõ SĐT'}
+          <div className="flex items-start gap-2">
+            <Tooltip title={isInbound ? 'Cuộc gọi đến (Inbound)' : 'Cuộc gọi đi (Outbound)'}>
+              <span
+                className={`mt-0.5 inline-flex shrink-0 ${
+                  answered ? 'text-emerald-500' : 'text-[var(--mos-text-secondary)]'
+                }`}
+              >
+                <AppIcon icon={isInbound ? PhoneIncoming : PhoneOutgoing} size={14} />
               </span>
+            </Tooltip>
+            <div className="min-w-0 flex flex-col">
+              {record.customerName ? (
+                <>
+                  <span className="truncate text-xs font-semibold text-[var(--mos-text-primary)]">
+                    {record.customerName}
+                  </span>
+                  <span className="text-[11px] tabular-nums text-[var(--mos-text-secondary)]">{phone || '—'}</span>
+                </>
+              ) : (
+                <span className="text-xs font-medium tabular-nums text-[var(--mos-text-primary)]">
+                  {phone || 'Không rõ SĐT'}
+                </span>
+              )}
             </div>
-            {record.customerName && (
-              <span className="text-[11px] text-[var(--mos-text-secondary)]">{record.customerName}</span>
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Nhân viên',
+      dataIndex: 'staffName',
+      key: 'staff',
+      width: 155,
+      render: (_: unknown, record: OmicallLogRow) => {
+        const display = record.staffName || record.staff?.displayName;
+        if (!display && !record.storeName) {
+          return <span className="text-xs text-[var(--mos-text-secondary)]">—</span>;
+        }
+        return (
+          <div className="flex flex-col">
+            <span className="truncate text-xs font-medium text-[var(--mos-text-primary)]">
+              {display || (record.staffId ? `Staff #${record.staffId}` : '—')}
+            </span>
+            {record.storeName && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-[var(--mos-text-secondary)]">
+                <AppIcon icon={MapPin} size={10} />
+                <span className="truncate">{record.storeName}</span>
+              </span>
             )}
           </div>
         );
       },
     },
     {
-      title: 'Đàm thoại',
-      dataIndex: 'duration',
-      key: 'duration',
-      width: 105,
-      render: (duration: number, record: OmicallLogRow) => {
-        const talkSec = record.billSec && record.billSec > 0 ? record.billSec : duration;
+      title: 'Ghi âm',
+      key: 'audio',
+      width: 150,
+      render: (_: unknown, record: OmicallLogRow) => {
+        const talkSec = record.billSec && record.billSec > 0 ? record.billSec : record.duration;
+        const durationLabel = formatOmicallDuration(talkSec);
+
+        if (record.recordingUrl) {
+          const isPlaying = playingLogId === record.id;
+          return (
+            <div className="flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
+              <div className="inline-flex items-center gap-2">
+                <Tooltip title={isPlaying ? 'Đóng trình phát' : 'Nghe ghi âm ngay'}>
+                  <Button
+                    size="small"
+                    type={isPlaying ? 'primary' : 'default'}
+                    shape="circle"
+                    icon={<AppIcon icon={isPlaying ? Square : Play} size={11} />}
+                    aria-label={isPlaying ? 'Dừng phát' : 'Nghe ghi âm'}
+                    onClick={() => onTogglePlay(record.id)}
+                  />
+                </Tooltip>
+                <span className="font-mono text-xs font-medium tabular-nums text-[var(--mos-text-primary)]">
+                  {durationLabel}
+                </span>
+              </div>
+              {isPlaying && <audio controls autoPlay src={record.recordingUrl} className="h-7 w-44 outline-none" />}
+            </div>
+          );
+        }
+
+        const statusLabel =
+          record.status === 'ANSWER'
+            ? 'Đã bắt máy (chưa có ghi âm)'
+            : record.status === 'BUSY'
+              ? 'Máy bận'
+              : record.status === 'CANCEL'
+                ? 'Đã hủy'
+                : 'Không bắt máy';
+
         return (
-          <Tooltip title={`Đàm thoại: ${talkSec}s · Tổng thời lượng: ${duration || 0}s`}>
-            <span className="font-mono text-xs tabular-nums">{formatOmicallDuration(talkSec)}</span>
+          <Tooltip title={statusLabel}>
+            <span className="inline-flex items-center gap-1.5 text-xs tabular-nums text-[var(--mos-text-secondary)]">
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  record.status === 'ANSWER'
+                    ? 'bg-emerald-500'
+                    : record.status === 'BUSY'
+                      ? 'bg-amber-500'
+                      : record.status === 'CANCEL'
+                        ? 'bg-red-500'
+                        : 'bg-zinc-500/60'
+                }`}
+              />
+              <span className="font-mono">{durationLabel}</span>
+            </span>
           </Tooltip>
         );
       },
     },
     {
-      title: 'Kết quả',
-      dataIndex: 'status',
-      key: 'status',
-      width: 105,
-      render: (status: string) => renderCallStatus(status),
-    },
-    {
-      title: 'Ghi âm (Nghe ngay)',
-      key: 'recordingUrl',
+      title: 'Happy Call & AI',
+      key: 'happyCall',
       width: 220,
-      render: (_: unknown, record: OmicallLogRow) => {
-        if (!record.recordingUrl) {
-          return <span className="text-xs text-[var(--mos-text-secondary)]">Chưa có ghi âm</span>;
-        }
-        if (playingLogId === record.id) {
-          return (
-            <div className="flex flex-col gap-1">
-              <audio controls autoPlay src={record.recordingUrl} className="h-8 w-48 outline-none" />
-              <Button
-                size="small"
-                type="link"
-                className="h-auto p-0 text-left text-[11px]"
-                onClick={() => onTogglePlay(record.id)}
-              >
-                Đóng trình phát
-              </Button>
-            </div>
-          );
-        }
-        return (
-          <Button size="small" icon={<AppIcon icon={Volume2} size={13} />} onClick={() => onTogglePlay(record.id)}>
-            Nghe ghi âm
-          </Button>
-        );
-      },
+      render: (_: unknown, record: OmicallLogRow) => <OmicallHappyCallCell record={record} />,
     },
     {
-      title: 'Phân tích AI & Happy Call',
-      key: 'analysisAndHappy',
-      width: 215,
+      title: 'Đánh giá',
+      key: 'ratings',
+      width: 205,
       render: (_: unknown, record: OmicallLogRow) => {
-        if (record.aiLockedUntilSelfRated) {
-          return (
-            <div className="flex flex-col gap-1">
-              <div className="flex flex-wrap items-center gap-1">
-                {renderAIStatus(record.analysisStatus)}
-                <StatusTag status="warning" label="🔒 Chờ NV tự chấm" />
-              </div>
-              <span className="text-[11px] text-[var(--mos-text-secondary)]">
-                Tự đánh giá để mở khóa Happy Call &amp; AI Coaching
-              </span>
-            </div>
-          );
-        }
-
-        const tags = Array.isArray(record.qaTags) ? record.qaTags : [];
+        const answered = isAnsweredOrRecordedCall(record);
         return (
-          <div className="flex flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-1">
-              {renderAIStatus(record.analysisStatus)}
-              {record.analysisStatus === 'DONE' && renderHappyStatus(record.happyCallStatus)}
-            </div>
-            <div className="flex flex-wrap items-center gap-1 text-[11px]">
-              {record.laughCount > 0 ? (
-                <StatusTag
-                  status="purple"
-                  icon={<AppIcon icon={Smile} size={11} />}
-                  label={<span className="tabular-nums">{record.laughCount}</span>}
-                />
-              ) : null}
-              {tags.slice(0, 3).map((tag) => (
-                <StatusTag
-                  key={tag}
-                  status={tag.toLowerCase().includes('khiếu nại') ? 'error' : 'default'}
-                  label={tag}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Hài lòng (4 nguồn)',
-      key: 'satisfactionSources',
-      width: 195,
-      render: (_: unknown, record: OmicallLogRow) => {
-        const ai = record.aiLockedUntilSelfRated ? null : (record.customerSatisfactionScore ?? null);
-        const nv = record.staffSelfSatisfactionScore ?? null;
-        const ql = record.managerSatisfactionScore ?? null;
-        const ad = record.adminSatisfactionScore ?? null;
-        const hasMismatch = ai !== null && nv !== null && Math.abs(ai - nv) >= 2;
-
-        if (record.aiLockedUntilSelfRated) {
-          return <StatusTag status="warning" label="🔒 Tự đánh giá để xem" />;
-        }
-
-        const hasAny = ai !== null || nv !== null || ql !== null || ad !== null;
-        if (!hasAny) {
-          return <span className="text-xs text-[var(--mos-text-secondary)]">Chưa có đánh giá</span>;
-        }
-
-        return (
-          <div className="flex flex-wrap items-center gap-1 text-[11px] tabular-nums">
-            {ai !== null && (
-              <Tooltip title="Đánh giá từ AI (Gemini)">
-                <span>
-                  <StatusTag status={ai >= 4 ? 'success' : ai === 3 ? 'default' : 'error'} label={`AI ${ai}★`} />
-                </span>
-              </Tooltip>
-            )}
-            {nv !== null && (
-              <Tooltip title={record.staffSelfNote ? `NV tự chấm: ${record.staffSelfNote}` : 'Nhân viên tự đánh giá'}>
-                <span>
-                  <StatusTag status={hasMismatch ? 'warning' : 'processing'} label={`NV ${nv}★`} />
-                </span>
-              </Tooltip>
-            )}
-            {ql !== null && (
+          <div className="flex items-center justify-between gap-2">
+            <OmicallFourSourceBadges record={record} />
+            <div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
+              {canReviewQa && record.recordingUrl && (
+                <Tooltip title="Phân tích lại bằng AI">
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<AppIcon icon={Sparkles} size={13} />}
+                    loading={reanalyzingLogId === record.id}
+                    aria-label="Phân tích lại AI"
+                    onClick={() => onReanalyze(record.id)}
+                  />
+                </Tooltip>
+              )}
               <Tooltip
-                title={record.managerReviewedByName ? `Quản lý/QA: ${record.managerReviewedByName}` : 'Quản lý/QA'}
+                title={record.aiLockedUntilSelfRated ? 'Tự đánh giá để mở khóa AI' : 'Mở chi tiết & thẩm định QA'}
               >
-                <span>
-                  <StatusTag status="purple" label={`QL ${ql}★`} />
-                </span>
+                <Button
+                  size="small"
+                  type={record.aiLockedUntilSelfRated ? 'primary' : answered ? 'default' : 'text'}
+                  className={
+                    answered && !record.aiLockedUntilSelfRated
+                      ? 'border-[var(--color-primary)]/50 text-[var(--color-primary)] hover:border-[var(--color-primary)]'
+                      : undefined
+                  }
+                  icon={
+                    <AppIcon
+                      icon={record.aiLockedUntilSelfRated ? Lock : Eye}
+                      size={13}
+                      className={answered && !record.aiLockedUntilSelfRated ? 'text-[var(--color-primary)]' : undefined}
+                    />
+                  }
+                  aria-label="Xem chi tiết cuộc gọi"
+                  onClick={() => onOpenQaDrawer(record.id)}
+                />
               </Tooltip>
-            )}
-            {ad !== null && (
-              <Tooltip title={record.adminReviewedByName ? `Admin: ${record.adminReviewedByName}` : 'Admin đánh giá'}>
-                <span>
-                  <StatusTag status="orange" label={`AD ${ad}★`} />
-                </span>
-              </Tooltip>
-            )}
+            </div>
           </div>
         );
       },
-    },
-    {
-      title: 'Hành động',
-      key: 'actions',
-      align: 'center' as const,
-      width: 210,
-      render: (_: unknown, record: OmicallLogRow) => (
-        <Space size={6}>
-          {canReviewQa && record.recordingUrl && (
-            <Button
-              size="small"
-              icon={<AppIcon icon={Sparkles} size={13} />}
-              loading={reanalyzingLogId === record.id}
-              onClick={() => onReanalyze(record.id)}
-            >
-              AI
-            </Button>
-          )}
-          <Button
-            type="primary"
-            icon={<AppIcon icon={Eye} size={14} />}
-            size="small"
-            onClick={() => onOpenQaDrawer(record.id)}
-            className="font-medium"
-          >
-            {record.aiLockedUntilSelfRated ? 'Tự đánh giá' : 'Chi tiết & QA'}
-          </Button>
-        </Space>
-      ),
     },
   ];
 }

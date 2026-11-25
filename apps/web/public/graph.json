@@ -12256,7 +12256,7 @@
         "path": "/api/omicall/logs/:id/reanalyze",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 320
+        "line": 322
       }
     },
     {
@@ -12270,7 +12270,7 @@
         "path": "/api/omicall/logs/sync",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 370
+        "line": 372
       }
     },
     {
@@ -12284,7 +12284,7 @@
         "path": "/api/omicall/logs/import-cdr",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 396
+        "line": 398
       }
     },
     {
@@ -12298,7 +12298,7 @@
         "path": "/api/omicall/logs/:id/verify",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 422
+        "line": 424
       }
     },
     {
@@ -12312,7 +12312,7 @@
         "path": "/api/omicall/branches",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 86
+        "line": 83
       }
     },
     {
@@ -12326,7 +12326,7 @@
         "path": "/api/omicall/logs/:id/self-assessment",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 98
+        "line": 95
       }
     },
     {
@@ -12340,7 +12340,7 @@
         "path": "/api/omicall/self-assessment-intent",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 149
+        "line": 146
       }
     },
     {
@@ -52907,8 +52907,8 @@
       "filePath": "apps/api/src/modules/omicall/omicall-coaching.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10617,
-        "lineCount": 289,
+        "sizeBytes": 10621,
+        "lineCount": 290,
         "ext": ".ts"
       }
     },
@@ -52920,8 +52920,8 @@
       "filePath": "apps/api/src/modules/omicall/omicall-logs-query.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18602,
-        "lineCount": 517,
+        "sizeBytes": 18646,
+        "lineCount": 525,
         "ext": ".ts"
       }
     },
@@ -52959,8 +52959,8 @@
       "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 25567,
-        "lineCount": 619,
+        "sizeBytes": 25697,
+        "lineCount": 627,
         "ext": ".ts"
       }
     },
@@ -52972,7 +52972,7 @@
       "filePath": "apps/api/src/modules/omicall/routes/omicall-rating.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9190,
+        "sizeBytes": 9217,
         "lineCount": 233,
         "ext": ".ts"
       }
@@ -66388,8 +66388,21 @@
       "filePath": "apps/web/app/dashboard/omicall/__tests__/OmicallDailyHeaderBar.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2704,
-        "lineCount": 72,
+        "sizeBytes": 3914,
+        "lineCount": 114,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/omicall/__tests__/OmicallMobileCallList.test.tsx",
+      "type": "File",
+      "label": "OmicallMobileCallList.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/omicall/__tests__/OmicallMobileCallList.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2565,
+        "lineCount": 82,
         "ext": ".tsx"
       }
     },
@@ -66427,8 +66440,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallDailyHeaderBar.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8995,
-        "lineCount": 226,
+        "sizeBytes": 18948,
+        "lineCount": 506,
         "ext": ".tsx"
       }
     },
@@ -66440,8 +66453,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsFiltersToolbar.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7804,
-        "lineCount": 236,
+        "sizeBytes": 7042,
+        "lineCount": 196,
         "ext": ".tsx"
       }
     },
@@ -66453,8 +66466,34 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsTabContent.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6189,
-        "lineCount": 208,
+        "sizeBytes": 7718,
+        "lineCount": 248,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallMobileCallList.tsx",
+      "type": "File",
+      "label": "OmicallMobileCallList.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallMobileCallList.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8547,
+        "lineCount": 218,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallRatingChips.tsx",
+      "type": "File",
+      "label": "OmicallRatingChips.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallRatingChips.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8943,
+        "lineCount": 234,
         "ext": ".tsx"
       }
     },
@@ -66466,8 +66505,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/omicallColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14676,
-        "lineCount": 433,
+        "sizeBytes": 12855,
+        "lineCount": 369,
         "ext": ".tsx"
       }
     },
@@ -66479,8 +66518,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/omicallPageTypes.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8003,
-        "lineCount": 253,
+        "sizeBytes": 11637,
+        "lineCount": 339,
         "ext": ".ts"
       }
     },
@@ -66505,8 +66544,8 @@
       "filePath": "apps/web/app/dashboard/omicall/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9789,
-        "lineCount": 287,
+        "sizeBytes": 10741,
+        "lineCount": 354,
         "ext": ".tsx"
       }
     },
@@ -115757,6 +115796,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallDailyHeaderBar.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallDailyHeaderBar.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsFiltersToolbar.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/omicall/omicall-page-modules/OmicallLogsFiltersToolbar.tsx",
       "target": "ws:packages/shared",
@@ -131942,8 +131988,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 6042,
-    "totalEdges": 7733,
+    "totalNodes": 6045,
+    "totalEdges": 7734,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -131952,14 +131998,14 @@
       "SharedType": 1586,
       "DesignToken": 12,
       "UIComponent": 798,
-      "File": 2606
+      "File": 2609
     },
     "edgeTypeCounts": {
       "EXPORTS": 1781,
       "HANDLES_ROUTE": 788,
       "RENDERS": 864,
       "USES_TOKEN": 800,
-      "IMPORTS": 1576,
+      "IMPORTS": 1577,
       "QUERIES_MODEL": 613,
       "API_CALL": 1311
     },
