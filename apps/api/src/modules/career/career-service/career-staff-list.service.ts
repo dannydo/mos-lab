@@ -198,7 +198,13 @@ function mapStaffToCareerListItem(
     happinessIndex: metrics.hiMap[legacyId] ?? 0.75, // HI trong kỳ được chọn
     bananaCount: metrics.bananasMap[legacyId] ?? 0, // Chuối nhận trong kỳ được chọn
     bananaBalance: legacyId ? (metrics.bananaBalancesMap[legacyId] ?? 0) : 0,
-    isBananaPassed: (metrics.bananasMap[legacyId] ?? 0) >= (periodConfig.period === 'last_3_months' ? 60 : 20),
+    isBananaPassed:
+      (metrics.bananasMap[legacyId] ?? 0) >=
+      (periodConfig.period === 'last_3_months'
+        ? ((careerRole === 'CV_PLUS' ? config.cvPlusToCvPlusPlus?.minBananaCount : config.cvToCvPlus?.minBananaCount) ??
+            20) * 3
+        : ((careerRole === 'CV_PLUS' ? config.cvPlusToCvPlusPlus?.minBananaCount : config.cvToCvPlus?.minBananaCount) ??
+          20)),
     ccLevel: ['CC', 'FM'].includes(careerRole) ? ccLevel : null,
     monthlyPoints: ['CC', 'FM'].includes(careerRole) ? monthlyPoints : null,
     qaAuditPassed: qaAudit.totalAudits > 0 ? qaAudit.isPassed : false,

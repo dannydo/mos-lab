@@ -34,22 +34,26 @@ const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
 
 const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS: CvPlusToCvPlusPlusRequirements = {
   minMonthsInCvPlus: 2, // 2 tháng ở vị trí CVL
-  minOrders: 350, // 350 ca / 3 tháng liền
+  minOrders: 330, // Bằng chuẩn CVL: 330 ca / 3 tháng liền (live-adjustable)
   maxFixRate: 0.015, // Tỷ lệ lỗi Fix <= 1.5%
-  minTipRatioAboveShop: 0.15, // Tip cao hơn 15% so với trung bình shop
-  minBananaCount: 25, // Chuối yêu thương nhận trong tháng gần nhất (chuẩn 25 chuối/tháng)
-  minHappinessIndex: 0.8, // Đồng đội tin yêu HI >= 80%
-  crossConsultCommissionRate: 0.025, // 2.5% hoa hồng tư vấn giùm khách của CV khác khi FM vắng
-  crossConsultTipRate: 0.2, // Nhận 20% tip khi tư vấn cho khách của CV khác
-  expectedCrossConsultOrdersPerMonth: 20, // Dự kiến 20 ca tư vấn chéo / tháng
-  expectedCrossConsultCombosPerMonth: 4, // Dự kiến chốt được 4 combo chéo / tháng (~450.000đ)
+  minTipRatioAboveShop: 0.05, // Tip cao hơn 5% so với trung bình shop (bằng chuẩn CVL)
+  minBananaCount: 20, // Chuối yêu thương nhận trong tháng gần nhất (chuẩn 20 chuối/tháng)
+  minHappinessIndex: 0.7, // Đồng đội tin yêu HI >= 70% (bằng chuẩn CVL)
+  crossConsultCommissionRate: 0.025, // Legacy field preserved for backward compat
+  crossConsultTipRate: 0.2, // Tip giữ như CVL (70% làm mi + 10% Check-in + 10% Check-out)
+  expectedCrossConsultOrdersPerMonth: 24, // Dự kiến 24 ca tư vấn chéo / tháng (CV thường + CVL)
+  expectedCrossConsultCombosPerMonth: 8, // Dự kiến chốt 8 combo chéo / tháng
   maxDisciplinaryViolations: 0,
   minWeeklyQaAudits: 1,
   minQaAudits: 4,
   requireZeroFailedAudits: true,
   trialDurationDays: 30,
   allowSelfConsultTrial: true,
-  minSelfComboRate: 0.3, // Tự chốt combo khách mình >= 30%
+  promotionMinComboRate: 0.3, // Đạt tối thiểu 30% tỷ lệ bán Combo...
+  promotionConsecutiveMonths: 2, // ...trong 2 tháng liên tiếp mới được lên CVLL
+  minSelfComboRate: 0.21, // Ngưỡng duy trì hàng tháng sau khi lên CVLL (bằng CVL, live-adjustable)
+  consecutiveFailedMonthsToDemote: 2, // Trượt 2 tháng liên tiếp giáng về CVL
+  enforceComboPenalty: true, // Trượt 1 tháng khóa lương tăng thêm & thưởng bán hàng cá nhân
   expectedSerumsPerWeek: 4, // 4 cây dưỡng mi / tuần
   expectedCombosPerMonth: 10, // 10 combo / tháng
   serumOriginalPriceBonus: 100000, // 100K/cây giá gốc (1.1M)
@@ -58,9 +62,11 @@ const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS: CvPlusToCvPlusPlusRequirements = {
   serumFreePriceBonus: 1000, // 1K/cây tặng miễn phí (Free 0đ)
   comboUnder2mBonus: 50000, // < 2M = 50K
   comboStepPerMillionBonus: 50000, // Mỗi 1M kế tiếp (từ 2M trở lên) = +50K
-  crossConsultCvShareRate: 0.2, // Chia 20% cho Chuyên Viên CV làm mi khi CVLL chốt hộ
-  hourlyWage: 29500, // 29.500đ/h (+4.000đ/h so với CV 25.500đ/h)
-  tipShareRatio: 0.9, // 90% trên khách của mình
+  crossConsultCvShareRate: 0, // Mô hình 100/0: CVLL nhận 100% Combo & Sản phẩm, CV/CVL nhận 0đ
+  exemptCvlDenominatorOnCrossConsult: true, // Miễn trừ mẫu số Not Combo Live cho CVL khi nhờ CVLL chốt hộ
+  enforceMandatoryOwnQueue: true, // Bắt buộc đi tua khách mình; bỏ tua bị phạt theo quy định
+  hourlyWage: 29500, // 29.500đ/h (+2.000đ/h so với CVL 27.500đ/h)
+  tipShareRatio: 0.9, // 90% trên khách của mình (70% + 20%)
 };
 
 const DEFAULT_CV_PLUS_PLUS_TO_FM: CvPlusPlusToFmRequirements = {
@@ -127,9 +133,9 @@ export const DEFAULT_CAREER_PROGRESSION_CONFIG: CareerProgressionConfig = {
       consecutiveFailedMonthsToDemote: 2, // 2 tháng liên tiếp không đạt -> tụt về CV
     },
     cvPlusPlus: {
-      minSelfComboRate: 0.25, // Duy trì tự chốt combo >= 25%
-      minHappinessIndex: 0.75, // HI đồng đội tin yêu >= 75%
-      consecutiveFailedMonthsToDemote: 2, // 2 tháng liên tiếp không đạt -> tụt về CV+
+      minSelfComboRate: 0.21, // Duy trì tự chốt combo >= 21% (như CVL, live-adjustable)
+      minHappinessIndex: 0.7, // HI đồng đội tin yêu >= 70%
+      consecutiveFailedMonthsToDemote: 2, // 2 tháng liên tiếp không đạt -> tụt về CVL
     },
   },
   compensation: {

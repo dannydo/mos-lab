@@ -40,17 +40,22 @@ export function CareerStage2ConfigTab({
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-slate-500 dark:text-slate-400 m-0">
-        Điều chỉnh trực tiếp các tiêu chuẩn thăng cấp{' '}
-        <strong className="inline-flex items-center gap-1">
-          <span>Ải 2:</span>
-          <CvlBadge />
-          <span>➔</span>
-          <CvllBadge />
-          <span>(Đàn Chị Sảnh)</span>
-        </strong>
-        . Đàn Chị Sảnh trực tiếp tư vấn, giữ vững tỷ lệ combo cao và hỗ trợ tư vấn chéo cho khách của các CV khác.
-      </p>
+      <div className="space-y-1.5">
+        <p className="text-xs text-slate-500 dark:text-slate-400 m-0">
+          Điều chỉnh trực tiếp các tiêu chuẩn thăng cấp{' '}
+          <strong className="inline-flex items-center gap-1">
+            <span>Ải 2:</span>
+            <CvlBadge />
+            <span>➔</span>
+            <CvllBadge />
+            <span>(Chuyên Viên Tự Chủ Cấp Cao)</span>
+          </strong>
+          . Tư vấn hỗ trợ chéo 100/0 cho CV &amp; CVL khác khi cần thiết.
+        </p>
+        <div className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+          ⚡ Mọi chỉ số điều chỉnh &amp; lưu tại đây tự động đồng bộ trực tiếp vào Kinh Thánh mOS (CV-002 &amp; CV-004).
+        </div>
+      </div>
 
       {/* NHÓM 1: NĂNG SUẤT & KỸ THUẬT CỐT LÕI */}
       <CareerConfigSectionCard
@@ -90,12 +95,12 @@ export function CareerStage2ConfigTab({
 
         <CareerConfigSliderField
           label="Số bộ mi tối thiểu (trong 3 tháng liền):"
-          valueDisplay={`${cvPlusToCvPlusPlus.minOrders ?? 350} bộ mi`}
+          valueDisplay={`${cvPlusToCvPlusPlus.minOrders ?? 330} bộ mi`}
           valueClassName="font-mono text-blue-600 dark:text-blue-400 font-black"
           min={150}
           max={600}
           step={10}
-          value={cvPlusToCvPlusPlus.minOrders ?? 350}
+          value={cvPlusToCvPlusPlus.minOrders ?? 330}
           onChange={(val) => updateStage2({ minOrders: val })}
         />
 
@@ -112,12 +117,12 @@ export function CareerStage2ConfigTab({
 
         <CareerConfigSliderField
           label="% Tip cao hơn trung bình shop:"
-          valueDisplay={`+${((cvPlusToCvPlusPlus.minTipRatioAboveShop ?? 0.15) * 100).toFixed(0)}%`}
+          valueDisplay={`+${((cvPlusToCvPlusPlus.minTipRatioAboveShop ?? 0.05) * 100).toFixed(0)}%`}
           valueClassName="font-mono text-pink-600 font-black"
-          min={5}
+          min={0}
           max={35}
           step={1}
-          value={(cvPlusToCvPlusPlus.minTipRatioAboveShop ?? 0.15) * 100}
+          value={(cvPlusToCvPlusPlus.minTipRatioAboveShop ?? 0.05) * 100}
           onChange={(val) => updateStage2({ minTipRatioAboveShop: val / 100 })}
         />
       </CareerConfigSectionCard>
@@ -145,23 +150,22 @@ export function CareerStage2ConfigTab({
           label={
             <span className="flex items-center gap-1 flex-wrap">
               <span>🎯</span>
-              <span>Tỷ lệ tự chốt combo tối thiểu trên khách của mình (Chuẩn</span>
+              <span>Ngưỡng duy trì tỷ lệ chốt Combo hàng tháng (</span>
               <CvllBadge />
               <span>):</span>
             </span>
           }
-          valueDisplay={`${((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.25) * 100).toFixed(0)}%`}
+          valueDisplay={`${((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.21) * 100).toFixed(0)}%`}
           valueClassName="font-mono text-purple-600 dark:text-purple-400 font-black text-sm"
           min={5}
           max={60}
           step={1}
-          value={Math.round((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.25) * 100)}
+          value={Math.round((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.21) * 100)}
           onChange={(val) => updateStage2({ minSelfComboRate: val / 100 })}
           footnote={
             <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 mt-0.5 italic">
-              * Chuẩn duy trì cho <CvllBadge />. Nếu chốt dưới tỷ lệ này, hệ thống sẽ kích hoạt chế tài tạm khóa phần
-              phụ cấp lương giờ tăng thêm (+{formatVnd((cvPlusToCvPlusPlus.hourlyWage ?? 29500) - 25500)}/h) và thưởng
-              bán hàng.
+              * Ngưỡng duy trì hàng tháng sau khi lên <CvllBadge />. Nếu chốt dưới tỷ lệ này, hệ thống khóa phần phụ cấp
+              lương giờ tăng thêm (+{formatVnd((cvPlusToCvPlusPlus.hourlyWage ?? 29500) - 25500)}/h) và thưởng bán hàng.
             </p>
           }
         />
@@ -275,38 +279,53 @@ export function CareerStage2ConfigTab({
             onChange={(val) => updateStage2({ expectedCrossConsultCombosPerMonth: val })}
           />
 
-          <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
+          <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
             <CareerConfigSliderField
               label={
                 <span className="text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1 flex-wrap">
-                  <span>💖 Tỷ lệ chia hoa hồng cho CV làm mi (CV nhận % từ</span>
-                  <CvllBadge />
-                  <span>):</span>
+                  <span>💖 Tỷ lệ chia hoa hồng cho CV/CVL làm mi (0% = Mô hình 100/0):</span>
                 </span>
               }
               valueDisplay={`${(summary.crossCvShareRate * 100).toFixed(0)}%`}
               valueClassName="font-mono text-emerald-600 dark:text-emerald-400 font-black"
-              min={10}
+              min={0}
               max={50}
               step={5}
               value={summary.crossCvShareRate * 100}
               onChange={(val) => updateStage2({ crossConsultCvShareRate: val / 100 })}
             />
             <div className="text-[10px] text-emerald-800 dark:text-emerald-200 space-y-0.5 leading-relaxed tabular-nums">
-              <div>
-                • <strong>Chuyên Viên làm mi được hưởng:</strong> {(summary.crossCvShareRate * 100).toFixed(0)}% hoa
-                hồng bán combo (+{formatVnd(summary.crossCvSharedAmount)}/tháng) và dưỡng mi (+
-                {formatVnd(Math.round(stage1SerumOriginalPriceBonus * summary.crossCvShareRate))}/cây gốc).
-              </div>
-              <div>
-                •{' '}
-                <strong className="inline-flex items-center gap-1">
-                  <CvllBadge />
-                  <span>chốt hộ:</span>
-                </strong>{' '}
-                Hưởng trọn 100% tiền thưởng hoa hồng (+{formatVnd(summary.crossComboComm)}/tháng).
-              </div>
+              {summary.crossCvShareRate === 0 ? (
+                <div>
+                  • <strong>Mô hình 100/0:</strong> <CvllBadge /> nhận trọn <strong>100%</strong> thưởng Combo &amp; Sản
+                  phẩm khi tư vấn hộ; CV/CVL làm mi nhận <strong>0đ</strong> bán hàng và giữ nguyên quyền lợi Tip.
+                </div>
+              ) : (
+                <>
+                  <div>
+                    • <strong>Chuyên Viên làm mi được hưởng:</strong> {(summary.crossCvShareRate * 100).toFixed(0)}% hoa
+                    hồng bán combo (+{formatVnd(summary.crossCvSharedAmount)}/tháng) và dưỡng mi (+
+                    {formatVnd(Math.round(stage1SerumOriginalPriceBonus * summary.crossCvShareRate))}/cây gốc).
+                  </div>
+                  <div>
+                    • <CvllBadge /> <strong>chốt hộ:</strong> Hưởng phần còn lại (
+                    {((1 - summary.crossCvShareRate) * 100).toFixed(0)}%).
+                  </div>
+                </>
+              )}
             </div>
+            <CareerConfigSwitchCard
+              title="Miễn trừ mẫu số % Combo cho CVL khi nhờ CVLL chốt hộ:"
+              description="Không tính ca nhờ CVLL chốt hộ vào mẫu số Not Combo Live của CVL"
+              checked={cvPlusToCvPlusPlus.exemptCvlDenominatorOnCrossConsult !== false}
+              onChange={(checked) => updateStage2({ exemptCvlDenominatorOnCrossConsult: checked })}
+            />
+            <CareerConfigSwitchCard
+              title="Bắt buộc đi tua khách của chính mình:"
+              description="CVLL bỏ tua để đi hỗ trợ sảnh sẽ bị xử phạt theo quy định công ty"
+              checked={cvPlusToCvPlusPlus.enforceMandatoryOwnQueue !== false}
+              onChange={(checked) => updateStage2({ enforceMandatoryOwnQueue: checked })}
+            />
           </div>
         </div>
 
@@ -398,12 +417,12 @@ export function CareerStage2ConfigTab({
         />
 
         <CareerConfigComboPenaltyBox
-          minComboPercent={((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.25) * 100).toFixed(0)}
+          minComboPercent={((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.21) * 100).toFixed(0)}
           checked={cvPlusToCvPlusPlus.enforceComboPenalty !== false}
           onChange={(checked) => updateStage2({ enforceComboPenalty: checked })}
           description={
             <>
-              Nếu tỷ lệ chốt combo &lt; {((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.25) * 100).toFixed(0)}%:{' '}
+              Nếu tỷ lệ chốt combo &lt; {((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.21) * 100).toFixed(0)}%:{' '}
               <strong>
                 Khóa phần lương tăng thêm (+{formatVnd((cvPlusToCvPlusPlus.hourlyWage ?? 29500) - 25500)}/h)
               </strong>{' '}
@@ -442,13 +461,13 @@ export function CareerStage2ConfigTab({
 
         <CareerConfigSliderField
           label={<span>🍌 Chuối Yêu Thương check-in trong tháng hoàn tất:</span>}
-          labelDescription="Chuối nhận từ thiên thần khác lúc check-in trong tháng hoàn tất gần nhất (chuẩn 25 chuối/tháng cho Đàn Chị)"
-          valueDisplay={`${cvPlusToCvPlusPlus.minBananaCount ?? 25} 🍌`}
+          labelDescription="Chuối nhận từ thiên thần khác lúc check-in trong tháng hoàn tất gần nhất (chuẩn 20 chuối/tháng)"
+          valueDisplay={`${cvPlusToCvPlusPlus.minBananaCount ?? 20} 🍌`}
           valueClassName="font-mono text-amber-500 font-black"
           min={5}
           max={60}
           step={1}
-          value={cvPlusToCvPlusPlus.minBananaCount ?? 25}
+          value={cvPlusToCvPlusPlus.minBananaCount ?? 20}
           onChange={(val) => updateStage2({ minBananaCount: val })}
         />
 
@@ -461,35 +480,68 @@ export function CareerStage2ConfigTab({
           }
           preSliderNote={
             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 mb-1 leading-normal">
-              Đàn chị sảnh gương mẫu: Yêu cầu đạt tỷ lệ đồng đội tin yêu, hỗ trợ và tự thả tim nhau ≥ 80% khi check-in /
-              check-out.
+              Yêu cầu đạt tỷ lệ đồng đội tin yêu, hỗ trợ và tự thả tim nhau ≥{' '}
+              {((cvPlusToCvPlusPlus.minHappinessIndex ?? 0.7) * 100).toFixed(0)}% khi check-in / check-out.
             </p>
           }
-          valueDisplay={`${((cvPlusToCvPlusPlus.minHappinessIndex ?? 0.8) * 100).toFixed(0)}%`}
+          valueDisplay={`${((cvPlusToCvPlusPlus.minHappinessIndex ?? 0.7) * 100).toFixed(0)}%`}
           valueClassName="font-mono text-emerald-600 dark:text-emerald-400 font-black"
           min={50}
           max={95}
           step={1}
-          value={(cvPlusToCvPlusPlus.minHappinessIndex ?? 0.8) * 100}
+          value={(cvPlusToCvPlusPlus.minHappinessIndex ?? 0.7) * 100}
           onChange={(val) => updateStage2({ minHappinessIndex: val / 100 })}
         />
       </CareerConfigSectionCard>
 
-      {/* NHÓM 4 (ẢI TRÙM CUỐI & THỬ THÁCH DUY TRÌ) */}
+      {/* NHÓM 5 (ẢI TRÙM CUỐI LÊN CVLL & DUY TRÌ / GIÁNG CẤP) */}
       <CareerConfigSectionCard
         tone="amber"
         badgeTone="amber"
         icon={<Flame className="w-3.5 h-3.5" />}
-        title="4. Ải Thử Thách & Duy Trì Hiệu Suất"
+        title="5. Ải Trùm Cuối Lên CVLL &amp; Giáng Cấp"
         badge={
           <>
-            <span>Thử thách</span>
+            <span>Thăng hạng</span>
             <CvllBadge />
           </>
         }
       >
         <CareerConfigSliderField
-          label="Số ngày thử thách tự tư vấn & dẫn dắt:"
+          label="🎯 Tỷ lệ bán Combo tối thiểu để lên CVLL:"
+          valueDisplay={`${((cvPlusToCvPlusPlus.promotionMinComboRate ?? 0.3) * 100).toFixed(0)}%`}
+          valueClassName="font-mono text-amber-600 dark:text-amber-400 font-black"
+          min={15}
+          max={50}
+          step={1}
+          value={Math.round((cvPlusToCvPlusPlus.promotionMinComboRate ?? 0.3) * 100)}
+          onChange={(val) => updateStage2({ promotionMinComboRate: val / 100 })}
+        />
+
+        <CareerConfigSliderField
+          label="📅 Số tháng liên tiếp đạt chuẩn Combo để lên CVLL:"
+          valueDisplay={`${cvPlusToCvPlusPlus.promotionConsecutiveMonths ?? 2} tháng liền`}
+          valueClassName="font-mono text-amber-600 dark:text-amber-400 font-black"
+          min={1}
+          max={6}
+          step={1}
+          value={cvPlusToCvPlusPlus.promotionConsecutiveMonths ?? 2}
+          onChange={(val) => updateStage2({ promotionConsecutiveMonths: val })}
+        />
+
+        <CareerConfigSliderField
+          label="🔄 Số tháng trượt ngưỡng duy trì liên tiếp sẽ giáng về CVL:"
+          valueDisplay={`${cvPlusToCvPlusPlus.consecutiveFailedMonthsToDemote ?? 2} tháng liền`}
+          valueClassName="font-mono text-rose-500 font-black"
+          min={1}
+          max={4}
+          step={1}
+          value={cvPlusToCvPlusPlus.consecutiveFailedMonthsToDemote ?? 2}
+          onChange={(val) => updateStage2({ consecutiveFailedMonthsToDemote: val })}
+        />
+
+        <CareerConfigSliderField
+          label="Số ngày thử thách tự tư vấn &amp; dẫn dắt:"
           valueDisplay={`${cvPlusToCvPlusPlus.trialDurationDays ?? 30} ngày`}
           valueClassName="font-mono text-amber-600 dark:text-amber-400 font-black"
           min={15}

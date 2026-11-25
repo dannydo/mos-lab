@@ -127,19 +127,17 @@ export async function getStaffProgression(
     ? config.cvPlusToCvPlusPlus || DEFAULT_CAREER_PROGRESSION_CONFIG.cvPlusToCvPlusPlus
     : config.cvToCvPlus || config.cvToCc || DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCvPlus;
 
-  const minOrders = activeReq.minOrders ?? (isCvPlusPlusTarget ? 350 : 330);
+  const minOrders = activeReq.minOrders ?? 330;
   const maxFixRate = activeReq.maxFixRate ?? 0.015;
-  const minTipRatioAboveShop = activeReq.minTipRatioAboveShop ?? (isCvPlusPlusTarget ? 0.15 : 0.1);
+  const minTipRatioAboveShop = activeReq.minTipRatioAboveShop ?? 0.05;
   const targetTipRate = Number((metrics.shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3));
-  const minBananaCount =
-    activeReq.minBananaCount && activeReq.minBananaCount <= 30
-      ? activeReq.minBananaCount
-      : isCvPlusPlusTarget
-        ? 25
-        : 20;
-  const minHappinessIndex = activeReq.minHappinessIndex ?? (isCvPlusPlusTarget ? 0.8 : 0.7);
-  const minSelfComboRate = activeReq.minSelfComboRate ?? (isCvPlusPlusTarget ? 0.3 : 0.2);
-  const requiredAudits = activeReq.minQaAudits && activeReq.minQaAudits <= 4 ? activeReq.minQaAudits : 4;
+  const minBananaCount = activeReq.minBananaCount && activeReq.minBananaCount >= 1 ? activeReq.minBananaCount : 20;
+  const minHappinessIndex = activeReq.minHappinessIndex ?? 0.7;
+  const promotionMinComboRate = isCvPlusPlusTarget
+    ? ((activeReq as SafeAny).promotionMinComboRate ?? 0.3)
+    : (activeReq.minSelfComboRate ?? 0.21);
+  const minSelfComboRate = activeReq.minSelfComboRate ?? 0.21;
+  const requiredAudits = activeReq.minQaAudits && activeReq.minQaAudits >= 0 ? activeReq.minQaAudits : 4;
   const requireZeroFailedAudits = activeReq.requireZeroFailedAudits !== false;
 
   // QA/QC Audit Quest Evaluation: Tính theo kỳ được chọn
@@ -163,7 +161,8 @@ export async function getStaffProgression(
   const foundationCompleted =
     isOrdersPassed && isFixPassed && isTipPassed && qaAuditCompleted && isHiPassed && isBananaPassed;
 
-  const bossTrialCompleted = activeReq.allowSelfConsultTrial !== false && metrics.selfComboRate >= minSelfComboRate;
+  const bossTrialCompleted =
+    activeReq.allowSelfConsultTrial !== false && metrics.selfComboRate >= promotionMinComboRate;
 
   // Đạt đủ cả 6 ải cốt lõi (kèm tự chốt combo nếu bật tính năng)
   const allPassed = foundationCompleted && (activeReq.allowSelfConsultTrial !== false ? bossTrialCompleted : true);

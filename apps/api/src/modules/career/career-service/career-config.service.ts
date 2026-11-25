@@ -1,5 +1,46 @@
 import type { FastifyInstance } from 'fastify';
-import { CareerProgressionConfig, DEFAULT_CAREER_PROGRESSION_CONFIG } from '@mos-lab/shared';
+import {
+  CareerProgressionConfig,
+  DEFAULT_CAREER_PROGRESSION_CONFIG,
+  type MaintenanceAndDemotionRules,
+} from '@mos-lab/shared';
+
+function mergeMaintenanceRules(
+  base: MaintenanceAndDemotionRules | undefined,
+  override: Partial<MaintenanceAndDemotionRules> | undefined,
+  cvPlusPlusReq: CareerProgressionConfig['cvPlusToCvPlusPlus']
+): MaintenanceAndDemotionRules {
+  const defaultRules = DEFAULT_CAREER_PROGRESSION_CONFIG.maintenanceRules!;
+  return {
+    cvPlus: {
+      minSelfComboRate:
+        override?.cvPlus?.minSelfComboRate ?? base?.cvPlus?.minSelfComboRate ?? defaultRules.cvPlus.minSelfComboRate,
+      maxFixRate: override?.cvPlus?.maxFixRate ?? base?.cvPlus?.maxFixRate ?? defaultRules.cvPlus.maxFixRate,
+      minHappinessIndex:
+        override?.cvPlus?.minHappinessIndex ?? base?.cvPlus?.minHappinessIndex ?? defaultRules.cvPlus.minHappinessIndex,
+      consecutiveFailedMonthsToDemote:
+        override?.cvPlus?.consecutiveFailedMonthsToDemote ??
+        base?.cvPlus?.consecutiveFailedMonthsToDemote ??
+        defaultRules.cvPlus.consecutiveFailedMonthsToDemote,
+    },
+    cvPlusPlus: {
+      minSelfComboRate:
+        cvPlusPlusReq.minSelfComboRate ??
+        override?.cvPlusPlus?.minSelfComboRate ??
+        base?.cvPlusPlus?.minSelfComboRate ??
+        defaultRules.cvPlusPlus.minSelfComboRate,
+      minHappinessIndex:
+        override?.cvPlusPlus?.minHappinessIndex ??
+        base?.cvPlusPlus?.minHappinessIndex ??
+        defaultRules.cvPlusPlus.minHappinessIndex,
+      consecutiveFailedMonthsToDemote:
+        cvPlusPlusReq.consecutiveFailedMonthsToDemote ??
+        override?.cvPlusPlus?.consecutiveFailedMonthsToDemote ??
+        base?.cvPlusPlus?.consecutiveFailedMonthsToDemote ??
+        defaultRules.cvPlusPlus.consecutiveFailedMonthsToDemote,
+    },
+  };
+}
 
 const CAREER_CONFIG_KEY = 'CAREER_PROGRESSION_RULES';
 
@@ -43,7 +84,13 @@ export async function getCareerConfig(fastify: FastifyInstance): Promise<CareerP
       delete normalizedCvPlusReq.comboUnder3mBonus;
       delete normalizedCvPlusReq.comboUnder4mBonus;
 
-      cachedConfig = {
+      const mergedMaintenance = mergeMaintenanceRules(
+        DEFAULT_CAREER_PROGRESSION_CONFIG.maintenanceRules,
+        parsed.maintenanceRules,
+        normalizedCvPlusReq
+      );
+
+      const resolvedConfig: CareerProgressionConfig = {
         ...DEFAULT_CAREER_PROGRESSION_CONFIG,
         ...parsed,
         cvToCc: normalizedCvReq,
@@ -54,9 +101,11 @@ export async function getCareerConfig(fastify: FastifyInstance): Promise<CareerP
         fmToCho: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.fmToCho, ...(parsed.fmToCho || {}) },
         choToBoss: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.choToBoss, ...(parsed.choToBoss || {}) },
         rewardRates: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.rewardRates, ...(parsed.rewardRates || {}) },
+        maintenanceRules: mergedMaintenance,
       };
+      cachedConfig = resolvedConfig;
       cacheTimestamp = now;
-      return cachedConfig;
+      return resolvedConfig;
     }
   } catch (err) {
     fastify.log.warn({ err }, 'Failed to read career config from DB, falling back to default');
@@ -92,6 +141,12 @@ export async function updateCareerConfig(
   delete mergedCvPlusReq.comboUnder3mBonus;
   delete mergedCvPlusReq.comboUnder4mBonus;
 
+  const mergedMaintenance = mergeMaintenanceRules(
+    current.maintenanceRules,
+    newConfig.maintenanceRules,
+    mergedCvPlusReq
+  );
+
   const merged: CareerProgressionConfig = {
     ...current,
     ...newConfig,
@@ -106,6 +161,7 @@ export async function updateCareerConfig(
     fmToCho: { ...current.fmToCho, ...(newConfig.fmToCho || {}) },
     choToBoss: { ...current.choToBoss, ...(newConfig.choToBoss || {}) },
     rewardRates: { ...current.rewardRates, ...(newConfig.rewardRates || {}) },
+    maintenanceRules: mergedMaintenance,
   };
 
   await fastify.prisma.crm.crmConfig.upsert({

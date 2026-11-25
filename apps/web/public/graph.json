@@ -46641,8 +46641,8 @@
       "filePath": "apps/api/src/modules/career/career-service/career-config.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4638,
-        "lineCount": 136,
+        "sizeBytes": 6815,
+        "lineCount": 190,
         "ext": ".ts"
       }
     },
@@ -46732,7 +46732,7 @@
       "filePath": "apps/api/src/modules/career/career-service/career-progression.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9568,
+        "sizeBytes": 9562,
         "lineCount": 254,
         "ext": ".ts"
       }
@@ -46758,8 +46758,8 @@
       "filePath": "apps/api/src/modules/career/career-service/career-staff-list.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12061,
-        "lineCount": 313,
+        "sizeBytes": 12365,
+        "lineCount": 321,
         "ext": ".ts"
       }
     },
@@ -60590,8 +60590,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path-page-modules/CareerPathDrawers.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8057,
-        "lineCount": 220,
+        "sizeBytes": 8115,
+        "lineCount": 225,
         "ext": ".tsx"
       }
     },
@@ -60616,8 +60616,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path-page-modules/careerPathTypesAndHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5023,
-        "lineCount": 134,
+        "sizeBytes": 5089,
+        "lineCount": 135,
         "ext": ".ts"
       }
     },
@@ -60668,8 +60668,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerBibleDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16925,
-        "lineCount": 326,
+        "sizeBytes": 18939,
+        "lineCount": 366,
         "ext": ".tsx"
       }
     },
@@ -60681,8 +60681,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6097,
-        "lineCount": 163,
+        "sizeBytes": 6754,
+        "lineCount": 176,
         "ext": ".tsx"
       }
     },
@@ -60785,8 +60785,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage2ConfigTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22204,
-        "lineCount": 504,
+        "sizeBytes": 25227,
+        "lineCount": 556,
         "ext": ".tsx"
       }
     },
@@ -60798,8 +60798,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/careerConfigTypesAndHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6725,
-        "lineCount": 207,
+        "sizeBytes": 7150,
+        "lineCount": 219,
         "ext": ".ts"
       }
     },
@@ -63606,8 +63606,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvDisciplineDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13627,
-        "lineCount": 322,
+        "sizeBytes": 13680,
+        "lineCount": 325,
         "ext": ".tsx"
       }
     },
@@ -63619,8 +63619,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvKyLuatTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28260,
-        "lineCount": 644,
+        "sizeBytes": 28389,
+        "lineCount": 649,
         "ext": ".tsx"
       }
     },
@@ -63671,8 +63671,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvXoayTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5642,
-        "lineCount": 174,
+        "sizeBytes": 5662,
+        "lineCount": 175,
         "ext": ".tsx"
       }
     },
@@ -63905,8 +63905,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileDetailSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13360,
-        "lineCount": 309,
+        "sizeBytes": 13311,
+        "lineCount": 302,
         "ext": ".tsx"
       }
     },
@@ -64139,8 +64139,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayLeaderboardCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11236,
-        "lineCount": 254,
+        "sizeBytes": 11203,
+        "lineCount": 252,
         "ext": ".tsx"
       }
     },
@@ -75124,8 +75124,8 @@
       "filePath": "apps/web/lib/api/career.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6093,
-        "lineCount": 168,
+        "sizeBytes": 6320,
+        "lineCount": 173,
         "ext": ".ts"
       }
     },
@@ -75767,6 +75767,32 @@
       }
     },
     {
+      "id": "file:packages/shared/src/business-rules/mos-bible/hydrate-career-commandments.test.ts",
+      "type": "File",
+      "label": "hydrate-career-commandments.test.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/business-rules/mos-bible/hydrate-career-commandments.test.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 2848,
+        "lineCount": 68,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/business-rules/mos-bible/hydrate-career-commandments.ts",
+      "type": "File",
+      "label": "hydrate-career-commandments.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/business-rules/mos-bible/hydrate-career-commandments.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 12571,
+        "lineCount": 158,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/business-rules/mos-bible/people-catalog-and-store.ts",
       "type": "File",
       "label": "people-catalog-and-store.ts",
@@ -75787,8 +75813,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/rewards-and-payroll.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 49395,
-        "lineCount": 555,
+        "sizeBytes": 53853,
+        "lineCount": 596,
         "ext": ".ts"
       }
     },
@@ -75813,8 +75839,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 4546,
-        "lineCount": 118,
+        "sizeBytes": 4681,
+        "lineCount": 123,
         "ext": ".ts"
       }
     },
@@ -76710,8 +76736,8 @@
       "filePath": "packages/shared/src/types/career-progression/career-defaults.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9591,
-        "lineCount": 199,
+        "sizeBytes": 10351,
+        "lineCount": 205,
         "ext": ".ts"
       }
     },
@@ -76723,8 +76749,8 @@
       "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 14366,
-        "lineCount": 276,
+        "sizeBytes": 15189,
+        "lineCount": 286,
         "ext": ".ts"
       }
     },
@@ -113881,6 +113907,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/CareerBibleDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/CareerBibleDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/career-path/components/IslandGameIcon.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/career-path/components/IslandGameIcon.tsx",
       "target": "ws:packages/shared",
@@ -132243,8 +132276,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 6056,
-    "totalEdges": 7750,
+    "totalNodes": 6058,
+    "totalEdges": 7751,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -132253,14 +132286,14 @@
       "SharedType": 1586,
       "DesignToken": 12,
       "UIComponent": 798,
-      "File": 2620
+      "File": 2622
     },
     "edgeTypeCounts": {
       "EXPORTS": 1781,
       "HANDLES_ROUTE": 788,
       "RENDERS": 864,
       "USES_TOKEN": 800,
-      "IMPORTS": 1593,
+      "IMPORTS": 1594,
       "QUERIES_MODEL": 613,
       "API_CALL": 1311
     },

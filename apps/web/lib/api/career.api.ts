@@ -11,6 +11,8 @@ import {
 } from '@mos-lab/shared';
 import { api, dedupeApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
 
+export const CAREER_CONFIG_UPDATED_EVENT = 'mos-career-config-updated';
+
 export const careerApi = {
   career: {
     getConfig: async (options?: ApiRequestOptions): Promise<CareerProgressionConfig> => {
@@ -32,6 +34,9 @@ export const careerApi = {
     updateConfig: async (payload: Partial<CareerProgressionConfig>): Promise<CareerProgressionConfig> => {
       const res = await api.put<{ success: boolean; data: CareerProgressionConfig }>('/career/config', payload);
       invalidateApiGetCache(['/career/config']);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(CAREER_CONFIG_UPDATED_EVENT, { detail: res.data.data }));
+      }
       return res.data.data;
     },
     getMyProgression: async (options?: ApiRequestOptions): Promise<StaffCareerStatus> => {

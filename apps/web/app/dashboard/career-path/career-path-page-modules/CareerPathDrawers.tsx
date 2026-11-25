@@ -87,7 +87,12 @@ export const CareerPathDrawers: React.FC<CareerPathDrawersProps> = ({
   return (
     <>
       {/* CAREER BIBLE DRAWER (KINH THÁNH mOS) */}
-      <CareerBibleDrawer open={!!selectedBibleTopic} onClose={onCloseBibleDrawer} topic={selectedBibleTopic} />
+      <CareerBibleDrawer
+        open={!!selectedBibleTopic}
+        onClose={onCloseBibleDrawer}
+        topic={selectedBibleTopic}
+        config={safeConfig}
+      />
 
       {/* 7 ISLANDS MAP BOTTOM SHEET FOR MOBILE */}
       <AdaptiveDrawer

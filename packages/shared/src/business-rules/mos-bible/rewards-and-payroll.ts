@@ -551,4 +551,45 @@ export const MOS_BIBLE_REWARDS_AND_PAYROLL_COMMANDMENTS: readonly MosBibleComman
       { label: 'Ledger và cap CC', reference: 'AGENTS.md · Rules #45, #49, #50' },
     ],
   },
+  {
+    id: 'CV-004',
+    book: 'REWARDS',
+    title: 'Quy chế CVLL (Chuyên Viên Tự Chủ Cấp Cao): +2K/h, Mô Hình 100/0 Tư Vấn Chéo & Lộ Trình 30% × 2 Tháng',
+    summary:
+      'CVLL là CVL có năng lực tư vấn hỗ trợ cho CV và CVL khác khi cần thiết. Lương giờ tăng +2.000đ/h so với CVL (29.500đ/h), hưởng 100% thưởng Combo và 100% thưởng Sản phẩm khi tư vấn chốt hộ cho CV/CVL (CV/CVL nhận 0đ bán hàng), nhận Tip 70+20 y hệt CVL, bắt buộc đi tua khách mình, và phải đạt 6 ải cốt lõi kèm tỷ lệ chốt Combo ≥ 30% trong 2 tháng liên tiếp mới được lên CVLL.',
+    commandments: [
+      'Điều kiện Thăng Cấp lên CVLL (6 Ải + 30% × 2 Tháng Liền): Phải đạt đầy đủ 6 ải cốt lõi (≥ 330 bộ mi/3 tháng, Fix ≤ 1.5%, Tip cao hơn TB shop ≥ +5%, kiểm định QA/QC ≥ 4 lần/tháng và 0 lỗi FAILED, HI ≥ 70%, ≥ 20 Chuối Yêu Thương) VÀ đạt tối thiểu 30% tỷ lệ tự chốt Combo trên khách Not Combo Live trong 2 tháng liên tiếp.',
+      'Lương Giờ & Quyền Lợi Cơ Bản Như CVL: Lương giờ đạt 29.500đ/h (+2.000đ/h so với CVL 27.500đ/h; +4.000đ/h so với CV 25.500đ/h). Toàn bộ công thức Combo bậc thang (<2M = 50K, mỗi 1M kế tiếp = +50K), thưởng Dưỡng mi Yeppeum (100K/50K/10K/1K) và quyền lợi cá nhân giữ nguyên như Điều răn CV-002.',
+      'Cơ Chế Tư Vấn Chéo 100/0 Cho CV và CVL Khác: Khi CVLL tư vấn hỗ trợ chốt đơn cho khách của CV hoặc CVL khác, CVLL nhận 100% tiền thưởng Combo và 100% tiền thưởng Sản phẩm; CV hoặc CVL thực hiện ca đó nhận 0đ thưởng Combo và 0đ thưởng Sản phẩm.',
+      'Quy Tắc Chia Tip 70+20 Giữ Nguyên Như CVL: Toàn bộ ca của bản thân hoặc ca hỗ trợ chéo đều áp dụng quy tắc Tip 70% làm mi + 10% Check-in + 10% Check-out (+ 10% Quỹ tiệm).',
+      'Miễn Trừ Mẫu Số % Combo Cho CVL: Khi CVL nhờ CVLL tư vấn chốt hộ, đơn hàng đó được loại khỏi mẫu số Not Combo Live của CVL để không làm tụt tỷ lệ chốt Combo hàng tháng của CVL.',
+      'Kỷ Luật Bắt Buộc Đi Tua Khách Mình: CVLL bắt buộc phải nhận và phục vụ đầy đủ các lượt khách theo tua của mình (bao gồm khách đầu tua và khách book); hành vi bỏ tua để chạy sang hỗ trợ sảnh sẽ bị xử phạt theo quy định công ty.',
+      'Ngưỡng Duy Trì Hàng Tháng & Giáng Cấp: Sau khi lên CVLL, mọi chỉ số duy trì, chế tài khóa thưởng tháng trượt ngưỡng (bảo lưu Tip, khóa phụ cấp lương giờ & thưởng bán hàng cá nhân) và quy tắc trượt 2 tháng liên tiếp giáng về CVL đều áp dụng đồng bộ từ cấu hình sống CAREER_PROGRESSION_RULES.',
+    ],
+    rationale:
+      'Trao quyền tư vấn hỗ trợ toàn sảnh cho Chuyên Viên Tự Chủ Cấp Cao mà vẫn giữ sổ sách minh bạch theo mô hình 100/0, bảo vệ tâm lý cộng tác của CVL bằng miễn trừ mẫu số, giữ kỷ luật xoay tua công bằng và đồng bộ live 100% từ cấu hình Admin.',
+    examples: [
+      'Tháng 1 đạt 32% Combo và Tháng 2 đạt 31% Combo cùng đủ 6 ải CVL: Đủ điều kiện thăng cấp lên CVLL với mức lương 29.500đ/h.',
+      'CVLL hỗ trợ chốt Combo 4.5M + Dưỡng mi 1.1M cho khách của CV Bảo Ngọc: CVLL nhận 200K Combo + 100K Dưỡng mi + 20% Tip; Bảo Ngọc nhận 70% Tip làm mi và 0đ Combo/Sản phẩm.',
+    ],
+    tags: ['CVLL', '100/0', 'tư vấn chéo', '30% 2 tháng', '29.500đ/h', 'bắt buộc đi tua', 'miễn trừ mẫu số', 'CV-002'],
+    routeScopes: ['/dashboard/career-path', '/dashboard/cv', '/ios-app'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-25',
+    sources: [
+      {
+        label: 'Cấu hình Thăng tiến Live',
+        reference: 'packages/shared/src/types/career-progression/career-defaults.ts',
+      },
+      {
+        label: 'Đồng bộ Kinh Thánh Live',
+        reference: 'packages/shared/src/business-rules/mos-bible/hydrate-career-commandments.ts',
+      },
+      {
+        label: 'Career Config & Progression Service',
+        reference: 'apps/api/src/modules/career/career-service/career-progression.service.ts',
+      },
+    ],
+  },
 ];

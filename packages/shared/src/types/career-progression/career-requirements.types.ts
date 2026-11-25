@@ -118,9 +118,19 @@ export interface CvPlusToCvPlusPlusRequirements {
   comboUnder4mBonus?: number;
   /** Thưởng cộng thêm cho mỗi 1 triệu kế tiếp từ mốc 2 triệu trở lên (mặc định: 50.000đ/1M) */
   comboStepPerMillionBonus?: number;
-  /** Tỷ lệ chia hoa hồng cho CV làm mi khi CV++ chốt hộ (0.20 = 20%) */
+  /** Tỷ lệ chia hoa hồng cho CV làm mi khi CVLL chốt hộ (0 = mô hình 100/0: CVLL nhận 100%, CV/CVL nhận 0đ) */
   crossConsultCvShareRate?: number;
-  /** Lương theo giờ áp dụng cho CV++ (mặc định: 29.500đ/h, tăng +4.000đ/h so với CV) */
+  /** Ngưỡng % tự chốt Combo tối thiểu để thăng cấp từ CVL lên CVLL (mặc định: 0.30 = 30%) */
+  promotionMinComboRate?: number;
+  /** Số tháng liên tiếp đạt promotionMinComboRate để thăng cấp lên CVLL (mặc định: 2 tháng) */
+  promotionConsecutiveMonths?: number;
+  /** Miễn trừ mẫu số Not Combo Live cho CVL khi nhờ CVLL chốt hộ (mặc định: true) */
+  exemptCvlDenominatorOnCrossConsult?: boolean;
+  /** Bắt buộc CVLL đi tua khách của chính mình; bỏ tua bị phạt theo quy định (mặc định: true) */
+  enforceMandatoryOwnQueue?: boolean;
+  /** Số tháng liên tiếp trượt ngưỡng duy trì sẽ giáng về CVL (mặc định: 2 tháng) */
+  consecutiveFailedMonthsToDemote?: number;
+  /** Lương theo giờ áp dụng cho CVLL (mặc định: 29.500đ/h, tăng +2.000đ/h so với CVL) */
   hourlyWage?: number;
   /** Tỷ lệ hưởng tip trên khách của mình (mặc định: 0.90 = 90%) */
   tipShareRatio?: number;

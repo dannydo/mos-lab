@@ -7,13 +7,17 @@ import {
   filterMosBibleCommandments,
   getMosBibleBook,
   getMosBibleCommandmentsForPath,
+  hydrateMosBibleCommandmentsWithCareerConfig,
   isMosBibleCommandmentRelevant,
+  LIVE_CAREER_BIBLE_IDS,
   MOS_BIBLE_BOOKS,
   MOS_BIBLE_COMMANDMENTS,
   vietnameseSearchFilter,
+  type CareerProgressionConfig,
   type MosBibleBookKey,
   type MosBibleCommandment,
 } from '@mos-lab/shared';
+import { apiClient, CAREER_CONFIG_UPDATED_EVENT } from '../../lib/api-client';
 import { AdaptiveDrawer, AppIcon, StatePanel, StatusTag } from '../ui';
 import { SalarySimulator } from '../salary-explainer';
 import MosBibleProposalModal from './MosBibleProposalModal';
@@ -40,11 +44,13 @@ const STATUS_PRESENTATION = {
 function CommandmentDetail({ commandment }: { commandment: MosBibleCommandment }) {
   const { token } = theme.useToken();
   const status = STATUS_PRESENTATION[commandment.status];
+  const isLiveSynced = LIVE_CAREER_BIBLE_IDS.has(commandment.id);
 
   return (
     <div className={styles.detail}>
       <div className="flex flex-wrap items-center gap-2">
         <StatusTag status={status.status} label={status.label} />
+        {isLiveSynced ? <StatusTag status="success" label="Đồng bộ Config Live" /> : null}
         <Tag className="m-0 tabular-nums">Bản {commandment.version}</Tag>
         <Text type="secondary" className="text-xs tabular-nums">
           Hiệu lực từ {commandment.effectiveFrom}
@@ -144,10 +150,47 @@ function CommandmentDetail({ commandment }: { commandment: MosBibleCommandment }
 
 export default function MosBibleDrawer({ open, pathname, targetCommandmentId, onClose }: MosBibleDrawerProps) {
   const { token } = theme.useToken();
-  const relatedCommandments = useMemo(() => getMosBibleCommandmentsForPath(pathname), [pathname]);
+  const [liveCareerConfig, setLiveCareerConfig] = useState<CareerProgressionConfig | null>(null);
+  const hydratedCommandments = useMemo(
+    () => hydrateMosBibleCommandmentsWithCareerConfig(MOS_BIBLE_COMMANDMENTS, liveCareerConfig),
+    [liveCareerConfig]
+  );
+  const relatedCommandments = useMemo(() => {
+    if (!liveCareerConfig) return getMosBibleCommandmentsForPath(pathname);
+    return hydratedCommandments.filter(
+      (commandment) => commandment.status === 'ACTIVE' && isMosBibleCommandmentRelevant(commandment, pathname)
+    );
+  }, [hydratedCommandments, liveCareerConfig, pathname]);
   const [scope, setScope] = useState<BibleScope>('PAGE');
   const [searchText, setSearchText] = useState('');
   const [book, setBook] = useState<MosBibleBookKey | 'ALL'>('ALL');
+
+  useEffect(() => {
+    const handleConfigUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<CareerProgressionConfig>;
+      if (customEvent.detail) {
+        setLiveCareerConfig(customEvent.detail);
+      }
+    };
+    window.addEventListener(CAREER_CONFIG_UPDATED_EVENT, handleConfigUpdated);
+    return () => window.removeEventListener(CAREER_CONFIG_UPDATED_EVENT, handleConfigUpdated);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    apiClient.career
+      .getConfig()
+      .then((cfg) => {
+        if (active && cfg) setLiveCareerConfig(cfg);
+      })
+      .catch(() => {
+        // Safe fallback to static defaults
+      });
+    return () => {
+      active = false;
+    };
+  }, [open]);
 
   const effectiveTargetId = useMemo(() => {
     if (targetCommandmentId) return targetCommandmentId;
@@ -173,7 +216,7 @@ export default function MosBibleDrawer({ open, pathname, targetCommandmentId, on
     }
   }, [open, pathname, relatedCommandments.length, effectiveTargetId]);
 
-  const scopedCommandments = scope === 'PAGE' ? relatedCommandments : MOS_BIBLE_COMMANDMENTS;
+  const scopedCommandments = scope === 'PAGE' ? relatedCommandments : hydratedCommandments;
   const visibleCommandments = useMemo(() => {
     const list = filterMosBibleCommandments(scopedCommandments, searchText, book);
     if (!effectiveTargetId) return list;

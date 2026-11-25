@@ -43,6 +43,19 @@ export function CareerConfigDrawer({
       cvToCc,
       cvToCvPlus: cvToCc,
       cvPlusToCvPlusPlus,
+      maintenanceRules: {
+        cvPlus: {
+          minSelfComboRate: cvToCc.minSelfComboRate ?? 0.21,
+          maxFixRate: cvToCc.maxFixRate ?? 0.03,
+          minHappinessIndex: config.maintenanceRules?.cvPlus?.minHappinessIndex ?? 0.65,
+          consecutiveFailedMonthsToDemote: config.maintenanceRules?.cvPlus?.consecutiveFailedMonthsToDemote ?? 2,
+        },
+        cvPlusPlus: {
+          minSelfComboRate: cvPlusToCvPlusPlus.minSelfComboRate ?? 0.21,
+          minHappinessIndex: cvPlusToCvPlusPlus.minHappinessIndex ?? 0.7,
+          consecutiveFailedMonthsToDemote: cvPlusToCvPlusPlus.consecutiveFailedMonthsToDemote ?? 2,
+        },
+      },
     });
   };
 

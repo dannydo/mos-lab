@@ -24,6 +24,7 @@ export interface CareerConfigSavePayload {
   cvToCc: CareerProgressionConfig['cvToCc'];
   cvToCvPlus: CareerProgressionConfig['cvToCvPlus'];
   cvPlusToCvPlusPlus: CareerProgressionConfig['cvPlusToCvPlusPlus'];
+  maintenanceRules?: CareerProgressionConfig['maintenanceRules'];
 }
 
 export function readStoredCareerUser(): CareerCurrentUser | null {

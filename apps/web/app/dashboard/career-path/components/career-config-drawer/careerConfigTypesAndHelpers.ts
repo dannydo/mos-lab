@@ -10,6 +10,7 @@ export interface CareerConfigSavePayload {
   cvToCc: CareerProgressionConfig['cvToCc'];
   cvToCvPlus: CareerProgressionConfig['cvToCvPlus'];
   cvPlusToCvPlusPlus: CareerProgressionConfig['cvPlusToCvPlusPlus'];
+  maintenanceRules?: CareerProgressionConfig['maintenanceRules'];
 }
 
 export interface CareerConfigDrawerProps {
@@ -78,19 +79,26 @@ export const DEFAULT_CV_TO_CC_CONFIG: CvToCcConfig = {
 
 export const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS_CONFIG: CvPlusToCvPlusPlusConfig = {
   minMonthsInCvPlus: 2,
-  minOrders: 350,
+  minOrders: 330,
   maxFixRate: 0.015,
-  minTipRatioAboveShop: 0.15,
-  minBananaCount: 25,
-  minHappinessIndex: 0.8,
+  minTipRatioAboveShop: 0.05,
+  minBananaCount: 20,
+  minHappinessIndex: 0.7,
   crossConsultCommissionRate: 0.025,
+  crossConsultTipRate: 0.2,
+  expectedCrossConsultOrdersPerMonth: 24,
+  expectedCrossConsultCombosPerMonth: 8,
   maxDisciplinaryViolations: 0,
   minWeeklyQaAudits: 1,
   minQaAudits: 4,
   requireZeroFailedAudits: true,
   trialDurationDays: 30,
   allowSelfConsultTrial: true,
-  minSelfComboRate: 0.3,
+  promotionMinComboRate: 0.3,
+  promotionConsecutiveMonths: 2,
+  minSelfComboRate: 0.21,
+  consecutiveFailedMonthsToDemote: 2,
+  enforceComboPenalty: true,
   expectedSerumsPerWeek: 4,
   expectedCombosPerMonth: 10,
   serumOriginalPriceBonus: 100000,
@@ -99,7 +107,11 @@ export const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS_CONFIG: CvPlusToCvPlusPlusConfig = 
   serumFreePriceBonus: 1000,
   comboUnder2mBonus: 50000,
   comboStepPerMillionBonus: 50000,
-  crossConsultCvShareRate: 0.2,
+  crossConsultCvShareRate: 0,
+  exemptCvlDenominatorOnCrossConsult: true,
+  enforceMandatoryOwnQueue: true,
+  hourlyWage: 29500,
+  tipShareRatio: 0.9,
 };
 
 export function resolveCvToCcConfig(config?: CareerProgressionConfig | null): CvToCcConfig {
@@ -149,9 +161,9 @@ export function computeStage2SalesSummary(cvPlusToCvPlusPlus: CvPlusToCvPlusPlus
   const combosPerMonth = cvPlusToCvPlusPlus.expectedCombosPerMonth ?? 10;
   const serumsPerWeek = cvPlusToCvPlusPlus.expectedSerumsPerWeek ?? 4;
   const crossTipRate = cvPlusToCvPlusPlus.crossConsultTipRate ?? 0.2;
-  const crossCvShareRate = cvPlusToCvPlusPlus.crossConsultCvShareRate ?? 0.2;
-  const crossOrdersPerMonth = cvPlusToCvPlusPlus.expectedCrossConsultOrdersPerMonth ?? 20;
-  const crossCombosPerMonth = cvPlusToCvPlusPlus.expectedCrossConsultCombosPerMonth ?? 4;
+  const crossCvShareRate = cvPlusToCvPlusPlus.crossConsultCvShareRate ?? 0;
+  const crossOrdersPerMonth = cvPlusToCvPlusPlus.expectedCrossConsultOrdersPerMonth ?? 24;
+  const crossCombosPerMonth = cvPlusToCvPlusPlus.expectedCrossConsultCombosPerMonth ?? 8;
 
   const sampleComboBonus = calculateComboBonus(4500000, cvPlusToCvPlusPlus);
   const comboComm = combosPerMonth * sampleComboBonus;

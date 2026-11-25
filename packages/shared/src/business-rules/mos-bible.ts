@@ -6,6 +6,11 @@ import { MOS_BIBLE_PEOPLE_CATALOG_AND_STORE_COMMANDMENTS } from './mos-bible/peo
 import { MOS_BIBLE_REWARDS_AND_PAYROLL_COMMANDMENTS } from './mos-bible/rewards-and-payroll.js';
 import { MOS_BIBLE_SYSTEM_AND_CAREER_COMMANDMENTS } from './mos-bible/system-and-career.js';
 
+export {
+  hydrateMosBibleCommandmentsWithCareerConfig,
+  LIVE_CAREER_BIBLE_IDS,
+} from './mos-bible/hydrate-career-commandments.js';
+
 export const MOS_BIBLE_BOOKS: readonly MosBibleBook[] = [
   {
     key: 'GOVERNANCE',
