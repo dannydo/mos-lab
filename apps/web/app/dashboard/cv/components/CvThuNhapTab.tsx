@@ -1,12 +1,15 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, type CvPaystubRecord } from '@mos-lab/shared';
+import { CcMobileWalletStrip } from '~/app/dashboard/cc/components/CcMobileWalletStrip';
+import { formatCompactVND } from '~/lib/format-utils';
 import { CvAllowanceModal } from './cv-thu-nhap-tab/CvAllowanceModal';
 import { CvIncomeSummaryCards } from './cv-thu-nhap-tab/CvIncomeSummaryCards';
 import { CvPaystubDetailModal } from './cv-thu-nhap-tab/CvPaystubDetailModal';
 import { CvPaystubTableCard } from './cv-thu-nhap-tab/CvPaystubTableCard';
+import { CvThuNhapMobileDetailSheet } from './cv-thu-nhap-tab/CvThuNhapMobileDetailSheet';
 import { CvWorkLogModal } from './cv-thu-nhap-tab/CvWorkLogModal';
 import {
   formatStoreCode,
@@ -27,6 +30,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
 
   const {
     isMobile,
+    showMobilePortrait,
     useCompactMetricFormat,
     formatMetricValue,
     previousPeriod,
@@ -100,6 +104,8 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
     onRefreshPaystubData: fetchData,
   });
 
+  const [inspectedRecord, setInspectedRecord] = useState<CvPaystubRecord | null>(null);
+
   const handleNavigateCareerPath = useCallback(
     (staffId: number) => {
       router.push(`/dashboard/career-path?staffId=${staffId}`);
@@ -107,18 +113,55 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
     [router]
   );
 
+  const summaryBonusTotal =
+    (summary.totalCvXoayBonus || 0) + (summary.totalSeniorityBonus || 0) + (summary.totalCvTipBonus || 0);
+  const showForecast = !forecastMeta.isDayMode && !forecastMeta.isPastPeriod;
+
   return (
-    <div className="cv-income-tab flex flex-col gap-4">
-      <CvIncomeSummaryCards
-        summary={summary}
-        previousSummary={previousSummary}
-        comparison={previousPeriod?.comparison}
-        forecastMeta={forecastMeta}
-        projectedSummary={projectedSummary}
-        formatMetricValue={formatMetricValue}
-        useCompactMetricFormat={useCompactMetricFormat}
-        isMobile={isMobile}
-      />
+    <div className={`cv-income-tab flex flex-col ${showMobilePortrait ? 'gap-3' : 'gap-4'}`}>
+      {showMobilePortrait ? (
+        <CcMobileWalletStrip
+          testId="cv-income-mobile-summary"
+          ariaLabel="Tóm tắt thu nhập CV"
+          items={[
+            {
+              key: 'total',
+              label: '∑ Thu nhập',
+              value: formatMetricValue(summary.grandTotalIncome || 0),
+              valueClassName: 'text-emerald-600 dark:text-emerald-400',
+              subtext:
+                showForecast && (projectedSummary.projectedTotalIncome || 0) > 0
+                  ? `~${formatCompactVND(projectedSummary.projectedTotalIncome)}`
+                  : undefined,
+            },
+            {
+              key: 'wage',
+              label: 'Lương giờ',
+              value: formatMetricValue(summary.totalHourlyWage || 0),
+              valueClassName: 'text-sky-600 dark:text-sky-400',
+              subtext: `${filteredData.length} CV`,
+            },
+            {
+              key: 'bonus',
+              label: '∑ Thưởng',
+              value: formatMetricValue(summaryBonusTotal),
+              valueClassName: 'text-amber-600 dark:text-amber-400',
+              subtext: 'Xoay · Tip · Thâm niên',
+            },
+          ]}
+        />
+      ) : (
+        <CvIncomeSummaryCards
+          summary={summary}
+          previousSummary={previousSummary}
+          comparison={previousPeriod?.comparison}
+          forecastMeta={forecastMeta}
+          projectedSummary={projectedSummary}
+          formatMetricValue={formatMetricValue}
+          useCompactMetricFormat={useCompactMetricFormat}
+          isMobile={isMobile}
+        />
+      )}
 
       <CvPaystubTableCard
         filteredData={filteredData}
@@ -133,6 +176,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
         onRefresh={() => void fetchData()}
         forecastMeta={forecastMeta}
         getProjectedRecord={getProjectedRecord}
+        onSelectMobileCard={setInspectedRecord}
         onOpenWorkLogs={(record) => void handleOpenWorkLogs(record)}
         onOpenPaystubModal={openPaystubModal}
         onNavigateCareerPath={handleNavigateCareerPath}
@@ -145,6 +189,17 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
         onUpdateSeniorityRule={updateSeniorityRule}
         onRemoveSeniorityRule={removeSeniorityRule}
         onSaveSeniorityConfig={handleSaveSeniorityConfig}
+      />
+
+      <CvThuNhapMobileDetailSheet
+        open={Boolean(inspectedRecord)}
+        onClose={() => setInspectedRecord(null)}
+        record={inspectedRecord}
+        projected={inspectedRecord ? getProjectedRecord(inspectedRecord) : null}
+        showForecast={showForecast}
+        onOpenPaystubModal={openPaystubModal}
+        onOpenWorkLogs={(record) => void handleOpenWorkLogs(record)}
+        onNavigateCareerPath={handleNavigateCareerPath}
       />
 
       <CvPaystubDetailModal

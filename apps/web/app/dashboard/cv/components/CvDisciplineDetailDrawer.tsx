@@ -14,8 +14,9 @@ import dayjs from 'dayjs';
 import type { CvDisciplineStaffRecord, CvDisciplineIncident, CvDisciplineViolationType } from '@mos-lab/shared';
 import { AdaptiveDrawer } from '../../../../components/ui';
 import CcAvatar from '../../cc/components/CcAvatar';
+import { useCcMobilePortrait } from '../../cc/components/useCcMobilePortrait';
+import { CvFeather1Badge } from '~/app/ios-app/components/ui-kit/CvFeatherLabels';
 import { formatStoreCode } from './CvThuNhapTab';
-import { useResponsiveTier } from '../../../../hooks/useResponsiveTier';
 
 const { Text, Title } = Typography;
 
@@ -33,8 +34,8 @@ export default function CvDisciplineDetailDrawer({
   initialFilter = 'ALL',
 }: CvDisciplineDetailDrawerProps) {
   const { token } = theme.useToken();
-  const tier = useResponsiveTier();
-  const isMobile = tier === 'mobile';
+  const { showMobilePortrait } = useCcMobilePortrait();
+  const isMobile = showMobilePortrait;
   const [filterType, setFilterType] = useState<CvDisciplineViolationType | 'ALL'>(initialFilter);
 
   // Sync initialFilter when drawer opens
@@ -117,6 +118,9 @@ export default function CvDisciplineDetailDrawer({
   return (
     <AdaptiveDrawer
       intent="detail"
+      placement={isMobile ? 'bottom' : 'right'}
+      height={isMobile ? '82dvh' : undefined}
+      zIndex={isMobile ? 990 : undefined}
       title={
         <div className="flex items-center gap-3">
           <CcAvatar name={staff?.staffName || ''} src={staff?.avatar} size={40} />
@@ -124,8 +128,11 @@ export default function CvDisciplineDetailDrawer({
             <div className="flex items-center gap-2">
               <span className="font-bold text-base text-slate-900 dark:text-slate-100">{staff?.staffName}</span>
               {staff?.isCvPlus && (
-                <Tag color="gold" className="!text-[10px] !font-extrabold !px-1.5 !rounded-full">
-                  CV🪶
+                <Tag
+                  color="gold"
+                  className="!text-[10px] !font-extrabold !px-1.5 !rounded-full inline-flex items-center"
+                >
+                  <CvFeather1Badge featherClass="w-2.5 h-2.5 text-amber-500" />
                 </Tag>
               )}
               <Tag className="!text-[10px] !font-mono !px-1.5 !rounded-full">{formatStoreCode(staff?.store)}</Tag>

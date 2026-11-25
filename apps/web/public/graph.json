@@ -44002,8 +44002,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14826611,
-        "lineCount": 326540,
+        "sizeBytes": 14846981,
+        "lineCount": 326958,
         "ext": ".ts"
       }
     },
@@ -62254,8 +62254,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/cc-thuong/useCcThuongData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18376,
-        "lineCount": 520,
+        "sizeBytes": 18364,
+        "lineCount": 518,
         "ext": ".ts"
       }
     },
@@ -63606,8 +63606,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvDisciplineDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13301,
-        "lineCount": 318,
+        "sizeBytes": 13627,
+        "lineCount": 322,
         "ext": ".tsx"
       }
     },
@@ -63619,8 +63619,21 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvKyLuatTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22787,
-        "lineCount": 544,
+        "sizeBytes": 28260,
+        "lineCount": 644,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/CvMobileShellHeader.tsx",
+      "type": "File",
+      "label": "CvMobileShellHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/CvMobileShellHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9633,
+        "lineCount": 259,
         "ext": ".tsx"
       }
     },
@@ -63632,8 +63645,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5671,
-        "lineCount": 192,
+        "sizeBytes": 8050,
+        "lineCount": 247,
         "ext": ".tsx"
       }
     },
@@ -63645,8 +63658,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4063,
-        "lineCount": 138,
+        "sizeBytes": 6931,
+        "lineCount": 208,
         "ext": ".tsx"
       }
     },
@@ -63658,8 +63671,21 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvXoayTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2927,
-        "lineCount": 105,
+        "sizeBytes": 5642,
+        "lineCount": 174,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/__tests__/CvMobileTabsApple.test.tsx",
+      "type": "File",
+      "label": "CvMobileTabsApple.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/__tests__/CvMobileTabsApple.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12927,
+        "lineCount": 408,
         "ext": ".tsx"
       }
     },
@@ -63684,8 +63710,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-speed/CvSpeedMatrixSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12148,
-        "lineCount": 331,
+        "sizeBytes": 14363,
+        "lineCount": 384,
         "ext": ".tsx"
       }
     },
@@ -63697,8 +63723,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-speed/CvSpeedPredictorWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7678,
-        "lineCount": 205,
+        "sizeBytes": 12995,
+        "lineCount": 331,
         "ext": ".tsx"
       }
     },
@@ -63710,8 +63736,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-speed/CvSpeedRankingSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12689,
-        "lineCount": 346,
+        "sizeBytes": 15020,
+        "lineCount": 401,
         "ext": ".tsx"
       }
     },
@@ -63723,8 +63749,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-speed/CvSpeedTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11554,
-        "lineCount": 347,
+        "sizeBytes": 15570,
+        "lineCount": 446,
         "ext": ".tsx"
       }
     },
@@ -63827,8 +63853,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubTableCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6874,
-        "lineCount": 193,
+        "sizeBytes": 10964,
+        "lineCount": 285,
         "ext": ".tsx"
       }
     },
@@ -63872,6 +63898,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileDetailSheet.tsx",
+      "type": "File",
+      "label": "CvThuNhapMobileDetailSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileDetailSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13360,
+        "lineCount": 309,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileList.tsx",
       "type": "File",
       "label": "CvThuNhapMobileList.tsx",
@@ -63879,8 +63918,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileList.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11466,
-        "lineCount": 228,
+        "sizeBytes": 9327,
+        "lineCount": 188,
         "ext": ".tsx"
       }
     },
@@ -63944,8 +63983,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/useCvPaystubData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4920,
-        "lineCount": 142,
+        "sizeBytes": 4568,
+        "lineCount": 138,
         "ext": ".ts"
       }
     },
@@ -63996,8 +64035,21 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipLeaderboardCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5760,
-        "lineCount": 138,
+        "sizeBytes": 10574,
+        "lineCount": 235,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipMobileDetailSheet.tsx",
+      "type": "File",
+      "label": "CvTipMobileDetailSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipMobileDetailSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9661,
+        "lineCount": 221,
         "ext": ".tsx"
       }
     },
@@ -64048,8 +64100,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-tip-tab/useCvTipData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5459,
-        "lineCount": 186,
+        "sizeBytes": 5530,
+        "lineCount": 187,
         "ext": ".ts"
       }
     },
@@ -64087,8 +64139,21 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayLeaderboardCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6507,
-        "lineCount": 151,
+        "sizeBytes": 11236,
+        "lineCount": 254,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayMobileDetailSheet.tsx",
+      "type": "File",
+      "label": "CvXoayMobileDetailSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayMobileDetailSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6914,
+        "lineCount": 161,
         "ext": ".tsx"
       }
     },
@@ -64139,8 +64204,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-xoay-tab/useCvXoayData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4125,
-        "lineCount": 133,
+        "sizeBytes": 4218,
+        "lineCount": 135,
         "ext": ".ts"
       }
     },
@@ -64152,8 +64217,8 @@
       "filePath": "apps/web/app/dashboard/cv/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11084,
-        "lineCount": 313,
+        "sizeBytes": 13593,
+        "lineCount": 378,
         "ext": ".tsx"
       }
     },
@@ -114866,8 +114931,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/CvTipTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/CvTipTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/cv/components/CvXoayTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cv/components/CvXoayTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/__tests__/CvMobileTabsApple.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/__tests__/CvMobileTabsApple.test.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -114964,6 +115043,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileDetailSheet.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileDetailSheet.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileList.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileList.tsx",
       "target": "ws:packages/shared",
@@ -115027,6 +115113,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipMobileDetailSheet.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/CvTipMobileDetailSheet.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/cv/components/cv-tip-tab/cvTipColumns.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cv/components/cv-tip-tab/cvTipColumns.tsx",
       "target": "ws:packages/shared",
@@ -115057,6 +115150,20 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayDetailTableCard.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayDetailTableCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayLeaderboardCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayLeaderboardCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayMobileDetailSheet.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/components/cv-xoay-tab/CvXoayMobileDetailSheet.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -132136,8 +132243,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 6051,
-    "totalEdges": 7744,
+    "totalNodes": 6056,
+    "totalEdges": 7750,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -132146,14 +132253,14 @@
       "SharedType": 1586,
       "DesignToken": 12,
       "UIComponent": 798,
-      "File": 2615
+      "File": 2620
     },
     "edgeTypeCounts": {
       "EXPORTS": 1781,
       "HANDLES_ROUTE": 788,
       "RENDERS": 864,
       "USES_TOKEN": 800,
-      "IMPORTS": 1587,
+      "IMPORTS": 1593,
       "QUERIES_MODEL": 613,
       "API_CALL": 1311
     },

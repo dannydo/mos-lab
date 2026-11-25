@@ -5,6 +5,7 @@ import { Card, Row, Col, Select, Button, Tag, Typography, theme as antTheme } fr
 import { CalculatorOutlined, FieldTimeOutlined } from '@ant-design/icons';
 import { useTheme } from '../../../../../context/ThemeContext';
 import { CvSpeedPrediction, ConfidenceLevel, LashServiceMode } from '@mos-lab/shared';
+import { useCcMobilePortrait } from '~/app/dashboard/cc/components/useCcMobilePortrait';
 
 const { Text } = Typography;
 
@@ -43,6 +44,7 @@ export function CvSpeedPredictorWidget({
 }: CvSpeedPredictorWidgetProps) {
   const { themeMode } = useTheme();
   const { token } = antTheme.useToken();
+  const { showMobilePortrait } = useCcMobilePortrait();
 
   const renderConfidenceTag = (level: ConfidenceLevel, layer: number) => {
     const color = level === 'high' ? 'green' : level === 'medium' ? 'gold' : 'volcano';
@@ -52,6 +54,130 @@ export function CvSpeedPredictorWidget({
       </Tag>
     );
   };
+
+  if (showMobilePortrait) {
+    return (
+      <section
+        aria-label="Công cụ dự đoán thời gian Booking"
+        className="rounded-2xl p-3.5 bg-white/95 dark:bg-white/[0.045] border border-slate-200/80 dark:border-white/[0.08] shadow-xs space-y-3"
+      >
+        <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-50">
+          <CalculatorOutlined className="text-amber-500" />
+          <span>Dự Đoán Thời Gian Booking (ETA)</span>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <Text type="secondary" className="text-[11px] font-semibold block mb-1">
+              CHỌN CHUYÊN VIÊN (CV):
+            </Text>
+            <Select
+              id="predictor-cv-select"
+              value={predCvId}
+              onChange={onCvIdChange}
+              className="w-full"
+              options={cvOptions}
+              placeholder="Chọn Chuyên Viên (CV)"
+              showSearch
+              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+            />
+          </div>
+
+          <Row gutter={8}>
+            <Col span={12}>
+              <Text type="secondary" className="text-[11px] font-semibold block mb-1">
+                DÁNG MI:
+              </Text>
+              <Select
+                id="predictor-style-select"
+                value={predStyle}
+                onChange={onStyleChange}
+                className="w-full"
+                options={LASH_STYLES.map((s) => ({ value: s, label: s }))}
+              />
+            </Col>
+            <Col span={12}>
+              <Text type="secondary" className="text-[11px] font-semibold block mb-1">
+                SỐ SỢI:
+              </Text>
+              <Select
+                id="predictor-count-select"
+                value={predCount}
+                onChange={onCountChange}
+                className="w-full"
+                options={LASH_COUNTS.map((c) => ({ value: c, label: `${c} sợi` }))}
+              />
+            </Col>
+          </Row>
+
+          <div>
+            <Text type="secondary" className="text-[11px] font-semibold block mb-1">
+              CHẾ ĐỘ DỊCH VỤ:
+            </Text>
+            <Select
+              id="predictor-mode-select"
+              value={predMode}
+              onChange={onModeChange}
+              className="w-full"
+              options={[
+                { value: 'normal_clean', label: 'Khách mới / Mi sạch (Normal Clean)' },
+                { value: 'normal_removal', label: 'Khách có mi cũ (Normal Removal)' },
+                { value: 'retain', label: 'Dặm mi (Retain)' },
+              ]}
+            />
+          </div>
+
+          <Button
+            type="primary"
+            icon={<FieldTimeOutlined />}
+            size="large"
+            loading={loading}
+            onClick={onPredict}
+            block
+            className="font-semibold flex items-center justify-center rounded-xl"
+          >
+            Dự Đoán Thời Gian Hoàn Thành
+          </Button>
+
+          {prediction && (
+            <div className="p-3.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/90 dark:bg-white/[0.03] flex flex-col gap-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <Text type="secondary" className="text-[11px] block">
+                    DỰ ĐOÁN TỔNG THỜI GIAN:
+                  </Text>
+                  <span className="text-2xl font-extrabold tabular-nums text-amber-600 dark:text-amber-400">
+                    {prediction.predictedMinutes.total} phút
+                  </span>
+                </div>
+                <div className="text-right">
+                  {renderConfidenceTag(prediction.confidence, prediction.modelLayer)}
+                  <Text type="secondary" className="text-[11px] block mt-1 tabular-nums">
+                    Benchmark: {prediction.benchmarkMinutes}p
+                  </Text>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-200/75 dark:border-white/[0.07] pt-2 space-y-1.5 text-xs">
+                <div className="flex justify-between items-center text-slate-600 dark:text-slate-300">
+                  <span>1. Vệ sinh mi:</span>
+                  <span className="font-semibold tabular-nums">{prediction.predictedMinutes.cleaning} phút</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-600 dark:text-slate-300">
+                  <span>2. Nối mi chính:</span>
+                  <span className="font-semibold tabular-nums">{prediction.predictedMinutes.extension} phút</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-600 dark:text-slate-300">
+                  <span>3. Chuẩn bị &amp; QC:</span>
+                  <span className="font-semibold tabular-nums">{prediction.predictedMinutes.prepQc} phút</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <Card
@@ -66,7 +192,7 @@ export function CvSpeedPredictorWidget({
       <div className="flex flex-col gap-4">
         <div>
           <Text type="secondary" className="text-xs font-semibold block mb-1">
-            CHỌN KỸ THUẬT VIÊN (CV):
+            CHỌN CHUYÊN VIÊN (CV):
           </Text>
           <Select
             id="predictor-cv-select"

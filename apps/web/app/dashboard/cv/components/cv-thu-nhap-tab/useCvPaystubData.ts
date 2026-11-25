@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import type { CvPaystubRecord, ReportComparisonMode } from '@mos-lab/shared';
 import { usePreviousReportPeriod } from '~/hooks/usePreviousReportPeriod';
-import { useResponsiveTier, useViewportSize } from '~/hooks/useResponsiveTier';
+import { useCcMobilePortrait } from '~/app/dashboard/cc/components/useCcMobilePortrait';
 import { apiClient } from '~/lib/api-client';
 import { formatCompactVND, formatVND } from '~/lib/format-utils';
 import {
@@ -27,13 +27,8 @@ interface UseCvPaystubDataParams {
 
 /** Fetches CV paystub rows, summaries, period comparisons, and end-of-period projections. */
 export function useCvPaystubData({ dateRange, selectedStore, comparisonMode }: UseCvPaystubDataParams) {
-  const tier = useResponsiveTier();
-  const { width: viewportWidth, height: viewportHeight } = useViewportSize();
-  // A rotated iPhone 12 is wide enough for the compact tablet/table layout.
-  // Keep the portrait phone record cards, but do not force a 844px landscape
-  // viewport into a vertically stacked phone composition.
-  const isTabletDensityLandscape = viewportWidth >= 768 && viewportWidth > viewportHeight;
-  const isMobile = tier === 'mobile' && !isTabletDensityLandscape;
+  const { tier, showMobilePortrait } = useCcMobilePortrait();
+  const isMobile = showMobilePortrait;
   const useCompactMetricFormat = tier === 'mobile' || tier === 'tablet';
 
   const formatMetricValue = useCallback(
@@ -119,6 +114,7 @@ export function useCvPaystubData({ dateRange, selectedStore, comparisonMode }: U
 
   return {
     isMobile,
+    showMobilePortrait,
     useCompactMetricFormat,
     formatMetricValue,
     previousPeriod,

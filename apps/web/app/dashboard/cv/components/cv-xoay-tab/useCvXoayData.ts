@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import type { CvXoayRecord, ReportComparisonMode } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import { usePreviousReportPeriod } from '~/hooks/usePreviousReportPeriod';
-import { useResponsiveTier } from '~/hooks/useResponsiveTier';
+import { useCcMobilePortrait } from '~/app/dashboard/cc/components/useCcMobilePortrait';
 import {
   buildCvXoayLeaderboard,
   computeCvXoayForecast,
@@ -25,8 +25,8 @@ interface UseCvXoayDataParams {
 }
 
 export function useCvXoayData({ dateRange, selectedStore, selectedConsultant, comparisonMode }: UseCvXoayDataParams) {
-  const tier = useResponsiveTier();
-  const isMobile = tier === 'mobile';
+  const { showMobilePortrait } = useCcMobilePortrait();
+  const isMobile = showMobilePortrait;
   const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
 
   const [loading, setLoading] = useState(false);
@@ -112,11 +112,13 @@ export function useCvXoayData({ dateRange, selectedStore, selectedConsultant, co
   return {
     loading,
     isMobile,
+    showMobilePortrait,
     previousPeriod,
     summary,
     previousSummary,
     leaderboard,
     forecast,
+    allRecords: data,
     filteredData,
     searchText,
     setSearchText,

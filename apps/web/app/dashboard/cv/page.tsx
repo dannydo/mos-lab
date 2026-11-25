@@ -10,12 +10,14 @@ import {
   SyncOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
+import { Gauge, Gift, RefreshCw, ShieldAlert, Wallet } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
 import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
-import { ReportPeriodNavigator, TableSettingsTrigger } from '../../../components/ui';
-import { useResponsiveTier } from '../../../hooks/useResponsiveTier';
+import { AppIcon, ReportPeriodNavigator, TableSettingsTrigger } from '../../../components/ui';
+import { useCcMobilePortrait } from '../cc/components/useCcMobilePortrait';
+import { CvMobileShellHeader, type CvMobileTabOption } from './components/CvMobileShellHeader';
 
 dayjs.extend(isoWeek);
 
@@ -41,7 +43,7 @@ function CvTabLabel({ icon, title, children }: { icon: React.ReactNode; title: s
 export default function CvReportPage() {
   const { token } = theme.useToken();
   const router = useRouter();
-  const responsiveTier = useResponsiveTier();
+  const { tier: responsiveTier, showMobilePortrait } = useCcMobilePortrait();
   const [currentUser, setCurrentUser] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
@@ -175,138 +177,201 @@ export default function CvReportPage() {
     }
   };
 
-  return (
-    <div className="responsive-page responsive-workspace cv-page w-full space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
-            CV Leaderboard
-          </Title>
-          <Text style={{ color: token.colorTextDescription }}>
-            Theo dõi dữ liệu Xoay, Lương giờ, Tip và thu nhập live
-          </Text>
-        </div>
+  const mobileTabs: CvMobileTabOption[] = [
+    { key: 'xoay', label: 'Xoay', icon: <AppIcon icon={RefreshCw} size={13} /> },
+    { key: 'tip', label: 'Tip', icon: <AppIcon icon={Gift} size={13} /> },
+    { key: 'thunhap', label: 'Thu Nhập', icon: <AppIcon icon={Wallet} size={13} /> },
+    { key: 'speed', label: 'Tốc Độ', icon: <AppIcon icon={Gauge} size={13} /> },
+    { key: 'kyluat', label: 'Kỷ Luật', icon: <AppIcon icon={ShieldAlert} size={13} /> },
+  ];
 
-        <Space wrap className="responsive-toolbar cv-report-toolbar" size={10}>
-          <ReportPeriodNavigator
-            mode={viewMode}
-            value={referenceDate}
-            label={getPeriodLabel()}
-            onModeChange={setViewMode}
-            onPrevious={() => handleNavigate(-1)}
-            onNext={() => handleNavigate(1)}
-            onValueChange={setReferenceDate}
-            rangeValue={dateRange}
-            onRangeChange={setDateRange}
-          />
-          {isAdminOrSuperAdminRole(currentUser?.role as string) && (
-            <TableSettingsTrigger
-              title="Cấu hình CV"
-              onClick={() => router.push('/dashboard/staff/teams?selected=CV')}
-              className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
-            />
-          )}
-        </Space>
-      </div>
-
-      {/* 3 MAIN TABS */}
-      {responsiveTier === 'mobile' && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
-          <span>💡</span>
-          <span>
-            <strong>Mẹo xem báo cáo:</strong> Xoay ngang điện thoại (Landscape) để xem bảng đối soát chi tiết hoặc xem
-            tóm tắt bên dưới.
-          </span>
-        </div>
-      )}
-      <Card
-        variant="outlined"
-        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-        styles={{ body: { padding: '12px 16px 16px 16px' } }}
-        className="shadow-sm rounded-xl dashboard-main-tabs-card"
-      >
-        <Tabs
-          activeKey={activeTab}
-          onChange={handleTabChange}
-          size={responsiveTier === 'mobile' ? 'small' : 'large'}
-          className="custom-report-tabs"
-          destroyOnHidden
-          items={[
-            {
-              key: 'xoay',
-              label: (
-                <CvTabLabel title="CV Xoay" icon={<SyncOutlined />}>
-                  Xoay
-                </CvTabLabel>
-              ),
-              children:
-                activeTab === 'xoay' ? (
-                  <CvXoayTab
-                    dateRange={dateRange}
-                    selectedStore={selectedStore}
-                    selectedConsultant={selectedConsultant}
-                    comparisonMode={viewMode}
-                  />
-                ) : null,
-            },
-            {
-              key: 'tip',
-              label: (
-                <CvTabLabel title="CV Tip" icon={<MoneyCollectOutlined />}>
-                  Tip
-                </CvTabLabel>
-              ),
-              children:
-                activeTab === 'tip' ? (
-                  <CvTipTab
-                    dateRange={dateRange}
-                    selectedStore={selectedStore}
-                    selectedConsultant={selectedConsultant}
-                    comparisonMode={viewMode}
-                  />
-                ) : null,
-            },
-            {
-              key: 'thunhap',
-              label: (
-                <CvTabLabel title="Thu nhập CV" icon={<WalletOutlined />}>
-                  Thu Nhập
-                </CvTabLabel>
-              ),
-              children:
-                activeTab === 'thunhap' ? (
-                  <CvThuNhapTab
-                    dateRange={dateRange}
-                    selectedStore={selectedStore}
-                    currentUser={currentUser}
-                    comparisonMode={viewMode}
-                  />
-                ) : null,
-            },
-            {
-              key: 'speed',
-              label: (
-                <CvTabLabel title="Tốc độ CV" icon={<DashboardOutlined />}>
-                  Tốc Độ
-                </CvTabLabel>
-              ),
-              children: activeTab === 'speed' ? <CvSpeedTab /> : null,
-            },
-            {
-              key: 'kyluat',
-              label: (
-                <CvTabLabel title="Kỷ luật CV" icon={<SafetyCertificateOutlined />}>
-                  Kỷ Luật
-                </CvTabLabel>
-              ),
-              children:
-                activeTab === 'kyluat' ? (
-                  <CvKyLuatTab dateRange={dateRange} selectedStore={selectedStore} comparisonMode={viewMode} />
-                ) : null,
-            },
-          ]}
+  const renderActiveTabContent = () => {
+    if (activeTab === 'xoay') {
+      return (
+        <CvXoayTab
+          dateRange={dateRange}
+          selectedStore={selectedStore}
+          selectedConsultant={selectedConsultant}
+          comparisonMode={viewMode}
         />
-      </Card>
+      );
+    }
+    if (activeTab === 'tip') {
+      return (
+        <CvTipTab
+          dateRange={dateRange}
+          selectedStore={selectedStore}
+          selectedConsultant={selectedConsultant}
+          comparisonMode={viewMode}
+        />
+      );
+    }
+    if (activeTab === 'thunhap') {
+      return (
+        <CvThuNhapTab
+          dateRange={dateRange}
+          selectedStore={selectedStore}
+          currentUser={currentUser}
+          comparisonMode={viewMode}
+        />
+      );
+    }
+    if (activeTab === 'speed') {
+      return <CvSpeedTab />;
+    }
+    return <CvKyLuatTab dateRange={dateRange} selectedStore={selectedStore} comparisonMode={viewMode} />;
+  };
+
+  const canManageCvConfig = isAdminOrSuperAdminRole(currentUser?.role as string);
+
+  return (
+    <div
+      className={`responsive-page responsive-workspace cv-page w-full ${
+        showMobilePortrait ? 'space-y-3' : 'space-y-6'
+      }`}
+    >
+      {showMobilePortrait ? (
+        <>
+          <CvMobileShellHeader
+            viewMode={viewMode}
+            referenceDate={referenceDate}
+            periodLabel={getPeriodLabel()}
+            activeTab={activeTab}
+            tabs={mobileTabs}
+            hidePeriodControls={activeTab === 'speed'}
+            showAdminSettings={canManageCvConfig}
+            onViewModeChange={setViewMode}
+            onNavigate={handleNavigate}
+            onValueChange={setReferenceDate}
+            onTabChange={handleTabChange}
+            onOpenAdminSettings={() => router.push('/dashboard/staff/teams?selected=CV')}
+          />
+          <div className="pt-0.5">{renderActiveTabContent()}</div>
+        </>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
+                CV Leaderboard
+              </Title>
+              <Text style={{ color: token.colorTextDescription }}>
+                Theo dõi dữ liệu Xoay, Lương giờ, Tip và thu nhập live
+              </Text>
+            </div>
+
+            <Space wrap className="responsive-toolbar cv-report-toolbar" size={10}>
+              <ReportPeriodNavigator
+                mode={viewMode}
+                value={referenceDate}
+                label={getPeriodLabel()}
+                onModeChange={setViewMode}
+                onPrevious={() => handleNavigate(-1)}
+                onNext={() => handleNavigate(1)}
+                onValueChange={setReferenceDate}
+                rangeValue={dateRange}
+                onRangeChange={setDateRange}
+              />
+              {canManageCvConfig && (
+                <TableSettingsTrigger
+                  title="Cấu hình CV"
+                  onClick={() => router.push('/dashboard/staff/teams?selected=CV')}
+                  className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
+                />
+              )}
+            </Space>
+          </div>
+
+          <Card
+            variant="outlined"
+            style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+            styles={{ body: { padding: '12px 16px 16px 16px' } }}
+            className="shadow-sm rounded-xl dashboard-main-tabs-card"
+          >
+            <Tabs
+              activeKey={activeTab}
+              onChange={handleTabChange}
+              size={responsiveTier === 'mobile' ? 'small' : 'large'}
+              className="custom-report-tabs"
+              destroyOnHidden
+              items={[
+                {
+                  key: 'xoay',
+                  label: (
+                    <CvTabLabel title="CV Xoay" icon={<SyncOutlined />}>
+                      Xoay
+                    </CvTabLabel>
+                  ),
+                  children:
+                    activeTab === 'xoay' ? (
+                      <CvXoayTab
+                        dateRange={dateRange}
+                        selectedStore={selectedStore}
+                        selectedConsultant={selectedConsultant}
+                        comparisonMode={viewMode}
+                      />
+                    ) : null,
+                },
+                {
+                  key: 'tip',
+                  label: (
+                    <CvTabLabel title="CV Tip" icon={<MoneyCollectOutlined />}>
+                      Tip
+                    </CvTabLabel>
+                  ),
+                  children:
+                    activeTab === 'tip' ? (
+                      <CvTipTab
+                        dateRange={dateRange}
+                        selectedStore={selectedStore}
+                        selectedConsultant={selectedConsultant}
+                        comparisonMode={viewMode}
+                      />
+                    ) : null,
+                },
+                {
+                  key: 'thunhap',
+                  label: (
+                    <CvTabLabel title="Thu nhập CV" icon={<WalletOutlined />}>
+                      Thu Nhập
+                    </CvTabLabel>
+                  ),
+                  children:
+                    activeTab === 'thunhap' ? (
+                      <CvThuNhapTab
+                        dateRange={dateRange}
+                        selectedStore={selectedStore}
+                        currentUser={currentUser}
+                        comparisonMode={viewMode}
+                      />
+                    ) : null,
+                },
+                {
+                  key: 'speed',
+                  label: (
+                    <CvTabLabel title="Tốc độ CV" icon={<DashboardOutlined />}>
+                      Tốc Độ
+                    </CvTabLabel>
+                  ),
+                  children: activeTab === 'speed' ? <CvSpeedTab /> : null,
+                },
+                {
+                  key: 'kyluat',
+                  label: (
+                    <CvTabLabel title="Kỷ luật CV" icon={<SafetyCertificateOutlined />}>
+                      Kỷ Luật
+                    </CvTabLabel>
+                  ),
+                  children:
+                    activeTab === 'kyluat' ? (
+                      <CvKyLuatTab dateRange={dateRange} selectedStore={selectedStore} comparisonMode={viewMode} />
+                    ) : null,
+                },
+              ]}
+            />
+          </Card>
+        </>
+      )}
     </div>
   );
 }

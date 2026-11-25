@@ -4,12 +4,23 @@ import React, { useState, useEffect } from 'react';
 import { Row, Col, message } from 'antd';
 import { apiClient } from '../../../../../lib/api-client';
 import { CvSpeedMatrix, CvSpeedRanking, CvSpeedDetail, CvSpeedPrediction, LashServiceMode } from '@mos-lab/shared';
+import { useCcMobilePortrait } from '~/app/dashboard/cc/components/useCcMobilePortrait';
 import { CvSpeedMatrixSection } from './CvSpeedMatrixSection';
 import { CvSpeedRankingSection } from './CvSpeedRankingSection';
 import { CvSpeedDetailModal } from './CvSpeedDetailModal';
 import { CvSpeedPredictorWidget } from './CvSpeedPredictorWidget';
 
+type CvSpeedMobileSubView = 'ranking' | 'matrix' | 'predictor';
+
+const SPEED_MOBILE_SUBVIEWS: ReadonlyArray<{ key: CvSpeedMobileSubView; label: string }> = [
+  { key: 'ranking', label: 'Xếp hạng' },
+  { key: 'matrix', label: 'Ma trận' },
+  { key: 'predictor', label: 'Dự đoán ETA' },
+];
+
 export function CvSpeedTab() {
+  const { showMobilePortrait } = useCcMobilePortrait();
+  const [mobileSubView, setMobileSubView] = useState<CvSpeedMobileSubView>('ranking');
   // Matrix State
   const [matrixServiceMode, setMatrixServiceMode] = useState<LashServiceMode>(() => {
     if (typeof window !== 'undefined') {
@@ -275,63 +286,151 @@ export function CvSpeedTab() {
   };
 
   return (
-    <div className="cv-speed-tab flex flex-col gap-6">
-      {/* SECTION 1: OVERVIEW SPEED MATRIX */}
-      <CvSpeedMatrixSection
-        matrixData={matrixData}
-        loading={matrixLoading}
-        seeding={seeding}
-        serviceMode={matrixServiceMode}
-        lashStyle={matrixLashStyle}
-        searchCvName={searchCvName}
-        matrixPage={matrixPage}
-        matrixPageSize={matrixPageSize}
-        onServiceModeChange={handleMatrixServiceModeChange}
-        onLashStyleChange={handleMatrixLashStyleChange}
-        onSearchChange={setSearchCvName}
-        onPageChange={handleMatrixPageChange}
-        onPageSizeChange={handleMatrixPageSizeChange}
-        onSeed={handleSeed}
-        onOpenDetail={openDetailModal}
-      />
+    <div className={`cv-speed-tab flex flex-col ${showMobilePortrait ? 'gap-3' : 'gap-6'}`}>
+      {showMobilePortrait ? (
+        <>
+          <div
+            data-testid="cv-speed-mobile-segmented"
+            role="radiogroup"
+            aria-label="Chế độ xem tốc độ CV"
+            className="grid grid-cols-3 p-0.5 rounded-xl bg-slate-200/80 dark:bg-white/[0.07]"
+          >
+            {SPEED_MOBILE_SUBVIEWS.map((view) => {
+              const active = mobileSubView === view.key;
+              return (
+                <button
+                  key={view.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setMobileSubView(view.key)}
+                  className={`h-7 rounded-[10px] text-xs font-semibold transition-all cursor-pointer ${
+                    active
+                      ? 'bg-white text-slate-950 shadow-xs dark:bg-white/[0.16] dark:text-white'
+                      : 'text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  {view.label}
+                </button>
+              );
+            })}
+          </div>
 
-      {/* SECTION 2 & 4: RANKING & PREDICTOR WIDGET ROW */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={14}>
-          <CvSpeedRankingSection
-            rankingData={rankingData}
-            loading={rankingLoading}
-            rankingStyle={rankingStyle}
-            rankingCount={rankingCount}
-            rankingMode={rankingMode}
-            rankingPage={rankingPage}
-            rankingPageSize={rankingPageSize}
-            onStyleChange={handleRankingStyleChange}
-            onCountChange={handleRankingCountChange}
-            onModeChange={handleRankingModeChange}
-            onPageChange={handleRankingPageChange}
-            onPageSizeChange={handleRankingPageSizeChange}
+          {mobileSubView === 'ranking' && (
+            <CvSpeedRankingSection
+              rankingData={rankingData}
+              loading={rankingLoading}
+              rankingStyle={rankingStyle}
+              rankingCount={rankingCount}
+              rankingMode={rankingMode}
+              rankingPage={rankingPage}
+              rankingPageSize={rankingPageSize}
+              onStyleChange={handleRankingStyleChange}
+              onCountChange={handleRankingCountChange}
+              onModeChange={handleRankingModeChange}
+              onPageChange={handleRankingPageChange}
+              onPageSizeChange={handleRankingPageSizeChange}
+              onOpenDetail={openDetailModal}
+            />
+          )}
+
+          {mobileSubView === 'matrix' && (
+            <CvSpeedMatrixSection
+              matrixData={matrixData}
+              loading={matrixLoading}
+              seeding={seeding}
+              serviceMode={matrixServiceMode}
+              lashStyle={matrixLashStyle}
+              searchCvName={searchCvName}
+              matrixPage={matrixPage}
+              matrixPageSize={matrixPageSize}
+              onServiceModeChange={handleMatrixServiceModeChange}
+              onLashStyleChange={handleMatrixLashStyleChange}
+              onSearchChange={setSearchCvName}
+              onPageChange={handleMatrixPageChange}
+              onPageSizeChange={handleMatrixPageSizeChange}
+              onSeed={handleSeed}
+              onOpenDetail={openDetailModal}
+            />
+          )}
+
+          {mobileSubView === 'predictor' && (
+            <CvSpeedPredictorWidget
+              cvOptions={cvOptions}
+              predCvId={predCvId}
+              predStyle={predStyle}
+              predCount={predCount}
+              predMode={predMode}
+              prediction={prediction}
+              loading={predictLoading}
+              onCvIdChange={setPredCvId}
+              onStyleChange={setPredStyle}
+              onCountChange={setPredCount}
+              onModeChange={setPredMode}
+              onPredict={handlePredict}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          {/* SECTION 1: OVERVIEW SPEED MATRIX */}
+          <CvSpeedMatrixSection
+            matrixData={matrixData}
+            loading={matrixLoading}
+            seeding={seeding}
+            serviceMode={matrixServiceMode}
+            lashStyle={matrixLashStyle}
+            searchCvName={searchCvName}
+            matrixPage={matrixPage}
+            matrixPageSize={matrixPageSize}
+            onServiceModeChange={handleMatrixServiceModeChange}
+            onLashStyleChange={handleMatrixLashStyleChange}
+            onSearchChange={setSearchCvName}
+            onPageChange={handleMatrixPageChange}
+            onPageSizeChange={handleMatrixPageSizeChange}
+            onSeed={handleSeed}
             onOpenDetail={openDetailModal}
           />
-        </Col>
 
-        <Col xs={24} lg={10}>
-          <CvSpeedPredictorWidget
-            cvOptions={cvOptions}
-            predCvId={predCvId}
-            predStyle={predStyle}
-            predCount={predCount}
-            predMode={predMode}
-            prediction={prediction}
-            loading={predictLoading}
-            onCvIdChange={setPredCvId}
-            onStyleChange={setPredStyle}
-            onCountChange={setPredCount}
-            onModeChange={setPredMode}
-            onPredict={handlePredict}
-          />
-        </Col>
-      </Row>
+          {/* SECTION 2 & 4: RANKING & PREDICTOR WIDGET ROW */}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={14}>
+              <CvSpeedRankingSection
+                rankingData={rankingData}
+                loading={rankingLoading}
+                rankingStyle={rankingStyle}
+                rankingCount={rankingCount}
+                rankingMode={rankingMode}
+                rankingPage={rankingPage}
+                rankingPageSize={rankingPageSize}
+                onStyleChange={handleRankingStyleChange}
+                onCountChange={handleRankingCountChange}
+                onModeChange={handleRankingModeChange}
+                onPageChange={handleRankingPageChange}
+                onPageSizeChange={handleRankingPageSizeChange}
+                onOpenDetail={openDetailModal}
+              />
+            </Col>
+
+            <Col xs={24} lg={10}>
+              <CvSpeedPredictorWidget
+                cvOptions={cvOptions}
+                predCvId={predCvId}
+                predStyle={predStyle}
+                predCount={predCount}
+                predMode={predMode}
+                prediction={prediction}
+                loading={predictLoading}
+                onCvIdChange={setPredCvId}
+                onStyleChange={setPredStyle}
+                onCountChange={setPredCount}
+                onModeChange={setPredMode}
+                onPredict={handlePredict}
+              />
+            </Col>
+          </Row>
+        </>
+      )}
 
       {/* SECTION 3: CV DETAIL MODAL */}
       <CvSpeedDetailModal

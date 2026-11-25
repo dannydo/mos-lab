@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import type { CvTipLeaderboardEntry, CvTipRecord, ReportComparisonMode, TipFilterType } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import { usePreviousReportPeriod } from '~/hooks/usePreviousReportPeriod';
-import { useResponsiveTier } from '~/hooks/useResponsiveTier';
+import { useCcMobilePortrait } from '~/app/dashboard/cc/components/useCcMobilePortrait';
 import {
   computeCvTipForecast,
   EMPTY_CV_TIP_SUMMARY,
@@ -30,8 +30,8 @@ export function useCvTipData({
   onSelectConsultant,
   comparisonMode,
 }: UseCvTipDataParams) {
-  const tier = useResponsiveTier();
-  const isMobile = tier === 'mobile';
+  const { showMobilePortrait } = useCcMobilePortrait();
+  const isMobile = showMobilePortrait;
   const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
 
   const [loading, setLoading] = useState(false);
@@ -161,6 +161,7 @@ export function useCvTipData({
 
   return {
     isMobile,
+    showMobilePortrait,
     previousPeriod,
     loading,
     leaderboard,

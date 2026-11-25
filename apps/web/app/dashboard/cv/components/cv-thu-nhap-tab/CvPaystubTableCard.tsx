@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Button, Input, Popover, Tooltip } from 'antd';
-import { Clock, DollarSign, Maximize2, Minimize2, Search, Settings } from 'lucide-react';
+import { Clock, DollarSign, Maximize2, Minimize2, RefreshCw, Search, Settings } from 'lucide-react';
 import type { CvPaystubRecord } from '@mos-lab/shared';
-import { DataTable, SectionCard } from '~/components/ui';
+import { AppIcon, DataTable, SectionCard } from '~/components/ui';
 import { CvSelfManagedSubRow } from './CvSelfManagedSubRow';
 import { CvSeniorityConfigPopover } from './CvSeniorityConfigPopover';
 import { CvThuNhapMobileList } from './CvThuNhapMobileList';
@@ -24,6 +24,7 @@ interface CvPaystubTableCardProps {
   onRefresh: () => void;
   forecastMeta: CvIncomeForecastMeta;
   getProjectedRecord: (record: CvPaystubRecord) => CvProjectedRecord;
+  onSelectMobileCard?: (record: CvPaystubRecord) => void;
   onOpenWorkLogs: (record: CvPaystubRecord) => void;
   onOpenPaystubModal: (record: CvPaystubRecord) => void;
   onNavigateCareerPath: (staffId: number) => void;
@@ -53,6 +54,7 @@ export function CvPaystubTableCard({
   onRefresh,
   forecastMeta,
   getProjectedRecord,
+  onSelectMobileCard,
   onOpenWorkLogs,
   onOpenPaystubModal,
   onNavigateCareerPath,
@@ -66,6 +68,7 @@ export function CvPaystubTableCard({
   onRemoveSeniorityRule,
   onSaveSeniorityConfig,
 }: CvPaystubTableCardProps) {
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const columns = useMemo(
     () =>
       buildCvThuNhapColumns({
@@ -82,6 +85,95 @@ export function CvPaystubTableCard({
     () => (filteredData || []).filter((r) => r.isCvPlus && r.cvPlusBreakdown).map((r) => r.staffId),
     [filteredData]
   );
+
+  if (isMobile) {
+    return (
+      <section aria-label="Phiếu thu nhập CV" className="space-y-2">
+        <div className="flex items-center justify-between gap-2 px-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Phiếu thu nhập · {filteredData.length}
+          </span>
+          <div className="flex items-center gap-1.5">
+            {canManagePaystub && (
+              <Popover
+                content={
+                  <CvSeniorityConfigPopover
+                    seniorityRules={seniorityRules}
+                    configLoading={configLoading}
+                    configSaving={configSaving}
+                    canManagePaystub={canManagePaystub}
+                    popoverRefCallback={popoverRefCallback}
+                    onAddRule={onAddSeniorityRule}
+                    onUpdateRule={onUpdateSeniorityRule}
+                    onRemoveRule={onRemoveSeniorityRule}
+                    onSaveConfig={onSaveSeniorityConfig}
+                  />
+                }
+                trigger="click"
+                placement="bottomRight"
+              >
+                <button
+                  type="button"
+                  aria-label="Cấu hình tỷ lệ thưởng thâm niên"
+                  className="w-7 h-7 rounded-full border border-slate-200/80 bg-slate-100 text-slate-600 dark:border-white/[0.1] dark:bg-white/[0.06] dark:text-slate-300 flex items-center justify-center transition-all cursor-pointer"
+                >
+                  <AppIcon icon={Settings} size={12} aria-hidden />
+                </button>
+              </Popover>
+            )}
+            <button
+              type="button"
+              aria-label="Tìm chuyên viên"
+              onClick={() => {
+                if (mobileSearchOpen && searchText) onSearchTextChange('');
+                setMobileSearchOpen((prev) => !prev);
+              }}
+              className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
+                mobileSearchOpen || searchText
+                  ? 'bg-slate-900 border-slate-900 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-slate-950'
+                  : 'bg-slate-100 border-slate-200/80 text-slate-600 dark:bg-white/[0.06] dark:border-white/[0.1] dark:text-slate-300'
+              }`}
+            >
+              <AppIcon icon={Search} size={12} aria-hidden />
+            </button>
+            <button
+              type="button"
+              aria-label="Làm mới thu nhập"
+              onClick={onRefresh}
+              className="w-7 h-7 rounded-full border border-slate-200/80 bg-slate-100 text-slate-600 dark:border-white/[0.1] dark:bg-white/[0.06] dark:text-slate-300 flex items-center justify-center transition-all cursor-pointer"
+            >
+              <AppIcon icon={RefreshCw} size={12} className={loading ? 'animate-spin' : ''} aria-hidden />
+            </button>
+          </div>
+        </div>
+
+        {mobileSearchOpen && (
+          <Input
+            id="cv-thunhap-mobile-search"
+            name="cvThuNhapMobileSearch"
+            placeholder="Tìm tên CV hoặc gõ CVL..."
+            prefix={<AppIcon icon={Search} size={13} className="text-slate-400" />}
+            value={searchText}
+            onChange={(e) => onSearchTextChange(e.target.value)}
+            allowClear
+            size="middle"
+            className="rounded-xl"
+          />
+        )}
+
+        <CvThuNhapMobileList
+          records={filteredData}
+          loading={loading}
+          forecastMeta={forecastMeta}
+          getProjectedRecord={getProjectedRecord}
+          onSelectCard={onSelectMobileCard}
+          onOpenWorkLogs={onOpenWorkLogs}
+          onOpenPaystubModal={onOpenPaystubModal}
+          onNavigateCareerPath={onNavigateCareerPath}
+        />
+      </section>
+    );
+  }
 
   return (
     <SectionCard
