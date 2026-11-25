@@ -1,10 +1,11 @@
 import React from 'react';
 import { Card, Progress, Space, Tooltip, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { CheckCircle2, CircleDot, Filter, RefreshCw, Trophy, UsersRound } from 'lucide-react';
-import { DailySalesBonusLeaderboardEntry, calculateWheelBonusCap } from '@mos-lab/shared';
+import { CheckCircle2, ChevronRight, CircleDot, Filter, RefreshCw, Trophy, UsersRound, X } from 'lucide-react';
+import { DailySalesBonusLeaderboardEntry, calculateWheelBonusCap, themeTokens } from '@mos-lab/shared';
 import { formatCompactVND, formatStoreCode } from '~/lib/format-utils';
 import { AppIcon, DataTable, MobileRecordList, StatusTag } from '~/components/ui';
+import { useViewportSize } from '~/hooks/useResponsiveTier';
 import CcAvatar from '../CcAvatar';
 
 interface CcThuongLeaderboardCardProps {
@@ -14,6 +15,7 @@ interface CcThuongLeaderboardCardProps {
   selectedCcName: string | null;
   setSelectedCcName: (name: string | null) => void;
   parentOnSelectConsultant?: (consultantName: string) => void;
+  onInspectConsultantMobile?: (entry: DailySalesBonusLeaderboardEntry) => void;
   isPastPeriod: boolean;
   isDayMode: boolean;
   periodNoun: string;
@@ -32,19 +34,27 @@ export const CcThuongLeaderboardCard: React.FC<CcThuongLeaderboardCardProps> = (
   selectedCcName,
   setSelectedCcName,
   parentOnSelectConsultant,
+  onInspectConsultantMobile,
   isPastPeriod,
   isDayMode,
   periodNoun,
   ratio,
 }) => {
   const { token } = theme.useToken();
+  const { width: viewportWidth, height: viewportHeight } = useViewportSize();
+  const { mobileLandscapeMaxWidth, mobileLandscapeMaxHeight } = themeTokens.responsive.breakpoints;
+  const isPhoneLandscape =
+    viewportWidth > viewportHeight &&
+    viewportWidth <= mobileLandscapeMaxWidth &&
+    viewportHeight <= mobileLandscapeMaxHeight;
+  const showMobileCards = isMobile && !isPhoneLandscape;
 
   const leaderboardColumns: ColumnsType<DailySalesBonusLeaderboardEntry> = [
     {
       title: 'Hạng',
       dataIndex: 'rank',
       key: 'rank',
-      width: 60,
+      width: 48,
       align: 'center',
       render: (rank: number) => {
         if (rank === 1) return <span className="text-lg">🥇</span>;
@@ -94,7 +104,7 @@ export const CcThuongLeaderboardCard: React.FC<CcThuongLeaderboardCardProps> = (
       title: 'Lượt Khách (Tổng / Vòng Xanh)',
       dataIndex: 'totalVisits',
       key: 'totalVisits',
-      width: 170,
+      width: 150,
       align: 'right',
       render: (val: number, record: DailySalesBonusLeaderboardEntry) => (
         <Tooltip
@@ -125,7 +135,7 @@ export const CcThuongLeaderboardCard: React.FC<CcThuongLeaderboardCardProps> = (
       title: 'Combo Bán & Tỷ Lệ (Vòng Xanh)',
       dataIndex: 'comboSalesCount',
       key: 'comboSalesCount',
-      width: 180,
+      width: 168,
       align: 'right',
       render: (val: number, record: DailySalesBonusLeaderboardEntry) => (
         <Tooltip
@@ -144,7 +154,17 @@ export const CcThuongLeaderboardCard: React.FC<CcThuongLeaderboardCardProps> = (
                     className="text-emerald-600 dark:text-emerald-400"
                   />
                 </Tooltip>
-                : <strong className="text-emerald-600 dark:text-emerald-400">{record.greenComboConversionRate}%</strong>
+                :{' '}
+                <strong
+                  data-cc-combo-rate={record.greenComboConversionRate}
+                  className={
+                    record.greenComboConversionRate >= 15
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-amber-600 dark:text-amber-400'
+                  }
+                >
+                  {record.greenComboConversionRate}%
+                </strong>
               </span>
               <div className="w-10">
                 <Progress
@@ -344,6 +364,142 @@ export const CcThuongLeaderboardCard: React.FC<CcThuongLeaderboardCardProps> = (
     parentOnSelectConsultant?.(newCc || 'ALL');
   };
 
+  if (showMobileCards) {
+    return (
+      <section aria-label="Xếp hạng CC" className="space-y-2">
+        <div className="flex items-center justify-between gap-2 px-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Xếp hạng CC · {leaderboardData.length}
+          </span>
+          {selectedCcName && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedCcName(null);
+                parentOnSelectConsultant?.('ALL');
+              }}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 cursor-pointer active:scale-95"
+            >
+              <span>Đang lọc: {selectedCcName}</span>
+              <AppIcon icon={X} size={11} aria-hidden />
+            </button>
+          )}
+        </div>
+
+        <MobileRecordList
+          className="space-y-2"
+          recordClassName="!rounded-2xl !px-3.5 !py-3 !bg-white/95 dark:!bg-white/[0.045] !border !border-slate-200/80 dark:!border-white/[0.08] !shadow-xs"
+          records={leaderboardData}
+          loading={loading}
+          getKey={(record) => String(record.consultantId)}
+          emptyDescription="Chưa có dữ liệu xếp hạng CC Thưởng"
+          getRecordClassName={(record) =>
+            selectedCcName === record.displayName ? '!ring-1 !ring-amber-400/70 !bg-amber-500/10' : ''
+          }
+          renderRecord={(record) => {
+            const isSelected = selectedCcName === record.displayName;
+            const comboRate = record.greenComboConversionRate || 0;
+            const rateHighlightClass =
+              comboRate >= 15 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400';
+
+            return (
+              <button
+                type="button"
+                className="w-full min-w-0 text-left cursor-pointer active:scale-[0.99] transition-transform"
+                aria-pressed={isSelected}
+                onClick={() => {
+                  if (onInspectConsultantMobile) {
+                    onInspectConsultantMobile(record);
+                  } else {
+                    toggleConsultantSelection(record.displayName);
+                  }
+                }}
+              >
+                {/* Top Row: Medal + Avatar + Name/Visits on Left | Hero % Bán Combo + Chevron on Right */}
+                <div className="flex items-center justify-between gap-2.5 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <span className="w-5 shrink-0 text-center text-sm font-bold tabular-nums text-amber-500">
+                      {record.rank === 1
+                        ? '🥇'
+                        : record.rank === 2
+                          ? '🥈'
+                          : record.rank === 3
+                            ? '🥉'
+                            : `#${record.rank}`}
+                    </span>
+                    <CcAvatar name={record.displayName} src={record.avatar} isSelected={isSelected} size={36} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+                        {record.displayName}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-1.5 text-[11.5px] text-slate-500 dark:text-slate-400 tabular-nums">
+                        <span className="font-medium">{formatStoreCode(record.store)}</span>
+                        <span>·</span>
+                        <span>{formatVisitCount(record.totalVisits)} lượt</span>
+                        <span>·</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                          {formatVisitCount(record.greenVisits)} VX
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="text-right">
+                      <div
+                        data-cc-combo-rate={comboRate}
+                        className={`text-[18px] font-bold leading-none tabular-nums ${rateHighlightClass}`}
+                      >
+                        {comboRate}%
+                      </div>
+                      <div className="mt-0.5 text-[10.5px] font-medium text-slate-500 dark:text-slate-400 tabular-nums">
+                        {formatVisitCount(record.comboSalesCount)}/{formatVisitCount(record.greenVisits)} VX
+                      </div>
+                    </div>
+                    <AppIcon icon={ChevronRight} size={16} className="text-slate-400/75 shrink-0" aria-hidden />
+                  </div>
+                </div>
+
+                {/* Slim 3px Apple Fitness Progress Bar */}
+                <div className="mt-2.5">
+                  <Progress
+                    percent={Math.min(100, Math.max(0, comboRate))}
+                    size="small"
+                    strokeColor={comboRate >= 15 ? token.colorSuccess : token.colorWarning}
+                    showInfo={false}
+                    className="m-0 block leading-none [&_.ant-progress-inner]:!h-[3px] [&_.ant-progress-bg]:!h-[3px]"
+                  />
+                </div>
+
+                {/* Bottom Row: 3 compact hairline metrics */}
+                <dl className="mt-2.5 pt-2 border-t border-slate-200/75 dark:border-white/[0.07] grid grid-cols-3 gap-2">
+                  <div className="min-w-0">
+                    <dt className="text-[10.5px] text-slate-500 dark:text-slate-400">Combo</dt>
+                    <dd className="truncate text-[13.5px] font-bold tabular-nums text-sky-600 dark:text-sky-400">
+                      {formatVisitCount(record.comboSalesCount)}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-[10.5px] text-slate-500 dark:text-slate-400">Doanh số</dt>
+                    <dd className="truncate text-[13.5px] font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                      {formatCompactVND(record.totalSales || 0)}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-[10.5px] text-slate-500 dark:text-slate-400">Thưởng</dt>
+                    <dd className="truncate text-[13.5px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                      +{formatCompactVND(record.totalBonus || 0)}
+                    </dd>
+                  </div>
+                </dl>
+              </button>
+            );
+          }}
+        />
+      </section>
+    );
+  }
+
   return (
     <Card
       title={
@@ -353,7 +509,7 @@ export const CcThuongLeaderboardCard: React.FC<CcThuongLeaderboardCardProps> = (
             <span className="font-bold text-base text-slate-900 dark:text-slate-100">CC Leaderboard</span>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <div className="hidden md:flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <AppIcon icon={Filter} size={12} className="text-amber-500" aria-hidden />
             <span>💡 Mẹo: Click vào tên CC trên bảng để tự động lọc dữ liệu chi tiết bên dưới</span>
           </div>
@@ -363,97 +519,24 @@ export const CcThuongLeaderboardCard: React.FC<CcThuongLeaderboardCardProps> = (
       styles={{ body: { padding: 0 } }}
       className="full-bleed-card shadow-sm rounded-xl"
     >
-      {isMobile ? (
-        <div className="p-3">
-          <MobileRecordList
-            records={leaderboardData}
-            loading={loading}
-            getKey={(record) => String(record.consultantId)}
-            emptyDescription="Chưa có dữ liệu xếp hạng CC Thưởng"
-            getRecordClassName={(record) =>
-              selectedCcName === record.displayName ? 'rounded-lg bg-amber-500/10 ring-1 ring-amber-400/60' : ''
-            }
-            renderRecord={(record) => {
-              const isSelected = selectedCcName === record.displayName;
-              return (
-                <button
-                  type="button"
-                  className="w-full min-w-0 text-left"
-                  aria-pressed={isSelected}
-                  onClick={() => toggleConsultantSelection(record.displayName)}
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="w-6 shrink-0 text-center text-sm font-bold tabular-nums text-amber-400">
-                      {record.rank === 1
-                        ? '🥇'
-                        : record.rank === 2
-                          ? '🥈'
-                          : record.rank === 3
-                            ? '🥉'
-                            : `#${record.rank}`}
-                    </span>
-                    <CcAvatar name={record.displayName} src={record.avatar} isSelected={isSelected} size={32} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        {record.displayName}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-400">
-                        <span>{formatStoreCode(record.store)} ·</span>
-                        <span className="inline-flex items-center gap-0.5 tabular-nums text-sky-400">
-                          <AppIcon icon={UsersRound} size="sm" aria-hidden />
-                          {formatVisitCount(record.totalVisits)} lượt
-                        </span>
-                        <span className="inline-flex items-center gap-0.5 tabular-nums text-emerald-400">
-                          <AppIcon icon={CircleDot} size="sm" aria-hidden />
-                          {formatVisitCount(record.greenVisits)} Vòng Xanh
-                        </span>
-                      </div>
-                    </div>
-                    <span className="shrink-0 text-xs text-amber-400">{isSelected ? 'Đang lọc' : 'Xem'}</span>
-                  </div>
-                  <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
-                    <div className="min-w-0">
-                      <dt className="text-[10px] text-slate-500">Combo</dt>
-                      <dd className="truncate text-sm font-bold tabular-nums text-sky-400">{record.comboSalesCount}</dd>
-                    </div>
-                    <div className="min-w-0">
-                      <dt className="text-[10px] text-slate-500">Doanh số</dt>
-                      <dd className="truncate text-sm font-bold tabular-nums text-amber-400">
-                        {formatCompactVND(record.totalSales || 0)}
-                      </dd>
-                    </div>
-                    <div className="min-w-0">
-                      <dt className="text-[10px] text-slate-500">Thưởng</dt>
-                      <dd className="truncate text-sm font-bold tabular-nums text-emerald-400">
-                        +{formatCompactVND(record.totalBonus || 0)}
-                      </dd>
-                    </div>
-                  </dl>
-                </button>
-              );
-            }}
-          />
-        </div>
-      ) : (
-        <DataTable<DailySalesBonusLeaderboardEntry>
-          dataSource={leaderboardData}
-          columns={leaderboardColumns}
-          rowKey="consultantId"
-          size="small"
-          pagination={false}
-          loading={loading}
-          scroll={{ x: 'max-content' }}
-          className="antd-custom-table"
-          locale={{ emptyText: 'Chưa có dữ liệu xếp hạng CC Thưởng' }}
-          onRow={(record) => ({
-            onClick: () => toggleConsultantSelection(record.displayName),
-            className:
-              selectedCcName === record.displayName
-                ? 'cursor-pointer bg-amber-500/10 dark:bg-amber-500/15 hover:bg-amber-500/15 transition-colors'
-                : 'cursor-pointer hover:bg-amber-500/5 transition-colors',
-          })}
-        />
-      )}
+      <DataTable<DailySalesBonusLeaderboardEntry>
+        dataSource={leaderboardData}
+        columns={leaderboardColumns}
+        rowKey="consultantId"
+        size="small"
+        pagination={false}
+        loading={loading}
+        scroll={{ x: 'max-content' }}
+        className="antd-custom-table"
+        locale={{ emptyText: 'Chưa có dữ liệu xếp hạng CC Thưởng' }}
+        onRow={(record) => ({
+          onClick: () => toggleConsultantSelection(record.displayName),
+          className:
+            selectedCcName === record.displayName
+              ? 'cursor-pointer bg-amber-500/10 dark:bg-amber-500/15 hover:bg-amber-500/15 transition-colors'
+              : 'cursor-pointer hover:bg-amber-500/5 transition-colors',
+        })}
+      />
     </Card>
   );
 };

@@ -33,6 +33,7 @@ export interface CcDailyBonusTotal {
   bonus: number;
   comboQty: number;
   productQty: number;
+  greenVisits: number;
 }
 
 export interface CcXoaySummary {

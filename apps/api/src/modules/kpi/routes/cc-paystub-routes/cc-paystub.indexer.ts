@@ -124,7 +124,9 @@ export function indexCcPaystubSources(
 
   // Compute Daily Sales Bonus per staff from CcKpiService (Single Source of Truth)
   const staffDailyBonusTotals = new Map<number, CcDailyBonusTotal>();
-  validStaffIds.forEach((id) => staffDailyBonusTotals.set(id, { bonus: 0, comboQty: 0, productQty: 0 }));
+  validStaffIds.forEach((id) =>
+    staffDailyBonusTotals.set(id, { bonus: 0, comboQty: 0, productQty: 0, greenVisits: 0 })
+  );
 
   if (sources.dailySalesResult && Array.isArray(sources.dailySalesResult.data)) {
     sources.dailySalesResult.data.forEach((r: SafeAny) => {
@@ -134,6 +136,7 @@ export function indexCcPaystubSources(
         item.bonus += Math.round(Number(r.daily_bonus || 0));
         item.comboQty += Number(r.combo_count || 0);
         item.productQty += Number(r.product_count || 0);
+        item.greenVisits += Number(r.green_visits || 0);
       }
     });
   }

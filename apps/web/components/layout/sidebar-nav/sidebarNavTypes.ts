@@ -30,6 +30,7 @@ export interface MenuItemLookup {
 export interface SidebarEcosystemModel {
   coreApps: EcosystemAppItem[];
   suiteApps: EcosystemSuiteItem[];
+  footerActions?: EcosystemSuiteItem[];
 }
 
 export type EcosystemNavigateHandler = (

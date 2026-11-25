@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Button, Tooltip } from 'antd';
-import { Crown, Eye } from 'lucide-react';
+import { Progress, theme } from 'antd';
+import { ChevronRight } from 'lucide-react';
 import type { CcDiamondEntry } from '@mos-lab/shared';
-import { AppIcon, MobileRecordList, StandardPagination, StatusTag } from '~/components/ui';
+import { AppIcon, MobileRecordList, StandardPagination } from '~/components/ui';
 import CcAvatar from '../CcAvatar';
 import {
   formatDiamondCurrency,
@@ -30,95 +30,107 @@ export function CcDiamondMobileList({
   onPageChange,
   onOpenDetail,
 }: CcDiamondMobileListProps) {
+  const { token } = theme.useToken();
+
   return (
-    <div className="px-3 pb-3">
+    <div className="space-y-2">
       <MobileRecordList
         records={records}
         getKey={(record) => record.ccId}
         loading={loading}
         emptyDescription="Chưa có dữ liệu Kim Cương"
+        className="space-y-2"
+        recordClassName="!rounded-2xl !px-3.5 !py-3 !bg-white/95 dark:!bg-white/[0.045] !border !border-slate-200/80 dark:!border-white/[0.08] !shadow-xs"
         renderRecord={(record) => {
-          const ratio = getReferralRatio(record);
-          const isQualified = isDiamondQualified(record, ratio);
+          const ratioStr = getReferralRatio(record);
+          const ratioNum = Number(ratioStr) || 0;
+          const isQualified = isDiamondQualified(record, ratioStr);
           const hasReferrals = record.soKhachDiamond > 0;
-          const rankLabel = record.rank === 1 ? 'Top 1' : `#${record.rank}`;
+          const progressPct = Math.min(100, Math.max(0, Math.round((ratioNum / 3) * 100)));
 
           return (
-            <div className="flex min-w-0 flex-col gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold tabular-nums ${
-                    record.rank === 1
-                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
-                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                  }`}
-                  aria-label={`Hạng ${rankLabel}`}
-                >
-                  {record.rank === 1 ? <AppIcon icon={Crown} size={14} /> : rankLabel}
+            <button
+              type="button"
+              className="w-full min-w-0 text-left cursor-pointer active:scale-[0.99] transition-transform"
+              onClick={() => onOpenDetail(record)}
+            >
+              {/* Top Row: Rank + Avatar + Name/Visits on Left | Hero % Giới thiệu + 💎 KH + Chevron on Right */}
+              <div className="flex items-center justify-between gap-2.5 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <span className="w-5 shrink-0 text-center text-sm font-bold tabular-nums text-amber-500">
+                    {record.rank === 1 ? '🥇' : record.rank === 2 ? '🥈' : record.rank === 3 ? '🥉' : `#${record.rank}`}
+                  </span>
+                  <CcAvatar name={record.tenCc} src={record.avatar} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+                      {record.tenCc}
+                    </div>
+                    <div className="text-[11.5px] font-medium text-slate-500 dark:text-slate-400 tabular-nums">
+                      {record.tongKhach.toLocaleString('vi-VN')} lượt tiếp
+                    </div>
+                  </div>
                 </div>
-                <CcAvatar name={record.tenCc} src={record.avatar} size={40} />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold text-slate-800 dark:text-slate-100">{record.tenCc}</div>
-                  <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Tư vấn viên</div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="text-right">
+                    <div
+                      className={`text-[17px] font-bold leading-none tabular-nums ${
+                        isQualified && hasReferrals
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : hasReferrals
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : 'text-slate-500 dark:text-slate-400'
+                      }`}
+                    >
+                      {isQualified && hasReferrals ? `✓ ${ratioStr}%` : `${ratioStr}%`}
+                    </div>
+                    <div className="mt-0.5 text-[10.5px] font-medium text-cyan-600 dark:text-cyan-400 tabular-nums">
+                      💎 {record.soKhachDiamond} khách
+                    </div>
+                  </div>
+                  <AppIcon icon={ChevronRight} size={16} className="text-slate-400/75 shrink-0" aria-hidden />
                 </div>
-                <StatusTag
-                  status={hasReferrals ? 'cyan' : 'default'}
-                  label={`💎 ${record.soKhachDiamond} khách`}
-                  className="shrink-0 whitespace-nowrap px-2 py-1 text-xs font-semibold"
+              </div>
+
+              {/* Slim 3px Progress Bar toward 3% threshold */}
+              <div className="mt-2.5">
+                <Progress
+                  percent={progressPct}
+                  size="small"
+                  showInfo={false}
+                  strokeColor={isQualified && hasReferrals ? token.colorSuccess : token.colorInfo}
+                  className="m-0 block leading-none [&_.ant-progress-inner]:!h-[3px] [&_.ant-progress-bg]:!h-[3px]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/70">
-                  <div className="text-xs text-slate-500 dark:text-slate-400">Khách đã tiếp</div>
-                  <div className="mt-1 text-base font-semibold tabular-nums text-slate-800 dark:text-slate-100">
-                    {record.tongKhach.toLocaleString('vi-VN')}
-                  </div>
-                </div>
-                <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/70">
-                  <div className="text-xs text-slate-500 dark:text-slate-400">Tỷ lệ giới thiệu</div>
-                  <div className="mt-1">
-                    {isQualified && hasReferrals ? (
-                      <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-                        ✓ {ratio}%
-                      </span>
-                    ) : hasReferrals ? (
-                      <span className="font-semibold tabular-nums text-rose-600 dark:text-rose-400">{ratio}%</span>
-                    ) : (
-                      <span className="font-semibold tabular-nums text-slate-500">{ratio}%</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex min-w-0 items-center justify-between gap-3 border-t border-slate-200 pt-3 dark:border-slate-800">
+              {/* Bottom 2-col hairline row */}
+              <dl className="mt-2.5 pt-2 border-t border-slate-200/75 dark:border-white/[0.07] grid grid-cols-2 gap-2">
                 <div className="min-w-0">
-                  <div className="text-xs text-slate-500 dark:text-slate-400">Thưởng Kim Cương</div>
-                  {record.thuongDiamond > 0 ? (
-                    <div className="mt-0.5 whitespace-nowrap font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                      +{formatDiamondCurrency(record.thuongDiamond)}
-                    </div>
-                  ) : record.potentialThuong && record.potentialThuong > 0 ? (
-                    <div className="mt-0.5 whitespace-nowrap font-semibold tabular-nums text-slate-500 dark:text-slate-300">
-                      0 đ <span className="text-xs font-medium text-rose-500 dark:text-rose-400">· cần ≥3%</span>
-                    </div>
-                  ) : (
-                    <div className="mt-0.5 whitespace-nowrap font-semibold tabular-nums text-slate-500 dark:text-slate-300">
-                      0 đ
-                    </div>
-                  )}
+                  <dt className="text-[10.5px] text-slate-500 dark:text-slate-400">Điều kiện ≥ 3%</dt>
+                  <dd
+                    className={`truncate text-[13px] font-bold tabular-nums ${
+                      isQualified && hasReferrals
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-600 dark:text-slate-300'
+                    }`}
+                  >
+                    {isQualified && hasReferrals ? 'Đạt chuẩn' : hasReferrals ? 'Chưa đạt 3%' : 'Chưa có KH'}
+                  </dd>
                 </div>
-                <Tooltip title="Xem chi tiết">
-                  <Button
-                    aria-label={`Xem chi tiết Kim Cương của ${record.tenCc}`}
-                    type="text"
-                    icon={<AppIcon icon={Eye} size={15} />}
-                    onClick={() => onOpenDetail(record)}
-                    className="h-8 w-8 shrink-0 rounded-lg text-cyan-600 hover:bg-cyan-50 dark:text-cyan-400 dark:hover:bg-cyan-950/40"
-                  />
-                </Tooltip>
-              </div>
-            </div>
+                <div className="min-w-0 text-right">
+                  <dt className="text-[10.5px] text-slate-500 dark:text-slate-400">Thưởng Kim Cương</dt>
+                  <dd
+                    className={`truncate text-[13.5px] font-bold tabular-nums ${
+                      record.thuongDiamond > 0
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    {record.thuongDiamond > 0 ? `+${formatDiamondCurrency(record.thuongDiamond)}` : '0 đ'}
+                  </dd>
+                </div>
+              </dl>
+            </button>
           );
         }}
       />

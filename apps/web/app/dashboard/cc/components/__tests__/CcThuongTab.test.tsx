@@ -1,8 +1,12 @@
 import React from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react';
+import type { ResponsiveTier } from '@mos-lab/shared';
 import CcThuongTab from '../CcThuongTab';
 import { apiClient } from '~/lib/api-client';
+
+let mockTier: ResponsiveTier = 'desktop';
+let mockViewportSize = { width: 1280, height: 800 };
 
 vi.mock('~/lib/api-client', () => ({
   apiClient: {
@@ -17,60 +21,66 @@ vi.mock('~/context/ThemeContext', () => ({
 }));
 
 vi.mock('~/hooks/useResponsiveTier', () => ({
-  useResponsiveTier: () => 'desktop',
+  useResponsiveTier: () => mockTier,
+  useViewportSize: () => mockViewportSize,
 }));
 
-describe('CcThuongTab Projected Sales (MOS-BUG-118)', () => {
+const createMockApiResponse = () => ({
+  data: [
+    {
+      id: 1,
+      date: '2026-10-15',
+      user_id: 10,
+      consultant_name: 'CC Test',
+      store_code: 'DT',
+      combo_count: 5,
+      green_combo_count: 4,
+      combo_sales: 100_000_000,
+      product_count: 2,
+      product_sales: 10_000_000,
+      single_sales: 50_000_000,
+      debt_collected: 0,
+      vat: 0,
+      debt: 0,
+      total_sales: 110_000_000,
+      commission_rate_percent: 2,
+      daily_bonus: 2_000_000,
+      green_visits: 10,
+      total_visits: 20,
+    },
+  ],
+  total: 1,
+  summary: {
+    totalComboSales: 100_000_000,
+    totalProductSales: 10_000_000,
+    totalSingleSales: 50_000_000,
+    totalSales: 160_000_000,
+    totalCcBonus: 2_000_000,
+    projectedComboSales: 200_000_000,
+    projectedProductSales: 20_000_000,
+    projectedSingleSales: 100_000_000,
+    projectedTotalSales: 320_000_000,
+    projectedCcBonus: 4_000_000,
+    elapsedRatioPercent: 50.0,
+  },
+  activeStaff: [{ userId: 10, displayName: 'CC Test' }],
+});
+
+describe('CcThuongTab Projected Sales & Combo Conversion Rate', () => {
+  beforeEach(() => {
+    mockTier = 'desktop';
+    mockViewportSize = { width: 1280, height: 800 };
+  });
+
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
   });
 
-  it('calculates projectedSingleSales and projectedTotalSales consistent with combo + single + product', async () => {
-    const mockApiResponse = {
-      data: [
-        {
-          id: 1,
-          date: '2026-10-15',
-          user_id: 10,
-          consultant_name: 'CC Test',
-          store_code: 'DT',
-          combo_count: 5,
-          green_combo_count: 4,
-          combo_sales: 100_000_000,
-          product_count: 2,
-          product_sales: 10_000_000,
-          single_sales: 50_000_000,
-          debt_collected: 0,
-          vat: 0,
-          debt: 0,
-          total_sales: 110_000_000,
-          commission_rate_percent: 2,
-          daily_bonus: 2_000_000,
-          green_visits: 10,
-          total_visits: 20,
-        },
-      ],
-      total: 1,
-      summary: {
-        totalComboSales: 100_000_000,
-        totalProductSales: 10_000_000,
-        totalSingleSales: 50_000_000,
-        totalSales: 160_000_000,
-        totalCcBonus: 2_000_000,
-        projectedComboSales: 200_000_000,
-        projectedProductSales: 20_000_000,
-        projectedSingleSales: 100_000_000,
-        projectedTotalSales: 320_000_000,
-        projectedCcBonus: 4_000_000,
-        elapsedRatioPercent: 50.0,
-      },
-      activeStaff: [{ userId: 10, displayName: 'CC Test' }],
-    };
+  it('calculates projectedSingleSales and projectedTotalSales consistent with combo + single + product and displays % bán combo on desktop', async () => {
+    vi.mocked(apiClient.gamification.getDailySalesBonusConsultants).mockResolvedValue(createMockApiResponse() as any);
 
-    vi.mocked(apiClient.gamification.getDailySalesBonusConsultants).mockResolvedValue(mockApiResponse as any);
-
-    render(<CcThuongTab includeVat={false} />);
+    const { container } = render(<CcThuongTab includeVat={false} />);
 
     await waitFor(() => {
       expect(screen.getAllByText(/Doanh Thu Combo/).length).toBeGreaterThan(0);
@@ -83,6 +93,64 @@ describe('CcThuongTab Projected Sales (MOS-BUG-118)', () => {
     expect(screen.getByText(/~\s*100M/)).toBeInTheDocument();
     expect(screen.getByText(/~\s*20M/)).toBeInTheDocument();
     expect(screen.getByText(/~\s*320M/)).toBeInTheDocument();
+
+    // Desktop DataTable shows % bán combo (5 combo / 10 Vòng Xanh = 50%)
+    const comboRateEl = container.querySelector('[data-cc-combo-rate="50"]');
+    expect(comboRateEl).not.toBeNull();
+    expect(comboRateEl?.textContent).toBe('50%');
+  });
+
+  it('shows Apple Wallet team summary, Apple Fitness CC cards with % Bán Combo, and opens Bottom Sheet on tap in iPhone Portrait', async () => {
+    mockTier = 'mobile';
+    mockViewportSize = { width: 390, height: 844 };
+    vi.mocked(apiClient.gamification.getDailySalesBonusConsultants).mockResolvedValue(createMockApiResponse() as any);
+
+    const { container } = render(<CcThuongTab includeVat={false} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cc-mobile-summary-strip')).toBeInTheDocument();
+    });
+
+    // Team summary strip shows % Combo đội = 50% (5/10 VX)
+    const summaryStrip = screen.getByTestId('cc-mobile-summary-strip');
+    expect(summaryStrip.textContent).toContain('% Combo đội');
+    expect(summaryStrip.textContent).toContain('50%');
+
+    // No nested "CC Leaderboard" outer card header or wide daily table on iPhone portrait
+    expect(screen.queryByText('CC Leaderboard')).toBeNull();
+    expect(screen.queryByText('Chi Tiết Thưởng Theo Ngày')).toBeNull();
+    expect(screen.getByText(/Xếp hạng CC · 1/)).toBeInTheDocument();
+
+    // Apple Fitness card shows Hero % Bán Combo (50% + 5/10 VX)
+    const comboRateEl = container.querySelector('[data-cc-combo-rate="50"]');
+    expect(comboRateEl).not.toBeNull();
+    expect(comboRateEl?.textContent).toBe('50%');
+    expect(screen.getAllByText('5/10 VX').length).toBeGreaterThan(0);
+
+    // Tapping the CC card opens Apple Bottom Sheet with daily breakdown (2026-10-15)
+    fireEvent.click(comboRateEl!.closest('button')!);
+    await waitFor(() => {
+      expect(screen.getByTestId('cc-mobile-detail-sheet')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('cc-mobile-detail-sheet').textContent).toContain('2026-10-15');
+  });
+
+  it('switches to DataTable with % bán combo on iPhone Landscape rotation', async () => {
+    mockTier = 'mobile';
+    mockViewportSize = { width: 844, height: 390 };
+    vi.mocked(apiClient.gamification.getDailySalesBonusConsultants).mockResolvedValue(createMockApiResponse() as any);
+
+    const { container } = render(<CcThuongTab includeVat={false} />);
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-cc-combo-rate="50"]')).not.toBeNull();
+    });
+
+    // Landscape uses DataTable instead of portrait summary strip / mobile cards, and keeps daily breakdown table
+    expect(screen.queryByTestId('cc-mobile-summary-strip')).toBeNull();
+    expect(screen.getByText('Chi Tiết Thưởng Theo Ngày')).toBeInTheDocument();
+    expect(screen.getAllByText('Combo Bán & Tỷ Lệ (Vòng Xanh)').length).toBeGreaterThan(0);
+    expect(container.querySelector('[data-cc-combo-rate="50"]')?.textContent).toBe('50%');
   });
 
   it('uses canonical actual Gross/Net revenue on KPI cards & leaderboard without double-VAT while preserving CC bonus base (MOS-BUG-253)', async () => {

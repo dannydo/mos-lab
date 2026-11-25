@@ -66,7 +66,8 @@ export const SidebarCollapsedRail: React.FC<SidebarCollapsedRailProps> = ({
             app.key === 'general' &&
             !isReportPathname(pathname) &&
             !isMissionPathname(pathname) &&
-            !isLabPathname(pathname);
+            !isLabPathname(pathname) &&
+            !isWingsGardenPathname(pathname);
           return (
             <li className="sidebar-compact-item" key={`eco-rail-${app.key}`}>
               <Tooltip placement="right" title={app.label} mouseEnterDelay={0.2}>
@@ -93,7 +94,7 @@ export const SidebarCollapsedRail: React.FC<SidebarCollapsedRailProps> = ({
           );
         })}
 
-        {ecosystemModel.suiteApps.map((suite) => {
+        {[...ecosystemModel.suiteApps, ...(ecosystemModel.footerActions ?? [])].map((suite) => {
           const Icon = suite.icon;
           const isActive =
             !suite.comingSoon &&

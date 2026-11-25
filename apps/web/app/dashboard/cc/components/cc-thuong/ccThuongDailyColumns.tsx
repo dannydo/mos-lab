@@ -41,18 +41,31 @@ export function buildCcThuongDailyColumns(): ColumnsType<DailySalesBonusConsulta
       dataIndex: 'combo_sales',
       key: 'combo_sales',
       align: 'right',
-      render: (val: number, record: DailySalesBonusConsultantRecord) => (
-        <div>
-          <span className="tabular-nums font-semibold text-xs text-blue-600 dark:text-blue-400">
-            {Math.round(val || 0).toLocaleString('vi-VN')} đ
-          </span>
-          {record.combo_count ? (
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
-              ({record.combo_count} combo)
-            </div>
-          ) : null}
-        </div>
-      ),
+      render: (val: number, record: DailySalesBonusConsultantRecord) => {
+        const greenVisits = record.green_visits || 0;
+        const comboCount = record.combo_count || 0;
+        const dailyComboRate = greenVisits > 0 ? Math.min(100, Math.round((comboCount / greenVisits) * 100)) : null;
+
+        return (
+          <div>
+            <span className="tabular-nums font-semibold text-xs text-blue-600 dark:text-blue-400">
+              {Math.round(val || 0).toLocaleString('vi-VN')}&nbsp;đ
+            </span>
+            {comboCount > 0 || dailyComboRate !== null ? (
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+                ({comboCount} combo
+                {dailyComboRate !== null ? (
+                  <>
+                    {' '}
+                    · <span className="font-semibold text-emerald-600 dark:text-emerald-400">{dailyComboRate}% VX</span>
+                  </>
+                ) : null}
+                )
+              </div>
+            ) : null}
+          </div>
+        );
+      },
     },
     {
       title: 'Doanh Số SP',

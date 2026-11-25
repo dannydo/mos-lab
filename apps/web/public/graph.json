@@ -12256,7 +12256,7 @@
         "path": "/api/omicall/logs/:id/reanalyze",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 320
+        "line": 322
       }
     },
     {
@@ -12270,7 +12270,7 @@
         "path": "/api/omicall/logs/sync",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 370
+        "line": 372
       }
     },
     {
@@ -12284,7 +12284,7 @@
         "path": "/api/omicall/logs/import-cdr",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 396
+        "line": 398
       }
     },
     {
@@ -12298,7 +12298,7 @@
         "path": "/api/omicall/logs/:id/verify",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 422
+        "line": 424
       }
     },
     {
@@ -12312,7 +12312,7 @@
         "path": "/api/omicall/branches",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 86
+        "line": 83
       }
     },
     {
@@ -12326,7 +12326,7 @@
         "path": "/api/omicall/logs/:id/self-assessment",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 98
+        "line": 95
       }
     },
     {
@@ -12340,7 +12340,7 @@
         "path": "/api/omicall/self-assessment-intent",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 149
+        "line": 146
       }
     },
     {
@@ -44002,8 +44002,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14846981,
-        "lineCount": 326958,
+        "sizeBytes": 14826611,
+        "lineCount": 326540,
         "ext": ".ts"
       }
     },
@@ -51087,8 +51087,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cc-paystub-routes/cc-paystub.calculator.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10323,
-        "lineCount": 266,
+        "sizeBytes": 10595,
+        "lineCount": 276,
         "ext": ".ts"
       }
     },
@@ -51100,8 +51100,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cc-paystub-routes/cc-paystub.helpers.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8964,
-        "lineCount": 274,
+        "sizeBytes": 8987,
+        "lineCount": 275,
         "ext": ".ts"
       }
     },
@@ -51113,8 +51113,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cc-paystub-routes/cc-paystub.indexer.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5401,
-        "lineCount": 160,
+        "sizeBytes": 5481,
+        "lineCount": 163,
         "ext": ".ts"
       }
     },
@@ -52907,8 +52907,8 @@
       "filePath": "apps/api/src/modules/omicall/omicall-coaching.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10617,
-        "lineCount": 289,
+        "sizeBytes": 10621,
+        "lineCount": 290,
         "ext": ".ts"
       }
     },
@@ -52920,8 +52920,8 @@
       "filePath": "apps/api/src/modules/omicall/omicall-logs-query.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18602,
-        "lineCount": 517,
+        "sizeBytes": 18646,
+        "lineCount": 525,
         "ext": ".ts"
       }
     },
@@ -52959,8 +52959,8 @@
       "filePath": "apps/api/src/modules/omicall/routes/omicall-logs.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 25567,
-        "lineCount": 619,
+        "sizeBytes": 25697,
+        "lineCount": 627,
         "ext": ".ts"
       }
     },
@@ -52972,7 +52972,7 @@
       "filePath": "apps/api/src/modules/omicall/routes/omicall-rating.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9190,
+        "sizeBytes": 9217,
         "lineCount": 233,
         "ext": ".ts"
       }
@@ -61578,7 +61578,7 @@
       "filePath": "apps/web/app/dashboard/cb/components/cb-live-telemetry-widget/CbHeaderControlBar.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5455,
+        "sizeBytes": 5535,
         "lineCount": 139,
         "ext": ".tsx"
       }
@@ -61747,8 +61747,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcDiamondTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4273,
-        "lineCount": 141,
+        "sizeBytes": 10747,
+        "lineCount": 267,
         "ext": ".tsx"
       }
     },
@@ -61760,8 +61760,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcGameTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6107,
-        "lineCount": 152,
+        "sizeBytes": 10555,
+        "lineCount": 242,
         "ext": ".tsx"
       }
     },
@@ -61773,8 +61773,34 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcLeaderboardCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7006,
-        "lineCount": 188,
+        "sizeBytes": 8142,
+        "lineCount": 216,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/CcMobileShellHeader.tsx",
+      "type": "File",
+      "label": "CcMobileShellHeader.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/CcMobileShellHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10729,
+        "lineCount": 291,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/CcMobileWalletStrip.tsx",
+      "type": "File",
+      "label": "CcMobileWalletStrip.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/CcMobileWalletStrip.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1684,
+        "lineCount": 51,
         "ext": ".tsx"
       }
     },
@@ -61799,8 +61825,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6411,
-        "lineCount": 177,
+        "sizeBytes": 9481,
+        "lineCount": 239,
         "ext": ".tsx"
       }
     },
@@ -61825,8 +61851,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcThuongTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8117,
-        "lineCount": 230,
+        "sizeBytes": 10338,
+        "lineCount": 275,
         "ext": ".tsx"
       }
     },
@@ -61851,8 +61877,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2920,
-        "lineCount": 104,
+        "sizeBytes": 5390,
+        "lineCount": 159,
         "ext": ".tsx"
       }
     },
@@ -61870,6 +61896,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/cc/components/__tests__/CcMobileTabsApple.test.tsx",
+      "type": "File",
+      "label": "CcMobileTabsApple.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/__tests__/CcMobileTabsApple.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8596,
+        "lineCount": 253,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/cc/components/__tests__/CcThuongTab.test.tsx",
       "type": "File",
       "label": "CcThuongTab.test.tsx",
@@ -61877,8 +61916,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/__tests__/CcThuongTab.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9236,
-        "lineCount": 265,
+        "sizeBytes": 12431,
+        "lineCount": 333,
         "ext": ".tsx"
       }
     },
@@ -61890,8 +61929,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/cc-diamond-tab/CcDiamondMobileList.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6125,
-        "lineCount": 140,
+        "sizeBytes": 6471,
+        "lineCount": 152,
         "ext": ".tsx"
       }
     },
@@ -61968,8 +62007,21 @@
       "filePath": "apps/web/app/dashboard/cc/components/cc-leaderboard/CcLeaderboardMobileList.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7127,
-        "lineCount": 154,
+        "sizeBytes": 6952,
+        "lineCount": 150,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-leaderboard/CcXoayMobileDetailSheet.tsx",
+      "type": "File",
+      "label": "CcXoayMobileDetailSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-leaderboard/CcXoayMobileDetailSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6910,
+        "lineCount": 156,
         "ext": ".tsx"
       }
     },
@@ -62026,6 +62078,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-thu-nhap-tab/CcIncomeMobileDetailSheet.tsx",
+      "type": "File",
+      "label": "CcIncomeMobileDetailSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-thu-nhap-tab/CcIncomeMobileDetailSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12998,
+        "lineCount": 310,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/cc/components/cc-thu-nhap-tab/CcIncomeMobileList.tsx",
       "type": "File",
       "label": "CcIncomeMobileList.tsx",
@@ -62033,8 +62098,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/cc-thu-nhap-tab/CcIncomeMobileList.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7667,
-        "lineCount": 184,
+        "sizeBytes": 9476,
+        "lineCount": 206,
         "ext": ".tsx"
       }
     },
@@ -62059,8 +62124,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/cc-thu-nhap-tab/CcIncomePaystubSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5533,
-        "lineCount": 166,
+        "sizeBytes": 7591,
+        "lineCount": 211,
         "ext": ".tsx"
       }
     },
@@ -62085,8 +62150,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/cc-thu-nhap-tab/ccIncomeColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13772,
-        "lineCount": 344,
+        "sizeBytes": 14612,
+        "lineCount": 361,
         "ext": ".tsx"
       }
     },
@@ -62137,8 +62202,34 @@
       "filePath": "apps/web/app/dashboard/cc/components/cc-thuong/CcThuongLeaderboardCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20200,
-        "lineCount": 460,
+        "sizeBytes": 24181,
+        "lineCount": 543,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-thuong/CcThuongMobileDetailSheet.tsx",
+      "type": "File",
+      "label": "CcThuongMobileDetailSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-thuong/CcThuongMobileDetailSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7319,
+        "lineCount": 161,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-thuong/CcThuongMobileSummaryStrip.tsx",
+      "type": "File",
+      "label": "CcThuongMobileSummaryStrip.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-thuong/CcThuongMobileSummaryStrip.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3562,
+        "lineCount": 87,
         "ext": ".tsx"
       }
     },
@@ -62150,8 +62241,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/cc-thuong/ccThuongDailyColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5050,
-        "lineCount": 157,
+        "sizeBytes": 5620,
+        "lineCount": 170,
         "ext": ".tsx"
       }
     },
@@ -62163,8 +62254,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/cc-thuong/useCcThuongData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18346,
-        "lineCount": 519,
+        "sizeBytes": 18376,
+        "lineCount": 520,
         "ext": ".ts"
       }
     },
@@ -62189,8 +62280,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipLeaderboardMobileList.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3580,
-        "lineCount": 84,
+        "sizeBytes": 5498,
+        "lineCount": 124,
         "ext": ".tsx"
       }
     },
@@ -62202,8 +62293,21 @@
       "filePath": "apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipLeaderboardSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2976,
-        "lineCount": 98,
+        "sizeBytes": 3978,
+        "lineCount": 121,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipMobileDetailSheet.tsx",
+      "type": "File",
+      "label": "CcTipMobileDetailSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipMobileDetailSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7380,
+        "lineCount": 161,
         "ext": ".tsx"
       }
     },
@@ -62364,6 +62468,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/cc/components/useCcMobilePortrait.ts",
+      "type": "File",
+      "label": "useCcMobilePortrait.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/useCcMobilePortrait.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 716,
+        "lineCount": 23,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/cc/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -62371,8 +62488,8 @@
       "filePath": "apps/web/app/dashboard/cc/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18358,
-        "lineCount": 534,
+        "sizeBytes": 22063,
+        "lineCount": 611,
         "ext": ".tsx"
       }
     },
@@ -66427,8 +66544,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/OmicallDailyHeaderBar.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8995,
-        "lineCount": 226,
+        "sizeBytes": 8886,
+        "lineCount": 227,
         "ext": ".tsx"
       }
     },
@@ -66466,8 +66583,8 @@
       "filePath": "apps/web/app/dashboard/omicall/omicall-page-modules/omicallColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14676,
-        "lineCount": 433,
+        "sizeBytes": 14709,
+        "lineCount": 435,
         "ext": ".tsx"
       }
     },
@@ -77048,8 +77165,8 @@
       "filePath": "packages/shared/src/types/kpi.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7222,
-        "lineCount": 302,
+        "sizeBytes": 7283,
+        "lineCount": 304,
         "ext": ".ts"
       }
     },
@@ -114168,8 +114285,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/cc/components/CcThuongConfigModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/CcThuongConfigModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/CcThuongTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/CcThuongTab.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -114182,8 +114313,29 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/CcTipTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/CcTipTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/cc/components/CcXoayTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/CcXoayTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/__tests__/CcMobileTabsApple.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/__tests__/CcMobileTabsApple.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/__tests__/CcThuongTab.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/__tests__/CcThuongTab.test.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -114231,6 +114383,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-leaderboard/CcXoayMobileDetailSheet.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-leaderboard/CcXoayMobileDetailSheet.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/cc/components/cc-leaderboard/cc-leaderboard-columns.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/cc-leaderboard/cc-leaderboard-columns.tsx",
       "target": "ws:packages/shared",
@@ -114240,6 +114399,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cc/components/cc-leaderboard/cc-leaderboard-utils.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/cc-leaderboard/cc-leaderboard-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-thu-nhap-tab/CcIncomeMobileDetailSheet.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-thu-nhap-tab/CcIncomeMobileDetailSheet.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -114301,6 +114467,20 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-thuong/CcThuongMobileDetailSheet.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-thuong/CcThuongMobileDetailSheet.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-thuong/CcThuongMobileSummaryStrip.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-thuong/CcThuongMobileSummaryStrip.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/cc/components/cc-thuong/ccThuongDailyColumns.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/cc-thuong/ccThuongDailyColumns.tsx",
       "target": "ws:packages/shared",
@@ -114331,6 +114511,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipLeaderboardSection.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipLeaderboardSection.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipMobileDetailSheet.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/cc-tip-tab/CcTipMobileDetailSheet.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -114401,6 +114588,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cc/components/cc-xoay-tab/useCcXoayState.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/cc-xoay-tab/useCcXoayState.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cc/components/useCcMobilePortrait.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cc/components/useCcMobilePortrait.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -131942,8 +132136,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 6042,
-    "totalEdges": 7733,
+    "totalNodes": 6051,
+    "totalEdges": 7744,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
@@ -131952,14 +132146,14 @@
       "SharedType": 1586,
       "DesignToken": 12,
       "UIComponent": 798,
-      "File": 2606
+      "File": 2615
     },
     "edgeTypeCounts": {
       "EXPORTS": 1781,
       "HANDLES_ROUTE": 788,
       "RENDERS": 864,
       "USES_TOKEN": 800,
-      "IMPORTS": 1576,
+      "IMPORTS": 1587,
       "QUERIES_MODEL": 613,
       "API_CALL": 1311
     },

@@ -408,7 +408,11 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                 </div>
 
                 {/* Row 1: Core Apps */}
-                <div className={`grid gap-2 ${navModel.suiteApps.length > 0 ? 'mb-3' : ''} ${coreColsClass}`}>
+                <div
+                  className={`grid gap-2 ${
+                    navModel.suiteApps.length > 0 || navModel.footerActions.length > 0 ? 'mb-3' : ''
+                  } ${coreColsClass}`}
+                >
                   {navModel.coreApps.map((app) => {
                     const Icon = app.icon;
                     const active = isCoreAppActive(app.key);
@@ -448,29 +452,29 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                   })}
                 </div>
 
-                {/* Row 2: Ecosystem Suites (mOS Reports · mOS Mission · mOS Bible · mOS Lab) */}
+                {/* Row 2: Ecosystem Suites (Báo cáo CV/CC/BK/Reports · mOS Mission · mOS Bible · mOS Lab · Wings Garden) */}
                 {navModel.suiteApps.length > 0 && (
                   <div>
                     <div className="text-[10px] font-extrabold uppercase tracking-wider opacity-55 mb-1.5 px-0.5">
                       Phân hệ hệ sinh thái
                     </div>
                     <div className={`grid gap-2 ${suiteColsClass}`}>
-                      {navModel.suiteApps.map((suite) => {
+                      {navModel.suiteApps.map((suite, idx) => {
                         const Icon = suite.icon;
-                        const isComingSoon = Boolean(suite.comingSoon);
-                        const active = !isComingSoon && isSuiteActive(suite.key);
+                        const active = isSuiteActive(suite.key);
+                        const hasBadge = Boolean(suite.badgeCount && suite.badgeCount > 0);
+                        const spanFull =
+                          navModel.suiteApps.length > 1 &&
+                          navModel.suiteApps.length % 2 === 1 &&
+                          idx === navModel.suiteApps.length - 1;
                         return (
                           <button
                             key={suite.key}
                             type="button"
-                            disabled={isComingSoon}
-                            aria-disabled={isComingSoon || undefined}
                             data-launcher-suite={suite.key}
-                            data-coming-soon={isComingSoon ? 'true' : undefined}
                             aria-current={active ? 'page' : undefined}
-                            title={isComingSoon ? `${suite.label} · Coming soon` : suite.label}
+                            title={suite.label}
                             onClick={() => {
-                              if (isComingSoon) return;
                               if (suite.action === 'open-bible') {
                                 setOpen(false);
                                 onAfterNavigate?.();
@@ -499,42 +503,89 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                                   ? 'rgba(255,255,255,0.04)'
                                   : '#f1f5f9',
                             }}
-                            className={`p-2.5 rounded-2xl border flex items-center gap-2.5 text-left transition-all ${
-                              isComingSoon
-                                ? 'cursor-not-allowed opacity-70'
-                                : 'active:scale-95 cursor-pointer hover:border-amber-400/50'
+                            className={`relative p-2.5 rounded-2xl border flex items-center gap-2 text-left transition-all active:scale-95 cursor-pointer hover:border-amber-400/50 ${
+                              spanFull ? 'col-span-2' : ''
                             }`}
                           >
+                            {hasBadge ? (
+                              <span className="absolute top-1.5 right-1.5 min-w-[17px] h-[17px] px-1 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold leading-none flex items-center justify-center tabular-nums">
+                                {suite.badgeCount! > 99 ? '99+' : suite.badgeCount}
+                              </span>
+                            ) : null}
                             <div
                               className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${toneClass(suite.tone)}`}
                             >
                               <Icon className="w-4 h-4 stroke-[2.2]" />
                             </div>
-                            <div className="min-w-0 flex-1">
+                            <div className={`min-w-0 flex-1 ${hasBadge ? 'pr-5' : ''}`}>
                               <div className="text-[11.5px] font-extrabold leading-tight truncate">{suite.label}</div>
-                              {isComingSoon ? (
-                                <span
-                                  className={`inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold tracking-wide mt-0.5 ${
-                                    isDark ? 'bg-white/10 text-slate-300' : 'bg-slate-200/90 text-slate-600'
-                                  }`}
-                                >
-                                  Coming soon
-                                </span>
-                              ) : (
-                                <div className="text-[9.5px] opacity-65 leading-tight truncate mt-0.5">
-                                  {suite.subtitle}
-                                </div>
-                              )}
+                              <div className="text-[10px] opacity-65 leading-tight truncate mt-0.5">
+                                {suite.subtitle}
+                              </div>
                             </div>
-                            {suite.badgeCount && suite.badgeCount > 0 ? (
-                              <span className="min-w-[17px] h-[17px] px-1.5 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold leading-none inline-flex items-center justify-center tabular-nums shrink-0">
-                                {suite.badgeCount > 99 ? '99+' : suite.badgeCount}
-                              </span>
-                            ) : null}
                           </button>
                         );
                       })}
                     </div>
+                  </div>
+                )}
+
+                {/* Row 3: Utility Footer (Báo lỗi & Góp ý — separated from Ecosystem Suites with zero duplicate badges) */}
+                {navModel.footerActions.length > 0 && (
+                  <div
+                    className="mt-3 pt-2.5 border-t flex flex-col gap-1.5"
+                    style={{ borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)' }}
+                  >
+                    {navModel.footerActions.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.key}
+                          type="button"
+                          data-launcher-suite={item.key}
+                          data-launcher-footer={item.key}
+                          title={item.label}
+                          onClick={() => {
+                            if (item.action === 'open-feedback') {
+                              setOpen(false);
+                              onAfterNavigate?.();
+                              openBugReport(undefined, { preferHistoryIfPending: true });
+                              return;
+                            }
+                            if (item.action === 'open-bible') {
+                              setOpen(false);
+                              onAfterNavigate?.();
+                              openMosBible();
+                              return;
+                            }
+                            navigateTo(item.href, item.key);
+                          }}
+                          className={`w-full px-2.5 py-2 rounded-xl border flex items-center gap-2.5 text-left transition-all active:scale-[0.99] cursor-pointer ${
+                            isDark
+                              ? 'bg-white/[0.03] border-white/[0.07] hover:bg-white/[0.06] hover:border-amber-400/40'
+                              : 'bg-slate-50 border-slate-200/80 hover:bg-slate-100 hover:border-amber-400/50'
+                          }`}
+                        >
+                          <div
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${toneClass(item.tone)}`}
+                          >
+                            <Icon className="w-3.5 h-3.5 stroke-[2.2]" />
+                          </div>
+                          <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
+                            <span className="text-[11.5px] font-bold leading-tight truncate">{item.label}</span>
+                            <span className="text-[10px] opacity-60 leading-tight truncate hidden sm:inline">
+                              {item.subtitle}
+                            </span>
+                          </div>
+                          {item.badgeCount && item.badgeCount > 0 ? (
+                            <span className="min-w-[17px] h-[17px] px-1.5 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold leading-none inline-flex items-center justify-center tabular-nums shrink-0">
+                              {item.badgeCount > 99 ? '99+' : item.badgeCount}
+                            </span>
+                          ) : null}
+                          <ChevronRight className="w-3.5 h-3.5 opacity-45 shrink-0" />
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

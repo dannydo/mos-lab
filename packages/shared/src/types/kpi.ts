@@ -149,6 +149,8 @@ export interface CcPaystubRecord extends HolidayPayBreakdown {
   checkinCount: number;
   comboProductBonus: number;
   comboCount: number;
+  greenVisits?: number;
+  greenComboConversionRate?: number;
   productCount: number;
   minigameBonus: number;
   rawMinigameBonus?: number;

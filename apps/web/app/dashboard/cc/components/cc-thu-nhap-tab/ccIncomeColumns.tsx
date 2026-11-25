@@ -101,10 +101,13 @@ export function buildCcIncomeColumns({
       render: (val: number, record: CcPaystubRecord) => {
         const proj = getProjectedRecord(record);
         const holdBonus = record.ccXoayHoldBonus || 0;
+        const wheelCapPercent = record.wheelCapPercent || 0;
         const tooltipTitle =
           holdBonus > 0
             ? `Thưởng gốc ${formatVND(record.rawCcXoayBonus || 0)}đ · nhận ${formatVND(val)}đ · on hold ${formatVND(holdBonus)}đ (cap 150% Daily Bonus)`
-            : `Click để xem Chi Tiết Ca Check-in Xoay (${record.checkinCount} lượt check-in)`;
+            : wheelCapPercent > 0
+              ? `Tỷ lệ Xoay / Daily Bonus: ${wheelCapPercent}% trên trần 150% · ${record.checkinCount} lượt check-in`
+              : `Click để xem Chi Tiết Ca Check-in Xoay (${record.checkinCount} lượt check-in)`;
 
         return (
           <CcIncomeClickableCell
@@ -115,7 +118,13 @@ export function buildCcIncomeColumns({
             projectedValue={proj.projectedCcXoayBonus}
             showForecast={showForecast}
             periodNoun={periodNoun}
-            subLabel={holdBonus > 0 ? 'Đã cap 150%' : `(${record.checkinCount} lượt)`}
+            subLabel={
+              holdBonus > 0
+                ? 'Đã cap 150%'
+                : wheelCapPercent > 0
+                  ? `(${wheelCapPercent}% trần 1.5×)`
+                  : `(${record.checkinCount} lượt)`
+            }
             onClick={() => onOpenCcXoayModal(record)}
           />
         );
@@ -128,16 +137,24 @@ export function buildCcIncomeColumns({
       align: 'right' as const,
       render: (val: number, record: CcPaystubRecord) => {
         const proj = getProjectedRecord(record);
+        const greenVisits = record.greenVisits || 0;
+        const comboRate =
+          record.greenComboConversionRate ??
+          (greenVisits > 0 ? Math.min(100, Math.round(((record.comboCount || 0) / greenVisits) * 100)) : 0);
         return (
           <CcIncomeClickableCell
             tone="emerald"
-            tooltipTitle={`Click để xem Chi Tiết Đơn Hàng Combo & SP (${record.comboCount} combo / ${record.productCount} sản phẩm)`}
+            tooltipTitle={`Click để xem Chi Tiết Đơn Hàng Combo & SP (${record.comboCount} combo${greenVisits > 0 ? ` / ${greenVisits} VX = ${comboRate}%` : ''} · ${record.productCount} sản phẩm)`}
             ariaLabel={`Xem chi tiết đơn hàng Combo & SP của ${record.displayName}`}
             formattedValue={`+${formatVND(val)}`}
             projectedValue={proj.projectedComboProductBonus}
             showForecast={showForecast}
             periodNoun={periodNoun}
-            subLabel={`(${record.comboCount} combo / ${record.productCount} SP)`}
+            subLabel={
+              greenVisits > 0
+                ? `(${record.comboCount} combo · ${comboRate}% VX / ${record.productCount} SP)`
+                : `(${record.comboCount} combo / ${record.productCount} SP)`
+            }
             onClick={() => onOpenComboModal(record)}
           />
         );

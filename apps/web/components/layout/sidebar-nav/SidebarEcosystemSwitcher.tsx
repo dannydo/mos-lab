@@ -50,7 +50,8 @@ export const SidebarEcosystemSwitcher: React.FC<SidebarEcosystemSwitcherProps> =
             app.key === 'general' &&
             !isReportPathname(pathname) &&
             !isMissionPathname(pathname) &&
-            !isLabPathname(pathname);
+            !isLabPathname(pathname) &&
+            !isWingsGardenPathname(pathname);
           return (
             <button
               key={app.key}
@@ -74,40 +75,58 @@ export const SidebarEcosystemSwitcher: React.FC<SidebarEcosystemSwitcherProps> =
       </div>
       {ecosystemModel.suiteApps.length > 0 && (
         <div className={`grid gap-1 mt-1.5 ${ecosystemModel.suiteApps.length <= 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-          {ecosystemModel.suiteApps.map((suite) => {
+          {ecosystemModel.suiteApps.map((suite, index) => {
             const Icon = suite.icon;
             const isActive =
-              !suite.comingSoon &&
-              ((suite.key === 'reports' && isReportPathname(pathname)) ||
-                (suite.key === 'mission' && isMissionPathname(pathname)) ||
-                (suite.key === 'lab' && isLabPathname(pathname)) ||
-                (suite.key === 'wings-garden' && isWingsGardenPathname(pathname)));
+              (suite.key === 'reports' && isReportPathname(pathname)) ||
+              (suite.key === 'mission' && isMissionPathname(pathname)) ||
+              (suite.key === 'lab' && isLabPathname(pathname)) ||
+              (suite.key === 'wings-garden' && isWingsGardenPathname(pathname));
+            const spanFull =
+              ecosystemModel.suiteApps.length > 1 &&
+              ecosystemModel.suiteApps.length % 2 === 1 &&
+              index === ecosystemModel.suiteApps.length - 1;
             return (
               <button
                 key={suite.key}
                 type="button"
-                disabled={Boolean(suite.comingSoon)}
-                aria-disabled={suite.comingSoon || undefined}
                 data-sidebar-eco-suite={suite.key}
-                data-coming-soon={suite.comingSoon ? 'true' : undefined}
-                title={suite.comingSoon ? `${suite.label} · Coming soon` : suite.label}
-                onClick={() => onEcosystemNavigate(suite.key, suite.href, suite.action, suite.comingSoon)}
-                className={`px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-left text-[11px] font-semibold transition-all min-w-0 ${
-                  suite.comingSoon ? 'opacity-65 cursor-not-allowed' : 'cursor-pointer active:scale-[0.99]'
+                title={suite.label}
+                onClick={() => onEcosystemNavigate(suite.key, suite.href, suite.action)}
+                className={`px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-left text-[11px] font-semibold transition-all min-w-0 cursor-pointer active:scale-[0.99] ${
+                  spanFull ? 'col-span-2' : ''
                 } ${isActive ? activeButtonClasses : inactiveButtonClasses}`}
               >
                 <AppIcon icon={Icon} size="sm" />
-                {suite.comingSoon ? (
-                  <span className="flex-1 min-w-0 flex flex-col leading-tight">
-                    <span className="truncate">{suite.shortLabel || suite.label}</span>
-                    <span className="text-[9px] font-medium opacity-70 truncate">Coming soon</span>
-                  </span>
-                ) : (
-                  <span className="flex-1 truncate">{suite.shortLabel || suite.label}</span>
-                )}
+                <span className="flex-1 truncate">{suite.shortLabel || suite.label}</span>
                 {suite.badgeCount && suite.badgeCount > 0 ? (
                   <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold tabular-nums shrink-0">
                     {suite.badgeCount > 99 ? '99+' : suite.badgeCount}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {(ecosystemModel.footerActions?.length ?? 0) > 0 && (
+        <div className="flex flex-col gap-1 mt-1.5">
+          {ecosystemModel.footerActions?.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                data-sidebar-eco-suite={item.key}
+                title={item.label}
+                onClick={() => onEcosystemNavigate(item.key, item.href, item.action)}
+                className={`w-full px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-left text-[11px] font-semibold transition-all min-w-0 cursor-pointer active:scale-[0.99] ${inactiveButtonClasses}`}
+              >
+                <AppIcon icon={Icon} size="sm" />
+                <span className="flex-1 truncate">{item.label}</span>
+                {item.badgeCount && item.badgeCount > 0 ? (
+                  <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold tabular-nums shrink-0">
+                    {item.badgeCount > 99 ? '99+' : item.badgeCount}
                   </span>
                 ) : null}
               </button>

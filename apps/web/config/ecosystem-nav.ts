@@ -225,48 +225,52 @@ function resolveReportsSuite(params: {
   );
 
   const isCc = isCcRole(rawRole) || hasCcTeamMembership(teamCodes);
-  const isBk = isTelesalesRole(rawRole) || upperTeams.has('BK') || upperTeams.has('BK_TELESALES');
+  const isBk =
+    isTelesalesRole(rawRole) ||
+    lowerRole === 'bk' ||
+    upperTeams.has('BK') ||
+    upperTeams.has('BK_TELESALES') ||
+    upperTeams.has('TELESALES');
   const isCs =
     ['cs', 'coca', 'control'].includes(lowerRole) ||
     upperTeams.has('CS') ||
     upperTeams.has('BK_CS') ||
     upperTeams.has('BK_CONTROL');
 
-  const metaByKey: Record<string, { href: string; subtitle: string }> = {
-    cv: { href: '/dashboard/cv', subtitle: 'Thu nhập & Ca làm' },
-    cc: { href: '/dashboard/cc', subtitle: 'KPI & Thưởng CC' },
-    bk: { href: '/dashboard/bk', subtitle: 'KPI & Hoa hồng BK' },
-    cs: { href: '/dashboard/cs', subtitle: 'Báo cáo CSKH' },
-    kpi: { href: '/dashboard/kpi', subtitle: 'KPI & Hiệu suất' },
-    cb: { href: '/dashboard/cb', subtitle: 'Dashboard $CB' },
-    'financial-goals': { href: '/dashboard/financial-goals', subtitle: 'Mục tiêu Tài chính' },
+  const metaByKey: Record<string, { label: string; shortLabel: string; href: string; subtitle: string }> = {
+    cv: { label: 'Báo cáo CV', shortLabel: 'Báo cáo CV', href: '/dashboard/cv', subtitle: 'Thu nhập & Ca làm' },
+    cc: { label: 'Báo cáo CC', shortLabel: 'Báo cáo CC', href: '/dashboard/cc', subtitle: 'KPI & Thưởng CC' },
+    bk: { label: 'Báo cáo BK', shortLabel: 'Báo cáo BK', href: '/dashboard/bk', subtitle: 'KPI & Hoa hồng BK' },
+    cs: { label: 'Báo cáo CS', shortLabel: 'Báo cáo CS', href: '/dashboard/cs', subtitle: 'Báo cáo CSKH' },
+    kpi: { label: 'mOS Reports', shortLabel: 'Reports', href: '/dashboard/kpi', subtitle: 'KPI & Hiệu suất' },
+    cb: { label: 'Dashboard $CB', shortLabel: '$CB', href: '/dashboard/cb', subtitle: 'Doanh thu trực tiếp' },
+    'financial-goals': {
+      label: 'Mục tiêu TC',
+      shortLabel: 'Tài chính',
+      href: '/dashboard/financial-goals',
+      subtitle: 'Mục tiêu Tài chính',
+    },
   };
 
-  let priorityOrder: string[];
-  if (isAdmin) {
-    priorityOrder = ['kpi', 'cc', 'cv', 'bk', 'cs', 'cb', 'financial-goals'];
-  } else if (isCv) {
-    priorityOrder = ['cv', 'cc', 'bk', 'cs', 'kpi', 'cb', 'financial-goals'];
-  } else if (isCc) {
-    priorityOrder = ['cc', 'kpi', 'bk', 'cs', 'cv', 'cb', 'financial-goals'];
-  } else if (isBk) {
-    priorityOrder = ['bk', 'kpi', 'cc', 'cs', 'cv', 'cb', 'financial-goals'];
-  } else if (isCs) {
-    priorityOrder = ['cs', 'kpi', 'bk', 'cc', 'cv', 'cb', 'financial-goals'];
-  } else {
-    priorityOrder = ['kpi', 'cc', 'bk', 'cs', 'cv', 'cb', 'financial-goals'];
-  }
+  const priorityOrder = isAdmin
+    ? ['kpi', 'cc', 'cv', 'bk', 'cs', 'cb', 'financial-goals']
+    : isCv
+      ? ['cv', 'cc', 'bk', 'cs', 'kpi', 'cb', 'financial-goals']
+      : isCc
+        ? ['cc', 'kpi', 'bk', 'cs', 'cv', 'cb', 'financial-goals']
+        : isBk
+          ? ['bk', 'kpi', 'cc', 'cs', 'cv', 'cb', 'financial-goals']
+          : isCs
+            ? ['cs', 'kpi', 'bk', 'cc', 'cv', 'cb', 'financial-goals']
+            : ['kpi', 'cc', 'bk', 'cs', 'cv', 'cb', 'financial-goals'];
 
   let chosenKey: string | undefined;
   if (isAdmin) {
     chosenKey = 'kpi';
   } else if (hasVisibilityMap) {
-    chosenKey = priorityOrder.find((key) => {
-      if (isCv && key === 'cv') {
-        return menuVisibility?.cv !== false;
-      }
-      return menuVisibility?.[key] === true;
-    });
+    chosenKey = priorityOrder.find((key) =>
+      isCv && key === 'cv' ? menuVisibility?.cv !== false : menuVisibility?.[key] === true
+    );
   } else {
     chosenKey = priorityOrder[0];
   }
@@ -275,8 +279,8 @@ function resolveReportsSuite(params: {
   const meta = metaByKey[chosenKey] || metaByKey.kpi;
   return {
     key: 'reports',
-    label: 'mOS Reports',
-    shortLabel: 'Reports',
+    label: meta.label,
+    shortLabel: meta.shortLabel,
     subtitle: meta.subtitle,
     href: meta.href,
     icon: ECOSYSTEM_ICONS.reports,
@@ -299,6 +303,7 @@ export function buildEcosystemNavModel(params: {
   consultRoleParam: 'CVL' | 'CVLL' | 'CC';
   coreApps: EcosystemAppItem[];
   suiteApps: EcosystemSuiteItem[];
+  footerActions: EcosystemSuiteItem[];
   quickLinks: EcosystemQuickLink[];
 } {
   const {
@@ -321,8 +326,8 @@ export function buildEcosystemNavModel(params: {
   const generalHref = resolveGeneralLandingHref(userRole, menuVisibility);
   const iosHref = roleGroup === 'ADMIN_MANAGER' ? '/ios-app' : `/ios-app?role=${consultRoleParam}`;
 
-  const canSeeGeneral =
-    !isCv || (hasVisibilityMap && OPERATIONAL_GENERAL_MENU_KEYS.some((k) => menuVisibility?.[k] === true));
+  const hasOperationalGeneralMenu = OPERATIONAL_GENERAL_MENU_KEYS.some((k) => menuVisibility?.[k] === true);
+  const canSeeGeneral = isAdmin || (hasVisibilityMap ? hasOperationalGeneralMenu : !isCv);
 
   const coreApps: EcosystemAppItem[] = [];
   if (canSeeGeneral) {
@@ -415,21 +420,23 @@ export function buildEcosystemNavModel(params: {
     });
   }
 
-  // Wings Garden: Live for Admin / Super Admin, shown as Coming soon for all other role groups
-  suiteApps.push({
-    key: 'wings-garden',
-    label: 'Wings Garden',
-    shortLabel: 'Wings Garden',
-    subtitle: isAdmin ? 'Thiên Đường Nối Lông' : 'Coming soon',
-    href: isAdmin ? '/wings-garden' : '#wings-garden-coming-soon',
-    icon: ECOSYSTEM_ICONS.wingsGarden,
-    tone: 'emerald',
-    comingSoon: !isAdmin,
-  });
-
-  // Báo lỗi & Góp ý: Available to all non-CV staff
-  if (!isCv) {
+  // Zero-Trust: Wings Garden is visible & navigable only for Admin / Super Admin
+  if (isAdmin) {
     suiteApps.push({
+      key: 'wings-garden',
+      label: 'Wings Garden',
+      shortLabel: 'Wings Garden',
+      subtitle: 'Thiên Đường Nối Lông',
+      href: '/wings-garden',
+      icon: ECOSYSTEM_ICONS.wingsGarden,
+      tone: 'emerald',
+    });
+  }
+
+  // Footer utility actions: Báo lỗi & Góp ý for non-CV staff (dedupe badge if mOS Mission is already shown)
+  const footerActions: EcosystemSuiteItem[] = [];
+  if (!isCv) {
+    footerActions.push({
       key: 'feedback',
       label: 'Báo lỗi & Góp ý',
       shortLabel: 'Góp ý',
@@ -438,7 +445,7 @@ export function buildEcosystemNavModel(params: {
       action: 'open-feedback',
       icon: ECOSYSTEM_ICONS.feedback,
       tone: 'amber',
-      badgeCount: bugAttentionCount > 0 ? bugAttentionCount : undefined,
+      badgeCount: !canSeeMission && bugAttentionCount > 0 ? bugAttentionCount : undefined,
     });
   }
 
@@ -639,6 +646,7 @@ export function buildEcosystemNavModel(params: {
     consultRoleParam,
     coreApps,
     suiteApps,
+    footerActions,
     quickLinks,
   };
 }

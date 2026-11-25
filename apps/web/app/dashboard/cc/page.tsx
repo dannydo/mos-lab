@@ -20,9 +20,13 @@ import { Zap } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
 import { CcLeaderboardEntry, CcXoayRecord, CcXoayReportResponse } from '@mos-lab/shared';
-import { useResponsiveTier } from '~/hooks/useResponsiveTier';
+import { formatCompactVND } from '~/lib/format-utils';
 
 import CcLeaderboardCard from './components/CcLeaderboardCard';
+import { CcMobileShellHeader } from './components/CcMobileShellHeader';
+import { CcMobileWalletStrip } from './components/CcMobileWalletStrip';
+import { CcXoayMobileDetailSheet } from './components/cc-leaderboard/CcXoayMobileDetailSheet';
+import { useCcMobilePortrait } from './components/useCcMobilePortrait';
 import { IconButton, ReportPeriodNavigator, TableSettingsTrigger, ToolbarToggle } from '../../../components/ui';
 
 const CcXoayTab = dynamic(() => import('./components/CcXoayTab'), {
@@ -100,7 +104,8 @@ export default function CcDashboardPage() {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const router = useRouter();
-  const responsiveTier = useResponsiveTier();
+  const { tier: responsiveTier, showMobilePortrait } = useCcMobilePortrait();
+  const [mobileXoayDetail, setMobileXoayDetail] = useState<CcLeaderboardEntry | null>(null);
 
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>(() => {
     if (typeof window !== 'undefined') {
@@ -361,9 +366,7 @@ export default function CcDashboardPage() {
     {
       key: 'cb',
       label: (
-        <CcTabLabel icon={<ThunderboltOutlined className="text-emerald-500 animate-pulse" />}>
-          $CB Live
-        </CcTabLabel>
+        <CcTabLabel icon={<ThunderboltOutlined className="text-emerald-500 animate-pulse" />}>$CB Live</CcTabLabel>
       ),
       children: activeTab === 'cb' ? <CbLiveTelemetryWidget showCardWrapper={false} /> : null,
     },
@@ -372,7 +375,36 @@ export default function CcDashboardPage() {
       label: <CcTabLabel icon={<SyncOutlined />}>Xoay</CcTabLabel>,
       children:
         activeTab === 'xoay' ? (
-          <div className={`flex flex-col cc-xoay-tab-stack ${responsiveTier === 'mobile' ? 'gap-2' : 'gap-4'}`}>
+          <div className={`flex flex-col cc-xoay-tab-stack ${responsiveTier === 'mobile' ? 'gap-2.5' : 'gap-4'}`}>
+            {showMobilePortrait && (
+              <CcMobileWalletStrip
+                testId="cc-xoay-mobile-summary"
+                ariaLabel="Tóm tắt thưởng CC Xoay"
+                items={[
+                  {
+                    key: 'checkins',
+                    label: 'Lượt phục vụ',
+                    value: (xoaySummary?.totalCheckins || 0).toLocaleString('vi-VN'),
+                    valueClassName: 'text-sky-600 dark:text-sky-400',
+                    subtext: `${leaderboardData.length} CC`,
+                  },
+                  {
+                    key: 'points',
+                    label: '∑ Điểm Xoay',
+                    value: (xoaySummary?.totalPoints || 0).toLocaleString('vi-VN'),
+                    valueClassName: 'text-emerald-600 dark:text-emerald-400',
+                    subtext: 'Điểm tích lũy',
+                  },
+                  {
+                    key: 'bonus',
+                    label: '∑ Thưởng Xoay',
+                    value: formatCompactVND(xoaySummary?.totalBonus || 0),
+                    valueClassName: 'text-amber-600 dark:text-amber-400',
+                    subtext: 'Theo level CC',
+                  },
+                ]}
+              />
+            )}
             <CcLeaderboardCard
               leaderboard={leaderboardData}
               loading={loading}
@@ -380,17 +412,36 @@ export default function CcDashboardPage() {
               onSelectConsultant={(ccName) => {
                 setSelectedConsultant((prev) => (prev === ccName ? 'ALL' : ccName));
               }}
+              onInspectConsultantMobile={(entry) => setMobileXoayDetail(entry)}
               dateRange={dateRange}
               comparisonMode={viewMode}
             />
-            <CcXoayTab
-              data={xoayData}
-              total={xoayTotal}
-              summary={xoaySummary}
-              loading={loading}
-              onRefresh={fetchCcData}
-              dateRange={dateRange}
-              comparisonMode={viewMode}
+            {!showMobilePortrait && (
+              <CcXoayTab
+                data={xoayData}
+                total={xoayTotal}
+                summary={xoaySummary}
+                loading={loading}
+                onRefresh={fetchCcData}
+                dateRange={dateRange}
+                comparisonMode={viewMode}
+              />
+            )}
+            <CcXoayMobileDetailSheet
+              open={Boolean(mobileXoayDetail)}
+              onClose={() => setMobileXoayDetail(null)}
+              consultant={mobileXoayDetail}
+              records={
+                mobileXoayDetail
+                  ? xoayData.filter(
+                      (rec) =>
+                        rec.consultantName === mobileXoayDetail.displayName ||
+                        rec.ccInName === mobileXoayDetail.displayName ||
+                        rec.ccOutName === mobileXoayDetail.displayName ||
+                        String(rec.consultantId || '') === String(mobileXoayDetail.consultantId)
+                    )
+                  : []
+              }
             />
           </div>
         ) : null,
@@ -441,87 +492,113 @@ export default function CcDashboardPage() {
     },
   ];
 
+  const mobileTabOptions = [
+    { key: 'thuong', label: 'Daily Bonus', icon: <DollarCircleOutlined /> },
+    { key: 'cb', label: '$CB Live', icon: <ThunderboltOutlined className="text-emerald-500 animate-pulse" /> },
+    { key: 'xoay', label: 'Xoay', icon: <SyncOutlined /> },
+    { key: 'tip', label: 'Tip', icon: <MoneyCollectOutlined /> },
+    { key: 'diamond', label: 'Kim Cương', icon: <SketchOutlined /> },
+    { key: 'game', label: 'Game', icon: <TrophyOutlined /> },
+    { key: 'thunhap', label: 'Thu Nhập', icon: <AccountBookOutlined /> },
+  ];
+
+  const activeTabContent = tabItems.find((item) => item.key === activeTab)?.children ?? null;
+  const isMobileTier = responsiveTier === 'mobile';
+
   return (
-    <div className="responsive-page responsive-workspace cc-page w-full space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
-            CC Leaderboard
-          </Title>
-          <Text style={{ color: token.colorTextDescription }}>Theo dõi hiệu suất, thưởng và thu nhập của CC</Text>
-        </div>
-
-        <Space wrap className="responsive-toolbar cc-report-toolbar" size={10}>
-          <ReportPeriodNavigator
-            mode={viewMode}
-            value={referenceDate}
-            label={getPeriodLabel()}
-            onModeChange={handleViewModeChange}
-            onPrevious={() => handleNavigate(-1)}
-            onNext={() => handleNavigate(1)}
-            onValueChange={handleValueChange}
-            rangeValue={dateRange}
-            onRangeChange={handleRangeChange}
-            className="cc-report-period"
-          />
-          <div className="cc-toolbar-filter-cluster" aria-label="Bộ lọc báo cáo CC">
-            <ToolbarToggle
-              label="VAT 8%"
-              aria-label="Công tắc VAT 8%"
-              checked={includeVat}
-              onChange={setIncludeVat}
-              className="cc-toolbar-vat-toggle text-amber-500 dark:text-amber-300"
-            />
+    <div className={`responsive-page responsive-workspace cc-page w-full ${isMobileTier ? 'space-y-3' : 'space-y-6'}`}>
+      {isMobileTier ? (
+        <CcMobileShellHeader
+          viewMode={viewMode}
+          referenceDate={referenceDate}
+          periodLabel={getPeriodLabel()}
+          includeVat={includeVat}
+          activeTab={activeTab}
+          tabs={mobileTabOptions}
+          onViewModeChange={handleViewModeChange}
+          onNavigate={handleNavigate}
+          onValueChange={handleValueChange}
+          onIncludeVatChange={setIncludeVat}
+          onTabChange={handleTabChange}
+          onOpenBonusConfig={() => setCcBonusConfigOpen(true)}
+          onOpenTeamManagement={() => router.push('/dashboard/staff/teams?selected=CC')}
+        />
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <Title level={2} style={{ color: token.colorPrimary, margin: 0 }}>
+              CC Leaderboard
+            </Title>
+            <Text style={{ color: token.colorTextDescription }}>Theo dõi hiệu suất, thưởng và thu nhập của CC</Text>
           </div>
-          <IconButton
-            label="$CB Live"
-            icon={Zap}
-            tone="primary"
-            onClick={() => handleTabChange('cb')}
-            className="!text-emerald-500 !border-emerald-500/50 hover:!border-emerald-500"
-          />
-          <Dropdown
-            trigger={['click']}
-            menu={{
-              items: [
-                { key: 'bonus', label: 'Cấu hình thưởng CC' },
-                { key: 'team', label: 'Quản lý nhân sự CC' },
-              ],
-              onClick: ({ key }) => {
-                if (key === 'bonus') setCcBonusConfigOpen(true);
-                if (key === 'team') router.push('/dashboard/staff/teams?selected=CC');
-              },
-            }}
-          >
-            <span>
-              <TableSettingsTrigger
-                title="Cấu hình CC"
-                data-ui="cc-settings-trigger"
-                className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
-              />
-            </span>
-          </Dropdown>
-        </Space>
-      </div>
 
-      {/* 4 MAIN TABS */}
-      {responsiveTier === 'mobile' && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
-          <span>💡</span>
-          <span>
-            <strong>Mẹo xem báo cáo:</strong> Xoay ngang điện thoại (Landscape) để xem bảng đối soát chi tiết hoặc xem
-            tóm tắt bên dưới.
-          </span>
+          <Space wrap className="responsive-toolbar cc-report-toolbar" size={10}>
+            <ReportPeriodNavigator
+              mode={viewMode}
+              value={referenceDate}
+              label={getPeriodLabel()}
+              onModeChange={handleViewModeChange}
+              onPrevious={() => handleNavigate(-1)}
+              onNext={() => handleNavigate(1)}
+              onValueChange={handleValueChange}
+              rangeValue={dateRange}
+              onRangeChange={handleRangeChange}
+              className="cc-report-period"
+            />
+            <div className="cc-toolbar-filter-cluster" aria-label="Bộ lọc báo cáo CC">
+              <ToolbarToggle
+                label="VAT 8%"
+                aria-label="Công tắc VAT 8%"
+                checked={includeVat}
+                onChange={setIncludeVat}
+                className="cc-toolbar-vat-toggle text-amber-500 dark:text-amber-300"
+              />
+            </div>
+            <IconButton
+              label="$CB Live"
+              icon={Zap}
+              tone="primary"
+              onClick={() => handleTabChange('cb')}
+              className="!text-emerald-500 !border-emerald-500/50 hover:!border-emerald-500"
+            />
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: [
+                  { key: 'bonus', label: 'Cấu hình thưởng CC' },
+                  { key: 'team', label: 'Quản lý nhân sự CC' },
+                ],
+                onClick: ({ key }) => {
+                  if (key === 'bonus') setCcBonusConfigOpen(true);
+                  if (key === 'team') router.push('/dashboard/staff/teams?selected=CC');
+                },
+              }}
+            >
+              <span>
+                <TableSettingsTrigger
+                  title="Cấu hình CC"
+                  data-ui="cc-settings-trigger"
+                  className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
+                />
+              </span>
+            </Dropdown>
+          </Space>
         </div>
       )}
-      <Card
-        variant="outlined"
-        style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
-        styles={{ body: { padding: '12px 16px 16px 16px' } }}
-        className="shadow-sm rounded-xl dashboard-main-tabs-card"
-      >
-        <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} size="large" destroyOnHidden />
-      </Card>
+
+      {/* 4 MAIN TABS */}
+      {isMobileTier ? (
+        <div className="min-w-0">{activeTabContent}</div>
+      ) : (
+        <Card
+          variant="outlined"
+          style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
+          styles={{ body: { padding: '12px 16px 16px 16px' } }}
+          className="shadow-sm rounded-xl dashboard-main-tabs-card"
+        >
+          <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} size="large" destroyOnHidden />
+        </Card>
+      )}
 
       <CcThuongConfigModal
         open={ccBonusConfigOpen}

@@ -164,9 +164,7 @@ export function useCcThuongData({
   }, [fetchData]);
 
   const hasActualRevenue = useMemo(
-    () =>
-      summary?.actualComboGross !== undefined ||
-      data.some((r) => r.actual_combo_gross !== undefined),
+    () => summary?.actualComboGross !== undefined || data.some((r) => r.actual_combo_gross !== undefined),
     [data, summary]
   );
 
@@ -509,6 +507,7 @@ export function useCcThuongData({
     projectedCcBonus,
     elapsedRatioPercent,
     leaderboardData,
+    allDailyData: mappedData,
     filteredDailyData,
     isPastPeriod,
     isDayMode,

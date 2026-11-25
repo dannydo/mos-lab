@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import HeaderRoleQuickSwitch from '../HeaderRoleQuickSwitch';
 import MosAppLauncher from '../MosAppLauncher';
+import { setBugReportBadgeSummary } from '../../../lib/bug-diagnostics';
 
 const mockPush = vi.fn();
 
@@ -23,6 +24,7 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
   beforeEach(() => {
     mockPush.mockReset();
     window.localStorage.clear();
+    setBugReportBadgeSummary({ actionRequiredCount: 0, unreadCount: 0 });
   });
 
   it('does not render duplicate "Tư vấn KH" button for CVL on desktop header', () => {
@@ -61,7 +63,7 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(screen.getByText('Lộ trình')).toBeDefined();
   });
 
-  it('opens unified 9-dot MosAppLauncher with Core Apps and CC suites for Manager in CC team', () => {
+  it('opens unified 9-dot MosAppLauncher with Core Apps and Báo cáo CC for Manager in CC team', () => {
     render(
       <MosAppLauncher
         currentApp="general"
@@ -82,12 +84,16 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(screen.getByText('mOS General')).toBeDefined();
     expect(screen.getByText('mOS Chat')).toBeDefined();
     expect(screen.getByText('iOS-App')).toBeDefined();
-    // Suite row for un-granted Manager+CC shows mOS Reports (CC KPI), mOS Bible & Báo lỗi, hides Zero-Trust Mission & Lab
-    expect(panel.querySelector('[data-launcher-suite="reports"]')).not.toBeNull();
+
+    // Suite row for un-granted Manager+CC shows Báo cáo CC, mOS Bible, hides Zero-Trust Mission, Lab & Wings Garden; feedback is in footer
+    const reportsBtn = panel.querySelector('[data-launcher-suite="reports"]');
+    expect(reportsBtn).not.toBeNull();
+    expect(reportsBtn?.textContent).toContain('Báo cáo CC');
     expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
-    expect(panel.querySelector('[data-launcher-suite="feedback"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-footer="feedback"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="wings-garden"]')).toBeNull();
 
     fireEvent.click(panel.querySelector('[data-launcher-app="ios"]')!);
     expect(mockPush).toHaveBeenCalledWith('/ios-app?role=CC');
@@ -113,9 +119,10 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(screen.queryByTestId('mos-app-launcher-panel')).toBeNull();
   });
 
-  it('shows all 3 Core Apps + 4 Suites for Super Admin and opens mOS Bible in-place via event', () => {
+  it('shows all 3 Core Apps + 5 Suites + Footer Feedback (no duplicate badge) for Super Admin', () => {
     const bibleSpy = vi.fn();
     window.addEventListener('open-mos-bible', bibleSpy);
+    setBugReportBadgeSummary({ actionRequiredCount: 3, unreadCount: 3 });
 
     render(<MosAppLauncher currentApp="general" userRole="super_admin" displayName="Danny Do" missionBadgeCount={4} />);
 
@@ -126,33 +133,43 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(panel.querySelector('[data-launcher-app="chat"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-app="ios"]')).not.toBeNull();
 
-    expect(panel.querySelector('[data-launcher-suite="reports"]')).not.toBeNull();
-    expect(panel.querySelector('[data-launcher-suite="mission"]')).not.toBeNull();
+    const reportsBtn = panel.querySelector('[data-launcher-suite="reports"]');
+    expect(reportsBtn?.textContent).toContain('mOS Reports');
+    const missionBtn = panel.querySelector('[data-launcher-suite="mission"]');
+    expect(missionBtn).not.toBeNull();
+    expect(missionBtn?.textContent).toContain('4');
     expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).not.toBeNull();
-    expect(panel.querySelector('[data-launcher-suite="wings-garden"]')).not.toBeNull();
-    expect(panel.querySelector('[data-launcher-suite="wings-garden"]')?.getAttribute('data-coming-soon')).toBeNull();
-    expect(panel.querySelector('[data-launcher-suite="feedback"]')).not.toBeNull();
-    expect(screen.getByText('4')).toBeDefined();
+    const gardenBtn = panel.querySelector('[data-launcher-suite="wings-garden"]');
+    expect(gardenBtn).not.toBeNull();
+    expect(gardenBtn?.className).toContain('col-span-2');
 
-    fireEvent.click(panel.querySelector('[data-launcher-suite="bible"]')!);
-    expect(bibleSpy).toHaveBeenCalledTimes(1);
-    expect(mockPush).not.toHaveBeenCalled();
+    // Footer feedback must NOT repeat bug badge when mOS Mission is already shown
+    const feedbackFooter = panel.querySelector('[data-launcher-footer="feedback"]');
+    expect(feedbackFooter).not.toBeNull();
+    expect(feedbackFooter?.textContent).not.toContain('3');
+
+    fireEvent.click(reportsBtn!);
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/kpi');
 
     fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
-    const reopened = screen.getByTestId('mos-app-launcher-panel');
-    fireEvent.click(reopened.querySelector('[data-launcher-suite="lab"]')!);
+    fireEvent.click(screen.getByTestId('mos-app-launcher-panel').querySelector('[data-launcher-suite="bible"]')!);
+    expect(bibleSpy).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    fireEvent.click(screen.getByTestId('mos-app-launcher-panel').querySelector('[data-launcher-suite="lab"]')!);
     expect(mockPush).toHaveBeenCalledWith('/dashboard/labs');
 
     fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
-    const reopenedForGarden = screen.getByTestId('mos-app-launcher-panel');
-    fireEvent.click(reopenedForGarden.querySelector('[data-launcher-suite="wings-garden"]')!);
+    fireEvent.click(
+      screen.getByTestId('mos-app-launcher-panel').querySelector('[data-launcher-suite="wings-garden"]')!
+    );
     expect(mockPush).toHaveBeenCalledWith('/wings-garden');
 
     window.removeEventListener('open-mos-bible', bibleSpy);
   });
 
-  it('hides mOS General, mOS Mission, and mOS Lab for CVL while keeping Chat, iOS-App, Reports (/dashboard/cv), and Bible', () => {
+  it('hides mOS General, Mission, Lab, Wings Garden, and Feedback for CVL while showing Báo cáo CV (/dashboard/cv)', () => {
     render(
       <MosAppLauncher
         currentApp="ios"
@@ -169,25 +186,21 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(panel.querySelector('[data-launcher-app="chat"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-app="ios"]')).not.toBeNull();
 
-    expect(panel.querySelector('[data-launcher-suite="reports"]')).not.toBeNull();
+    const reportsBtn = panel.querySelector('[data-launcher-suite="reports"]');
+    expect(reportsBtn).not.toBeNull();
+    expect(reportsBtn?.textContent).toContain('Báo cáo CV');
     expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
     expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="wings-garden"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="feedback"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-footer="feedback"]')).toBeNull();
 
-    const cvlGarden = panel.querySelector('[data-launcher-suite="wings-garden"]') as HTMLButtonElement | null;
-    expect(cvlGarden).not.toBeNull();
-    expect(cvlGarden?.getAttribute('data-coming-soon')).toBe('true');
-    expect(cvlGarden?.disabled).toBe(true);
-    expect(cvlGarden?.textContent).toContain('Coming soon');
-    fireEvent.click(cvlGarden!);
-    expect(mockPush).not.toHaveBeenCalled();
-
-    fireEvent.click(panel.querySelector('[data-launcher-suite="reports"]')!);
+    fireEvent.click(reportsBtn!);
     expect(mockPush).toHaveBeenCalledWith('/dashboard/cv');
   });
 
-  it('routes Manager+CC via menuVisibility, hides ungranted suites, and reveals Mission/Lab when explicitly granted', () => {
+  it('dedupes mOS General for CC when no operational general menus are granted and routes Báo cáo CC to /dashboard/cc', () => {
     const onAfterNavigate = vi.fn();
     const closeListener = vi.fn();
     window.addEventListener('mos-chat:close', closeListener);
@@ -206,31 +219,23 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
     const panel = screen.getByTestId('mos-app-launcher-panel');
 
+    // No operational general menu granted -> mOS General hidden so it doesn't duplicate Báo cáo CC
+    expect(panel.querySelector('[data-launcher-app="general"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
-    expect(panel.querySelector('[data-launcher-suite="feedback"]')).not.toBeNull();
-    expect(panel.querySelector('[data-launcher-suite="reports"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="wings-garden"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-footer="feedback"]')).not.toBeNull();
+    const reportsBtn = panel.querySelector('[data-launcher-suite="reports"]');
+    expect(reportsBtn?.textContent).toContain('Báo cáo CC');
     expect(panel.querySelector('[data-launcher-suite="bible"]')).not.toBeNull();
 
-    const mgrGarden = panel.querySelector('[data-launcher-suite="wings-garden"]') as HTMLButtonElement | null;
-    expect(mgrGarden?.getAttribute('data-coming-soon')).toBe('true');
-    expect(mgrGarden?.disabled).toBe(true);
-    fireEvent.click(mgrGarden!);
-    expect(mockPush).not.toHaveBeenCalled();
-
-    // Clicking mOS Reports goes straight to /dashboard/cc
-    fireEvent.click(panel.querySelector('[data-launcher-suite="reports"]')!);
+    // Clicking Báo cáo CC goes straight to /dashboard/cc
+    fireEvent.click(reportsBtn!);
+    expect(onAfterNavigate).toHaveBeenCalledTimes(1);
+    expect(closeListener).toHaveBeenCalledTimes(1);
     expect(mockPush).toHaveBeenCalledWith('/dashboard/cc');
 
-    // Clicking mOS General closes embedded chat and routes to /dashboard/cc
-    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
-    const panelGeneral = screen.getByTestId('mos-app-launcher-panel');
-    fireEvent.click(panelGeneral.querySelector('[data-launcher-app="general"]')!);
-    expect(onAfterNavigate).toHaveBeenCalledTimes(2);
-    expect(closeListener).toHaveBeenCalledTimes(2);
-    expect(mockPush).toHaveBeenCalledWith('/dashboard/cc');
-
-    // Explicitly unlocking bug-reports & labs-hub reveals Mission and Lab
+    // Granting 'today' reveals mOS General (/dashboard/today), while unlocking bug-reports & labs-hub reveals Mission and Lab
     rerender(
       <MosAppLauncher
         currentApp="chat"
@@ -239,7 +244,7 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
         displayName="Đào Trần Vũ Vy"
         menuVisibility={{
           dashboard: false,
-          today: false,
+          today: true,
           cc: true,
           'career-path': true,
           'bug-reports': true,
@@ -252,45 +257,125 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
 
     fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
     const grantedPanel = screen.getByTestId('mos-app-launcher-panel');
+    expect(grantedPanel.querySelector('[data-launcher-app="general"]')).not.toBeNull();
     expect(grantedPanel.querySelector('[data-launcher-suite="mission"]')).not.toBeNull();
     expect(grantedPanel.querySelector('[data-launcher-suite="lab"]')).not.toBeNull();
+
+    fireEvent.click(grantedPanel.querySelector('[data-launcher-app="general"]')!);
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/today');
 
     window.removeEventListener('mos-chat:close', closeListener);
   });
 
-  it('enables Wings Garden for Admin and marks it Coming soon (non-navigable) for non-admin roles', () => {
+  it('routes BK (telesales, booker, bk role, BK/TELESALES team) to Báo cáo BK (/dashboard/bk) with Zero-Trust menuVisibility', () => {
+    const { rerender } = render(
+      <MosAppLauncher currentApp="general" userRole="telesales" displayName="Tư vấn viên BK" />
+    );
+
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    let panel = screen.getByTestId('mos-app-launcher-panel');
+    let reportsBtn = panel.querySelector('[data-launcher-suite="reports"]');
+    expect(reportsBtn?.textContent).toContain('Báo cáo BK');
+    fireEvent.click(reportsBtn!);
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/bk');
+
+    mockPush.mockClear();
+    rerender(<MosAppLauncher currentApp="general" userRole="booker" displayName="Booker A" />);
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    panel = screen.getByTestId('mos-app-launcher-panel');
+    expect(panel.querySelector('[data-launcher-suite="reports"]')?.textContent).toContain('Báo cáo BK');
+    fireEvent.click(panel.querySelector('[data-launcher-suite="reports"]')!);
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/bk');
+
+    mockPush.mockClear();
+    rerender(<MosAppLauncher currentApp="general" userRole="bk" displayName="BK Role" />);
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    panel = screen.getByTestId('mos-app-launcher-panel');
+    expect(panel.querySelector('[data-launcher-suite="reports"]')?.textContent).toContain('Báo cáo BK');
+    fireEvent.click(panel.querySelector('[data-launcher-suite="reports"]')!);
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/bk');
+
+    mockPush.mockClear();
+    rerender(
+      <MosAppLauncher
+        currentApp="general"
+        userRole="staff"
+        teamCodes={['TELESALES']}
+        displayName="Team Telesales"
+        menuVisibility={{ bk: true }}
+      />
+    );
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    panel = screen.getByTestId('mos-app-launcher-panel');
+    expect(panel.querySelector('[data-launcher-app="general"]')).toBeNull();
+    reportsBtn = panel.querySelector('[data-launcher-suite="reports"]');
+    expect(reportsBtn?.textContent).toContain('Báo cáo BK');
+    fireEvent.click(reportsBtn!);
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/bk');
+
+    // Zero-Trust: when bk & kpi are false, reports tile is hidden; when today + bk are true, both show with distinct routes
+    mockPush.mockClear();
+    rerender(
+      <MosAppLauncher
+        currentApp="general"
+        userRole="telesales"
+        teamCodes={['BK']}
+        displayName="BK ZeroTrust"
+        menuVisibility={{ bk: false, kpi: false }}
+      />
+    );
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    panel = screen.getByTestId('mos-app-launcher-panel');
+    expect(panel.querySelector('[data-launcher-suite="reports"]')).toBeNull();
+
+    rerender(
+      <MosAppLauncher
+        currentApp="general"
+        userRole="telesales"
+        teamCodes={['BK']}
+        displayName="BK Operational"
+        menuVisibility={{ today: true, bk: true }}
+      />
+    );
+    panel = screen.getByTestId('mos-app-launcher-panel');
+    expect(panel.querySelector('[data-launcher-app="general"]')).not.toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="reports"]')?.textContent).toContain('Báo cáo BK');
+    fireEvent.click(panel.querySelector('[data-launcher-app="general"]')!);
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/today');
+  });
+
+  it('enforces Zero-Trust on Wings Garden (Admin-only) and shows feedback badge only when mOS Mission is absent', () => {
+    setBugReportBadgeSummary({ actionRequiredCount: 2, unreadCount: 2 });
+
     const { rerender } = render(<MosAppLauncher currentApp="general" userRole="admin" displayName="Hân Huỳnh" />);
 
     fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
     const adminPanel = screen.getByTestId('mos-app-launcher-panel');
     const adminGarden = adminPanel.querySelector('[data-launcher-suite="wings-garden"]') as HTMLButtonElement | null;
     expect(adminGarden).not.toBeNull();
-    expect(adminGarden?.disabled).toBe(false);
-    expect(adminGarden?.getAttribute('data-coming-soon')).toBeNull();
+    expect(adminPanel.querySelector('[data-launcher-suite="mission"]')?.textContent).toContain('2');
+    expect(adminPanel.querySelector('[data-launcher-footer="feedback"]')?.textContent).not.toContain('2');
     fireEvent.click(adminGarden!);
     expect(mockPush).toHaveBeenCalledWith('/wings-garden');
 
     mockPush.mockClear();
 
+    // Non-admin without mOS Mission: Wings Garden hidden, Feedback shows badge 2
     rerender(<MosAppLauncher currentApp="general" userRole="telesales" displayName="Tư vấn viên BK" />);
     fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
     const salesPanel = screen.getByTestId('mos-app-launcher-panel');
-    const salesGarden = salesPanel.querySelector('[data-launcher-suite="wings-garden"]') as HTMLButtonElement | null;
-    expect(salesGarden).not.toBeNull();
-    expect(salesGarden?.disabled).toBe(true);
-    expect(salesGarden?.getAttribute('data-coming-soon')).toBe('true');
-    expect(salesGarden?.textContent).toContain('Coming soon');
-    fireEvent.click(salesGarden!);
-    expect(mockPush).not.toHaveBeenCalled();
+    expect(salesPanel.querySelector('[data-launcher-suite="wings-garden"]')).toBeNull();
+    expect(salesPanel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
+    expect(salesPanel.querySelector('[data-launcher-footer="feedback"]')?.textContent).toContain('2');
+
+    rerender(<MosAppLauncher currentApp="general" userRole="cc" displayName="Tư vấn CC" />);
+    const ccPanel = screen.getByTestId('mos-app-launcher-panel');
+    expect(ccPanel.querySelector('[data-launcher-suite="wings-garden"]')).toBeNull();
+    expect(ccPanel.querySelector('[data-launcher-suite="reports"]')?.textContent).toContain('Báo cáo CC');
 
     rerender(<MosAppLauncher currentApp="general" userRole="cv" displayName="Chuyên viên Mi" />);
     const cvPanel = screen.getByTestId('mos-app-launcher-panel');
-    const cvGarden = cvPanel.querySelector('[data-launcher-suite="wings-garden"]') as HTMLButtonElement | null;
-    expect(cvGarden).not.toBeNull();
-    expect(cvGarden?.disabled).toBe(true);
-    expect(cvGarden?.getAttribute('data-coming-soon')).toBe('true');
-    expect(cvGarden?.textContent).toContain('Coming soon');
-    fireEvent.click(cvGarden!);
-    expect(mockPush).not.toHaveBeenCalled();
+    expect(cvPanel.querySelector('[data-launcher-suite="wings-garden"]')).toBeNull();
+    expect(cvPanel.querySelector('[data-launcher-footer="feedback"]')).toBeNull();
   });
 });

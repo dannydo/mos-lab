@@ -62,7 +62,15 @@ function buildSingleCcPaystubRecord(
   const hourlyWage = settledWage != null ? Math.round(settledWage) : Math.round(totalWorkHours * rate);
 
   const xoayInfo = indexed.xoayMap.get(uid) || { count: 0, bonus: 0 };
-  const dailyBonusInfo = indexed.staffDailyBonusTotals.get(uid) || { bonus: 0, comboQty: 0, productQty: 0 };
+  const dailyBonusInfo = indexed.staffDailyBonusTotals.get(uid) || {
+    bonus: 0,
+    comboQty: 0,
+    productQty: 0,
+    greenVisits: 0,
+  };
+  const greenVisits = dailyBonusInfo.greenVisits || 0;
+  const greenComboConversionRate =
+    greenVisits > 0 ? Math.min(100, Math.round((dailyBonusInfo.comboQty / greenVisits) * 100)) : 0;
 
   const capResult = calculateWheelBonusCap(dailyBonusInfo.bonus, xoayInfo.bonus);
   const ccXoayBonus = capResult.effectiveWheelBonus;
@@ -148,6 +156,8 @@ function buildSingleCcPaystubRecord(
     checkinCount: xoayInfo.count,
     comboProductBonus: dailyBonusInfo.bonus,
     comboCount: dailyBonusInfo.comboQty,
+    greenVisits,
+    greenComboConversionRate,
     productCount: dailyBonusInfo.productQty,
     minigameBonus,
     rawMinigameBonus: capResult.rawWheelBonus,

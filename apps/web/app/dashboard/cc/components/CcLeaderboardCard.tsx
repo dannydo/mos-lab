@@ -3,12 +3,12 @@
 import { useMemo } from 'react';
 import { Card, Table, theme } from 'antd';
 import { TrophyOutlined, FilterOutlined } from '@ant-design/icons';
-import { CircleCheck, CircleX, TriangleAlert } from 'lucide-react';
+import { CircleCheck, CircleX, TriangleAlert, X } from 'lucide-react';
 import { Dayjs } from 'dayjs';
-import { CcLeaderboardEntry, themeTokens } from '@mos-lab/shared';
+import { CcLeaderboardEntry } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { AppIcon } from '~/components/ui';
-import { useResponsiveTier, useViewportSize } from '~/hooks/useResponsiveTier';
+import { useCcMobilePortrait } from './useCcMobilePortrait';
 import { buildCcLeaderboardColumns } from './cc-leaderboard/cc-leaderboard-columns';
 import { CcLeaderboardMobileList } from './cc-leaderboard/CcLeaderboardMobileList';
 import {
@@ -22,6 +22,7 @@ interface CcLeaderboardCardProps {
   loading?: boolean;
   selectedConsultant?: string;
   onSelectConsultant?: (consultantName: string) => void;
+  onInspectConsultantMobile?: (entry: CcLeaderboardEntry) => void;
   dateRange?: [Dayjs, Dayjs];
   comparisonMode?: 'month' | 'week' | 'day';
 }
@@ -31,22 +32,14 @@ export default function CcLeaderboardCard({
   loading,
   selectedConsultant,
   onSelectConsultant,
+  onInspectConsultantMobile,
   dateRange,
   comparisonMode = 'month',
 }: CcLeaderboardCardProps) {
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
-  const tier = useResponsiveTier();
-  const { width: viewportWidth, height: viewportHeight } = useViewportSize();
-  const { mobileLandscapeMaxWidth, mobileLandscapeMaxHeight } = themeTokens.responsive.breakpoints;
-  const isPhoneLandscape =
-    viewportWidth > viewportHeight &&
-    viewportWidth <= mobileLandscapeMaxWidth &&
-    viewportHeight <= mobileLandscapeMaxHeight;
-  // Portrait phones use scan-friendly cards. A rotated phone has enough width
-  // for the denser, chart-bearing table and should retain that operational view.
-  const showMobileCards = tier === 'mobile' && !isPhoneLandscape;
+  const { showMobilePortrait: showMobileCards } = useCcMobilePortrait();
 
   const isMonthMode = comparisonMode === 'month';
   const isDayMode = comparisonMode === 'day';
@@ -73,6 +66,54 @@ export default function CcLeaderboardCard({
 
   // Summary counts
   const capSummary = useMemo(() => computeCapSummary(leaderboard), [leaderboard]);
+
+  if (showMobileCards) {
+    return (
+      <section aria-label="Xếp hạng CC Xoay" className="space-y-2">
+        <div className="flex items-center justify-between gap-2 px-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Xếp hạng Xoay · {leaderboard.length}
+          </span>
+          <div className="flex items-center gap-2 text-[10px]">
+            {capSummary.hardcapped > 0 && (
+              <span className="inline-flex items-center gap-0.5 font-semibold text-rose-500 tabular-nums">
+                <AppIcon icon={CircleX} size={11} />
+                {capSummary.hardcapped}
+              </span>
+            )}
+            {capSummary.warning > 0 && (
+              <span className="inline-flex items-center gap-0.5 font-semibold text-amber-500 tabular-nums">
+                <AppIcon icon={TriangleAlert} size={11} />
+                {capSummary.warning}
+              </span>
+            )}
+            {selectedConsultant && selectedConsultant !== 'ALL' && (
+              <button
+                type="button"
+                onClick={() => onSelectConsultant?.('ALL')}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 cursor-pointer active:scale-95"
+              >
+                <span>Lọc: {selectedConsultant}</span>
+                <AppIcon icon={X} size={11} aria-hidden />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <CcLeaderboardMobileList
+          leaderboard={leaderboard}
+          loading={loading}
+          selectedConsultant={selectedConsultant}
+          onSelectConsultant={onSelectConsultant}
+          onInspectConsultantMobile={onInspectConsultantMobile}
+          isDayMode={isDayMode}
+          isMonthMode={isMonthMode}
+          isPastPeriod={isPastPeriod}
+          ratio={ratio}
+        />
+      </section>
+    );
+  }
 
   return (
     <Card
@@ -146,42 +187,29 @@ export default function CcLeaderboardCard({
         </span>
       </div>
 
-      {showMobileCards ? (
-        <CcLeaderboardMobileList
-          leaderboard={leaderboard}
-          loading={loading}
-          selectedConsultant={selectedConsultant}
-          onSelectConsultant={onSelectConsultant}
-          isDayMode={isDayMode}
-          isMonthMode={isMonthMode}
-          isPastPeriod={isPastPeriod}
-          ratio={ratio}
-        />
-      ) : (
-        <Table
-          dataSource={leaderboard}
-          columns={columns}
-          rowKey="consultantId"
-          size="small"
-          pagination={false}
-          loading={loading}
-          scroll={{ x: 'max-content' }}
-          className="antd-custom-table"
-          locale={{ emptyText: 'Chưa có dữ liệu' }}
-          onRow={(record) => ({
-            onClick: () => onSelectConsultant?.(record.displayName),
-            className: 'cursor-pointer hover:bg-amber-500/5 transition-colors',
-            style: {
-              background:
-                selectedConsultant === record.displayName
-                  ? isDark
-                    ? 'rgba(212,168,75,0.12)'
-                    : 'rgba(212,168,75,0.06)'
-                  : undefined,
-            },
-          })}
-        />
-      )}
+      <Table
+        dataSource={leaderboard}
+        columns={columns}
+        rowKey="consultantId"
+        size="small"
+        pagination={false}
+        loading={loading}
+        scroll={{ x: 'max-content' }}
+        className="antd-custom-table"
+        locale={{ emptyText: 'Chưa có dữ liệu' }}
+        onRow={(record) => ({
+          onClick: () => onSelectConsultant?.(record.displayName),
+          className: 'cursor-pointer hover:bg-amber-500/5 transition-colors',
+          style: {
+            background:
+              selectedConsultant === record.displayName
+                ? isDark
+                  ? 'rgba(212,168,75,0.12)'
+                  : 'rgba(212,168,75,0.06)'
+                : undefined,
+          },
+        })}
+      />
     </Card>
   );
 }
