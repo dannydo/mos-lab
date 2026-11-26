@@ -1,4 +1,5 @@
 import {
+  canAccessFmSimulator,
   canAccessLoca,
   CV_DEFAULT_ALLOWED_MENU_KEYS,
   isAdminOrSuperAdminRole,
@@ -15,7 +16,15 @@ export type { SidebarItemConfig, SidebarGroupConfig };
 export { getSelectedMenuKey } from './sidebar/sidebar-route-matcher';
 
 // Zero-Trust R&D & Mission keys remain strictly hidden from non-admins unless explicitly granted via menuVisibility
-const ZERO_TRUST_EXPLICIT_GRANT_KEYS = new Set(['labs-hub', 'pilot-dark-lashes', 'cc-payroll-pilot', 'bug-reports']);
+const ZERO_TRUST_EXPLICIT_GRANT_KEYS = new Set([
+  'labs-hub',
+  'pilot-dark-lashes',
+  'cc-payroll-pilot',
+  'fm-simulator',
+  'bug-reports',
+]);
+// Strictly Admin-Only keys: NEVER unlockable for non-admins via menuVisibility overrides
+const STRICT_ADMIN_ONLY_KEYS = new Set(['pnl-simulator']);
 
 export function getSidebarGroups(
   userRole: string = '',
@@ -26,7 +35,7 @@ export function getSidebarGroups(
   academyAccess: boolean = false,
   menuVisibility: Record<string, boolean> = {},
   categoryVisibility: Record<string, boolean> = {},
-  _currentUser: { username?: string | null; email?: string | null } = {},
+  _currentUser: { username?: string | null; email?: string | null; teamCodes?: readonly string[] | null } = {},
   bugInboxApprovalCount: number = 0,
   activeFunds: SafeAny[] = []
 ): SidebarGroupConfig[] {
@@ -72,6 +81,11 @@ export function getSidebarGroups(
 
   const filterItems = (items: SidebarItemConfig[]): SidebarItemConfig[] =>
     items.flatMap((item) => {
+      if (!isAdmin && STRICT_ADMIN_ONLY_KEYS.has(item.key)) return [];
+      if (item.key === 'fm-simulator') {
+        if (!isAdmin && menuVisibility[item.key] === false) return [];
+        return canAccessFmSimulator(normalizedRole, _currentUser?.teamCodes) ? [item] : [];
+      }
       // Dynamic campaign links do not have individual static menu keys. Their
       // parent category therefore enforces the category policy for every child.
       if (!isCrmCategoryVisible && item.key === 'nyc-parent') return [];

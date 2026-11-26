@@ -14,6 +14,7 @@ export interface CareerCurrentUser {
   username?: string;
   email?: string;
   name?: string;
+  teamCodes?: string[];
 }
 
 export type CareerIslandId = 'ktv' | 'cv' | 'cv_plus' | 'cv_plus_plus' | 'fm' | 'cho' | 'boss' | 'cc';
@@ -24,6 +25,7 @@ export interface CareerConfigSavePayload {
   cvToCc: CareerProgressionConfig['cvToCc'];
   cvToCvPlus: CareerProgressionConfig['cvToCvPlus'];
   cvPlusToCvPlusPlus: CareerProgressionConfig['cvPlusToCvPlusPlus'];
+  fmFloorFarm?: CareerProgressionConfig['fmFloorFarm'];
   maintenanceRules?: CareerProgressionConfig['maintenanceRules'];
 }
 
@@ -82,6 +84,7 @@ export function normalizeCareerProgressionConfig(config: CareerProgressionConfig
     fmToCho: { ...base.fmToCho, ...(config.fmToCho || {}) },
     choToBoss: { ...base.choToBoss, ...(config.choToBoss || {}) },
     rewardRates: { ...base.rewardRates, ...(config.rewardRates || {}) },
+    fmFloorFarm: { ...base.fmFloorFarm!, ...(config.fmFloorFarm || {}) },
   };
 }
 

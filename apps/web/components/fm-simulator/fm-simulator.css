@@ -1,0 +1,188 @@
+/* Apple Minimalist Simulator Scoped Styles (Light + Dark parity, accessible sliders & tabs) */
+
+.fm-apple-sim {
+  --fm-slider-track: 6px;
+  --fm-slider-thumb: 22px;
+  --fm-safe-bar-height: 76px;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+.fm-apple-sim h1,
+.fm-apple-sim h2,
+.fm-apple-sim h3 {
+  text-wrap: balance;
+}
+
+.fm-apple-sim p,
+.fm-apple-sim li {
+  text-wrap: pretty;
+}
+
+.fm-mobile-scroll {
+  scroll-padding-bottom: calc(var(--fm-safe-bar-height) + env(safe-area-inset-bottom, 0px) + 16px);
+}
+
+.fm-safe-bottom {
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+}
+
+/* Native accessible range slider styled without comma-separated vendor pseudo-elements */
+.fm-apple-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+
+.fm-apple-range:focus-visible {
+  outline: 2px solid rgb(59 130 246 / 0.75);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+.fm-apple-range::-webkit-slider-runnable-track {
+  height: var(--fm-slider-track);
+  border-radius: 9999px;
+  background: rgb(229 229 234);
+}
+
+.dark-theme .fm-apple-range::-webkit-slider-runnable-track {
+  background: rgb(56 56 58);
+}
+
+.fm-apple-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--fm-slider-thumb);
+  height: var(--fm-slider-thumb);
+  border-radius: 9999px;
+  background: rgb(255 255 255);
+  border: 0.5px solid rgb(0 0 0 / 0.14);
+  box-shadow:
+    0 2px 6px rgb(0 0 0 / 0.18),
+    0 0 1px rgb(0 0 0 / 0.12);
+  margin-block-start: calc((var(--fm-slider-track) - var(--fm-slider-thumb)) / 2);
+  transition: transform 140ms ease;
+}
+
+.fm-apple-range:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+.fm-apple-range::-moz-range-track {
+  height: var(--fm-slider-track);
+  border-radius: 9999px;
+  background: rgb(229 229 234);
+}
+
+.dark-theme .fm-apple-range::-moz-range-track {
+  background: rgb(56 56 58);
+}
+
+.fm-apple-range::-moz-range-thumb {
+  width: var(--fm-slider-thumb);
+  height: var(--fm-slider-thumb);
+  border-radius: 9999px;
+  background: rgb(255 255 255);
+  border: 0.5px solid rgb(0 0 0 / 0.14);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.18);
+}
+
+/* Native <progress> replaces dynamic style={{ width }} bars cleanly */
+.fm-apple-progress {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 0;
+  background-color: rgb(229 229 234 / 0.75);
+}
+
+.dark-theme .fm-apple-progress {
+  background-color: rgb(56 56 58 / 0.85);
+}
+
+.fm-apple-progress::-webkit-progress-bar {
+  background-color: transparent;
+}
+
+.fm-apple-progress.tone-blue::-webkit-progress-value {
+  background-color: rgb(10 132 255);
+  border-radius: 9999px;
+  transition: width 220ms ease;
+}
+
+.fm-apple-progress.tone-emerald::-webkit-progress-value {
+  background-color: rgb(52 199 89);
+  border-radius: 9999px;
+  transition: width 220ms ease;
+}
+
+.fm-apple-progress.tone-amber::-webkit-progress-value {
+  background-color: rgb(245 158 11);
+  border-radius: 9999px;
+  transition: width 220ms ease;
+}
+
+.fm-apple-progress.tone-violet::-webkit-progress-value {
+  background-color: rgb(139 92 246);
+  border-radius: 9999px;
+  transition: width 220ms ease;
+}
+
+.fm-apple-progress.tone-rose::-webkit-progress-value {
+  background-color: rgb(244 63 94);
+  border-radius: 9999px;
+  transition: width 220ms ease;
+}
+
+.fm-apple-progress.tone-blue::-moz-progress-bar {
+  background-color: rgb(10 132 255);
+  border-radius: 9999px;
+}
+
+.fm-apple-progress.tone-emerald::-moz-progress-bar {
+  background-color: rgb(52 199 89);
+  border-radius: 9999px;
+}
+
+.fm-apple-progress.tone-amber::-moz-progress-bar {
+  background-color: rgb(245 158 11);
+  border-radius: 9999px;
+}
+
+.fm-apple-progress.tone-violet::-moz-progress-bar {
+  background-color: rgb(139 92 246);
+  border-radius: 9999px;
+}
+
+.fm-apple-progress.tone-rose::-moz-progress-bar {
+  background-color: rgb(244 63 94);
+  border-radius: 9999px;
+}
+
+/* Tab underline via pseudo-element tied to aria-selected (never color alone - WCAG 1.4.1) */
+.fm-apple-tab {
+  position: relative;
+  min-height: 44px;
+}
+
+.fm-apple-tab[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 4px;
+  height: 0;
+  border-bottom: 2px solid rgb(10 132 255);
+  border-radius: 9999px;
+}
+
+.dark-theme .fm-apple-tab[aria-selected='true']::after {
+  border-bottom-color: rgb(59 130 246);
+}

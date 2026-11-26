@@ -190,6 +190,19 @@ export function canAccessIosConsultationApp(role?: string | null, teamCodes?: re
   return false;
 }
 
+/**
+ * Access guard for FM 7★ Salary Simulator (`/dashboard/fm-simulator`, `/fm-simulator`, and Career Path FM tab):
+ * Allowed for Admin / Super Admin, CC, CVL (CV🪶), CVLL (🪶CV🪶), active CC team members, plus FM / CHO / Boss.
+ * Standard CV / KTV / Telesales remain restricted, and P&L remains strictly Admin-only.
+ */
+export function canAccessFmSimulator(role?: string | null, teamCodes?: readonly string[] | null): boolean {
+  if (canAccessIosConsultationApp(role, teamCodes)) return true;
+  const lower = String(role || '')
+    .trim()
+    .toLowerCase();
+  return ['fm', 'cho', 'boss'].includes(lower);
+}
+
 export type LockedIosOperationalRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 
 /**

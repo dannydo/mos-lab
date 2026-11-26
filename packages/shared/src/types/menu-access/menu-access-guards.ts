@@ -1,5 +1,6 @@
 import {
   UNIVERSAL_LANDING_ROUTE,
+  canAccessFmSimulator,
   canAccessIosConsultationApp,
   getPreferredLandingRoute,
   isAdminOrSuperAdminRole,
@@ -35,6 +36,14 @@ export function isCvAllowedPath(
   if (cleanPath === '/ios-app' || cleanPath.startsWith('/ios-app/')) {
     return userRole || teamCodes?.length ? canAccessIosConsultationApp(userRole, teamCodes) : false;
   }
+  if (
+    cleanPath === '/dashboard/fm-simulator' ||
+    cleanPath.startsWith('/dashboard/fm-simulator/') ||
+    cleanPath === '/fm-simulator' ||
+    cleanPath.startsWith('/fm-simulator/')
+  ) {
+    return userRole || teamCodes?.length ? canAccessFmSimulator(userRole, teamCodes) : false;
+  }
   if (menuVisibility) {
     for (const def of MENU_ACCESS_DEFINITIONS) {
       const defBasePath = def.path.split('?')[0].replace(/\/+$/, '');
@@ -68,6 +77,14 @@ export function isNonAdminAllowedDashboardPath(
   const cleanPath = pathname.split('?')[0].replace(/\/+$/, '') || '/';
   if (cleanPath === '/ios-app' || cleanPath.startsWith('/ios-app/')) {
     return canAccessIosConsultationApp(userRole, teamCodes);
+  }
+  if (
+    cleanPath === '/dashboard/fm-simulator' ||
+    cleanPath.startsWith('/dashboard/fm-simulator/') ||
+    cleanPath === '/fm-simulator' ||
+    cleanPath.startsWith('/fm-simulator/')
+  ) {
+    return canAccessFmSimulator(userRole, teamCodes);
   }
   if (isCvRole(userRole)) {
     return isCvAllowedPath(cleanPath, menuVisibility, userRole, teamCodes);

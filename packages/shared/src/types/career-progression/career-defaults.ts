@@ -3,6 +3,7 @@ import type {
   CvPlusPlusToFmRequirements,
   CvPlusToCvPlusPlusRequirements,
   CvToCvPlusRequirements,
+  FmFloorFarmConfig,
 } from './career-requirements.types.js';
 
 const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
@@ -78,6 +79,93 @@ const DEFAULT_CV_PLUS_PLUS_TO_FM: CvPlusPlusToFmRequirements = {
   minAvgLevel: 10,
 };
 
+export const DEFAULT_FM_FLOOR_FARM_CONFIG: FmFloorFarmConfig = {
+  // 3 Tiers & Daily Base Claim & Cover Shift
+  fm1BaseSalary: 8_000_000,
+  fm2BaseSalary: 9_000_000,
+  fm3BaseSalary: 10_000_000,
+  workingDaysPerMonth: 26,
+  coverShiftBonus: 400_000,
+  fm2PromotionMonths: 3,
+  fm2MinStars: 8,
+  fm3PromotionMonths: 3,
+  fm3MinStars: 10,
+  demoteConsecutiveMonths: 2,
+  requireActiveClaimWallet: true,
+
+  // Capacity & Stepped 2% DT Pool & 60/40 Split
+  cvsPerFm: 8,
+  minCvsForSecondFm: 13,
+  targetBedCapacityRatio: 0.67,
+  revPerCvTarget: 40_000_000,
+  visitsPerCvTarget: 100,
+  dtRateBelowTarget: 0.01,
+  dtRateAtTarget: 0.02,
+  dtRateAccelerator: 0.022,
+  dtAcceleratorCapacityRatio: 0.8,
+  dtBranchSharedWeight: 0.6,
+  dtGroupOwnedWeight: 0.4,
+
+  // Pillar 1: Google Maps (5★ only; 4★ = 0đ; 1–3★ = Sâu)
+  gmaps1StarReviewsPerCv: 3,
+  gmaps2StarReviewsPerCv: 4,
+  gmaps3StarReviewsPerCv: 5,
+  gmaps1StarBonus: 400_000,
+  gmaps2StarBonus: 800_000,
+  gmaps3StarBonus: 1_200_000,
+  gmapsMaxNegativeWormsPerMonth: 1,
+  gmapsTwoWormsMaxStar: 1,
+  gmapsZeroBonusWormsThreshold: 3,
+  gmapsAllowButterflyRedemption: true,
+
+  // Pillar 2: Kho & Vật Tư
+  inv1StarBonus: 300_000,
+  inv2StarBonus: 600_000,
+  inv3StarBonus: 750_000,
+  invMaxLossRate1Star: 0.03,
+  invMaxLossRate2Star: 0.02,
+  invMaxLossRate3Star: 0.01,
+
+  // Pillar 3: CSVC · Giường 3 Sạch · Phong Thái/Son
+  fac1StarBonus: 300_000,
+  fac2StarBonus: 600_000,
+  fac3StarBonus: 750_000,
+  facMinScore1Star: 90,
+  facMinScore2Star: 95,
+  facMinScore3Star: 98,
+
+  // Pillar 4: Tua · Giờ Công · FAL & Tư Vấn
+  ops1StarBonus: 300_000,
+  ops2StarBonus: 600_000,
+  ops3StarBonus: 800_000,
+  falMaxRate1Star: 0.015,
+  falMaxRate2Star: 0.01,
+  falMaxRate3Star: 0.005,
+  minFairnessHi1Star: 0.75,
+  minFairnessHi2Star: 0.85,
+  minFairnessHi3Star: 0.92,
+
+  // Keep-Sharp Consult, FAL Gate & Fun Fund
+  weeklyRegularConsultTarget: 6,
+  weeklyNewCustomerConsultMin: 2,
+  consultMinComboRate: 0.25,
+  consultExcellentComboRate: 0.3,
+  consultTipToFunFund: true,
+  requireAllFalThroughFm: true,
+  falSlaHours: 24,
+
+  // Daily Quests, Shield, Worm Penalties, Wheel & Holiday Autopilot
+  dailyQuestBonusTotal: 110_000,
+  minShieldHpForChest: 80,
+  missedQuestHpPenalty: 10,
+  mapsWormLate24hPenalty: 200_000,
+  falWormLate24hPenalty: 100_000,
+  falWormLate48hPenalty: 300_000,
+  wheelMinPrize: 500_000,
+  wheelMaxPrize: 1_500_000,
+  holidayAutopilotMinCvlRatio: 0.5,
+};
+
 export const DEFAULT_CAREER_PROGRESSION_CONFIG: CareerProgressionConfig = {
   version: '2026.5',
   updatedAt: new Date().toISOString(),
@@ -87,6 +175,7 @@ export const DEFAULT_CAREER_PROGRESSION_CONFIG: CareerProgressionConfig = {
   cvPlusPlusToFm: DEFAULT_CV_PLUS_PLUS_TO_FM,
   cvToCc: DEFAULT_CV_TO_CV_PLUS,
   ccToFm: DEFAULT_CV_PLUS_PLUS_TO_FM,
+  fmFloorFarm: DEFAULT_FM_FLOOR_FARM_CONFIG,
   fmToCho: {
     minTargetHitMonths: 3,
     helpLowHiStaffImprove: true, // Giúp đỡ người có HI thấp lên cao hơn

@@ -8658,7 +8658,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 41
+        "line": 38
       }
     },
     {
@@ -8672,7 +8672,7 @@
         "path": "/api/chat/messages/forward",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 211
+        "line": 208
       }
     },
     {
@@ -14887,6 +14887,18 @@
       }
     },
     {
+      "id": "page:/dashboard/fm-simulator",
+      "type": "Component",
+      "label": "App Page: /dashboard/fm-simulator",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/fm-simulator/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/fm-simulator",
+        "apiCallsCount": 0,
+        "apiCalls": []
+      }
+    },
+    {
       "id": "page:/dashboard/funds",
       "type": "Component",
       "label": "App Page: /dashboard/funds",
@@ -15049,6 +15061,18 @@
       }
     },
     {
+      "id": "page:/dashboard/pnl-simulator",
+      "type": "Component",
+      "label": "App Page: /dashboard/pnl-simulator",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/pnl-simulator/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/pnl-simulator",
+        "apiCallsCount": 0,
+        "apiCalls": []
+      }
+    },
+    {
       "id": "page:/dashboard/post-hub",
       "type": "Component",
       "label": "App Page: /dashboard/post-hub",
@@ -15174,6 +15198,18 @@
       }
     },
     {
+      "id": "page:/fm-simulator",
+      "type": "Component",
+      "label": "App Page: /fm-simulator",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/fm-simulator/page.tsx",
+      "metadata": {
+        "routePath": "/fm-simulator",
+        "apiCallsCount": 0,
+        "apiCalls": []
+      }
+    },
+    {
       "id": "page:/ios-app",
       "type": "Component",
       "label": "App Page: /ios-app",
@@ -15229,6 +15265,18 @@
       "filePath": "apps/web/app/payroll-native-cc-run/page.tsx",
       "metadata": {
         "routePath": "/payroll-native-cc-run",
+        "apiCallsCount": 0,
+        "apiCalls": []
+      }
+    },
+    {
+      "id": "page:/pnl-simulator",
+      "type": "Component",
+      "label": "App Page: /pnl-simulator",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/pnl-simulator/page.tsx",
+      "metadata": {
+        "routePath": "/pnl-simulator",
         "apiCallsCount": 0,
         "apiCalls": []
       }
@@ -22466,6 +22514,18 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CareerRewardRates",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmFloorFarmConfig",
+      "type": "SharedType",
+      "label": "FmFloorFarmConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmFloorFarmConfig",
         "package": "@mos-lab/shared"
       }
     },
@@ -37062,6 +37122,174 @@
       }
     },
     {
+      "id": "uicomp:AdminOnlyPnlGuard",
+      "type": "UIComponent",
+      "label": "<AdminOnlyPnlGuard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/AdminOnlyPnlGuard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "AdminOnlyPnlGuard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:ApplePrimitives",
+      "type": "UIComponent",
+      "label": "<ApplePrimitives />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/ApplePrimitives.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ApplePrimitives",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:AppleSimulatorShell",
+      "type": "UIComponent",
+      "label": "<AppleSimulatorShell />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/AppleSimulatorShell.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "AppleSimulatorShell",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:FmCockpitView",
+      "type": "UIComponent",
+      "label": "<FmCockpitView />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/FmCockpitView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FmCockpitView",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:FmPillarCard",
+      "type": "UIComponent",
+      "label": "<FmPillarCard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/FmPillarCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FmPillarCard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:FmSimulatorAccessGuard",
+      "type": "UIComponent",
+      "label": "<FmSimulatorAccessGuard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/FmSimulatorAccessGuard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FmSimulatorAccessGuard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:FmSimulatorStudio",
+      "type": "UIComponent",
+      "label": "<FmSimulatorStudio />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/FmSimulatorStudio.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FmSimulatorStudio",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:PnlCockpitView",
+      "type": "UIComponent",
+      "label": "<PnlCockpitView />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/PnlCockpitView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "PnlCockpitView",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:PnlSimulatorStudio",
+      "type": "UIComponent",
+      "label": "<PnlSimulatorStudio />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/PnlSimulatorStudio.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "PnlSimulatorStudio",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:RulesBlueprintView",
+      "type": "UIComponent",
+      "label": "<RulesBlueprintView />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/RulesBlueprintView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "RulesBlueprintView",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:fm-simulator.constants",
+      "type": "UIComponent",
+      "label": "<fm-simulator.constants />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/fm-simulator.constants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "fm-simulator.constants",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:fm-simulator.engine.test",
+      "type": "UIComponent",
+      "label": "<fm-simulator.engine.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/fm-simulator.engine.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "fm-simulator.engine.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:fm-simulator.engine",
+      "type": "UIComponent",
+      "label": "<fm-simulator.engine />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/fm-simulator.engine.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "fm-simulator.engine",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:pnl-access-guard.test",
+      "type": "UIComponent",
+      "label": "<pnl-access-guard.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/pnl-access-guard.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "pnl-access-guard.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:IconPickerGrid",
       "type": "UIComponent",
       "label": "<IconPickerGrid />",
@@ -46793,8 +47021,8 @@
       "filePath": "apps/api/src/modules/career/career-service/career-config.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6831,
-        "lineCount": 192,
+        "sizeBytes": 7334,
+        "lineCount": 207,
         "ext": ".ts"
       }
     },
@@ -47300,8 +47528,8 @@
       "filePath": "apps/api/src/modules/chat/chat-file.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18276,
-        "lineCount": 500,
+        "sizeBytes": 18280,
+        "lineCount": 498,
         "ext": ".ts"
       }
     },
@@ -47677,8 +47905,8 @@
       "filePath": "apps/api/src/modules/chat/chat-video-processor.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17295,
-        "lineCount": 521,
+        "sizeBytes": 17360,
+        "lineCount": 529,
         "ext": ".ts"
       }
     },
@@ -48054,8 +48282,8 @@
       "filePath": "apps/api/src/modules/chat/routes/messages-send-forward.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16615,
-        "lineCount": 426,
+        "sizeBytes": 16610,
+        "lineCount": 423,
         "ext": ".ts"
       }
     },
@@ -60781,8 +61009,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path-page-modules/CareerPathDrawers.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8115,
-        "lineCount": 225,
+        "sizeBytes": 8236,
+        "lineCount": 230,
         "ext": ".tsx"
       }
     },
@@ -60807,8 +61035,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path-page-modules/careerPathTypesAndHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5089,
-        "lineCount": 135,
+        "sizeBytes": 5243,
+        "lineCount": 138,
         "ext": ".ts"
       }
     },
@@ -60820,8 +61048,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path-page-modules/useCareerPathState.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17839,
-        "lineCount": 480,
+        "sizeBytes": 18215,
+        "lineCount": 491,
         "ext": ".ts"
       }
     },
@@ -60833,8 +61061,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22542,
-        "lineCount": 432,
+        "sizeBytes": 23110,
+        "lineCount": 442,
         "ext": ".ts"
       }
     },
@@ -60872,8 +61100,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6754,
-        "lineCount": 176,
+        "sizeBytes": 7542,
+        "lineCount": 192,
         "ext": ".tsx"
       }
     },
@@ -60885,8 +61113,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerRealmEncyclopedia.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4214,
-        "lineCount": 95,
+        "sizeBytes": 4871,
+        "lineCount": 110,
         "ext": ".tsx"
       }
     },
@@ -60982,6 +61210,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage3FmConfigTab.tsx",
+      "type": "File",
+      "label": "CareerStage3FmConfigTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage3FmConfigTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 24000,
+        "lineCount": 604,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/careerConfigTypesAndHelpers.ts",
       "type": "File",
       "label": "careerConfigTypesAndHelpers.ts",
@@ -60989,8 +61230,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/careerConfigTypesAndHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7150,
-        "lineCount": 219,
+        "sizeBytes": 7714,
+        "lineCount": 242,
         "ext": ".ts"
       }
     },
@@ -61340,8 +61581,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6862,
-        "lineCount": 149,
+        "sizeBytes": 11846,
+        "lineCount": 259,
         "ext": ".tsx"
       }
     },
@@ -64986,6 +65227,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/fm-simulator/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/fm-simulator/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 452,
+        "lineCount": 14,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/funds/components/FundDetailDrawer.tsx",
       "type": "File",
       "label": "FundDetailDrawer.tsx",
@@ -68548,6 +68802,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/pnl-simulator/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pnl-simulator/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 437,
+        "lineCount": 14,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/post-hub/components/PostHubApprovalStage.tsx",
       "type": "File",
       "label": "PostHubApprovalStage.tsx",
@@ -71599,6 +71866,19 @@
       "metadata": {
         "sizeBytes": 12156,
         "lineCount": 323,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/fm-simulator/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/fm-simulator/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 425,
+        "lineCount": 14,
         "ext": ".tsx"
       }
     },
@@ -74918,6 +75198,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/pnl-simulator/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/pnl-simulator/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 420,
+        "lineCount": 14,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/suppress-warnings.ts",
       "type": "File",
       "label": "suppress-warnings.ts",
@@ -75354,8 +75647,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21709,
-        "lineCount": 538,
+        "sizeBytes": 21669,
+        "lineCount": 533,
         "ext": ".ts"
       }
     },
@@ -75945,6 +76238,19 @@
       }
     },
     {
+      "id": "file:packages/shared/src/business-rules/mos-bible/fm-and-management.ts",
+      "type": "File",
+      "label": "fm-and-management.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/business-rules/mos-bible/fm-and-management.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 6065,
+        "lineCount": 44,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/business-rules/mos-bible/governance-and-booking.ts",
       "type": "File",
       "label": "governance-and-booking.ts",
@@ -75965,8 +76271,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/hydrate-career-commandments.test.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2843,
-        "lineCount": 65,
+        "sizeBytes": 5343,
+        "lineCount": 122,
         "ext": ".ts"
       }
     },
@@ -75978,8 +76284,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/hydrate-career-commandments.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12539,
-        "lineCount": 150,
+        "sizeBytes": 20924,
+        "lineCount": 198,
         "ext": ".ts"
       }
     },
@@ -76030,8 +76336,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 4681,
-        "lineCount": 123,
+        "sizeBytes": 4821,
+        "lineCount": 125,
         "ext": ".ts"
       }
     },
@@ -76771,8 +77077,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 13480,
-        "lineCount": 409,
+        "sizeBytes": 14092,
+        "lineCount": 420,
         "ext": ".ts"
       }
     },
@@ -76927,8 +77233,8 @@
       "filePath": "packages/shared/src/types/career-progression/career-defaults.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10351,
-        "lineCount": 205,
+        "sizeBytes": 12859,
+        "lineCount": 294,
         "ext": ".ts"
       }
     },
@@ -76940,8 +77246,8 @@
       "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 15189,
-        "lineCount": 286,
+        "sizeBytes": 17756,
+        "lineCount": 374,
         "ext": ".ts"
       }
     },
@@ -77473,8 +77779,8 @@
       "filePath": "packages/shared/src/types/menu-access/menu-access-guards.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 13412,
-        "lineCount": 375,
+        "sizeBytes": 13984,
+        "lineCount": 392,
         "ext": ".ts"
       }
     },
@@ -85293,6 +85599,13 @@
       "label": "PAGE_OF"
     },
     {
+      "id": "edge:page:/dashboard/fm-simulator:ws:apps/web",
+      "source": "page:/dashboard/fm-simulator",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
       "id": "edge:page:/dashboard/funds:ws:apps/web",
       "source": "page:/dashboard/funds",
       "target": "ws:apps/web",
@@ -85384,6 +85697,13 @@
       "label": "PAGE_OF"
     },
     {
+      "id": "edge:page:/dashboard/pnl-simulator:ws:apps/web",
+      "source": "page:/dashboard/pnl-simulator",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
       "id": "edge:page:/dashboard/post-hub:ws:apps/web",
       "source": "page:/dashboard/post-hub",
       "target": "ws:apps/web",
@@ -85454,6 +85774,13 @@
       "label": "PAGE_OF"
     },
     {
+      "id": "edge:page:/fm-simulator:ws:apps/web",
+      "source": "page:/fm-simulator",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
       "id": "edge:page:/ios-app:ws:apps/web",
       "source": "page:/ios-app",
       "target": "ws:apps/web",
@@ -85484,6 +85811,13 @@
     {
       "id": "edge:page:/payroll-native-cc-run:ws:apps/web",
       "source": "page:/payroll-native-cc-run",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/pnl-simulator:ws:apps/web",
+      "source": "page:/pnl-simulator",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -89705,6 +90039,13 @@
     {
       "id": "edge:type:@mos-lab/shared:CareerRewardRates:ws:packages/shared",
       "source": "type:@mos-lab/shared:CareerRewardRates",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmFloorFarmConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmFloorFarmConfig",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -99736,6 +100077,202 @@
     {
       "id": "edge:uicomp:RangeFilterField:token:color:primary",
       "source": "uicomp:RangeFilterField",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:AdminOnlyPnlGuard:ws:apps/web",
+      "source": "uicomp:AdminOnlyPnlGuard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:AdminOnlyPnlGuard:token:color:primary",
+      "source": "uicomp:AdminOnlyPnlGuard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:ApplePrimitives:ws:apps/web",
+      "source": "uicomp:ApplePrimitives",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ApplePrimitives:token:color:primary",
+      "source": "uicomp:ApplePrimitives",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:AppleSimulatorShell:ws:apps/web",
+      "source": "uicomp:AppleSimulatorShell",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:AppleSimulatorShell:token:color:primary",
+      "source": "uicomp:AppleSimulatorShell",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:FmCockpitView:ws:apps/web",
+      "source": "uicomp:FmCockpitView",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FmCockpitView:token:color:primary",
+      "source": "uicomp:FmCockpitView",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:FmPillarCard:ws:apps/web",
+      "source": "uicomp:FmPillarCard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FmPillarCard:token:color:primary",
+      "source": "uicomp:FmPillarCard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:FmSimulatorAccessGuard:ws:apps/web",
+      "source": "uicomp:FmSimulatorAccessGuard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FmSimulatorAccessGuard:token:color:primary",
+      "source": "uicomp:FmSimulatorAccessGuard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:FmSimulatorStudio:ws:apps/web",
+      "source": "uicomp:FmSimulatorStudio",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FmSimulatorStudio:token:color:primary",
+      "source": "uicomp:FmSimulatorStudio",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:PnlCockpitView:ws:apps/web",
+      "source": "uicomp:PnlCockpitView",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:PnlCockpitView:token:color:primary",
+      "source": "uicomp:PnlCockpitView",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:PnlSimulatorStudio:ws:apps/web",
+      "source": "uicomp:PnlSimulatorStudio",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:PnlSimulatorStudio:token:color:primary",
+      "source": "uicomp:PnlSimulatorStudio",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:RulesBlueprintView:ws:apps/web",
+      "source": "uicomp:RulesBlueprintView",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:RulesBlueprintView:token:color:primary",
+      "source": "uicomp:RulesBlueprintView",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:fm-simulator.constants:ws:apps/web",
+      "source": "uicomp:fm-simulator.constants",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:fm-simulator.constants:token:color:primary",
+      "source": "uicomp:fm-simulator.constants",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:fm-simulator.engine.test:ws:apps/web",
+      "source": "uicomp:fm-simulator.engine.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:fm-simulator.engine.test:token:color:primary",
+      "source": "uicomp:fm-simulator.engine.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:fm-simulator.engine:ws:apps/web",
+      "source": "uicomp:fm-simulator.engine",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:fm-simulator.engine:token:color:primary",
+      "source": "uicomp:fm-simulator.engine",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:pnl-access-guard.test:ws:apps/web",
+      "source": "uicomp:pnl-access-guard.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:pnl-access-guard.test:token:color:primary",
+      "source": "uicomp:pnl-access-guard.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -114254,6 +114791,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage2ConfigTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage2ConfigTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage3FmConfigTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage3FmConfigTab.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -132586,31 +133130,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 6073,
-    "totalEdges": 7768,
+    "totalNodes": 6098,
+    "totalEdges": 7802,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
       "FastifyRoute": 792,
-      "Component": 66,
-      "SharedType": 1591,
+      "Component": 70,
+      "SharedType": 1592,
       "DesignToken": 12,
-      "UIComponent": 801,
-      "File": 2625
+      "UIComponent": 815,
+      "File": 2631
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1786,
+      "EXPORTS": 1787,
       "HANDLES_ROUTE": 792,
-      "RENDERS": 867,
-      "USES_TOKEN": 803,
-      "IMPORTS": 1596,
+      "RENDERS": 885,
+      "USES_TOKEN": 817,
+      "IMPORTS": 1597,
       "QUERIES_MODEL": 613,
       "API_CALL": 1311
     },
     "fastifyRouteCount": 792,
     "prismaModelCount": 183,
-    "nextPageCount": 66,
-    "sharedTypeCount": 1591
+    "nextPageCount": 70,
+    "sharedTypeCount": 1592
   },
   "routes": [
     {

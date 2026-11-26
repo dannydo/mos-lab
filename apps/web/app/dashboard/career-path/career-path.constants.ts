@@ -1,6 +1,7 @@
 import type { CareerProgressionConfig, CareerStaffSummary, StaffCareerStatus } from '@mos-lab/shared';
 import {
   DEFAULT_CAREER_PROGRESSION_CONFIG,
+  DEFAULT_FM_FLOOR_FARM_CONFIG,
   calculateComboBonus,
   formatComboTierBracketLabel,
   matchesCareerBranchFilter as matchesSharedCareerBranchFilter,
@@ -27,6 +28,11 @@ export interface CareerIsland {
 
 export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsland[] {
   const { cvToCc, cvPlusToCvPlusPlus, cvPlusPlusToFm, ccToFm, fmToCho, choToBoss, rewardRates } = safeConfig;
+  const fm = { ...DEFAULT_FM_FLOOR_FARM_CONFIG, ...(safeConfig.fmFloorFarm || {}) };
+  const fm3StarTotal = fm.gmaps3StarBonus + fm.inv3StarBonus + fm.fac3StarBonus + fm.ops3StarBonus;
+  const fm1M = (fm.fm1BaseSalary / 1_000_000).toFixed(fm.fm1BaseSalary % 1_000_000 === 0 ? 0 : 1);
+  const fm2M = (fm.fm2BaseSalary / 1_000_000).toFixed(fm.fm2BaseSalary % 1_000_000 === 0 ? 0 : 1);
+  const fm3M = (fm.fm3BaseSalary / 1_000_000).toFixed(fm.fm3BaseSalary % 1_000_000 === 0 ? 0 : 1);
 
   return [
     {
@@ -135,33 +141,37 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
     },
     {
       id: 'fm',
-      name: '🪽 FM 🪽',
-      badge: 'Đang Nghiên Cứu',
+      name: 'FM 1–2–3 · Vận Hành 7★',
+      badge: 'Chuẩn Hóa 7★',
       icon: '🏰',
-      sub: 'Tư Vấn + Vận Hành',
-      title: 'Nhạc Trưởng Vận Hành · Floor Manager',
-      desc: 'Giữ cho cả tiệm vận hành chuẩn xác như đồng hồ Thụy Sĩ. Tư vấn trưởng phụ trách khách cho Chuyên Viên CV, kiểm soát CSVC & kho bãi.',
+      sub: `Lương ${fm1M}/${fm2M}/${fm3M}M + 7 Trụ Sao`,
+      title: 'Nhạc Trưởng Vận Hành · Floor Manager (FM 1–2–3)',
+      desc: 'Quản lý sàn theo hệ thống 7 Trụ Cột Sao (tối đa 4.60M): 5★ Google Maps 2–4%, kiểm soát FAL, nuôi đội ngũ Tự Lái trần 60% và gặp CEO & HR tối thiểu 3 buổi/tuần hướng nghiệp.',
       focus:
-        'Tư vấn chính cho khách của CV, quản trị kho hàng hàng tuần, kiểm soát 5 giác quan CSVC & nâng đỡ đồng đội',
+        'Giữ ≥ 50% giường vận hành, săn Google Maps 2–4% (2/3/4 rv/CV), kiểm soát FAL ≤ 0.5%, dẫn dắt đội ngũ Tự Lái trần 60% và họp CEO & HR ≥ 3 buổi/tuần',
       skills: [
         {
-          name: 'Tư Vấn Trưởng Sàn',
-          desc: 'Trực tiếp đón tiếp & tư vấn chuyên sâu cho khách của các Chuyên Viên CV (chưa lên CV🪶)',
+          name: 'Google Maps 5★ & Kiểm Soát FAL',
+          desc: 'Đạt 2%/3%/4% review 5★ (2/3/4 rv/CV) với 0 Sâu và giữ FAL ≤ 1.5% / 1.0% / 0.5% trước 48h',
         },
-        { name: 'Mắt Thần Kho Bãi', desc: 'Kiểm kê kho & CSVC hàng tuần, chống thất thoát ≤ 0.5%' },
-        { name: 'Nâng Tầm Đồng Đội', desc: 'Chăm sóc và kèm cặp giúp nhân sự có điểm HI thấp tiến bộ hơn' },
+        {
+          name: 'Đội Ngũ Tự Lái (Trần 60%) & CEO/HR',
+          desc: 'Phát triển 40–60% CVL/CVLL (≥2 CVLL lên 3★) và bắt buộc gặp CEO & HR ≥ 3 buổi/tuần hướng nghiệp',
+        },
+        {
+          name: 'Kho, Phòng 5 Giác Quan, Diện Mạo & Tua/6 Ca TV',
+          desc: 'Lệch kho ≤ 1%, điểm phòng ≥ 98đ, phong thái chuẩn chỉnh, HI ≥ 92% và đủ 6 ca tư vấn/tuần',
+        },
       ],
       perks: [
-        'Gói thu nhập an toàn: Lương cứng 6.5M + Phụ cấp sàn 1.5M (Cố định 8.0M)',
-        'Vẫn nhận Thưởng Vòng Xoay tư vấn (CC Cash / Vòng xoay CC) theo Level CC tích lũy như cũ',
-        'Vẫn nhận 20% Tiền Tip Tư Vấn khi tư vấn cho khách của Chuyên Viên CV (không nối mi, bảo đảm 70% tip cho Chuyên Viên làm mi)',
-        'Thưởng Cán Mốc Hòa Vốn (2.0M) + Thưởng 2.0% phần doanh thu vượt mốc (DT ≥ 450M, EP ≥ 350M)',
-        'Thưởng Đánh Giá Sàn (1.0M - 1.5M): Đạt chuẩn CSVC ≥ 95 điểm & shop đạt ≥ 30 Google Review 5★/tháng',
-        'Thưởng Tiết Kiệm: Nhận 10% số tiền chi phí vận hành tiết kiệm được (khi kho hao hụt ≤ 0.5% & vật tư ≤ 5%)',
-        'Nghỉ lễ trọn vẹn hưởng nguyên gói lương khi đào tạo được 🪶CV🪶 quán xuyến sảnh; chịu trách nhiệm On-Call 24/7 giải quyết sự cố',
-        `Túi Chuối Thần Kỳ: Được cấp ${rewardRates.fmMonthlyBananaGrant} Chuối/tháng để thưởng nóng tức thì cho nhân viên xuất sắc`,
+        `3 Bậc Lương Cứng nối thẳng CHO: FM 1 = ${fm1M}M · FM 2 = ${fm2M}M · FM 3 = ${fm3M}M / ${fm.workingDaysPerMonth} công (không bao giờ trừ vào lương cứng)`,
+        'Quỹ % DT 3 Cổng: đạt ≥ 50% giường (ĐT ≥ 9 CV, EP ≥ 6 CV), 5 Tier REV/CV (0.5% → 2.2%), tự tách 2 FM từ ≥ 13 CV (+400K/ca cover)',
+        '7 Trụ Cột Sao (Max 21★ = 4.60M: 1★ = 1.55M · 2★ = 3.10M · 3★ = 4.60M, bỏ Lucky Wheel) kèm 4 Khiên Tuần',
+        'Tự Lái Lễ Tết: mở khóa khi đạt ≥ 2★ Tự Lái (50–60% CVL/CVLL, có ≥ 1 CVLL Keyholder và họp CEO & HR ≥ 3 buổi/tuần)',
+        'Fun Fund Team 80K / ca tư vấn (riêng ngoài lương) để gắn kết đội ngũ tại sàn',
+        `Túi Chuối Thần Kỳ: Được cấp ${rewardRates.fmMonthlyBananaGrant} Chuối/tháng để thưởng nóng đồng đội`,
       ],
-      gateText: `Chi nhánh đạt Target ≥ ${fmToCho.minTargetHitMonths} tháng + Giúp đỡ người có HI thấp tiến bộ + Thất thoát kho ≤ ${(fmToCho.maxInventoryLossRate * 100).toFixed(1)}% + CSVC 5 giác quan ≥ ${fmToCho.minFacilityScore}% ➔ Thăng cấp Chief Happiness Officer (CHO)!`,
+      gateText: `Đạt ≥ 18/21★ liên tiếp 3 tháng (FAL ≤ 0.5%) + Đội ngũ Tự Lái đạt 3★ (60% & ≥ 2 CVLL) + Họp CEO & HR ≥ 3 buổi/tuần + Thất thoát kho ≤ 1.0% ➔ Thăng cấp Chief Happiness Officer (CHO 11M)!`,
     },
     {
       id: 'cho',

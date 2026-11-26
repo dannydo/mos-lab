@@ -61,4 +61,61 @@ describe('hydrateMosBibleCommandmentsWithCareerConfig', () => {
     assert.match(cv004.commandments[6], /≥ 25% Combo/);
     assert.equal(cv004.effectiveFrom, '2026-11-26');
   });
+
+  it('hydrates FM-001 with default 3-tier FM Floor Farm rules and 1-3★ pillar caps', () => {
+    const hydrated = hydrateMosBibleCommandmentsWithCareerConfig(
+      MOS_BIBLE_COMMANDMENTS,
+      DEFAULT_CAREER_PROGRESSION_CONFIG
+    );
+    const fm001 = hydrated.find((c) => c.id === 'FM-001');
+    assert.ok(fm001, 'FM-001 commandment must exist');
+    assert.equal(LIVE_CAREER_BIBLE_IDS.has('FM-001'), true);
+    assert.match(fm001.summary, /8\.000\.000đ/);
+    assert.match(fm001.summary, /9\.000\.000đ/);
+    assert.match(fm001.summary, /10\.000\.000đ/);
+    assert.match(fm001.summary, /5★/);
+    assert.match(fm001.summary, /≤ 1 sâu/);
+    assert.match(fm001.summary, /0\.5%/);
+    assert.match(fm001.summary, /6 ca tư vấn/);
+    assert.match(fm001.commandments[1], /1\.5×/);
+    assert.match(fm001.commandments[1], /> 12 CV/);
+    assert.match(fm001.commandments[1], /13 CV/);
+    assert.match(fm001.commandments[3], /≤ 3%/);
+    assert.match(fm001.commandments[3], /≤ 2%/);
+    assert.match(fm001.commandments[3], /≤ 1%/);
+    assert.match(fm001.commandments[6], /-200\.000đ\/con/);
+    assert.match(fm001.commandments[8], /≥ 50% CVL\/CVLL/);
+  });
+
+  it('dynamically updates FM-001 text when live fmFloorFarm admin config changes', () => {
+    const customConfig = {
+      ...DEFAULT_CAREER_PROGRESSION_CONFIG,
+      updatedAt: '2026-11-27T00:00:00.000Z',
+      fmFloorFarm: {
+        ...DEFAULT_CAREER_PROGRESSION_CONFIG.fmFloorFarm!,
+        fm1BaseSalary: 8_500_000,
+        fm3BaseSalary: 10_500_000,
+        gmaps3StarBonus: 1_500_000,
+        falMaxRate3Star: 0.004,
+        mapsWormLate24hPenalty: 250_000,
+        gmapsAllowButterflyRedemption: false,
+        consultTipToFunFund: false,
+        holidayAutopilotMinCvlRatio: 0.6,
+      },
+    };
+
+    const hydrated = hydrateMosBibleCommandmentsWithCareerConfig(MOS_BIBLE_COMMANDMENTS, customConfig);
+    const fm001 = hydrated.find((c) => c.id === 'FM-001');
+
+    assert.ok(fm001);
+    assert.match(fm001.summary, /8\.500\.000đ/);
+    assert.match(fm001.summary, /10\.500\.000đ/);
+    assert.match(fm001.summary, /3\.800\.000đ/);
+    assert.match(fm001.summary, /0\.4%/);
+    assert.match(fm001.commandments[2], /đang tắt Sâu Hóa Bướm/);
+    assert.match(fm001.commandments[5], /cấu hình lương hiện hành/);
+    assert.match(fm001.commandments[6], /-250\.000đ\/con/);
+    assert.match(fm001.commandments[8], /≥ 60% CVL\/CVLL/);
+    assert.equal(fm001.effectiveFrom, '2026-11-27');
+  });
 });

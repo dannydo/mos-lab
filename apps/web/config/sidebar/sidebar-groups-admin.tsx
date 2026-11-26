@@ -10,7 +10,9 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import {
+  Award,
   BarChart3,
+  Calculator,
   CalendarClock,
   DollarSign,
   FlaskConical,
@@ -153,6 +155,22 @@ export function buildAdminAndReportSidebarGroups(params: {
         icon: <SafetyCertificateOutlined />,
         path: '/dashboard/payroll-pilot',
       },
+      {
+        key: 'fm-simulator',
+        label: 'Mô Phỏng FM',
+        icon: <AppIcon icon={Award} size="sm" className="text-amber-500" />,
+        path: '/dashboard/fm-simulator',
+      },
+      ...(isAdmin
+        ? [
+            {
+              key: 'pnl-simulator',
+              label: 'Mô Phỏng P&L',
+              icon: <AppIcon icon={Calculator} size="sm" className="text-emerald-500" />,
+              path: '/dashboard/pnl-simulator',
+            },
+          ]
+        : []),
     ],
   };
 

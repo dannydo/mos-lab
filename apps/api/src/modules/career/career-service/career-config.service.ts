@@ -2,8 +2,21 @@ import type { FastifyInstance } from 'fastify';
 import {
   CareerProgressionConfig,
   DEFAULT_CAREER_PROGRESSION_CONFIG,
+  DEFAULT_FM_FLOOR_FARM_CONFIG,
+  type FmFloorFarmConfig,
   type MaintenanceAndDemotionRules,
 } from '@mos-lab/shared';
+
+function mergeFmFloorFarmConfig(
+  base: FmFloorFarmConfig | undefined,
+  override: Partial<FmFloorFarmConfig> | undefined
+): FmFloorFarmConfig {
+  return {
+    ...DEFAULT_FM_FLOOR_FARM_CONFIG,
+    ...(base || {}),
+    ...(override || {}),
+  };
+}
 
 function mergeMaintenanceRules(
   base: MaintenanceAndDemotionRules | undefined,
@@ -101,6 +114,7 @@ export async function getCareerConfig(fastify: FastifyInstance): Promise<CareerP
         fmToCho: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.fmToCho, ...(parsed.fmToCho || {}) },
         choToBoss: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.choToBoss, ...(parsed.choToBoss || {}) },
         rewardRates: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.rewardRates, ...(parsed.rewardRates || {}) },
+        fmFloorFarm: mergeFmFloorFarmConfig(DEFAULT_CAREER_PROGRESSION_CONFIG.fmFloorFarm, parsed.fmFloorFarm),
         maintenanceRules: mergedMaintenance,
       };
       cachedConfig = resolvedConfig;
@@ -161,6 +175,7 @@ export async function updateCareerConfig(
     fmToCho: { ...current.fmToCho, ...(newConfig.fmToCho || {}) },
     choToBoss: { ...current.choToBoss, ...(newConfig.choToBoss || {}) },
     rewardRates: { ...current.rewardRates, ...(newConfig.rewardRates || {}) },
+    fmFloorFarm: mergeFmFloorFarmConfig(current.fmFloorFarm, newConfig.fmFloorFarm),
     maintenanceRules: mergedMaintenance,
   };
 

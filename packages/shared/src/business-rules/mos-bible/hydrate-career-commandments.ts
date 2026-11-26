@@ -1,8 +1,8 @@
-import { calculateComboBonus } from '../../types/career-progression/career-defaults.js';
+import { calculateComboBonus, DEFAULT_FM_FLOOR_FARM_CONFIG } from '../../types/career-progression/career-defaults.js';
 import type { CareerProgressionConfig } from '../../types/career-progression/career-requirements.types.js';
 import type { MosBibleCommandment } from '../../types/mos-bible.js';
 
-export const LIVE_CAREER_BIBLE_IDS = new Set<string>(['CV-002', 'CV-004', 'CAREER-CVL-001']);
+export const LIVE_CAREER_BIBLE_IDS = new Set<string>(['CV-002', 'CV-004', 'CAREER-CVL-001', 'FM-001']);
 
 function fmtVnd(value: number): string {
   return `${Math.round(value).toLocaleString('vi-VN')}đ`;
@@ -125,8 +125,50 @@ function buildLiveCareerCvl001(base: MosBibleCommandment, config: CareerProgress
   };
 }
 
+function buildLiveFm001(base: MosBibleCommandment, config: CareerProgressionConfig): MosBibleCommandment {
+  const fm = {
+    ...DEFAULT_FM_FLOOR_FARM_CONFIG,
+    ...(config.fmFloorFarm || {}),
+  };
+  const star1Total = fm.gmaps1StarBonus + fm.inv1StarBonus + fm.fac1StarBonus + fm.ops1StarBonus;
+  const star2Total = fm.gmaps2StarBonus + fm.inv2StarBonus + fm.fac2StarBonus + fm.ops2StarBonus;
+  const star3Total = fm.gmaps3StarBonus + fm.inv3StarBonus + fm.fac3StarBonus + fm.ops3StarBonus;
+  const maxSingleFmCvs = Math.max(fm.cvsPerFm, fm.minCvsForSecondFm - 1);
+  const sharedPct = fmtPct(fm.dtBranchSharedWeight);
+  const groupPct = fmtPct(fm.dtGroupOwnedWeight);
+  const butterflyNote = fm.gmapsAllowButterflyRedemption
+    ? ' và cơ chế Sâu Hóa Bướm (khách tự sửa lên 5★ xóa khỏi bộ đếm sâu)'
+    : ' (đang tắt Sâu Hóa Bướm)';
+  const tipFunNote = fm.consultTipToFunFund
+    ? 'toàn bộ 20% Tip tư vấn của FM chảy về Quỹ Ăn Chơi Nhóm/Chi Nhánh'
+    : '20% Tip tư vấn phân bổ theo cấu hình lương hiện hành';
+  const falGateNote = fm.requireAllFalThroughFm
+    ? `100% ca FAL (Fix · Adjust · Log) bắt buộc đi qua cổng FM xác minh trong ${fm.falSlaHours}h (cấm tự duyệt Adjust của chính FM)`
+    : `Ca FAL xử lý theo phân quyền hiện hành trong ${fm.falSlaHours}h`;
+  const activeClaimNote = fm.requireActiveClaimWallet
+    ? 'Bấm nhận công & nhận thưởng kiểu Active Claim tiền mới nổ vào Ví (quên bấm công ngày cuối tháng vẫn auto trả đủ 100% theo luật lao động)'
+    : 'Thưởng và công ngày tự động kết chuyển cuối kỳ';
+
+  return {
+    ...base,
+    summary: `Floor Manager vận hành theo mô hình Nông Trại Vui Vẻ với 3 bậc lương cứng (FM 1: ${fmtVnd(fm.fm1BaseSalary)} · FM 2: ${fmtVnd(fm.fm2BaseSalary)} · FM 3: ${fmtVnd(fm.fm3BaseSalary)} / ${fm.workingDaysPerMonth} công), Quỹ DT bậc thang ${fmtPct(fm.dtRateBelowTarget)}/${fmtPct(fm.dtRateAtTarget)}/${fmtPct(fm.dtRateAccelerator)} chia ${sharedPct}/${groupPct}, 4 trụ sao 1★–3★ (tối đa +${fmtVnd(star3Total)}), Google Maps chỉ tính 5★ & trần ≤ ${fm.gmapsMaxNegativeWormsPerMonth} sâu/tháng, FAL tối đa ${fmtPct(fm.falMaxRate3Star)}/${fmtPct(fm.falMaxRate2Star)}/${fmtPct(fm.falMaxRate1Star)}, giữ lửa ${fm.weeklyRegularConsultTarget} ca tư vấn/tuần và ${fm.requireActiveClaimWallet ? 'chế độ Active Claim bấm nhận tiền vào ví' : 'kết chuyển tự động'}.`,
+    commandments: [
+      `3 Bậc Lương Cứng FM 1–2–3 & Công Ngày + Active Claim: FM 1 nhận ${fmtVnd(fm.fm1BaseSalary)}, FM 2 nhận ${fmtVnd(fm.fm2BaseSalary)} (≥ ${fm.fm2MinStars}/12★ liên tiếp ${fm.fm2PromotionMonths} tháng, FAL ≤ ${fmtPct(fm.falMaxRate2Star)}, HI Tua ≥ ${fmtPct(fm.minFairnessHi2Star)}, 0 tháng vỡ ≥ 2 tuần), FM 3 nhận ${fmtVnd(fm.fm3BaseSalary)} (≥ ${fm.fm3MinStars}/12★ liên tiếp ${fm.fm3PromotionMonths} tháng, FAL ≤ ${fmtPct(fm.falMaxRate3Star)}, HI Tua ≥ ${fmtPct(fm.minFairnessHi3Star)}, kèm ≥ 1 CVLL hoặc FM 1) trên chuẩn ${fm.workingDaysPerMonth} công/tháng. Rớt chuẩn ${fm.demoteConsecutiveMonths} tháng liên tiếp lùi 1 bậc; vi phạm trung thực rút quyền FM ngay. ${activeClaimNote}; Tưới hộ đồng đội nghỉ thưởng +${fmtVnd(fm.coverShiftBonus)}/ca.`,
+      `Biên Chế Sàn, Công Suất & Chia Quỹ DT ${sharedPct}/${groupPct}: Định mức 1 FM / ${fm.cvsPerFm} CV-CVL; khi vượt quá tỷ lệ 1.5× (> ${maxSingleFmCvs} CV, từ ≥ ${fm.minCvsForSecondFm} CV) mới được phép và bắt buộc tuyển FM #2. Chuẩn công suất ≥ ${fmtPct(fm.targetBedCapacityRatio)} số giường (${fmtVnd(fm.revPerCvTarget)} & ${fm.visitsPerCvTarget} khách/CV). Quỹ DT bậc thang mềm: dưới chuẩn = ${fmtPct(fm.dtRateBelowTarget)} DT · đạt chuẩn = ${fmtPct(fm.dtRateAtTarget)} DT · vượt ≥ ${fmtPct(fm.dtAcceleratorCapacityRatio)} giường = ${fmtPct(fm.dtRateAccelerator)} DT. Khi chi nhánh có ≥ 2 FM: ${sharedPct} Quỹ DT chia chung toàn đội theo ngày công & độ xanh vườn, ${groupPct} theo doanh thu nhóm phụ trách kèm điều phối Tua FIFO trên mOS.`,
+      `Trụ 1 · Google Maps (Chỉ tính 5★ · 4★ = 0đ · 1–3★ = Sâu · Trần ≤ ${fm.gmapsMaxNegativeWormsPerMonth} Sâu/Tháng): 1★ = ${fm.gmaps1StarReviewsPerCv} quả 5★/CV (+${fmtVnd(fm.gmaps1StarBonus)}); 2★ = ${fm.gmaps2StarReviewsPerCv} quả 5★/CV + SLA ≤ ${fm.falSlaHours}h (+${fmtVnd(fm.gmaps2StarBonus)}); 3★ = ≥ ${fm.gmaps3StarReviewsPerCv} quả 5★/CV + 0 sâu (+${fmtVnd(fm.gmaps3StarBonus)}). Trần sâu: 0 sâu mở 3★; 1 sâu tối đa 2★; 2 sâu tụt trần tối đa ${fm.gmapsTwoWormsMaxStar}★ & khóa Vòng Quay; ≥ ${fm.gmapsZeroBonusWormsThreshold} sâu khóa thẳng 0★ (0đ). Hỗ trợ miễn trừ review ảo (Verified Customer Only)${butterflyNote}.`,
+      `Trụ 2 & 3 · Kho Vật Tư + CSVC/Giường 3 Sạch/Son: Kho 1★ (hao hụt ≤ ${fmtPct(fm.invMaxLossRate1Star)}) = +${fmtVnd(fm.inv1StarBonus)} · 2★ (≤ ${fmtPct(fm.invMaxLossRate2Star)}) = +${fmtVnd(fm.inv2StarBonus)} · 3★ (≤ ${fmtPct(fm.invMaxLossRate3Star)} & 0 đứt hàng) = +${fmtVnd(fm.inv3StarBonus)}. CSVC & Phong thái 1★ (≥ ${fm.facMinScore1Star}đ) = +${fmtVnd(fm.fac1StarBonus)} · 2★ (≥ ${fm.facMinScore2Star}đ & 0 lỗi son) = +${fmtVnd(fm.fac2StarBonus)} · 3★ (≥ ${fm.facMinScore3Star}đ & 0 lỗi QA) = +${fmtVnd(fm.fac3StarBonus)}. (Tổng Quỹ 4 Trụ: 1★ = +${fmtVnd(star1Total)} · 2★ = +${fmtVnd(star2Total)} · 3★ = +${fmtVnd(star3Total)}).`,
+      `Trụ 4 · Tua, Giờ Công, FAL & Tư Vấn: Mức FAL ${fmtPct(fm.falMaxRate3Star)} / ${fmtPct(fm.falMaxRate2Star)} / ${fmtPct(fm.falMaxRate1Star)} là ngưỡng trần (trên ${fmtPct(fm.falMaxRate1Star)} = 0★). 1★ (FAL ≤ ${fmtPct(fm.falMaxRate1Star)}, HI ≥ ${fmtPct(fm.minFairnessHi1Star)}) = +${fmtVnd(fm.ops1StarBonus)} · 2★ (FAL ≤ ${fmtPct(fm.falMaxRate2Star)}, HI ≥ ${fmtPct(fm.minFairnessHi2Star)}) = +${fmtVnd(fm.ops2StarBonus)} · 3★ (FAL ≤ ${fmtPct(fm.falMaxRate3Star)}, HI ≥ ${fmtPct(fm.minFairnessHi3Star)}) = +${fmtVnd(fm.ops3StarBonus)}.`,
+      `Cổng Kiểm Định FAL & Giữ Lửa Nghề Tư Vấn: ${falGateNote}. FM thực hiện tối thiểu ${fm.weeklyRegularConsultTarget} ca tư vấn thường/tuần (tối thiểu ${fm.weeklyNewCustomerConsultMin} ca Khách Mới), duy trì Combo ≥ ${fmtPct(fm.consultMinComboRate)} (xuất sắc ≥ ${fmtPct(fm.consultExcellentComboRate)}). FM không nhận hoa hồng Combo/SP cá nhân; ${tipFunNote}.`,
+      `Bậc Thang Phạt Sâu Xử Lý Trễ: Xử lý dứt điểm ≤ ${fm.falSlaHours}h = 0đ phạt. Trễ 24–48h: sâu Google Maps 1–3★ trừ -${fmtVnd(fm.mapsWormLate24hPenalty)}/con, sâu FAL nội bộ trừ -${fmtVnd(fm.falWormLate24hPenalty)}/con. Trễ > 48h: sâu Maps gây Vỡ Rương tuần (-25% Quỹ Sao) + khóa Vòng Quay; sâu FAL nội bộ trừ -${fmtVnd(fm.falWormLate48hPenalty)}/con + khóa Vòng Quay. Tiền phạt chỉ trừ trong Quỹ Sao/Thưởng, tuyệt đối không trừ lương cứng.`,
+      `Lõi Game Nông Trại Vui Vẻ & Vòng Quay 4 Tuần Xanh: Hoàn thành 4 khung giờ chuẩn mỗi ngày nhận +${fmtVnd(fm.dailyQuestBonusTotal)}/ngày, giữ Thanh Khiên ≥ ${fm.minShieldHpForChest} HP (mất -${fm.missedQuestHpPenalty} HP/việc sót) để bảo toàn Rương tuần; QA/CHO kiểm đột xuất chống tưới khống. Đủ 4/4 Tuần Xanh + ≥ ${fm.fm2MinStars}/12★ mở Vòng Quay Thần Tài (+${fmtVnd(fm.wheelMinPrize)} đến +${fmtVnd(fm.wheelMaxPrize)}).`,
+      `Đặc Quyền Nghỉ Lễ Tự Lái (Thay thế CC): Mở khóa khi chi nhánh đạt tỷ lệ ≥ ${fmtPct(fm.holidayAutopilotMinCvlRatio)} CVL/CVLL, có ≥ 1 CVLL cầm chìa khóa trực lễ và FM hoàn tất 5 bước bàn giao T-1 (quân số, kho đệm 150%, CSVC/POS 100%, khóa tua Booker, Hotline/Maps từ xa). FM nghỉ lễ hưởng trọn 100% gói tháng.`,
+    ],
+    effectiveFrom: config.updatedAt ? config.updatedAt.slice(0, 10) : base.effectiveFrom,
+  };
+}
+
 /**
- * Đồng bộ trực tiếp các Điều răn Kinh Thánh mOS liên quan đến CVL / CVLL theo cấu hình sống CAREER_PROGRESSION_RULES.
+ * Đồng bộ trực tiếp các Điều răn Kinh Thánh mOS liên quan đến CVL / CVLL / FM theo cấu hình sống CAREER_PROGRESSION_RULES.
  */
 export function hydrateMosBibleCommandmentsWithCareerConfig(
   commandments: readonly MosBibleCommandment[],
@@ -143,6 +185,9 @@ export function hydrateMosBibleCommandmentsWithCareerConfig(
     }
     if (commandment.id === 'CAREER-CVL-001') {
       return buildLiveCareerCvl001(commandment, config);
+    }
+    if (commandment.id === 'FM-001') {
+      return buildLiveFm001(commandment, config);
     }
     return commandment;
   });

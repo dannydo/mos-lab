@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Zap, Award } from 'lucide-react';
+import { ArrowRight, Award, Zap } from 'lucide-react';
 import { IslandGameIcon } from './IslandGameIcon';
 
 export interface CareerIslandData {
@@ -20,9 +20,13 @@ export interface CareerIslandData {
 
 interface CareerRealmEncyclopediaProps {
   currentIslandData: CareerIslandData;
+  onOpenFmSimulator?: () => void;
 }
 
-export const CareerRealmEncyclopedia: React.FC<CareerRealmEncyclopediaProps> = ({ currentIslandData }) => {
+export const CareerRealmEncyclopedia: React.FC<CareerRealmEncyclopediaProps> = ({
+  currentIslandData,
+  onOpenFmSimulator,
+}) => {
   return (
     <div className="rounded-3xl p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -33,7 +37,18 @@ export const CareerRealmEncyclopedia: React.FC<CareerRealmEncyclopediaProps> = (
           <h2 className="text-base font-black text-slate-900 dark:text-white mt-1">{currentIslandData.title}</h2>
           <p className="text-xs text-slate-600 dark:text-slate-300 italic">&ldquo;{currentIslandData.desc}&rdquo;</p>
         </div>
-        <div className="shrink-0 self-start sm:self-auto">
+        <div className="shrink-0 self-start sm:self-auto flex items-center gap-2.5">
+          {currentIslandData.id === 'fm' && onOpenFmSimulator ? (
+            <button
+              type="button"
+              onClick={onOpenFmSimulator}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-amber-500 px-3.5 text-xs font-semibold text-white shadow-xs transition hover:bg-amber-600 active:scale-95"
+            >
+              <Award className="h-3.5 w-3.5" />
+              <span>Mở Mô Phỏng Lương FM 7★</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
           <IslandGameIcon islandId={currentIslandData.id} size="lg" isActive={true} />
         </div>
       </div>

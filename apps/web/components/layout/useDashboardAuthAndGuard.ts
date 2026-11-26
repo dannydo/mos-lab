@@ -126,6 +126,10 @@ export function useDashboardAuthAndGuard(pathname: string) {
   // Zero-Trust Admin-Only Default Route Guard (Layer 2)
   useEffect(() => {
     if (!user) return;
+    if (!isAdminOrSuperAdminRole(user.role) && pathname.startsWith('/dashboard/pnl-simulator')) {
+      router.replace(getDefaultRouteForRole(user.role));
+      return;
+    }
     if (isCvRole(user.role) && !isCvAllowedPath(pathname, routeVisibility, user.role, user.teamCodes)) {
       router.replace('/dashboard/cv');
       return;

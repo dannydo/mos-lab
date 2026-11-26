@@ -10,6 +10,8 @@ import {
   type CareerRole,
   type CareerPeriod,
   type BananaTransactionCategory,
+  canAccessFmSimulator,
+  isAdminOrSuperAdminRole,
   normalizeCareerBranchFilter,
 } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
@@ -54,7 +56,13 @@ export function useCareerPathState() {
   }, []);
 
   const isDanny = useMemo(() => isSuperAdminCareerUser(currentUser), [currentUser]);
+  const isAdmin = useMemo(() => isAdminOrSuperAdminRole(currentUser?.role), [currentUser]);
+  const canUseFmSimulator = useMemo(
+    () => canAccessFmSimulator(currentUser?.role, currentUser?.teamCodes),
+    [currentUser]
+  );
   const canConfigure = useMemo(() => canOpenCareerConfig(currentUser), [currentUser]);
+  const initialTab = searchParams.get('tab');
 
   const [activeIsland, setActiveIsland] = useState<CareerIslandId>('cv');
   const [config, setConfig] = useState<CareerProgressionConfig>(FALLBACK_CAREER_PROGRESSION_CONFIG);
@@ -423,6 +431,9 @@ export function useCareerPathState() {
   return {
     themeMode,
     isDanny,
+    isAdmin,
+    canUseFmSimulator,
+    initialTab,
     canConfigure,
     activeIsland,
     setActiveIsland,

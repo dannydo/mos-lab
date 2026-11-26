@@ -267,6 +267,93 @@ export interface CareerRewardRates {
   fmMonthlyBananaGrant: number;
 }
 
+export interface FmFloorFarmConfig {
+  // 3 Tiers & Daily Base Claim & Cover Shift
+  fm1BaseSalary: number;
+  fm2BaseSalary: number;
+  fm3BaseSalary: number;
+  workingDaysPerMonth: number;
+  coverShiftBonus: number;
+  fm2PromotionMonths: number;
+  fm2MinStars: number;
+  fm3PromotionMonths: number;
+  fm3MinStars: number;
+  demoteConsecutiveMonths: number;
+  requireActiveClaimWallet: boolean;
+
+  // Capacity & Stepped 2% DT Pool & 60/40 Split
+  cvsPerFm: number;
+  minCvsForSecondFm: number;
+  targetBedCapacityRatio: number;
+  revPerCvTarget: number;
+  visitsPerCvTarget: number;
+  dtRateBelowTarget: number;
+  dtRateAtTarget: number;
+  dtRateAccelerator: number;
+  dtAcceleratorCapacityRatio: number;
+  dtBranchSharedWeight: number;
+  dtGroupOwnedWeight: number;
+
+  // Pillar 1: Google Maps (5★ only; 4★ = 0đ; 1–3★ = Sâu)
+  gmaps1StarReviewsPerCv: number;
+  gmaps2StarReviewsPerCv: number;
+  gmaps3StarReviewsPerCv: number;
+  gmaps1StarBonus: number;
+  gmaps2StarBonus: number;
+  gmaps3StarBonus: number;
+  gmapsMaxNegativeWormsPerMonth: number;
+  gmapsTwoWormsMaxStar: number;
+  gmapsZeroBonusWormsThreshold: number;
+  gmapsAllowButterflyRedemption: boolean;
+
+  // Pillar 2: Kho & Vật Tư
+  inv1StarBonus: number;
+  inv2StarBonus: number;
+  inv3StarBonus: number;
+  invMaxLossRate1Star: number;
+  invMaxLossRate2Star: number;
+  invMaxLossRate3Star: number;
+
+  // Pillar 3: CSVC · Giường 3 Sạch · Phong Thái/Son
+  fac1StarBonus: number;
+  fac2StarBonus: number;
+  fac3StarBonus: number;
+  facMinScore1Star: number;
+  facMinScore2Star: number;
+  facMinScore3Star: number;
+
+  // Pillar 4: Tua · Giờ Công · FAL & Tư Vấn
+  ops1StarBonus: number;
+  ops2StarBonus: number;
+  ops3StarBonus: number;
+  falMaxRate1Star: number;
+  falMaxRate2Star: number;
+  falMaxRate3Star: number;
+  minFairnessHi1Star: number;
+  minFairnessHi2Star: number;
+  minFairnessHi3Star: number;
+
+  // Keep-Sharp Consult, FAL Gate & Fun Fund
+  weeklyRegularConsultTarget: number;
+  weeklyNewCustomerConsultMin: number;
+  consultMinComboRate: number;
+  consultExcellentComboRate: number;
+  consultTipToFunFund: boolean;
+  requireAllFalThroughFm: boolean;
+  falSlaHours: number;
+
+  // Daily Quests, Shield, Worm Penalties, Wheel & Holiday Autopilot
+  dailyQuestBonusTotal: number;
+  minShieldHpForChest: number;
+  missedQuestHpPenalty: number;
+  mapsWormLate24hPenalty: number;
+  falWormLate24hPenalty: number;
+  falWormLate48hPenalty: number;
+  wheelMinPrize: number;
+  wheelMaxPrize: number;
+  holidayAutopilotMinCvlRatio: number;
+}
+
 export interface CareerProgressionConfig {
   version: string;
   updatedAt: string;
@@ -277,6 +364,7 @@ export interface CareerProgressionConfig {
   fmToCho: FmToChoRequirements;
   choToBoss: ChoToBossRequirements;
   rewardRates: CareerRewardRates;
+  fmFloorFarm?: FmFloorFarmConfig;
   compensation?: CompensationPackageConfig;
   maintenanceRules?: MaintenanceAndDemotionRules;
   // Aliases for backward compatibility:

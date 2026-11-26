@@ -1,7 +1,7 @@
-import type { CareerProgressionConfig } from '@mos-lab/shared';
+import { DEFAULT_FM_FLOOR_FARM_CONFIG, type CareerProgressionConfig, type FmFloorFarmConfig } from '@mos-lab/shared';
 import { calculateComboBonus } from '../../career-path.constants';
 
-export type CareerConfigTab = 'CV_TO_CV_PLUS' | 'CV_PLUS_TO_CV_PLUS_PLUS';
+export type CareerConfigTab = 'CV_TO_CV_PLUS' | 'CV_PLUS_TO_CV_PLUS_PLUS' | 'FM_FLOOR_FARM';
 
 export type CvToCcConfig = CareerProgressionConfig['cvToCc'];
 export type CvPlusToCvPlusPlusConfig = CareerProgressionConfig['cvPlusToCvPlusPlus'];
@@ -10,6 +10,7 @@ export interface CareerConfigSavePayload {
   cvToCc: CareerProgressionConfig['cvToCc'];
   cvToCvPlus: CareerProgressionConfig['cvToCvPlus'];
   cvPlusToCvPlusPlus: CareerProgressionConfig['cvPlusToCvPlusPlus'];
+  fmFloorFarm?: FmFloorFarmConfig;
   maintenanceRules?: CareerProgressionConfig['maintenanceRules'];
 }
 
@@ -122,6 +123,13 @@ export function resolveCvPlusToCvPlusPlusConfig(config?: CareerProgressionConfig
   return config?.cvPlusToCvPlusPlus || DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS_CONFIG;
 }
 
+export function resolveFmFloorFarmConfig(config?: CareerProgressionConfig | null): FmFloorFarmConfig {
+  return {
+    ...DEFAULT_FM_FLOOR_FARM_CONFIG,
+    ...(config?.fmFloorFarm || {}),
+  };
+}
+
 export function formatVnd(num?: number | null): string {
   if (!num) return '0đ';
   return `${num.toLocaleString('vi-VN')}đ`;
@@ -214,5 +222,16 @@ export function patchStage2Config(
   return {
     ...config,
     cvPlusToCvPlusPlus: { ...cvPlusToCvPlusPlus, ...patch },
+  };
+}
+
+export function patchFmFloorFarmConfig(
+  config: CareerProgressionConfig,
+  fmFloorFarm: FmFloorFarmConfig,
+  patch: Partial<FmFloorFarmConfig>
+): CareerProgressionConfig {
+  return {
+    ...config,
+    fmFloorFarm: { ...fmFloorFarm, ...patch },
   };
 }

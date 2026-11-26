@@ -12,10 +12,12 @@ import {
   computeStage2SalesSummary,
   resolveCvPlusToCvPlusPlusConfig,
   resolveCvToCcConfig,
+  resolveFmFloorFarmConfig,
 } from './career-config-drawer/careerConfigTypesAndHelpers';
 import { CvlBadge, CvllBadge } from './career-config-drawer/CareerConfigFieldPrimitives';
 import { CareerStage1ConfigTab } from './career-config-drawer/CareerStage1ConfigTab';
 import { CareerStage2ConfigTab } from './career-config-drawer/CareerStage2ConfigTab';
+import { CareerStage3FmConfigTab } from './career-config-drawer/CareerStage3FmConfigTab';
 
 export type { CareerConfigDrawerProps, CareerConfigSavePayload, CareerConfigTab };
 
@@ -33,6 +35,7 @@ export function CareerConfigDrawer({
 
   const cvToCc = resolveCvToCcConfig(config);
   const cvPlusToCvPlusPlus = resolveCvPlusToCvPlusPlusConfig(config);
+  const fmFloorFarm = resolveFmFloorFarmConfig(config);
 
   const stage1Summary = computeStage1SalesSummary(cvToCc);
   const stage2Summary = computeStage2SalesSummary(cvPlusToCvPlusPlus);
@@ -43,6 +46,7 @@ export function CareerConfigDrawer({
       cvToCc,
       cvToCvPlus: cvToCc,
       cvPlusToCvPlusPlus,
+      fmFloorFarm,
       maintenanceRules: {
         cvPlus: {
           minSelfComboRate: cvToCc.minSelfComboRate ?? 0.21,
@@ -63,7 +67,7 @@ export function CareerConfigDrawer({
     <AdaptiveDrawer
       title="⚙️ Cấu Hình Thông Số Thăng Tiến (Zero-Code Admin)"
       placement="right"
-      width={520}
+      width={560}
       open={open}
       onClose={onClose}
       className={themeMode === 'dark' ? 'dark-theme' : 'light-theme'}
@@ -80,7 +84,7 @@ export function CareerConfigDrawer({
           </div>
         )}
 
-        {/* TAB / SEGMENTED SWITCHER: CV -> CVL vs CVL -> CVLL */}
+        {/* TAB / SEGMENTED SWITCHER: CV -> CVL vs CVL -> CVLL vs FM */}
         <div className="p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
           <Segmented
             block
@@ -107,6 +111,14 @@ export function CareerConfigDrawer({
                 ),
                 value: 'CV_PLUS_TO_CV_PLUS_PLUS',
               },
+              {
+                label: (
+                  <span className="inline-flex items-center justify-center gap-1 py-1 text-xs font-bold">
+                    <span>Ải 3: FM</span>
+                  </span>
+                ),
+                value: 'FM_FLOOR_FARM',
+              },
             ]}
           />
         </div>
@@ -119,7 +131,7 @@ export function CareerConfigDrawer({
               summary={stage1Summary}
               onConfigChange={onConfigChange}
             />
-          ) : (
+          ) : activeTab === 'CV_PLUS_TO_CV_PLUS_PLUS' ? (
             <CareerStage2ConfigTab
               config={config}
               cvPlusToCvPlusPlus={cvPlusToCvPlusPlus}
@@ -127,6 +139,8 @@ export function CareerConfigDrawer({
               stage1SerumOriginalPriceBonus={stage1Summary.serumOrigBonus}
               onConfigChange={onConfigChange}
             />
+          ) : (
+            <CareerStage3FmConfigTab config={config} fmFloorFarm={fmFloorFarm} onConfigChange={onConfigChange} />
           )}
         </ConfigProvider>
       </div>
@@ -141,13 +155,15 @@ export function CareerConfigDrawer({
                 <span>Ải CV ➔</span>
                 <CvlBadge />
               </>
-            ) : (
+            ) : activeTab === 'CV_PLUS_TO_CV_PLUS_PLUS' ? (
               <>
                 <span>Ải</span>
                 <CvlBadge />
                 <span>➔</span>
                 <CvllBadge />
               </>
+            ) : (
+              <span>Ải 3: Floor Manager (FM 1–2–3)</span>
             )}
           </strong>
         </div>

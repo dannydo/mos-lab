@@ -48,6 +48,8 @@ export function getSelectedMenuKey(
   if (pathname.includes('/dashboard/career-path')) return 'career-path';
   if (pathname.includes('/dashboard/pilot-dark-lashes')) return 'pilot-dark-lashes';
   if (pathname.includes('/dashboard/payroll-pilot')) return 'cc-payroll-pilot';
+  if (pathname.includes('/dashboard/fm-simulator')) return 'fm-simulator';
+  if (pathname.includes('/dashboard/pnl-simulator')) return 'pnl-simulator';
 
   if (pathname.includes('/dashboard/financial-goals')) return 'financial-goals';
   if (pathname.includes('/dashboard/telesale-competency')) return 'telesale-competency';

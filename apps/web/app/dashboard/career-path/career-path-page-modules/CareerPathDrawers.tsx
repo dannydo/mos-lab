@@ -50,6 +50,7 @@ interface CareerPathDrawersProps {
   selectedStaffStatus: StaffCareerStatus | null;
   bananaDrawerCategory: BananaTransactionCategory;
   selectedPeriod: CareerPeriod;
+  onOpenFmSimulator?: () => void;
 }
 
 export const CareerPathDrawers: React.FC<CareerPathDrawersProps> = ({
@@ -83,6 +84,7 @@ export const CareerPathDrawers: React.FC<CareerPathDrawersProps> = ({
   selectedStaffStatus,
   bananaDrawerCategory,
   selectedPeriod,
+  onOpenFmSimulator,
 }) => {
   return (
     <>
@@ -194,7 +196,7 @@ export const CareerPathDrawers: React.FC<CareerPathDrawersProps> = ({
         onClose={onCloseEncyclopediaDrawer}
         destroyOnHidden
       >
-        <CareerRealmEncyclopedia currentIslandData={currentIslandData} />
+        <CareerRealmEncyclopedia currentIslandData={currentIslandData} onOpenFmSimulator={onOpenFmSimulator} />
       </AdaptiveDrawer>
 
       {/* ADMIN CONFIG DRAWER */}

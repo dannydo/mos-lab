@@ -1,6 +1,7 @@
 import type { MosBibleBook, MosBibleBookKey, MosBibleCommandment } from '../types/mos-bible.js';
 import { removeVietnameseTones } from '../utils/search.js';
 import { MOS_BIBLE_CUSTOMER_AND_COMBO_COMMANDMENTS } from './mos-bible/customer-and-combo.js';
+import { MOS_BIBLE_FM_AND_MANAGEMENT_COMMANDMENTS } from './mos-bible/fm-and-management.js';
 import { MOS_BIBLE_GOVERNANCE_AND_BOOKING_COMMANDMENTS } from './mos-bible/governance-and-booking.js';
 import { MOS_BIBLE_PEOPLE_CATALOG_AND_STORE_COMMANDMENTS } from './mos-bible/people-catalog-and-store.js';
 import { MOS_BIBLE_REWARDS_AND_PAYROLL_COMMANDMENTS } from './mos-bible/rewards-and-payroll.js';
@@ -62,6 +63,7 @@ export const MOS_BIBLE_BOOKS: readonly MosBibleBook[] = [
 export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
   ...MOS_BIBLE_GOVERNANCE_AND_BOOKING_COMMANDMENTS,
   ...MOS_BIBLE_REWARDS_AND_PAYROLL_COMMANDMENTS,
+  ...MOS_BIBLE_FM_AND_MANAGEMENT_COMMANDMENTS,
   ...MOS_BIBLE_CUSTOMER_AND_COMBO_COMMANDMENTS,
   ...MOS_BIBLE_PEOPLE_CATALOG_AND_STORE_COMMANDMENTS,
   ...MOS_BIBLE_SYSTEM_AND_CAREER_COMMANDMENTS,
