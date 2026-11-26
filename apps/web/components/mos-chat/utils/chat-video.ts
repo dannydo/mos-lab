@@ -1,16 +1,31 @@
-import type { MosChatImageAttachment } from '@mos-lab/shared';
+import {
+  MOS_CHAT_MAX_CONCURRENT_VIDEO_UPLOADS,
+  MOS_CHAT_MAX_VIDEO_BYTES,
+  MOS_CHAT_MAX_VIDEOS_PER_MESSAGE,
+} from '@mos-lab/shared';
 import { isVideoAttachment, formatVideoDuration } from './chat-helpers';
 
-export { isVideoAttachment, formatVideoDuration };
+export {
+  isVideoAttachment,
+  formatVideoDuration,
+  MOS_CHAT_MAX_CONCURRENT_VIDEO_UPLOADS,
+  MOS_CHAT_MAX_VIDEO_BYTES,
+  MOS_CHAT_MAX_VIDEOS_PER_MESSAGE,
+};
+
+export const MAX_CHAT_VIDEO_BYTES = MOS_CHAT_MAX_VIDEO_BYTES;
+export const MAX_CHAT_VIDEOS_PER_MESSAGE = MOS_CHAT_MAX_VIDEOS_PER_MESSAGE;
+export const MAX_CONCURRENT_CHAT_VIDEO_UPLOADS = MOS_CHAT_MAX_CONCURRENT_VIDEO_UPLOADS;
+export const SUPPORTED_VIDEO_EXTS = ['mp4', 'webm', 'mov', 'm4v'] as const;
 
 /**
  * Kiểm tra xem File người dùng chọn có phải là video được hỗ trợ không
  */
 export function isSupportedVideoFile(file: File): boolean {
   if (!file) return false;
-  if (file.type && file.type.startsWith('video/')) return true;
+  if (file.type && (file.type.startsWith('video/') || file.type === 'video/x-m4v')) return true;
   const ext = (file.name.split('.').pop() || '').toLowerCase();
-  return ['mp4', 'webm', 'mov'].includes(ext);
+  return (SUPPORTED_VIDEO_EXTS as readonly string[]).includes(ext);
 }
 
 /**

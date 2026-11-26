@@ -49,6 +49,7 @@ export interface MosChatThreadComposerDesktopProps {
   localThreadHasText: boolean;
   setLocalThreadHasText: React.Dispatch<React.SetStateAction<boolean>>;
   threadAttachments: SafeAny[];
+  hasPendingUpload?: boolean;
   stagedCustomerCard?: MosChatCustomerCard | null;
   replyingToReply: { id: string; senderName: string; text: string } | null;
   setReplyingToReply: React.Dispatch<React.SetStateAction<{ id: string; senderName: string; text: string } | null>>;
@@ -111,6 +112,7 @@ export const MosChatThreadComposerDesktop: React.FC<MosChatThreadComposerDesktop
   localThreadHasText,
   setLocalThreadHasText,
   threadAttachments,
+  hasPendingUpload = false,
   stagedCustomerCard,
   replyingToReply,
   setReplyingToReply,
@@ -393,7 +395,7 @@ export const MosChatThreadComposerDesktop: React.FC<MosChatThreadComposerDesktop
             </button>
           </Tooltip>
 
-          <Tooltip title="Đính kèm video vào luồng (MP4, WebM, MOV tối đa 50MB)">
+          <Tooltip title="Đính kèm video vào luồng (MP4, MOV, WebM, M4V tối đa 100MB)">
             <button
               type="button"
               aria-label="Đính kèm video vào luồng"
@@ -569,22 +571,24 @@ export const MosChatThreadComposerDesktop: React.FC<MosChatThreadComposerDesktop
           <span className="text-[11px] select-none hidden sm:inline" style={{ color: token.colorTextQuaternary }}>
             Enter gửi · Shift+Enter xuống dòng
           </span>
-          <Tooltip title="Gửi vào luồng (Enter)">
+          <Tooltip title={hasPendingUpload ? 'Video đang được tải lên...' : 'Gửi vào luồng (Enter)'}>
             <button
               type="button"
               aria-label="Gửi vào luồng"
               onClick={() => void handleThreadSubmit()}
-              disabled={!localThreadHasText && threadAttachments.length === 0 && !stagedCustomerCard}
+              disabled={
+                (!localThreadHasText && threadAttachments.length === 0 && !stagedCustomerCard) || hasPendingUpload
+              }
               className="w-7 h-7 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background:
-                  localThreadHasText || threadAttachments.length > 0 || stagedCustomerCard
+                  (localThreadHasText || threadAttachments.length > 0 || stagedCustomerCard) && !hasPendingUpload
                     ? '#d4a84b'
                     : isDark
                       ? 'rgba(255, 255, 255, 0.08)'
                       : 'rgba(0, 0, 0, 0.06)',
                 color:
-                  localThreadHasText || threadAttachments.length > 0 || stagedCustomerCard
+                  (localThreadHasText || threadAttachments.length > 0 || stagedCustomerCard) && !hasPendingUpload
                     ? '#000'
                     : token.colorTextQuaternary,
               }}

@@ -34,6 +34,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
     getEffectiveUnreadCount,
     dockAttachments,
     setDockAttachments,
+    hasActiveUploadsForScope,
     dockInputs,
     setDockInputs,
     surfaceBg,
@@ -96,6 +97,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
       setDockInputs,
       dockAttachments,
       setDockAttachments,
+      hasActiveUploadsForScope,
       isComposingRef,
       lastCompositionEndMsRef,
       handleSendMessage,
@@ -329,6 +331,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
       prev.collapsedDockIds === next.collapsedDockIds &&
       prev.userPrefs === next.userPrefs &&
       prev.dockAttachments === next.dockAttachments &&
+      prev.pendingUploads === next.pendingUploads &&
       prev.dockInputs === next.dockInputs &&
       prev.openStickerPopoverKey === next.openStickerPopoverKey &&
       prev.tasks === next.tasks &&

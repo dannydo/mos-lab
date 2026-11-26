@@ -1,14 +1,21 @@
 import crypto from 'node:crypto';
-import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
+import { mkdir, open, readFile, writeFile, unlink } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { resolve, sep } from 'node:path';
-import { MosChatImageAttachment, UploadMosChatImageRequest, SafeAny } from '@mos-lab/shared';
+import {
+  MOS_CHAT_MAX_VIDEO_BYTES,
+  MOS_CHAT_MAX_VIDEOS_PER_MESSAGE,
+  MosChatImageAttachment,
+  UploadMosChatImageRequest,
+  SafeAny,
+} from '@mos-lab/shared';
 
 export const MAX_CHAT_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB max per image
 export const MAX_CHAT_FILE_BYTES = 25 * 1024 * 1024; // 25 MB max per file / PDF / document
-export const MAX_CHAT_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB max per video (MOS-CHAT-VIDEO)
-export const CHAT_IMAGE_BODY_LIMIT = 75 * 1024 * 1024; // 75 MB body limit for base64 / video payload
+export const MAX_CHAT_VIDEO_BYTES = MOS_CHAT_MAX_VIDEO_BYTES; // 100 MB max per video (MOS-CHAT-VIDEO)
+export const CHAT_IMAGE_BODY_LIMIT = 75 * 1024 * 1024; // 75 MB body limit for base64 payload
+export const SUPPORTED_CHAT_VIDEO_EXTS = ['mp4', 'webm', 'mov', 'm4v'] as const;
 
 export const CHAT_MIME_EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -22,6 +29,7 @@ export const CHAT_MIME_EXTENSIONS: Record<string, string> = {
   'video/mp4': 'mp4',
   'video/webm': 'webm',
   'video/quicktime': 'mov',
+  'video/x-m4v': 'm4v',
   'application/pdf': 'pdf',
   'application/msword': 'doc',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
@@ -49,6 +57,7 @@ export const EXT_TO_CHAT_MIME: Record<string, string> = {
   mp4: 'video/mp4',
   webm: 'video/webm',
   mov: 'video/quicktime',
+  m4v: 'video/x-m4v',
   pdf: 'application/pdf',
   doc: 'application/msword',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -153,14 +162,17 @@ export async function decodeAndValidateChatFile(input: UploadMosChatImageRequest
     .trim()
     .replace(/^data:[^;]+;base64,/i, '');
 
-  const isVideo = mimeType.startsWith('video/') || ['mp4', 'webm', 'mov'].includes(ext) || Boolean(input.isVideo);
+  const isVideo =
+    mimeType.startsWith('video/') ||
+    (SUPPORTED_CHAT_VIDEO_EXTS as readonly string[]).includes(ext) ||
+    Boolean(input.isVideo);
 
   const maxBytes = isVideo
     ? MAX_CHAT_VIDEO_BYTES
     : mimeType.startsWith('image/')
       ? MAX_CHAT_IMAGE_BYTES
       : MAX_CHAT_FILE_BYTES;
-  const maxSizeLabel = isVideo ? '50MB' : mimeType.startsWith('image/') ? '8MB' : '25MB';
+  const maxSizeLabel = isVideo ? '100MB' : mimeType.startsWith('image/') ? '8MB' : '25MB';
 
   if (!encoded || encoded.length > Math.ceil(maxBytes * 1.45)) {
     throw new Error(`Tệp quá lớn (tối đa ${maxSizeLabel}) hoặc dữ liệu tệp không hợp lệ.`);
@@ -221,6 +233,9 @@ export async function decodeAndValidateChatFile(input: UploadMosChatImageRequest
     } else if (ext === 'mov' || mimeType === 'video/quicktime') {
       finalMimeType = 'video/quicktime';
       ext = 'mov';
+    } else if (ext === 'm4v' || mimeType === 'video/x-m4v') {
+      finalMimeType = 'video/x-m4v';
+      ext = 'm4v';
     } else {
       finalMimeType = 'video/mp4';
       ext = 'mp4';
@@ -274,9 +289,52 @@ export function decodeAndValidateChatImage(input: UploadMosChatImageRequest): Bu
   return buffer;
 }
 
+export function resolveVideoFormat(originalFileName: string, rawMimeType?: string): { ext: string; mimeType: string } {
+  const fileExtFromFileName = (originalFileName.split('.').pop() || '').toLowerCase();
+  let mimeType = String(rawMimeType || '')
+    .trim()
+    .toLowerCase();
+  if ((!mimeType || mimeType === 'application/octet-stream') && fileExtFromFileName in EXT_TO_CHAT_MIME) {
+    mimeType = EXT_TO_CHAT_MIME[fileExtFromFileName];
+  }
+  const ext = CHAT_MIME_EXTENSIONS[mimeType] || (fileExtFromFileName in EXT_TO_CHAT_MIME ? fileExtFromFileName : '');
+  if (!ext || !(SUPPORTED_CHAT_VIDEO_EXTS as readonly string[]).includes(ext)) {
+    throw new Error('Định dạng video không được hỗ trợ (hệ thống hỗ trợ MP4, MOV, WebM, M4V).');
+  }
+  return {
+    ext,
+    mimeType: EXT_TO_CHAT_MIME[ext] || mimeType,
+  };
+}
+
+export async function validateVideoFileMagicBytes(filePath: string, ext: string): Promise<void> {
+  const handle = await open(filePath, 'r');
+  try {
+    const header = Buffer.alloc(32);
+    const { bytesRead } = await handle.read(header, 0, 32, 0);
+    if (bytesRead < 8) {
+      throw new Error('Nội dung tệp video không hợp lệ hoặc bị hỏng.');
+    }
+    if (ext === 'webm') {
+      const isWebm = header[0] === 0x1a && header[1] === 0x45 && header[2] === 0xdf && header[3] === 0xa3;
+      if (!isWebm) {
+        throw new Error('Nội dung tệp không phải định dạng WebM hợp lệ.');
+      }
+      return;
+    }
+    const atomType = header.subarray(4, 8).toString('ascii');
+    const validIsoAtoms = new Set(['ftyp', 'moov', 'mdat', 'wide', 'free', 'skip', 'pnot']);
+    if (!validIsoAtoms.has(atomType)) {
+      throw new Error(`Nội dung tệp không khớp định dạng video ${ext.toUpperCase()} hợp lệ.`);
+    }
+  } finally {
+    await handle.close();
+  }
+}
+
 export function sanitizeChatAttachments(raw?: MosChatImageAttachment[]): MosChatImageAttachment[] {
   if (!Array.isArray(raw) || raw.length === 0) return [];
-  return raw
+  const filtered = raw
     .slice(0, 12)
     .filter((item) => {
       if (!item || typeof item.url !== 'string') return false;
@@ -299,7 +357,7 @@ export function sanitizeChatAttachments(raw?: MosChatImageAttachment[]): MosChat
         (item.mimeType && item.mimeType in CHAT_MIME_EXTENSIONS ? item.mimeType : 'application/octet-stream');
       const isVideo =
         Boolean(item.isVideo) ||
-        ['mp4', 'webm', 'mov'].includes(ext) ||
+        (SUPPORTED_CHAT_VIDEO_EXTS as readonly string[]).includes(ext) ||
         (item.mimeType ? item.mimeType.startsWith('video/') : false);
 
       return {
@@ -315,8 +373,19 @@ export function sanitizeChatAttachments(raw?: MosChatImageAttachment[]): MosChat
         isVideo: isVideo ? true : undefined,
         source: item.source || 'upload',
         fileExt: ext || undefined,
+        isProcessing: item.isProcessing ? true : undefined,
+        processingStatus:
+          item.isProcessing && item.processingStatus ? String(item.processingStatus).slice(0, 160) : undefined,
+        processedAt: item.processedAt ? String(item.processedAt) : undefined,
       };
     });
+
+  let videoCount = 0;
+  return filtered.filter((att) => {
+    if (!att.isVideo) return true;
+    videoCount += 1;
+    return videoCount <= MOS_CHAT_MAX_VIDEOS_PER_MESSAGE;
+  });
 }
 
 export interface SavedChatVideoResult {
@@ -351,7 +420,7 @@ export async function processVideoMedia(
 
   // 2. If video is MOV or WebM, remux or transcode to MP4 with +faststart for universal browser playback
   let mp4FileName: string | undefined;
-  if (ext === 'mov' || ext === 'webm') {
+  if (ext === 'mov' || ext === 'webm' || ext === 'm4v') {
     const candidateMp4FileName = `${fileUuid}.mp4`;
     const mp4Path = resolve(rootDir, candidateMp4FileName);
     try {
@@ -403,19 +472,9 @@ export async function saveChatVideoBuffer(
   originalFileName: string,
   rawMimeType?: string
 ): Promise<SavedChatVideoResult> {
-  const fileExtFromFileName = (originalFileName.split('.').pop() || '').toLowerCase();
-  let mimeType = String(rawMimeType || '')
-    .trim()
-    .toLowerCase();
-  if ((!mimeType || mimeType === 'application/octet-stream') && fileExtFromFileName in EXT_TO_CHAT_MIME) {
-    mimeType = EXT_TO_CHAT_MIME[fileExtFromFileName];
-  }
-  const ext = CHAT_MIME_EXTENSIONS[mimeType] || (fileExtFromFileName in EXT_TO_CHAT_MIME ? fileExtFromFileName : '');
-  if (!ext || !['mp4', 'webm', 'mov'].includes(ext)) {
-    throw new Error('Định dạng video không được hỗ trợ (hệ thống hỗ trợ MP4, WebM, QuickTime MOV).');
-  }
+  const { ext, mimeType } = resolveVideoFormat(originalFileName, rawMimeType);
   if (buffer.length <= 0 || buffer.length > MAX_CHAT_VIDEO_BYTES) {
-    throw new Error('Video quá lớn (tối đa 50MB).');
+    throw new Error('Video quá lớn (tối đa 100MB).');
   }
 
   const rootDir = mosChatMediaRoot();

@@ -263,6 +263,20 @@ describe('mOS Chat File Upload & PDF Document Invariants (MOS-BUG-147)', () => {
       assert.equal(sanitized[0].name, 'valid.pdf');
     });
 
+    it('limits video attachments to a maximum of 5 items per message', () => {
+      const raw: MosChatImageAttachment[] = Array.from({ length: 7 }, (_, i) => ({
+        id: `vid-${i}`,
+        url: `/api/chat/media/12345678-1234-1234-1234-12345678900${i}.mp4`,
+        name: `clip-${i}.mp4`,
+        mimeType: 'video/mp4',
+        sizeBytes: 1024,
+        isVideo: true,
+      }));
+
+      const sanitized = sanitizeChatAttachments(raw);
+      assert.equal(sanitized.length, 5);
+    });
+
     it('limits attachments to a maximum of 12 items per message', () => {
       const raw: MosChatImageAttachment[] = Array.from({ length: 15 }, (_, i) => ({
         id: `item-${i}`,
@@ -290,15 +304,27 @@ describe('mOS Chat File Upload & PDF Document Invariants (MOS-BUG-147)', () => {
       assert.match(res.fileName, /^[a-f0-9-]{36}\.mp4$/);
     });
 
-    it('rejects video buffer exceeding 50MB limit', async () => {
-      const hugeBuffer = Buffer.alloc(51 * 1024 * 1024);
+    it('successfully validates and saves M4V video buffer', async () => {
+      const dummyM4v = Buffer.concat([
+        Buffer.from([0x00, 0x00, 0x00, 0x18]),
+        Buffer.from('ftypM4V ', 'ascii'),
+        Buffer.alloc(100),
+      ]);
+      const res = await saveChatVideoBuffer(dummyM4v, 'iphone_clip.m4v', 'video/x-m4v');
+      assert.equal(res.ext, 'm4v');
+      assert.equal(res.mimeType, 'video/x-m4v');
+      assert.match(res.fileName, /^[a-f0-9-]{36}\.m4v$/);
+    });
+
+    it('rejects video buffer exceeding 100MB limit', async () => {
+      const hugeBuffer = Buffer.alloc(101 * 1024 * 1024);
       await assert.rejects(
         async () => {
           await saveChatVideoBuffer(hugeBuffer, 'huge.mp4', 'video/mp4');
         },
         {
           name: 'Error',
-          message: 'Video quá lớn (tối đa 50MB).',
+          message: 'Video quá lớn (tối đa 100MB).',
         }
       );
     });

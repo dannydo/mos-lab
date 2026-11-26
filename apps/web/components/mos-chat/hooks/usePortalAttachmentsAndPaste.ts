@@ -6,12 +6,13 @@ import type { MosChatImageAttachment, SafeAny } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { apiClient } from '../../../lib/api-client';
 import { convertAttachmentToDataUrl } from '../shared/utils/convertAttachmentToDataUrl';
-import { parseGoogleDriveImageFromText, readOrCompressImagePayload } from '../utils/chat-helpers';
-import { uploadSingleChatVideo } from '../utils/chat-upload';
+import { useChatUploadQueue } from '../shared/hooks/useChatUploadQueue';
+import { isVideoAttachment, parseGoogleDriveImageFromText, readOrCompressImagePayload } from '../utils/chat-helpers';
 import { isSupportedVideoFile } from '../utils/chat-video';
 
 export interface UsePortalAttachmentsAndPasteParams {
   open: boolean;
+  dockAttachments?: Record<string, MosChatImageAttachment[]>;
   setDockAttachments: React.Dispatch<React.SetStateAction<Record<string, MosChatImageAttachment[]>>>;
   antdMessage: MessageInstance;
 }
@@ -21,6 +22,7 @@ const SUPPORTED_CHAT_DOC_EXTS = [
   'mp4',
   'webm',
   'mov',
+  'm4v',
   'pdf',
   'doc',
   'docx',
@@ -62,12 +64,24 @@ function isSupportedChatFile(f: File): boolean {
 
 export function usePortalAttachmentsAndPaste({
   open,
+  dockAttachments,
   setDockAttachments,
   antdMessage,
 }: UsePortalAttachmentsAndPasteParams) {
   const [stagedAttachments, setStagedAttachments] = useState<MosChatImageAttachment[]>([]);
   const [threadAttachments, setThreadAttachments] = useState<MosChatImageAttachment[]>([]);
-  const [uploadingCount, setUploadingCount] = useState<number>(0);
+  const [nonVideoUploadingCount, setNonVideoUploadingCount] = useState<number>(0);
+  const uploadQueue = useChatUploadQueue();
+
+  const stagedRef = useRef(stagedAttachments);
+  stagedRef.current = stagedAttachments;
+  const threadRef = useRef(threadAttachments);
+  threadRef.current = threadAttachments;
+  const dockRef = useRef(dockAttachments);
+  dockRef.current = dockAttachments;
+
+  const activePendingVideoCount = uploadQueue.pendingUploads.filter((p) => p.phase !== 'error').length;
+  const uploadingCount = nonVideoUploadingCount + activePendingVideoCount;
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
   const [isDraggingOverThread, setIsDraggingOverThread] = useState<boolean>(false);
   const [driveLinkModalOpen, setDriveLinkModalOpen] = useState<boolean>(false);
@@ -150,26 +164,53 @@ export function usePortalAttachmentsAndPaste({
       const candidateFiles = Array.from(files).filter(isSupportedChatFile);
       if (candidateFiles.length === 0) {
         antdMessage.warning(
-          'Định dạng tệp không được hỗ trợ (hỗ trợ Video MP4/WebM/MOV, PDF, Excel, Word, TXT, ZIP và hình ảnh).'
+          'Định dạng tệp không được hỗ trợ (hỗ trợ Video MP4/MOV/WebM/M4V, PDF, Excel, Word, TXT, ZIP và hình ảnh).'
         );
         return;
       }
 
-      setUploadingCount((c) => c + candidateFiles.length);
+      const existingVideoCount =
+        scope === 'thread'
+          ? threadRef.current.filter(isVideoAttachment).length
+          : scope === 'dock' && convId
+            ? (dockRef.current?.[convId] || []).filter(isVideoAttachment).length
+            : stagedRef.current.filter(isVideoAttachment).length;
+
+      let queuedVideoOffset = 0;
+      const nonVideoFiles: File[] = [];
+
       for (const file of candidateFiles.slice(0, 10)) {
-        try {
-          if (isSupportedVideoFile(file)) {
-            if (file.size > 50 * 1024 * 1024) {
-              antdMessage.error(`Video "${file.name}" vượt quá dung lượng tối đa cho phép (50MB).`);
-              continue;
-            }
-            const uploadedAtt = await uploadSingleChatVideo(file);
-            if (uploadedAtt) {
-              uploadedAtt.source = source;
+        if (isSupportedVideoFile(file)) {
+          const enqueueRes = uploadQueue.enqueueVideoUpload({
+            file,
+            scope,
+            convId,
+            source,
+            existingVideoCount: existingVideoCount + queuedVideoOffset,
+            onSuccess: (uploadedAtt) => {
               appendAttachmentToTarget(uploadedAtt, scope, convId);
               antdMessage.success(`Đã đính kèm video "${file.name}"`);
-            }
-          } else if (isImageOrHeicFile(file)) {
+            },
+            onError: (errMsg) => {
+              antdMessage.error(errMsg);
+            },
+          });
+          if (!enqueueRes.accepted && enqueueRes.reason) {
+            antdMessage.error(enqueueRes.reason);
+          } else if (enqueueRes.accepted) {
+            queuedVideoOffset += 1;
+          }
+        } else {
+          nonVideoFiles.push(file);
+        }
+      }
+
+      if (nonVideoFiles.length === 0) return;
+
+      setNonVideoUploadingCount((c) => c + nonVideoFiles.length);
+      for (const file of nonVideoFiles) {
+        try {
+          if (isImageOrHeicFile(file)) {
             const compressed = await readOrCompressImagePayload(file);
             const uploaded = await apiClient.chat.uploadImage({
               dataBase64: compressed.dataBase64,
@@ -222,11 +263,11 @@ export function usePortalAttachmentsAndPaste({
         } catch (err: SafeAny) {
           antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể tải tệp lên.');
         } finally {
-          setUploadingCount((c) => Math.max(0, c - 1));
+          setNonVideoUploadingCount((c) => Math.max(0, c - 1));
         }
       }
     },
-    [antdMessage, appendAttachmentToTarget]
+    [antdMessage, appendAttachmentToTarget, uploadQueue]
   );
 
   const handleClipboardPaste = useCallback(
@@ -305,6 +346,12 @@ export function usePortalAttachmentsAndPaste({
     threadAttachments,
     setThreadAttachments,
     uploadingCount,
+    nonVideoUploadingCount,
+    pendingUploads: uploadQueue.pendingUploads,
+    cancelPendingUpload: uploadQueue.cancelUpload,
+    retryPendingUpload: uploadQueue.retryUpload,
+    dismissPendingUpload: uploadQueue.dismissFailedUpload,
+    hasActiveUploadsForScope: uploadQueue.hasActiveUploadsForScope,
     isDraggingOver,
     setIsDraggingOver,
     isDraggingOverThread,

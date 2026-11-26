@@ -16,10 +16,8 @@ import { dispatchChatMessageWebPush } from '../chat-web-push.service.js';
 import { withChatMutationLock } from '../chat-repository.service.js';
 import { buildForwardedChatMessage } from '../chat-forward.service.js';
 import { sanitizeChatAttachments } from '../chat-file.service.js';
-import {
-  canUserAccessConversation,
-  resolveUserPrefKey,
-} from '../chat-access.service.js';
+import { reconcileAttachmentProcessingState } from '../chat-video-processor.service.js';
+import { canUserAccessConversation, resolveUserPrefKey } from '../chat-access.service.js';
 import {
   advanceSenderReadPrefsForTargets,
   ChatTargetResolutionError,
@@ -46,7 +44,7 @@ export async function registerChatMessageSendForwardRoutes(fastify: FastifyInsta
       const user = request.user as JwtUserPayload;
       const body = request.body as CreateMosChatMessageRequest;
       const text = String(body?.text || '').trim();
-      const attachments = sanitizeChatAttachments(body?.attachments);
+      const attachments = sanitizeChatAttachments(body?.attachments).map(reconcileAttachmentProcessingState);
       if (!body?.conversationId || (!text && !body?.customerCard && attachments.length === 0)) {
         return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu nội dung tin nhắn hoặc hình ảnh' });
       }

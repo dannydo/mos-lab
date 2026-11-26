@@ -36,6 +36,8 @@ import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { AI_COPILOT_CONV_ID, AI_QUICK_PROMPTS } from '../constants/chat-constants';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { cleanQuotedText } from '../utils/quoteUtils';
+import type { PendingChatUploadItem } from '../shared/hooks/useChatUploadQueue';
+import { MosChatMobileUploadStrip } from './MosChatMobileUploadStrip';
 
 export interface MosChatMobileComposerProps {
   onOpenActionSheet: () => void;
@@ -44,6 +46,10 @@ export interface MosChatMobileComposerProps {
   attachedImages?: MosChatImageAttachment[];
   onRemoveAttachment?: (id: string) => void;
   isUploadingImages?: boolean;
+  pendingUploads?: PendingChatUploadItem[];
+  onCancelPendingUpload?: (tempId: string) => void;
+  onRetryPendingUpload?: (tempId: string) => void;
+  onDismissPendingUpload?: (tempId: string) => void;
   onSendSuccess?: () => void;
   text?: string;
   onTextChange?: (text: string) => void;
@@ -58,6 +64,10 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   attachedImages = [],
   onRemoveAttachment,
   isUploadingImages = false,
+  pendingUploads = [],
+  onCancelPendingUpload,
+  onRetryPendingUpload,
+  onDismissPendingUpload,
   onSendSuccess,
   text: controlledText,
   onTextChange,
@@ -328,6 +338,16 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
         </div>
       )}
 
+      {/* Video Chunked Upload Progress Strip */}
+      {pendingUploads.length > 0 && onCancelPendingUpload && onRetryPendingUpload && onDismissPendingUpload && (
+        <MosChatMobileUploadStrip
+          items={pendingUploads}
+          onCancel={onCancelPendingUpload}
+          onRetry={onRetryPendingUpload}
+          onDismiss={onDismissPendingUpload}
+        />
+      )}
+
       {/* Attached Files & Images Preview Strip */}
       {hasAttachments && (
         <div className="flex items-center gap-2 mb-2 overflow-x-auto no-scrollbar py-1">
@@ -448,7 +468,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
       )}
 
       {/* Uploading Banner when no images are ready yet */}
-      {isUploadingImages && !hasAttachments && (
+      {isUploadingImages && !hasAttachments && pendingUploads.length === 0 && (
         <div
           className={`flex items-center gap-2 px-3 py-1.5 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs ${
             isDark ? 'text-amber-300' : 'text-amber-800'

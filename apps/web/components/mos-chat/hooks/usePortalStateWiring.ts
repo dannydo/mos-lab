@@ -181,6 +181,7 @@ export function usePortalStateWiring({
 
   const attachments = usePortalAttachmentsAndPaste({
     open,
+    dockAttachments: dock.dockAttachments,
     setDockAttachments: dock.setDockAttachments,
     antdMessage,
   });
@@ -397,6 +398,7 @@ export function usePortalStateWiring({
     setStagedAttachments: attachments.setStagedAttachments,
     threadAttachments: attachments.threadAttachments,
     setThreadAttachments: attachments.setThreadAttachments,
+    hasActiveUploadsForScope: attachments.hasActiveUploadsForScope,
     replyingToMessage: composerRefs.replyingToMessage,
     setReplyingToMessage: composerRefs.setReplyingToMessage,
     activeThreadMsgId: composerRefs.activeThreadMsgId,

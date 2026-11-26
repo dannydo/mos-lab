@@ -5,7 +5,7 @@ export type MosChatTaskPriority = 'URGENT' | 'HIGH' | 'NORMAL';
 export type MosChatImageMimeType =
   'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' | 'image/heic' | 'image/heif' | 'image/svg+xml' | 'image/bmp';
 
-export type MosChatVideoMimeType = 'video/mp4' | 'video/webm' | 'video/quicktime';
+export type MosChatVideoMimeType = 'video/mp4' | 'video/webm' | 'video/quicktime' | 'video/x-m4v';
 
 export type MosChatFileMimeType =
   | MosChatImageMimeType
@@ -41,6 +41,7 @@ export interface MosChatImageAttachment {
   fileExt?: string;
   isProcessing?: boolean;
   processingStatus?: string;
+  processedAt?: string;
 }
 
 export type MosChatAttachment = MosChatImageAttachment;

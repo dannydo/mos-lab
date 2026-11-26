@@ -29,7 +29,9 @@ import type {
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { getFileExtension, isImageAttachment } from '../utils/chat-helpers';
 import { formatVideoDuration, isVideoAttachment } from '../utils/chat-video';
+import type { PendingChatUploadItem } from '../shared/hooks/useChatUploadQueue';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
+import { MosChatMobileUploadStrip } from './MosChatMobileUploadStrip';
 
 export interface MosChatMobileThreadComposerProps {
   isDark: boolean;
@@ -39,6 +41,10 @@ export interface MosChatMobileThreadComposerProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   isSending: boolean;
   isUploadingImages: boolean;
+  pendingUploads?: PendingChatUploadItem[];
+  onCancelPendingUpload?: (tempId: string) => void;
+  onRetryPendingUpload?: (tempId: string) => void;
+  onDismissPendingUpload?: (tempId: string) => void;
   attachedImages: MosChatImageAttachment[];
   setAttachedImages: React.Dispatch<React.SetStateAction<MosChatImageAttachment[]>>;
   stagedCustomerCard: MosChatCustomerCard | null;
@@ -70,6 +76,10 @@ export const MosChatMobileThreadComposer: React.FC<MosChatMobileThreadComposerPr
   textareaRef,
   isSending,
   isUploadingImages,
+  pendingUploads = [],
+  onCancelPendingUpload,
+  onRetryPendingUpload,
+  onDismissPendingUpload,
   attachedImages,
   setAttachedImages,
   stagedCustomerCard,
@@ -321,7 +331,7 @@ export const MosChatMobileThreadComposer: React.FC<MosChatMobileThreadComposerPr
         </div>
       )}
 
-      {isUploadingImages && attachedImages.length === 0 && (
+      {isUploadingImages && attachedImages.length === 0 && pendingUploads.length === 0 && (
         <div
           className={`flex items-center gap-2 px-3 py-1.5 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs ${
             isDark ? 'text-amber-300' : 'text-amber-800'
@@ -330,6 +340,15 @@ export const MosChatMobileThreadComposer: React.FC<MosChatMobileThreadComposerPr
           <Loader2 className={`w-3.5 h-3.5 animate-spin shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
           <span>Đang tải hình ảnh lên...</span>
         </div>
+      )}
+
+      {pendingUploads.length > 0 && onCancelPendingUpload && onRetryPendingUpload && onDismissPendingUpload && (
+        <MosChatMobileUploadStrip
+          items={pendingUploads}
+          onCancel={onCancelPendingUpload}
+          onRetry={onRetryPendingUpload}
+          onDismiss={onDismissPendingUpload}
+        />
       )}
 
       {stagedCustomerCard && (

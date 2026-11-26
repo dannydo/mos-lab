@@ -5,6 +5,8 @@ import type {
   ActionMosChatWorkflowInstanceResponse,
   BuzzMosChatMessageRequest,
   BuzzMosChatMessageResponse,
+  CompleteMosChatVideoUploadRequest,
+  CompleteMosChatVideoUploadResponse,
   CreateMosChatConversationRequest,
   CreateMosChatMessageRequest,
   CreateMosChatMissionRequest,
@@ -19,6 +21,8 @@ import type {
   ExtractMosChatChecklistResponse,
   ForwardMosChatMessageRequest,
   ForwardMosChatMessageResponse,
+  InitMosChatVideoUploadRequest,
+  InitMosChatVideoUploadResponse,
   MarkConversationAsUnreadResponse,
   MarkThreadAsReadResponse,
   MosChatAccessConfig,
@@ -71,6 +75,7 @@ import type {
   UploadMosChatFileResponse,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
+  UploadMosChatVideoChunkResponse,
 } from '@mos-lab/shared';
 import { api, dedupeApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
 
@@ -178,7 +183,54 @@ export const chatApi = {
     ): Promise<UploadMosChatImageResponse> => {
       const res = await api.post('/chat/upload-video', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 300_000,
         onUploadProgress,
+      });
+      return res.data;
+    },
+    initVideoUpload: async (payload: InitMosChatVideoUploadRequest): Promise<InitMosChatVideoUploadResponse> => {
+      const res = await api.post('/chat/upload-video/init', payload, {
+        timeout: 30_000,
+      });
+      return res.data;
+    },
+    uploadVideoChunk: async (
+      uploadId: string,
+      chunkIndex: number,
+      chunkBlob: Blob,
+      options?: {
+        signal?: AbortSignal;
+        onUploadProgress?: (progressEvent: SafeAny) => void;
+      }
+    ): Promise<UploadMosChatVideoChunkResponse> => {
+      const formData = new FormData();
+      formData.append('file', chunkBlob, `chunk-${chunkIndex}.part`);
+      const res = await api.post(
+        `/chat/upload-video/${encodeURIComponent(uploadId)}/chunk?chunkIndex=${chunkIndex}`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 120_000,
+          signal: options?.signal,
+          onUploadProgress: options?.onUploadProgress,
+        }
+      );
+      return res.data;
+    },
+    completeVideoUpload: async (
+      uploadId: string,
+      payload?: CompleteMosChatVideoUploadRequest,
+      options?: { signal?: AbortSignal }
+    ): Promise<CompleteMosChatVideoUploadResponse> => {
+      const res = await api.post(`/chat/upload-video/${encodeURIComponent(uploadId)}/complete`, payload || {}, {
+        timeout: 60_000,
+        signal: options?.signal,
+      });
+      return res.data;
+    },
+    abortVideoUpload: async (uploadId: string): Promise<{ success: boolean }> => {
+      const res = await api.delete(`/chat/upload-video/${encodeURIComponent(uploadId)}`, {
+        timeout: 15_000,
       });
       return res.data;
     },
@@ -366,12 +418,7 @@ export const chatApi = {
       reportId: number,
       options?: ApiRequestOptions
     ): Promise<{ success: boolean; data: SharedMosChatMissionPreview }> => {
-      return dedupeApiGet(
-        `/chat/missions/${encodeURIComponent(String(reportId))}/preview`,
-        undefined,
-        5000,
-        options
-      );
+      return dedupeApiGet(`/chat/missions/${encodeURIComponent(String(reportId))}/preview`, undefined, 5000, options);
     },
     listWorkflows: async (
       options?: ApiRequestOptions

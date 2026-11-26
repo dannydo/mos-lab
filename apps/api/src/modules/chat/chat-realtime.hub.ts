@@ -201,11 +201,19 @@ export function computeDeltaFromSnapshot(
       const msgDeletedMs = msg.deletedAt ? new Date(msg.deletedAt).getTime() : 0;
       const msgBuzzedMs = msg.buzzedAt ? new Date(msg.buzzedAt).getTime() : 0;
       const msgMissionUpdatedMs = msg.mission?.updatedAt ? new Date(msg.mission.updatedAt).getTime() : 0;
+      const msgAttachmentProcessedMs = (msg.attachments || []).reduce((max, att) => {
+        const ms = att?.processedAt ? new Date(att.processedAt).getTime() : 0;
+        return Math.max(max, Number.isNaN(ms) ? 0 : ms);
+      }, 0);
       const latestReplyMs = (msg.thread || []).reduce((max, r) => {
         const rCreated = r.createdAt ? new Date(r.createdAt).getTime() : 0;
         const rEdited = r.editedAt ? new Date(r.editedAt).getTime() : 0;
         const rDeleted = r.deletedAt ? new Date(r.deletedAt).getTime() : 0;
-        return Math.max(max, rCreated, rEdited, rDeleted);
+        const rAttProcessed = (r.attachments || []).reduce((attMax, att) => {
+          const ms = att?.processedAt ? new Date(att.processedAt).getTime() : 0;
+          return Math.max(attMax, Number.isNaN(ms) ? 0 : ms);
+        }, 0);
+        return Math.max(max, rCreated, rEdited, rDeleted, rAttProcessed);
       }, 0);
 
       const effectiveMsgMs = Math.max(
@@ -214,6 +222,7 @@ export function computeDeltaFromSnapshot(
         msgDeletedMs,
         msgBuzzedMs,
         msgMissionUpdatedMs,
+        msgAttachmentProcessedMs,
         latestReplyMs
       );
 

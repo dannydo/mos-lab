@@ -13,6 +13,7 @@ import { ChatMissionBridgeService } from '../chat-mission-bridge.service.js';
 import { chatRealtimeHub } from '../chat-realtime.hub.js';
 import { dispatchChatMessageWebPush } from '../chat-web-push.service.js';
 import { mosChatMediaRoot, sanitizeChatAttachments } from '../chat-file.service.js';
+import { reconcileAttachmentProcessingState } from '../chat-video-processor.service.js';
 import {
   isDannyOrSuperAdminUser,
   canUserAccessConversation,
@@ -43,7 +44,7 @@ export async function registerChatThreadRoutes(fastify: FastifyInstance) {
       const text = String(body?.text || '').trim();
       const customerCard = body?.customerCard || undefined;
       const sendText = text || (customerCard?.name ? `Đính kèm thẻ khách hàng ${customerCard.name}` : '');
-      const attachments = sanitizeChatAttachments(body?.attachments);
+      const attachments = sanitizeChatAttachments(body?.attachments).map(reconcileAttachmentProcessingState);
       if (!body?.conversationId || !body?.messageId || (!sendText && attachments.length === 0 && !customerCard)) {
         return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu nội dung phản hồi luồng' });
       }

@@ -123,10 +123,10 @@ const start = async () => {
     // Must be registered before any route which opts into websocket handling.
     await server.register(websocket);
 
-    // Register Multipart plugin for file & video uploads (MOS-CHAT-VIDEO: 55MB limit)
+    // Register Multipart plugin for file & video uploads (MOS-CHAT-VIDEO: 105MB limit for streamed/chunked uploads)
     await server.register(multipart, {
       limits: {
-        fileSize: 55 * 1024 * 1024,
+        fileSize: 105 * 1024 * 1024,
         files: 1,
       },
     });

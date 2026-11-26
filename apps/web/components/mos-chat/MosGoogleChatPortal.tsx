@@ -133,7 +133,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       <input
         ref={portal.attachments.fileInputRef}
         type="file"
-        accept="image/*,.heic,.heif,.HEIC,.HEIF,video/*,.mp4,.webm,.mov,.MP4,.WEBM,.MOV,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar,.7z"
+        accept="image/*,.heic,.heif,.HEIC,.HEIF,video/*,.mp4,.webm,.mov,.m4v,.MP4,.WEBM,.MOV,.M4V,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar,.7z"
         multiple
         className="hidden"
         onChange={(e) => {

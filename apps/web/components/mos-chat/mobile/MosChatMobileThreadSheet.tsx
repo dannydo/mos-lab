@@ -9,7 +9,8 @@ import { formatStickerToken, type MosChatStickerItem } from '../mos-chat-sticker
 import { type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
 import { syncTextareaHeightSmart } from '../components/MosChatComposer';
-import { uploadMultipleChatImages } from '../utils/chat-upload';
+import { useChatUploadQueue } from '../shared/hooks/useChatUploadQueue';
+import { dispatchMobileSelectedFiles } from './mobileUploadHelpers';
 import { formatQuotePayload } from '../utils/quoteUtils';
 import type {
   MosChatCustomerCard,
@@ -91,6 +92,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
   const [replyingToReply, setReplyingToReply] = useState<MosChatThreadReply | null>(null);
   const [attachedImages, setAttachedImages] = useState<MosChatImageAttachment[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState<boolean>(false);
+  const uploadQueue = useChatUploadQueue();
+  const hasActiveThreadUploads = uploadQueue.pendingUploads.some((p) => p.scope === 'thread' && p.phase !== 'error');
   const [customerPickerOpen, setCustomerPickerOpen] = useState<boolean>(false);
   const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
   const [actionSheetOpen, setActionSheetOpen] = useState<boolean>(false);
@@ -359,31 +362,18 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const count = files.length;
-    setIsUploadingImages(true);
-    const hideMsg = antdMessage.loading(`Đang tải ${count} tệp lên...`, 0);
-
-    try {
-      const uploaded = await uploadMultipleChatImages(files);
-      hideMsg();
-      if (uploaded.length > 0) {
-        setAttachedImages((prev) => [...prev, ...uploaded]);
-        if (uploaded.length === count) {
-          antdMessage.success(`Đã đính kèm ${uploaded.length} tệp trong luồng`);
-        } else {
-          antdMessage.warning(`Đã tải ${uploaded.length}/${count} tệp`);
-        }
-      } else {
-        antdMessage.error('Không thể tải tệp lên');
-      }
-    } catch {
-      hideMsg();
-      antdMessage.error('Không thể tải tệp lên');
-    } finally {
-      setIsUploadingImages(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      if (videoInputRef.current) videoInputRef.current.value = '';
-    }
+    await dispatchMobileSelectedFiles({
+      files,
+      scope: 'thread',
+      attachedImages,
+      setAttachedImages,
+      setIsUploadingNonVideo: setIsUploadingImages,
+      enqueueVideoUpload: uploadQueue.enqueueVideoUpload,
+      antdMessage,
+      successSuffix: ' trong luồng',
+    });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (videoInputRef.current) videoInputRef.current.value = '';
   };
 
   const handleSelectSticker = async (sticker: MosChatStickerItem) => {
@@ -414,7 +404,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,video/*,.mp4,.webm,.mov,.heic,.heif,.HEIC,.HEIF,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar"
+        accept="image/*,video/*,.mp4,.webm,.mov,.m4v,.heic,.heif,.HEIC,.HEIF,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar"
         onChange={handleImageFileChange}
         className="hidden"
         aria-label="Tải nhiều ảnh đính kèm trong luồng"
@@ -422,7 +412,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
       <input
         ref={videoInputRef}
         type="file"
-        accept="video/*,.mp4,.webm,.mov"
+        accept="video/*,.mp4,.webm,.mov,.m4v"
         onChange={handleImageFileChange}
         className="hidden"
         aria-label="Tải video đính kèm trong luồng"
@@ -548,7 +538,11 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         setText={setText}
         textareaRef={textareaRef}
         isSending={isSending}
-        isUploadingImages={isUploadingImages}
+        isUploadingImages={isUploadingImages || hasActiveThreadUploads}
+        pendingUploads={uploadQueue.pendingUploads.filter((p) => p.scope === 'thread')}
+        onCancelPendingUpload={uploadQueue.cancelUpload}
+        onRetryPendingUpload={uploadQueue.retryUpload}
+        onDismissPendingUpload={uploadQueue.dismissFailedUpload}
         attachedImages={attachedImages}
         setAttachedImages={setAttachedImages}
         stagedCustomerCard={stagedCustomerCard}

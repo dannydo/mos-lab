@@ -14,7 +14,8 @@ import { MosChatMobilePinnedTab } from './MosChatMobilePinnedTab';
 import { MosChatFilesPane } from '../components/MosChatFilesPane';
 import { formatStickerToken, type MosChatStickerItem, type MosChatStickerPackId } from '../mos-chat-stickers';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
-import { uploadMultipleChatImages } from '../utils/chat-upload';
+import { useChatUploadQueue } from '../shared/hooks/useChatUploadQueue';
+import { dispatchMobileSelectedFiles } from './mobileUploadHelpers';
 import { MosChatActiveCallRoomBanner } from '../components/MosChatVoiceCallWidget';
 import { useTheme } from '../../../context/ThemeContext';
 import '../../../app/ios-app/ios-typography.css';
@@ -93,6 +94,8 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
   } | null>(null);
   const [attachedImages, setAttachedImages] = useState<MosChatImageAttachment[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState<boolean>(false);
+  const uploadQueue = useChatUploadQueue();
+  const hasActiveMobileUploads = uploadQueue.pendingUploads.some((p) => p.scope === 'main' && p.phase !== 'error');
   const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
   const [customerPickerOpen, setCustomerPickerOpen] = useState<boolean>(false);
   const [pushModalOpen, setPushModalOpen] = useState(false);
@@ -143,30 +146,17 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const count = files.length;
-    setIsUploadingImages(true);
-    const hideMsg = antdMessage.loading(`Đang tải ${count} tệp lên...`, 0);
-
-    try {
-      const uploaded = await uploadMultipleChatImages(files);
-      hideMsg();
-      if (uploaded.length > 0) {
-        setAttachedImages((prev) => [...prev, ...uploaded]);
-        if (uploaded.length === count) {
-          antdMessage.success(`Đã đính kèm ${uploaded.length} tệp`);
-        } else {
-          antdMessage.warning(`Đã tải ${uploaded.length}/${count} tệp`);
-        }
-      } else {
-        antdMessage.error('Không thể tải tệp lên, vui lòng thử lại');
-      }
-    } catch {
-      hideMsg();
-      antdMessage.error('Có lỗi xảy ra khi tải ảnh lên');
-    } finally {
-      setIsUploadingImages(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    await dispatchMobileSelectedFiles({
+      files,
+      scope: 'main',
+      attachedImages,
+      setAttachedImages,
+      setIsUploadingNonVideo: setIsUploadingImages,
+      enqueueVideoUpload: uploadQueue.enqueueVideoUpload,
+      antdMessage,
+    });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (videoInputRef.current) videoInputRef.current.value = '';
   };
 
   const handleSelectSticker = (sticker: MosChatStickerItem) => {
@@ -186,7 +176,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,video/*,.mp4,.webm,.mov,.heic,.heif,.HEIC,.HEIF,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar"
+        accept="image/*,video/*,.mp4,.webm,.mov,.m4v,.heic,.heif,.HEIC,.HEIF,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar"
         onChange={handleImageFileChange}
         className="hidden"
         aria-label="Tải nhiều ảnh đính kèm"
@@ -194,7 +184,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
       <input
         ref={videoInputRef}
         type="file"
-        accept="video/*,.mp4,.webm,.mov"
+        accept="video/*,.mp4,.webm,.mov,.m4v"
         onChange={handleImageFileChange}
         className="hidden"
         aria-label="Tải video đính kèm"
@@ -260,7 +250,11 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
                 }}
                 attachedImages={attachedImages}
                 onRemoveAttachment={(id) => setAttachedImages((prev) => prev.filter((img) => img.id !== id))}
-                isUploadingImages={isUploadingImages}
+                isUploadingImages={isUploadingImages || hasActiveMobileUploads}
+                pendingUploads={uploadQueue.pendingUploads.filter((p) => p.scope === 'main')}
+                onCancelPendingUpload={uploadQueue.cancelUpload}
+                onRetryPendingUpload={uploadQueue.retryUpload}
+                onDismissPendingUpload={uploadQueue.dismissFailedUpload}
                 onSendSuccess={() => {
                   setAttachedImages([]);
                   setStagedCustomerCard(null);

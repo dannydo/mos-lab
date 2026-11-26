@@ -12,6 +12,7 @@ import type {
 } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID, AI_QUICK_PROMPTS } from '../constants/chat-constants';
 import { cleanQuotedText } from '../utils/quoteUtils';
+import type { PendingChatUploadItem } from '../shared/hooks/useChatUploadQueue';
 import { MosChatComposerMobile } from './MosChatComposerMobile';
 import { MosChatComposerDesktop } from './MosChatComposerDesktop';
 
@@ -90,6 +91,7 @@ export interface MosChatComposerProps {
   composerInputRef: React.RefObject<HTMLTextAreaElement | null>;
 
   stagedAttachments: MosChatImageAttachment[];
+  pendingUploads?: PendingChatUploadItem[];
   renderStagedAttachmentsStrip: (attachments: MosChatImageAttachment[], scope: 'main') => React.ReactNode;
   stagedCustomerCard?: MosChatCustomerCard | null;
   setStagedCustomerCard?: React.Dispatch<React.SetStateAction<MosChatCustomerCard | null>>;
@@ -147,6 +149,7 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
     setComposerCursorPos,
     composerInputRef,
     stagedAttachments,
+    pendingUploads = [],
     renderStagedAttachmentsStrip,
     stagedCustomerCard,
     setStagedCustomerCard,
@@ -411,6 +414,7 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
             setComposerCursorPos={setComposerCursorPos}
             composerInputRef={composerInputRef}
             stagedAttachments={stagedAttachments}
+            hasPendingUpload={pendingUploads.some((p) => p.scope === 'main' && p.phase !== 'error')}
             stagedCustomerCard={stagedCustomerCard}
             isUrgentSend={isUrgentSend}
             setIsUrgentSend={setIsUrgentSend}
@@ -459,6 +463,7 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
       prev.isUrgentSend === next.isUrgentSend &&
       prev.activeConversation?.id === next.activeConversation?.id &&
       prev.stagedAttachments === next.stagedAttachments &&
+      prev.pendingUploads === next.pendingUploads &&
       prev.stagedCustomerCard === next.stagedCustomerCard &&
       prev.mentionRenderKey === next.mentionRenderKey &&
       prev.replyingToMessage === next.replyingToMessage

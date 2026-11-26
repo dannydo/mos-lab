@@ -8434,7 +8434,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "preHandler",
-        "line": 70
+        "line": 84
       }
     },
     {
@@ -8448,7 +8448,63 @@
         "path": "/api/chat/upload-file",
         "module": "chat",
         "handler": "preHandler",
-        "line": 80
+        "line": 94
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/upload-video/init",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/upload-video/init",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes/media-and-tts.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/upload-video/init",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 104
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/upload-video/:uploadId/chunk",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/upload-video/:uploadId/chunk",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes/media-and-tts.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/upload-video/:uploadId/chunk",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 124
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/upload-video/:uploadId/complete",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/upload-video/:uploadId/complete",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes/media-and-tts.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/upload-video/:uploadId/complete",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 162
+      }
+    },
+    {
+      "id": "route:DELETE:/api/chat/upload-video/:uploadId",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/chat/upload-video/:uploadId",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes/media-and-tts.routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/chat/upload-video/:uploadId",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 193
       }
     },
     {
@@ -8462,7 +8518,7 @@
         "path": "/api/chat/upload-video",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 90
+        "line": 214
       }
     },
     {
@@ -8476,7 +8532,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 158
+        "line": 313
       }
     },
     {
@@ -8490,7 +8546,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 317
+        "line": 472
       }
     },
     {
@@ -8504,7 +8560,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 322
+        "line": 477
       }
     },
     {
@@ -8602,7 +8658,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 40
+        "line": 41
       }
     },
     {
@@ -8616,7 +8672,7 @@
         "path": "/api/chat/messages/forward",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 210
+        "line": 211
       }
     },
     {
@@ -8798,7 +8854,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 35
+        "line": 36
       }
     },
     {
@@ -8812,7 +8868,7 @@
         "path": "/api/chat/threads/:messageId/extract-checklist",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 197
+        "line": 198
       }
     },
     {
@@ -8826,7 +8882,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 252
+        "line": 253
       }
     },
     {
@@ -29302,6 +29358,66 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:InitMosChatVideoUploadRequest",
+      "type": "SharedType",
+      "label": "InitMosChatVideoUploadRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InitMosChatVideoUploadRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InitMosChatVideoUploadResponse",
+      "type": "SharedType",
+      "label": "InitMosChatVideoUploadResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InitMosChatVideoUploadResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UploadMosChatVideoChunkResponse",
+      "type": "SharedType",
+      "label": "UploadMosChatVideoChunkResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UploadMosChatVideoChunkResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CompleteMosChatVideoUploadRequest",
+      "type": "SharedType",
+      "label": "CompleteMosChatVideoUploadRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CompleteMosChatVideoUploadRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CompleteMosChatVideoUploadResponse",
+      "type": "SharedType",
+      "label": "CompleteMosChatVideoUploadResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CompleteMosChatVideoUploadResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:MosChatPresenceStatus",
       "type": "SharedType",
       "label": "MosChatPresenceStatus",
@@ -40330,6 +40446,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatMobileUploadStrip",
+      "type": "UIComponent",
+      "label": "<MosChatMobileUploadStrip />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileUploadStrip.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileUploadStrip",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MobileAppModalsAndSheets",
       "type": "UIComponent",
       "label": "<MobileAppModalsAndSheets />",
@@ -40374,6 +40502,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useMobileTaskWorkflow",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:mobileUploadHelpers",
+      "type": "UIComponent",
+      "label": "<mobileUploadHelpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/mobileUploadHelpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mobileUploadHelpers",
         "isPrimitive": false
       }
     },
@@ -41190,6 +41330,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useChatThreadMissionState",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useChatUploadQueue",
+      "type": "UIComponent",
+      "label": "<useChatUploadQueue />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/shared/hooks/useChatUploadQueue.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useChatUploadQueue",
         "isPrimitive": false
       }
     },
@@ -46641,8 +46793,8 @@
       "filePath": "apps/api/src/modules/career/career-service/career-config.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6815,
-        "lineCount": 190,
+        "sizeBytes": 6831,
+        "lineCount": 192,
         "ext": ".ts"
       }
     },
@@ -46732,8 +46884,8 @@
       "filePath": "apps/api/src/modules/career/career-service/career-progression.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9562,
-        "lineCount": 254,
+        "sizeBytes": 9558,
+        "lineCount": 253,
         "ext": ".ts"
       }
     },
@@ -46758,8 +46910,8 @@
       "filePath": "apps/api/src/modules/career/career-service/career-staff-list.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12365,
-        "lineCount": 321,
+        "sizeBytes": 12339,
+        "lineCount": 319,
         "ext": ".ts"
       }
     },
@@ -47135,8 +47287,8 @@
       "filePath": "apps/api/src/modules/chat/chat-file-upload.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11316,
-        "lineCount": 307,
+        "sizeBytes": 12287,
+        "lineCount": 333,
         "ext": ".ts"
       }
     },
@@ -47148,8 +47300,8 @@
       "filePath": "apps/api/src/modules/chat/chat-file.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16113,
-        "lineCount": 439,
+        "sizeBytes": 18276,
+        "lineCount": 500,
         "ext": ".ts"
       }
     },
@@ -47304,8 +47456,8 @@
       "filePath": "apps/api/src/modules/chat/chat-realtime.hub.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8413,
-        "lineCount": 266,
+        "sizeBytes": 8933,
+        "lineCount": 275,
         "ext": ".ts"
       }
     },
@@ -47488,6 +47640,45 @@
       "metadata": {
         "sizeBytes": 14092,
         "lineCount": 385,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-video-chunk.service.ts",
+      "type": "File",
+      "label": "chat-video-chunk.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-video-chunk.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 12342,
+        "lineCount": 343,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-video-chunk.test.ts",
+      "type": "File",
+      "label": "chat-video-chunk.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-video-chunk.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5658,
+        "lineCount": 170,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-video-processor.service.ts",
+      "type": "File",
+      "label": "chat-video-processor.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-video-processor.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 17295,
+        "lineCount": 521,
         "ext": ".ts"
       }
     },
@@ -47824,8 +48015,8 @@
       "filePath": "apps/api/src/modules/chat/routes/media-and-tts.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12518,
-        "lineCount": 326,
+        "sizeBytes": 18083,
+        "lineCount": 481,
         "ext": ".ts"
       }
     },
@@ -47863,8 +48054,8 @@
       "filePath": "apps/api/src/modules/chat/routes/messages-send-forward.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16486,
-        "lineCount": 425,
+        "sizeBytes": 16615,
+        "lineCount": 426,
         "ext": ".ts"
       }
     },
@@ -47941,8 +48132,8 @@
       "filePath": "apps/api/src/modules/chat/routes/threads.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16530,
-        "lineCount": 411,
+        "sizeBytes": 16659,
+        "lineCount": 412,
         "ext": ".ts"
       }
     },
@@ -56196,7 +56387,7 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17668,
+        "sizeBytes": 17699,
         "lineCount": 439,
         "ext": ".ts"
       }
@@ -60668,8 +60859,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerBibleDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18939,
-        "lineCount": 366,
+        "sizeBytes": 18936,
+        "lineCount": 364,
         "ext": ".tsx"
       }
     },
@@ -75163,8 +75354,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19835,
-        "lineCount": 486,
+        "sizeBytes": 21709,
+        "lineCount": 538,
         "ext": ".ts"
       }
     },
@@ -75774,8 +75965,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/hydrate-career-commandments.test.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2848,
-        "lineCount": 68,
+        "sizeBytes": 2843,
+        "lineCount": 65,
         "ext": ".ts"
       }
     },
@@ -75787,8 +75978,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/hydrate-career-commandments.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12571,
-        "lineCount": 158,
+        "sizeBytes": 12539,
+        "lineCount": 150,
         "ext": ".ts"
       }
     },
@@ -75813,7 +76004,7 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/rewards-and-payroll.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 53853,
+        "sizeBytes": 53867,
         "lineCount": 596,
         "ext": ".ts"
       }
@@ -77334,8 +77525,8 @@
       "filePath": "packages/shared/src/types/mos-chat/actions-and-sync.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10194,
-        "lineCount": 393,
+        "sizeBytes": 11384,
+        "lineCount": 440,
         "ext": ".ts"
       }
     },
@@ -77347,8 +77538,8 @@
       "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12721,
-        "lineCount": 446,
+        "sizeBytes": 12761,
+        "lineCount": 447,
         "ext": ".ts"
       }
     },
@@ -81856,6 +82047,34 @@
     {
       "id": "edge:route:POST:/api/chat/upload-file:ws:apps/api",
       "source": "route:POST:/api/chat/upload-file",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/upload-video/init:ws:apps/api",
+      "source": "route:POST:/api/chat/upload-video/init",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/upload-video/:uploadId/chunk:ws:apps/api",
+      "source": "route:POST:/api/chat/upload-video/:uploadId/chunk",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/upload-video/:uploadId/complete:ws:apps/api",
+      "source": "route:POST:/api/chat/upload-video/:uploadId/complete",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:DELETE:/api/chat/upload-video/:uploadId:ws:apps/api",
+      "source": "route:DELETE:/api/chat/upload-video/:uploadId",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -93509,6 +93728,41 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:InitMosChatVideoUploadRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InitMosChatVideoUploadRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InitMosChatVideoUploadResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InitMosChatVideoUploadResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UploadMosChatVideoChunkResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UploadMosChatVideoChunkResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CompleteMosChatVideoUploadRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CompleteMosChatVideoUploadRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CompleteMosChatVideoUploadResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CompleteMosChatVideoUploadResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:MosChatPresenceStatus:ws:packages/shared",
       "source": "type:@mos-lab/shared:MosChatPresenceStatus",
       "target": "ws:packages/shared",
@@ -103435,6 +103689,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatMobileUploadStrip:ws:apps/web",
+      "source": "uicomp:MosChatMobileUploadStrip",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileUploadStrip:token:color:primary",
+      "source": "uicomp:MosChatMobileUploadStrip",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MobileAppModalsAndSheets:ws:apps/web",
       "source": "uicomp:MobileAppModalsAndSheets",
       "target": "ws:apps/web",
@@ -103486,6 +103754,20 @@
     {
       "id": "edge:uicomp:useMobileTaskWorkflow:token:color:primary",
       "source": "uicomp:useMobileTaskWorkflow",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mobileUploadHelpers:ws:apps/web",
+      "source": "uicomp:mobileUploadHelpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mobileUploadHelpers:token:color:primary",
+      "source": "uicomp:mobileUploadHelpers",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -104438,6 +104720,20 @@
     {
       "id": "edge:uicomp:useChatThreadMissionState:token:color:primary",
       "source": "uicomp:useChatThreadMissionState",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useChatUploadQueue:ws:apps/web",
+      "source": "uicomp:useChatUploadQueue",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useChatUploadQueue:token:color:primary",
+      "source": "uicomp:useChatUploadQueue",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -109023,6 +109319,20 @@
     {
       "id": "edge:file:apps/api/src/modules/chat/chat-unread.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-unread.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-video-chunk.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-video-chunk.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-video-processor.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-video-processor.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -132276,31 +132586,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 6058,
-    "totalEdges": 7751,
+    "totalNodes": 6073,
+    "totalEdges": 7768,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
-      "FastifyRoute": 788,
+      "FastifyRoute": 792,
       "Component": 66,
-      "SharedType": 1586,
+      "SharedType": 1591,
       "DesignToken": 12,
-      "UIComponent": 798,
-      "File": 2622
+      "UIComponent": 801,
+      "File": 2625
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1781,
-      "HANDLES_ROUTE": 788,
-      "RENDERS": 864,
-      "USES_TOKEN": 800,
-      "IMPORTS": 1594,
+      "EXPORTS": 1786,
+      "HANDLES_ROUTE": 792,
+      "RENDERS": 867,
+      "USES_TOKEN": 803,
+      "IMPORTS": 1596,
       "QUERIES_MODEL": 613,
       "API_CALL": 1311
     },
-    "fastifyRouteCount": 788,
+    "fastifyRouteCount": 792,
     "prismaModelCount": 183,
     "nextPageCount": 66,
-    "sharedTypeCount": 1586
+    "sharedTypeCount": 1591
   },
   "routes": [
     {
@@ -134863,6 +135173,34 @@
       "path": "/api/chat/upload-file",
       "filePath": "apps/api/src/modules/chat/routes/media-and-tts.routes.ts",
       "handler": "preHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/upload-video/init",
+      "filePath": "apps/api/src/modules/chat/routes/media-and-tts.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/upload-video/:uploadId/chunk",
+      "filePath": "apps/api/src/modules/chat/routes/media-and-tts.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/upload-video/:uploadId/complete",
+      "filePath": "apps/api/src/modules/chat/routes/media-and-tts.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/chat/upload-video/:uploadId",
+      "filePath": "apps/api/src/modules/chat/routes/media-and-tts.routes.ts",
+      "handler": "inlineHandler",
       "moduleName": "chat"
     },
     {

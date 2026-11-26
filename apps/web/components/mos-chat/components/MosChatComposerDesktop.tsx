@@ -54,6 +54,7 @@ export interface MosChatComposerDesktopProps {
   setComposerCursorPos: (v: React.SetStateAction<number>) => void;
   composerInputRef: React.RefObject<HTMLTextAreaElement | null>;
   stagedAttachments: MosChatImageAttachment[];
+  hasPendingUpload?: boolean;
   stagedCustomerCard?: MosChatCustomerCard | null;
   isUrgentSend: boolean;
   setIsUrgentSend: React.Dispatch<React.SetStateAction<boolean>>;
@@ -106,6 +107,7 @@ export const MosChatComposerDesktop: React.FC<MosChatComposerDesktopProps> = ({
   setComposerCursorPos,
   composerInputRef,
   stagedAttachments,
+  hasPendingUpload = false,
   stagedCustomerCard,
   isUrgentSend,
   setIsUrgentSend,
@@ -400,7 +402,7 @@ export const MosChatComposerDesktop: React.FC<MosChatComposerDesktopProps> = ({
             </Tooltip>
 
             {/* [Film] Đính kèm Video vào khung chat (MOS-CHAT-VIDEO) */}
-            <Tooltip title="Đính kèm video (MP4, WebM, MOV tối đa 50MB)">
+            <Tooltip title="Đính kèm video (MP4, MOV, WebM, M4V tối đa 100MB)">
               <button
                 type="button"
                 aria-label="Đính kèm video"
@@ -541,21 +543,22 @@ export const MosChatComposerDesktop: React.FC<MosChatComposerDesktopProps> = ({
             <span className="text-[11px] select-none hidden sm:inline" style={{ color: token.colorTextQuaternary }}>
               Enter gửi · Shift+Enter xuống dòng
             </span>
-            <Tooltip title="Gửi tin nhắn (Enter)">
+            <Tooltip title={hasPendingUpload ? 'Video đang được tải lên...' : 'Gửi tin nhắn (Enter)'}>
               <button
                 type="button"
                 aria-label="Gửi tin nhắn"
                 onClick={handleSendMain}
-                className="w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer shadow-sm active:scale-95 transition-all"
+                disabled={hasPendingUpload}
+                className="w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer shadow-sm active:scale-95 transition-all disabled:opacity-45 disabled:cursor-not-allowed"
                 style={{
                   background:
-                    effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard
+                    (effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard) && !hasPendingUpload
                       ? '#d4a84b'
                       : isDark
                         ? 'rgba(255, 255, 255, 0.08)'
                         : 'rgba(0, 0, 0, 0.06)',
                   color:
-                    effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard
+                    (effectiveHasText || stagedAttachments.length > 0 || stagedCustomerCard) && !hasPendingUpload
                       ? '#000'
                       : token.colorTextQuaternary,
                 }}

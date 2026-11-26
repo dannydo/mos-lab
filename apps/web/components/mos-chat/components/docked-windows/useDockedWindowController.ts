@@ -18,6 +18,7 @@ interface UseDockedWindowControllerParams {
   setDockInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   dockAttachments: Record<string, SafeAny[]>;
   setDockAttachments: React.Dispatch<React.SetStateAction<Record<string, SafeAny[]>>>;
+  hasActiveUploadsForScope?: (scope: 'main' | 'thread' | 'dock', convId?: string) => boolean;
   isComposingRef: React.MutableRefObject<boolean>;
   lastCompositionEndMsRef: React.MutableRefObject<number>;
   handleSendMessage: (convId: string, text: string, quote?: SafeAny, atts?: SafeAny[]) => void;
@@ -47,6 +48,7 @@ export function useDockedWindowController({
   setDockInputs,
   dockAttachments,
   setDockAttachments,
+  hasActiveUploadsForScope,
   isComposingRef,
   lastCompositionEndMsRef,
   handleSendMessage,
@@ -253,6 +255,7 @@ export function useDockedWindowController({
     nativeIsComposing || isComposingRef.current || keyCode === 229 || Date.now() - lastCompositionEndMsRef.current < 60;
 
   const submitDockMessage = (cid: string) => {
+    if (hasActiveUploadsForScope?.('dock', cid)) return;
     const val = dockInputs[cid] || '';
     const atts = dockAttachments[cid] || [];
     if (!val.trim() && atts.length === 0) return;

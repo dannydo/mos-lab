@@ -56,15 +56,16 @@ export const MosChatVideoPlayer: React.FC<MosChatVideoPlayerProps> = ({
   const fileName = attachment.name || 'video.mp4';
   const ext = (attachment.fileExt || fileName.split('.').pop() || 'mp4').toUpperCase();
 
-  // If this is a QuickTime MOV, derive alternative MP4 stream URL if available
-  const mp4FallbackUrl =
-    rawUrl.endsWith('.mov') || rawUrl.endsWith('.MOV') ? resolveMediaUrl(rawUrl.replace(/\.mov$/i, '.mp4')) : null;
+  // If this is a QuickTime MOV or M4V, derive alternative MP4 stream URL if available
+  const mp4FallbackUrl = /\.(mov|m4v|webm)$/i.test(rawUrl)
+    ? resolveMediaUrl(rawUrl.replace(/\.(mov|m4v|webm)$/i, '.mp4'))
+    : null;
 
   // Resolve poster thumbnail if provided, or check if an automated JPEG frame exists
   const posterUrl = attachment.posterUrl
     ? resolveMediaUrl(attachment.posterUrl)
-    : rawUrl.endsWith('.mov') || rawUrl.endsWith('.MOV') || rawUrl.endsWith('.mp4')
-      ? resolveMediaUrl(rawUrl.replace(/\.(mov|mp4)$/i, '.jpg'))
+    : /\.(mov|mp4|m4v|webm)$/i.test(rawUrl)
+      ? resolveMediaUrl(rawUrl.replace(/\.(mov|mp4|m4v|webm)$/i, '.jpg'))
       : undefined;
 
   const isProcessing = Boolean(attachment.isProcessing);

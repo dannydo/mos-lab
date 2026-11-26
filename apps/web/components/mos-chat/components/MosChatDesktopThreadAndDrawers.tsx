@@ -194,6 +194,7 @@ export const MosChatDesktopThreadAndWorkspace: React.FC<MosChatDesktopThreadAndW
       handleSendThreadReply={msgSending.handleSendThreadReply}
       threadAttachments={attachments.threadAttachments}
       setThreadAttachments={attachments.setThreadAttachments}
+      pendingUploads={attachments.pendingUploads}
       triggerFilePicker={attachments.triggerFilePicker}
       setRichEditorModalState={mentions.setRichEditorModalState}
       renderComposerEmojiPickerContent={uiAdapters.renderComposerEmojiPickerContent}

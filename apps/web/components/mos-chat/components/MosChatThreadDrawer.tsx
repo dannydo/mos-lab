@@ -430,6 +430,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
       prev.threadInput === next.threadInput &&
       prev.threadHasText === next.threadHasText &&
       prev.threadAttachments === next.threadAttachments &&
+      prev.pendingUploads === next.pendingUploads &&
       prev.stagedCustomerCard === next.stagedCustomerCard &&
       prev.isUrgentSendThread === next.isUrgentSendThread &&
       prev.aiThinkingActive === next.aiThinkingActive &&

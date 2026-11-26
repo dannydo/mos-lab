@@ -6,6 +6,7 @@ import { MessageSquareReply, X } from 'lucide-react';
 import type { MosChatConversation, MosChatCustomerCard, MosChatMessage, SafeAny } from '@mos-lab/shared';
 import { MosChatThreadComposerMobile } from './MosChatThreadComposerMobile';
 import { MosChatThreadComposerDesktop } from './MosChatThreadComposerDesktop';
+import type { PendingChatUploadItem } from '../shared/hooks/useChatUploadQueue';
 
 export interface MosChatThreadComposerProps {
   isMobile: boolean;
@@ -32,6 +33,7 @@ export interface MosChatThreadComposerProps {
   renderStagedAttachmentsStrip: (attachments: SafeAny[], scope: SafeAny) => React.ReactNode;
   renderMentionAutocompleteDropdown: (scope: SafeAny) => React.ReactNode;
   threadAttachments: SafeAny[];
+  pendingUploads?: PendingChatUploadItem[];
   stagedCustomerCard?: MosChatCustomerCard | null;
   setStagedCustomerCard?: React.Dispatch<React.SetStateAction<MosChatCustomerCard | null>>;
   replyingToReply: { id: string; senderName: string; text: string } | null;
@@ -104,6 +106,7 @@ export const MosChatThreadComposer: React.FC<MosChatThreadComposerProps> = (prop
     renderStagedAttachmentsStrip,
     renderMentionAutocompleteDropdown,
     threadAttachments,
+    pendingUploads = [],
     stagedCustomerCard,
     setStagedCustomerCard,
     replyingToReply,

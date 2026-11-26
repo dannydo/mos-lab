@@ -227,6 +227,10 @@ export function usePortalUiAdapters({
       scope={scope}
       convId={convId}
       uploadingCount={attachments.uploadingCount}
+      pendingUploads={attachments.pendingUploads}
+      onCancelPendingUpload={attachments.cancelPendingUpload}
+      onRetryPendingUpload={attachments.retryPendingUpload}
+      onDismissPendingUpload={attachments.dismissPendingUpload}
       token={token}
       surfaceRaised={surfaceRaised}
       borderStrong={borderStrong}

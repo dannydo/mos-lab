@@ -1,4 +1,5 @@
 import type React from 'react';
+import type { PendingChatUploadItem } from '../shared/hooks/useChatUploadQueue';
 import type {
   MosChatConversation,
   MosChatMessage,
@@ -107,6 +108,7 @@ export interface MosChatThreadDrawerProps {
   ) => Promise<void> | void;
   threadAttachments: SafeAny[];
   setThreadAttachments: React.Dispatch<React.SetStateAction<SafeAny[]>>;
+  pendingUploads?: PendingChatUploadItem[];
   triggerFilePicker: (scope: 'main' | 'thread') => void;
   setRichEditorModalState: (state: SafeAny) => void;
   renderComposerEmojiPickerContent: (scope?: SafeAny) => React.ReactNode;

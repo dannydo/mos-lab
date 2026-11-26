@@ -375,6 +375,7 @@ export const MosChatDesktopMainColumn: React.FC<MosChatDesktopMainColumnProps> =
           setComposerCursorPos={composerRefs.setComposerCursorPos}
           composerInputRef={composerRefs.composerInputRef}
           stagedAttachments={attachments.stagedAttachments}
+          pendingUploads={attachments.pendingUploads}
           renderStagedAttachmentsStrip={uiAdapters.renderStagedAttachmentsStrip}
           stagedCustomerCard={msgSending.stagedCustomerCard}
           setStagedCustomerCard={msgSending.setStagedCustomerCard}

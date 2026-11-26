@@ -47,6 +47,7 @@ export interface UsePortalMessageSendingParams {
   setStagedAttachments: React.Dispatch<React.SetStateAction<MosChatImageAttachment[]>>;
   threadAttachments: MosChatImageAttachment[];
   setThreadAttachments: React.Dispatch<React.SetStateAction<MosChatImageAttachment[]>>;
+  hasActiveUploadsForScope?: (scope: 'main' | 'thread' | 'dock', convId?: string) => boolean;
   replyingToMessage: MosChatMessage | null;
   setReplyingToMessage: React.Dispatch<React.SetStateAction<MosChatMessage | null>>;
   activeThreadMsgId: string | null;
@@ -90,6 +91,7 @@ export function usePortalMessageSending({
   setStagedAttachments,
   threadAttachments,
   setThreadAttachments,
+  hasActiveUploadsForScope,
   replyingToMessage,
   setReplyingToMessage,
   activeThreadMsgId,
@@ -248,6 +250,8 @@ export function usePortalMessageSending({
 
   const handleSendMain = async () => {
     if (!activeConversation) return;
+    if (hasActiveUploadsForScope?.('main'))
+      return void antdMessage.warning('Video đang được tải lên, vui lòng đợi hoàn tất.');
     const text = composerTextRef.current;
     const attachmentsToSend = stagedAttachments;
     const cardToSend = stagedCustomerCard;
@@ -319,6 +323,8 @@ export function usePortalMessageSending({
     const targetMsgId = targetMsgIdOverride || activeThreadMessage?.id || activeThreadMsgId;
 
     if ((!text && attachmentsToSend.length === 0 && !cardToSend) || !activeConversation || !targetMsgId) return;
+    if (hasActiveUploadsForScope?.('thread'))
+      return void antdMessage.warning('Video đang được tải lên, vui lòng đợi hoàn tất.');
 
     if (activeThreadMsgId !== targetMsgId) {
       setActiveThreadMsgId(targetMsgId);

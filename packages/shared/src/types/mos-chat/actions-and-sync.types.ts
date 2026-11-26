@@ -390,3 +390,50 @@ export interface SearchMosChatMessagesResponse {
   totalMatches: number;
   items: MosChatSearchResultItem[];
 }
+
+// ================= CHUNKED VIDEO UPLOAD (100MB) DTOs & CONSTANTS =================
+
+export const MOS_CHAT_MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+export const MOS_CHAT_VIDEO_CHUNK_BYTES = 5 * 1024 * 1024;
+export const MOS_CHAT_MAX_CONCURRENT_VIDEO_UPLOADS = 2;
+export const MOS_CHAT_MAX_VIDEOS_PER_MESSAGE = 5;
+
+export interface InitMosChatVideoUploadRequest {
+  fileName: string;
+  mimeType?: string;
+  totalSizeBytes: number;
+  totalChunks: number;
+  durationSec?: number;
+  width?: number;
+  height?: number;
+  source?: 'clipboard' | 'drive' | 'upload';
+}
+
+export interface InitMosChatVideoUploadResponse {
+  success: boolean;
+  uploadId: string;
+  chunkSizeBytes: number;
+  maxVideoBytes: number;
+  expiresAt: string;
+}
+
+export interface UploadMosChatVideoChunkResponse {
+  success: boolean;
+  uploadId: string;
+  chunkIndex: number;
+  receivedBytes: number;
+  uploadedChunks: number;
+}
+
+export interface CompleteMosChatVideoUploadRequest {
+  durationSec?: number;
+  width?: number;
+  height?: number;
+  posterUrl?: string;
+  source?: 'clipboard' | 'drive' | 'upload';
+}
+
+export interface CompleteMosChatVideoUploadResponse {
+  success: boolean;
+  attachment: MosChatImageAttachment;
+}

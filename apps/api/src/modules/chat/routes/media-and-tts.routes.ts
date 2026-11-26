@@ -1,25 +1,39 @@
 import crypto from 'crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { createReadStream } from 'node:fs';
-import { mkdir, writeFile, stat } from 'node:fs/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { mkdir, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
+import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import type {
+  CompleteMosChatVideoUploadRequest,
+  InitMosChatVideoUploadRequest,
   MosChatImageAttachment,
   SafeAny,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
 } from '@mos-lab/shared';
-import { requireAuth } from '../../../middlewares/auth.js';
+import { requireAuth, type JwtUserPayload } from '../../../middlewares/auth.js';
 import { TelesaleTargetService } from '../../kpi/services/telesale-target.service.js';
 import {
   CHAT_IMAGE_BODY_LIMIT,
   EXT_TO_CHAT_MIME,
+  MAX_CHAT_VIDEO_BYTES,
   mosChatMediaRoot,
   decodeAndValidateChatFile,
-  saveChatVideoBuffer,
+  resolveVideoFormat,
+  validateVideoFileMagicBytes,
 } from '../chat-file.service.js';
+import {
+  abortChunkedVideoUpload,
+  completeChunkedVideoUpload,
+  initChunkedVideoUpload,
+  saveVideoUploadChunk,
+} from '../chat-video-chunk.service.js';
+import { runTier1VideoProcessing, startChatMediaTempCleanupScheduler } from '../chat-video-processor.service.js';
 
 export async function registerChatMediaAndTtsRoutes(fastify: FastifyInstance) {
+  startChatMediaTempCleanupScheduler();
   const handleUploadChatFile = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const body = request.body as UploadMosChatImageRequest;
@@ -86,13 +100,124 @@ export async function registerChatMediaAndTtsRoutes(fastify: FastifyInstance) {
     handleUploadChatFile
   );
 
-  // POST /api/chat/upload-video (MOS-CHAT-VIDEO: Multipart video streaming upload)
+  // POST /api/chat/upload-video/init (100MB Chunked Video Upload - Step 1)
+  fastify.post(
+    '/chat/upload-video/init',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const user = request.user as JwtUserPayload;
+        const body = (request.body || {}) as InitMosChatVideoUploadRequest;
+        return await initChunkedVideoUpload(user.id, body);
+      } catch (err: SafeAny) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: err?.message || 'Không thể khởi tạo phiên tải video.',
+        });
+      }
+    }
+  );
+
+  // POST /api/chat/upload-video/:uploadId/chunk (100MB Chunked Video Upload - Step 2)
+  fastify.post(
+    '/chat/upload-video/:uploadId/chunk',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const user = request.user as JwtUserPayload;
+        const { uploadId } = request.params as { uploadId: string };
+        const query = (request.query || {}) as { chunkIndex?: string };
+        const data = await request.file();
+        if (!data) {
+          return reply.status(400).send({
+            error: 'Bad Request',
+            message: 'Không tìm thấy dữ liệu mảnh video.',
+          });
+        }
+        const fields = (data.fields || {}) as Record<string, SafeAny>;
+        const rawIndex = query.chunkIndex ?? fields?.chunkIndex?.value ?? fields?.chunkIndex;
+        const chunkIndex = Number(rawIndex);
+
+        const result = await saveVideoUploadChunk({
+          userId: user.id,
+          uploadId,
+          chunkIndex,
+          stream: data.file,
+        });
+        return { success: true, ...result };
+      } catch (err: SafeAny) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: err?.message || 'Không thể lưu mảnh video.',
+        });
+      }
+    }
+  );
+
+  // POST /api/chat/upload-video/:uploadId/complete (100MB Chunked Video Upload - Step 3)
+  fastify.post(
+    '/chat/upload-video/:uploadId/complete',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const user = request.user as JwtUserPayload;
+        const { uploadId } = request.params as { uploadId: string };
+        const body = (request.body || {}) as CompleteMosChatVideoUploadRequest;
+        const attachment = await completeChunkedVideoUpload({
+          fastify,
+          userId: user.id,
+          uploadId,
+          body,
+        });
+        const response: UploadMosChatImageResponse = {
+          success: true,
+          attachment,
+        };
+        return response;
+      } catch (err: SafeAny) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: err?.message || 'Không thể hoàn tất tải video.',
+        });
+      }
+    }
+  );
+
+  // DELETE /api/chat/upload-video/:uploadId (Abort & cleanup chunked upload)
+  fastify.delete(
+    '/chat/upload-video/:uploadId',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const user = request.user as JwtUserPayload;
+        const { uploadId } = request.params as { uploadId: string };
+        await abortChunkedVideoUpload(user.id, uploadId);
+        return { success: true };
+      } catch (err: SafeAny) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: err?.message || 'Không thể hủy phiên tải video.',
+        });
+      }
+    }
+  );
+
+  // POST /api/chat/upload-video (Legacy single-request multipart upload, streamed straight to disk)
   fastify.post(
     '/chat/upload-video',
     {
       preHandler: [requireAuth],
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
+      let tmpPath: string | null = null;
       try {
         const data = await request.file();
         if (!data) {
@@ -102,16 +227,42 @@ export async function registerChatMediaAndTtsRoutes(fastify: FastifyInstance) {
           });
         }
 
-        const buffer = await data.toBuffer();
         const originalFileName = data.filename || `video-${Date.now()}.mp4`;
-        const mimeType = data.mimetype;
+        const { ext } = resolveVideoFormat(originalFileName, data.mimetype);
+        const rootDir = mosChatMediaRoot();
+        await mkdir(rootDir, { recursive: true, mode: 0o700 });
 
-        const {
-          fileName,
-          mimeType: finalMime,
+        const fileUuid = crypto.randomUUID();
+        tmpPath = resolve(rootDir, `${fileUuid}.${ext}.tmp`);
+        const targetPath = resolve(rootDir, `${fileUuid}.${ext}`);
+
+        let streamedBytes = 0;
+        const limiter = new Transform({
+          transform(chunk, _encoding, callback) {
+            streamedBytes += chunk.length;
+            if (streamedBytes > MAX_CHAT_VIDEO_BYTES) {
+              callback(new Error('Video quá lớn (tối đa 100MB).'));
+              return;
+            }
+            callback(null, chunk);
+          },
+        });
+
+        await pipeline(data.file, limiter, createWriteStream(tmpPath, { mode: 0o600 }));
+        if (data.file.truncated || streamedBytes <= 0 || streamedBytes > MAX_CHAT_VIDEO_BYTES) {
+          throw new Error('Video quá lớn (tối đa 100MB).');
+        }
+        await validateVideoFileMagicBytes(tmpPath, ext);
+        await rename(tmpPath, targetPath);
+        tmpPath = null;
+
+        const tier1 = await runTier1VideoProcessing({
+          fastify,
+          targetPath,
+          fileUuid,
           ext,
-          posterFileName,
-        } = await saveChatVideoBuffer(buffer, originalFileName, mimeType);
+          sizeBytes: streamedBytes,
+        });
 
         const fields = (data.fields || {}) as Record<string, SafeAny>;
         const durationSecRaw = fields?.durationSec
@@ -120,24 +271,25 @@ export async function registerChatMediaAndTtsRoutes(fastify: FastifyInstance) {
         const widthRaw = fields?.width ? Number(fields.width?.value || fields.width) : undefined;
         const heightRaw = fields?.height ? Number(fields.height?.value || fields.height) : undefined;
         const posterUrlRaw = fields?.posterUrl ? String(fields.posterUrl?.value || fields.posterUrl).trim() : undefined;
-        const posterUrl = posterUrlRaw || (posterFileName ? `/api/chat/media/${posterFileName}` : undefined);
+        const posterUrl =
+          posterUrlRaw || (tier1.posterFileName ? `/api/chat/media/${tier1.posterFileName}` : undefined);
 
-        const fileUuid = fileName.split('.')[0];
         const safeName = originalFileName.slice(0, 150);
-
         const attachment: MosChatImageAttachment = {
           id: `att-${fileUuid.slice(0, 8)}`,
-          url: `/api/chat/media/${fileName}`,
+          url: `/api/chat/media/${tier1.finalFileName}`,
           name: safeName,
-          mimeType: finalMime,
-          sizeBytes: buffer.length,
-          width: widthRaw && !isNaN(widthRaw) ? widthRaw : undefined,
-          height: heightRaw && !isNaN(heightRaw) ? heightRaw : undefined,
-          durationSec: durationSecRaw && !isNaN(durationSecRaw) ? durationSecRaw : undefined,
+          mimeType: tier1.finalMimeType,
+          sizeBytes: tier1.finalSizeBytes,
+          width: widthRaw && !isNaN(widthRaw) ? widthRaw : tier1.width,
+          height: heightRaw && !isNaN(heightRaw) ? heightRaw : tier1.height,
+          durationSec: durationSecRaw && !isNaN(durationSecRaw) ? durationSecRaw : tier1.durationSec,
           posterUrl,
           isVideo: true,
           source: 'upload',
-          fileExt: ext,
+          fileExt: tier1.finalExt,
+          isProcessing: tier1.isProcessing ? true : undefined,
+          processingStatus: tier1.processingStatus,
         };
 
         const response: UploadMosChatImageResponse = {
@@ -146,6 +298,9 @@ export async function registerChatMediaAndTtsRoutes(fastify: FastifyInstance) {
         };
         return response;
       } catch (err: SafeAny) {
+        if (tmpPath) {
+          await unlink(tmpPath).catch(() => {});
+        }
         return reply.status(400).send({
           error: 'Bad Request',
           message: err?.message || 'Không thể tải video lên.',
@@ -191,7 +346,7 @@ export async function registerChatMediaAndTtsRoutes(fastify: FastifyInstance) {
           } catch {
             return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tệp đính kèm.' });
           }
-        } else if (ext === 'mov') {
+        } else if (ext === 'mov' || ext === 'm4v' || ext === 'webm') {
           const fallbackMp4 = `${match[1]}.mp4`;
           const fallbackPath = resolve(rootDir, fallbackMp4);
           try {

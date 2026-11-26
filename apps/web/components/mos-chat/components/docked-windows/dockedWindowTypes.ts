@@ -1,4 +1,5 @@
 import type React from 'react';
+import type { PendingChatUploadItem } from '../../shared/hooks/useChatUploadQueue';
 import type {
   MosChatConversation,
   MosChatMessage,
@@ -39,6 +40,8 @@ export interface MosChatDockedWindowsProps {
   getEffectiveUnreadCount: (conv: MosChatConversation) => number;
   dockAttachments: Record<string, SafeAny[]>;
   setDockAttachments: React.Dispatch<React.SetStateAction<Record<string, SafeAny[]>>>;
+  pendingUploads?: PendingChatUploadItem[];
+  hasActiveUploadsForScope?: (scope: 'main' | 'thread' | 'dock', convId?: string) => boolean;
   dockInputs: Record<string, string>;
   setDockInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   surfaceBg: string;
