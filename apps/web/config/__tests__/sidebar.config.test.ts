@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { canAccessFmSimulator } from '@mos-lab/shared';
 import { getSidebarGroups, getSelectedMenuKey } from '../sidebar.config';
 
 describe('Sidebar Configuration CV Invariants', () => {
@@ -64,10 +65,12 @@ describe('Sidebar Configuration CV Invariants', () => {
     expect(allItemKeys.has('bk')).toBe(false);
     expect(allItemKeys.has('cs')).toBe(false);
 
-    // CV must see ONLY cv and career-path by default
+    // Standard CV sees ONLY cv and career-path; CVL/CVLL also unlock fm-simulator; pnl-simulator is strictly Admin-only
     expect(allItemKeys.has('cv')).toBe(true);
     expect(allItemKeys.has('career-path')).toBe(true);
-    expect([...allItemKeys].sort()).toEqual(['career-path', 'cv']);
+    expect(allItemKeys.has('pnl-simulator')).toBe(false);
+    const expectedKeys = canAccessFmSimulator(role) ? ['career-path', 'cv', 'fm-simulator'] : ['career-path', 'cv'];
+    expect([...allItemKeys].sort()).toEqual(expectedKeys);
   });
 
   it('should allow CV to see an additional item only when explicitly unlocked via menuVisibility', () => {
