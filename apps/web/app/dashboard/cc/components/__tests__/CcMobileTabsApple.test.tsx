@@ -172,11 +172,11 @@ describe('CC Report Apple iOS Portrait Mobile Tabs', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('cc-tip-mobile-summary')).toBeInTheDocument();
+      expect(screen.getByText(/Xếp hạng Tip · 1/)).toBeInTheDocument();
+      expect(container.querySelector('[data-cc-tip-rate="25"]')?.textContent).toBe('25%');
     });
 
-    expect(screen.getByText(/Xếp hạng Tip · 1/)).toBeInTheDocument();
     const tipRateEl = container.querySelector('[data-cc-tip-rate="25"]');
-    expect(tipRateEl?.textContent).toBe('25%');
 
     // Desktop detail table card must be hidden on portrait
     expect(screen.queryByText('Bảng Xếp Hạng Báo Cáo CC Thưởng Tip - Tip Leaderboard')).toBeNull();
@@ -207,10 +207,9 @@ describe('CC Report Apple iOS Portrait Mobile Tabs', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('cc-diamond-mobile-summary')).toBeInTheDocument();
+      expect(screen.getByText(/Kim Cương · 1 CC/)).toBeInTheDocument();
+      expect(screen.getByText('✓ 5.0%')).toBeInTheDocument();
     });
-
-    expect(screen.getByText(/Kim Cương · 1 CC/)).toBeInTheDocument();
-    expect(screen.getByText('✓ 5.0%')).toBeInTheDocument();
     expect(screen.queryByText('Từ 6 khách')).toBeNull();
 
     fireEvent.click(screen.getByText('Thể lệ ≥3%'));

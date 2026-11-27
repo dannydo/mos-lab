@@ -11598,7 +11598,7 @@
         "path": "/api/kpi/cv-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 79
+        "line": 83
       }
     },
     {
@@ -47418,8 +47418,8 @@
       "filePath": "apps/api/src/modules/career/career-service/career-cvl-debt-rewards.helper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11519,
-        "lineCount": 294,
+        "sizeBytes": 11531,
+        "lineCount": 296,
         "ext": ".ts"
       }
     },
@@ -47431,8 +47431,8 @@
       "filePath": "apps/api/src/modules/career/career-service/career-cvl-rewards.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19984,
-        "lineCount": 523,
+        "sizeBytes": 19972,
+        "lineCount": 520,
         "ext": ".ts"
       }
     },
@@ -47600,8 +47600,8 @@
       "filePath": "apps/api/src/modules/career/cv-plus-rewards.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10910,
-        "lineCount": 280,
+        "sizeBytes": 10898,
+        "lineCount": 277,
         "ext": ".ts"
       }
     },
@@ -50460,8 +50460,8 @@
       "filePath": "apps/api/src/modules/fm-quests/fm-quests.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5494,
-        "lineCount": 159,
+        "sizeBytes": 5466,
+        "lineCount": 157,
         "ext": ".ts"
       }
     },
@@ -50473,8 +50473,8 @@
       "filePath": "apps/api/src/modules/fm-quests/fm-quests.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10066,
-        "lineCount": 284,
+        "sizeBytes": 10027,
+        "lineCount": 278,
         "ext": ".ts"
       }
     },
@@ -50486,8 +50486,8 @@
       "filePath": "apps/api/src/modules/fm-quests/fm-quests.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16245,
-        "lineCount": 475,
+        "sizeBytes": 16279,
+        "lineCount": 481,
         "ext": ".ts"
       }
     },
@@ -50499,8 +50499,8 @@
       "filePath": "apps/api/src/modules/fm-quests/fm-quests.store.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9040,
-        "lineCount": 251,
+        "sizeBytes": 9052,
+        "lineCount": 255,
         "ext": ".ts"
       }
     },
@@ -52137,8 +52137,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub-routes/cv-allowances.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3965,
-        "lineCount": 111,
+        "sizeBytes": 4019,
+        "lineCount": 115,
         "ext": ".ts"
       }
     },
@@ -61679,8 +61679,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/CareerConfigFieldPrimitives.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11823,
-        "lineCount": 343,
+        "sizeBytes": 11816,
+        "lineCount": 339,
         "ext": ".tsx"
       }
     },
@@ -61692,8 +61692,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage1ConfigTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19568,
-        "lineCount": 431,
+        "sizeBytes": 19555,
+        "lineCount": 430,
         "ext": ".tsx"
       }
     },
@@ -61705,8 +61705,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage2ConfigTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26314,
-        "lineCount": 576,
+        "sizeBytes": 26286,
+        "lineCount": 574,
         "ext": ".tsx"
       }
     },
@@ -62836,8 +62836,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/__tests__/CcMobileTabsApple.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8596,
-        "lineCount": 253,
+        "sizeBytes": 8644,
+        "lineCount": 252,
         "ext": ".tsx"
       }
     },
@@ -64617,7 +64617,7 @@
       "filePath": "apps/web/app/dashboard/cv/components/__tests__/CvMobileTabsApple.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12927,
+        "sizeBytes": 12929,
         "lineCount": 408,
         "ext": ".tsx"
       }
@@ -64812,8 +64812,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvSelfManagedSubRow.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8767,
-        "lineCount": 154,
+        "sizeBytes": 8763,
+        "lineCount": 153,
         "ext": ".tsx"
       }
     },
@@ -76785,8 +76785,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/fm-and-management.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6701,
-        "lineCount": 55,
+        "sizeBytes": 6738,
+        "lineCount": 61,
         "ext": ".ts"
       }
     },
@@ -76824,8 +76824,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/hydrate-career-commandments.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 24315,
-        "lineCount": 240,
+        "sizeBytes": 24323,
+        "lineCount": 242,
         "ext": ".ts"
       }
     },
@@ -77773,8 +77773,8 @@
       "filePath": "packages/shared/src/types/career-progression/career-defaults.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 16107,
-        "lineCount": 356,
+        "sizeBytes": 16101,
+        "lineCount": 353,
         "ext": ".ts"
       }
     },
@@ -78059,8 +78059,8 @@
       "filePath": "packages/shared/src/types/cvl-training-mentorship.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7689,
-        "lineCount": 225,
+        "sizeBytes": 7685,
+        "lineCount": 224,
         "ext": ".ts"
       }
     },
@@ -78150,8 +78150,8 @@
       "filePath": "packages/shared/src/types/fm-quests.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 8158,
-        "lineCount": 287,
+        "sizeBytes": 8164,
+        "lineCount": 288,
         "ext": ".ts"
       }
     },

@@ -224,10 +224,10 @@ describe('CV Report Apple iOS Portrait Mobile Tabs', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('cv-tip-mobile-summary')).toBeInTheDocument();
+      expect(container.querySelector('[data-cv-tip-rate="30"]')?.textContent).toBe('30%');
     });
 
     expect(screen.queryByText('Chi Tiết Ca Làm Nhận Tip CV')).toBeNull();
-    expect(container.querySelector('[data-cv-tip-rate="30"]')?.textContent).toBe('30%');
 
     fireEvent.click(screen.getByText('Bảo Trân').closest('button')!);
     await waitFor(() => {
