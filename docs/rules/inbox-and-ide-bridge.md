@@ -66,6 +66,7 @@ When executing any ticket from mOS Inbox inside an assigned worktree (`ag-*` or 
 - **Core Rule**: _"Nếu không hiểu rõ hoặc có rủi ro, tuyệt đối không gửi lệnh, và kể cả AG, thấy không rõ thì phải clarify trước khi làm!"_
 - **VoicePilot Frontline Gate**: Ambiguous or sensitive requests ("check slow queries log on prod", "check server logs", "fix payment bug") MUST be clarified in 1 short spoken question (target system/DB/VPS and scope/time range) before dispatching to AG.
 - **AG Execution Guard**: For any Production action, DB mutation, or underspecified instruction, NEVER execute blindly — clarify target server, database, exact command, blast radius, and risks first, and request plan confirmation before running high-risk changes.
+- **Live SQL & DDL Guard**: Never run unindexed ad-hoc joins directly against `live-wings` `management` without testing on Orb/Win AG first; always wrap ad-hoc `SELECT` checks in `SET STATEMENT max_statement_time=10 FOR ...`. All legacy index scripts must use `ensureLegacyIndexesSafely` (`lock_wait_timeout = 3`, `ANALYZE TABLE` only when a new index is actually created).
 
 ---
 

@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { PrismaClient as LegacyPrismaClient } from '../generated/legacy-client/index.js';
+import { createLegacyIndexClient, ensureLegacyIndexesSafely } from './lib/apply-legacy-indexes.js';
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
@@ -150,42 +150,11 @@ const phase1Indexes = [
   },
 ] as const;
 
-const quoteIdentifier = (identifier: string) => `\`${identifier.replace(/`/g, '``')}\``;
-
 async function main() {
-  const legacy = new LegacyPrismaClient({
-    datasources: { db: { url: process.env.LEGACY_DATABASE_URL } },
-  });
+  const legacy = createLegacyIndexClient();
 
   try {
-    const existing = await legacy.$queryRawUnsafe<Array<{ index_name: string }>>(
-      `SELECT DISTINCT index_name FROM information_schema.statistics WHERE table_schema = DATABASE() AND index_name IN (${phase1Indexes
-        .map((index) => `'${index.name}'`)
-        .join(', ')})`
-    );
-    const existingNames = new Set(existing.map((index) => index.index_name));
-
-    for (const index of phase1Indexes) {
-      if (existingNames.has(index.name)) {
-        console.log(`Index already present: ${index.name}`);
-        continue;
-      }
-
-      const statement = `CREATE INDEX ${quoteIdentifier(index.name)} ON ${quoteIdentifier(index.table)} (${index.columns
-        .map(quoteIdentifier)
-        .join(', ')})`;
-      console.log(`Creating index: ${index.name}`);
-      try {
-        await legacy.$executeRawUnsafe(statement);
-      } catch (error) {
-        // A prior deploy connection can finish the same DDL between the initial inventory and this statement.
-        if (error instanceof Error && error.message.includes('Duplicate key name')) {
-          console.log(`Index already present after concurrent DDL: ${index.name}`);
-          continue;
-        }
-        throw error;
-      }
-    }
+    await ensureLegacyIndexesSafely(legacy, phase1Indexes);
   } finally {
     await legacy.$disconnect();
   }

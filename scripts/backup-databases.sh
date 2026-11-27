@@ -39,6 +39,7 @@ for DB in "${DATABASES[@]}"; do
   if nice -n 19 ionice -c 3 mysqldump \
     --defaults-extra-file="$CNF_FILE" \
     --single-transaction \
+    --max-statement-time=0 \
     --quick \
     --routines \
     --triggers \

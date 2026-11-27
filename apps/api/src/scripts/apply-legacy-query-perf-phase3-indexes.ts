@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { PrismaClient as LegacyPrismaClient } from '../generated/legacy-client/index.js';
+import { createLegacyIndexClient, ensureLegacyIndexesSafely } from './lib/apply-legacy-indexes.js';
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
@@ -27,12 +27,8 @@ const phase3Indexes = [
   },
 ] as const;
 
-const quoteIdentifier = (identifier: string) => `\`${identifier.replace(/`/g, '``')}\``;
-
 async function main() {
-  const legacy = new LegacyPrismaClient({
-    datasources: { db: { url: process.env.LEGACY_DATABASE_URL } },
-  });
+  const legacy = createLegacyIndexClient();
 
   try {
     // 1. Check and align collation for user_ticket.completed_attribute_group_key
@@ -53,42 +49,8 @@ async function main() {
       console.log('user_ticket.completed_attribute_group_key already has correct utf8mb4 collation.');
     }
 
-    // 2. Add composite indexes
-    const existing = await legacy.$queryRawUnsafe<Array<{ index_name: string }>>(
-      `SELECT DISTINCT index_name FROM information_schema.statistics WHERE table_schema = DATABASE() AND index_name IN (${phase3Indexes
-        .map((index) => `'${index.name}'`)
-        .join(', ')})`
-    );
-    const existingNames = new Set(existing.map((index) => index.index_name));
-
-    for (const index of phase3Indexes) {
-      if (existingNames.has(index.name)) {
-        console.log(`Index already present: ${index.name}`);
-        continue;
-      }
-
-      const statement = `CREATE INDEX ${quoteIdentifier(index.name)} ON ${quoteIdentifier(index.table)} (${index.columns
-        .map(quoteIdentifier)
-        .join(', ')})`;
-      console.log(`Creating index: ${index.name}`);
-      try {
-        await legacy.$executeRawUnsafe(statement);
-        console.log(`Successfully created index: ${index.name}`);
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('Duplicate key name')) {
-          console.log(`Index already present after concurrent DDL: ${index.name}`);
-          continue;
-        }
-        throw error;
-      }
-    }
-
-    // 3. Refresh optimizer statistics
-    console.log('Refreshing optimizer statistics for modified tables...');
-    await legacy.$executeRawUnsafe(
-      'ANALYZE TABLE `user_ticket`, `user_balance_transaction`, `inventory_warehouse_order_item`, `user_service_balance_transaction`;'
-    );
-    console.log('Optimizer statistics refreshed successfully.');
+    // 2. Add missing composite indexes safely (ANALYZE runs only for modified tables)
+    await ensureLegacyIndexesSafely(legacy, phase3Indexes);
   } finally {
     await legacy.$disconnect();
   }
