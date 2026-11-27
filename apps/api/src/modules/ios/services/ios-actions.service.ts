@@ -23,6 +23,7 @@ import {
   runPostSaveLegacyStepSync,
 } from './ios-actions-completion.helper.js';
 import { buildPreCheckoutPaymentOverride } from './ios-pre-checkout-payment.helper.js';
+import { buildAddUnderLashRoundOverride, prepareAddUnderLashRoundBody } from './ios-under-lash-add.helper.js';
 import { ExecuteIosActionResult, ExecuteIosActionOptions } from './ios-actions.types.js';
 
 export type IosOverrideRepository = ReturnType<typeof createOverrideRepository>;
@@ -419,6 +420,16 @@ export async function executeIosBookingAction(
           cloudSyncedAt: nowIso,
         },
       };
+    } else if (action === 'ADD_UNDER_LASH_ROUND') {
+      const preparedBody = await prepareAddUnderLashRoundBody(bookingId, body, isSimulationMode);
+      nextOverride = buildAddUnderLashRoundOverride({
+        bookingId,
+        current,
+        body: preparedBody,
+        walletSelectionPatch,
+        actorStaffId,
+        actorStaffName,
+      });
     } else if (action === 'UPDATE_CUSTOMER_AVATAR') {
       let avatarUrl = String(body.customerAvatar || '').trim();
       if (!isSimulationMode && avatarUrl && avatarUrl.startsWith('data:image/')) {

@@ -205,6 +205,31 @@ export function useIosBookingsSync({
                             status: data.override.status,
                           }
                         : {}),
+                      ...(data?.override?.serviceName
+                        ? {
+                            serviceName: data.override.serviceName,
+                            ...(data.override.servicePrice !== undefined
+                              ? { servicePrice: Number(data.override.servicePrice) }
+                              : {}),
+                            ...(data.override.upgradePrice !== undefined
+                              ? { upgradePrice: Number(data.override.upgradePrice) }
+                              : {}),
+                            ...(data.override.serviceDuration !== undefined
+                              ? { serviceDuration: Number(data.override.serviceDuration) }
+                              : {}),
+                            ...(data.override.cvRotationPoints !== undefined
+                              ? { cvRotationPoints: Number(data.override.cvRotationPoints) }
+                              : {}),
+                          }
+                        : {}),
+                      ...(data?.override?.attributes
+                        ? {
+                            attributes: {
+                              ...(b.attributes || ({} as any)),
+                              ...data.override.attributes,
+                            },
+                          }
+                        : {}),
                       ...(data?.simulationAttemptCount !== undefined
                         ? {
                             simulationAttemptCount: Number(data.simulationAttemptCount),

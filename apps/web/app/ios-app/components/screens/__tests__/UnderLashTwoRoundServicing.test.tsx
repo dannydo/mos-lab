@@ -1,10 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { resolveActiveServicingRound, splitUpperAndUnderTargetDuration } from '@mos-lab/shared';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+  bookingRequiresUnderLashRound,
+  isPureUnderLashServiceName,
+  resolveActiveServicingRound,
+  splitUpperAndUnderTargetDuration,
+} from '@mos-lab/shared';
 import { Screen07bLashProgressCleaned } from '../Screen07bLashProgressCleaned';
 import { Screen09LashProgressAfter } from '../Screen09LashProgressAfter';
+import { Screen10CustomerSurvey } from '../Screen10CustomerSurvey';
 import { Screen02LashHistorySheet } from '../Screen02LashHistorySheet';
+import { AddUnderMinkSheet } from '../../modals/booking/AddUnderMinkSheet';
 import { BookingItem, LashHistoryItem } from '../../../state/mockData';
 
 vi.mock('../../../../../context/ThemeContext', () => ({
@@ -194,5 +201,114 @@ describe('Under Lash 2-Round Sequential Servicing', () => {
     );
     expect(screen.getByText(/3 TẤM HÌNH BẮT BUỘC/i)).toBeInTheDocument();
     expect(screen.queryByText(/VÒNG 2/i)).not.toBeInTheDocument();
+  });
+
+  it('treats pure Under Lash services as 1 round while supporting mid-shift AddUnderMink CTAs & Sheet', async () => {
+    const pureUnderBooking = makeDualBooking({
+      serviceName: 'Flawless Under Mink 390K (Mi Dưới Mới)',
+      attributes: { style: 'Tự nhiên', thickness: '0.07mm', curl: 'B', length: '7mm', hasUnderMink: false },
+      progress: { elapsedSeconds: 0, timerRunning: false },
+    });
+    expect(isPureUnderLashServiceName(pureUnderBooking.serviceName)).toBe(true);
+    expect(bookingRequiresUnderLashRound(pureUnderBooking)).toBe(false);
+
+    const upperOnlyBooking = makeDualBooking({
+      serviceName: 'HyperLight 4X',
+      servicePrice: 770000,
+      attributes: { ...BASE_ATTRS, hasUnderMink: false, underMinkServiceType: undefined },
+      progress: { elapsedSeconds: 3000, timerRunning: false, afterPhotoUrl: 'https://cdn.test/u.jpg' },
+    });
+
+    const onOpenAfterCta = vi.fn();
+    render(
+      <Screen09LashProgressAfter
+        booking={upperOnlyBooking}
+        onBack={vi.fn()}
+        onSavePhoto={vi.fn()}
+        onOpenAddUnderMink={onOpenAfterCta}
+      />
+    );
+    const afterCta = screen.getByTestId('add-under-mink-cta-after');
+    fireEvent.click(afterCta);
+    expect(onOpenAfterCta).toHaveBeenCalledWith('https://cdn.test/u.jpg');
+
+    const onOpenSurveyCta = vi.fn();
+    render(
+      <Screen10CustomerSurvey
+        booking={upperOnlyBooking}
+        onBack={vi.fn()}
+        onComplete={vi.fn()}
+        onOpenAddUnderMink={onOpenSurveyCta}
+      />
+    );
+    fireEvent.click(screen.getByTestId('add-under-mink-cta-survey'));
+    expect(onOpenSurveyCta).toHaveBeenCalledTimes(1);
+
+    const onConfirmAddRound = vi.fn();
+    const onConfirmCreateNew = vi.fn();
+    const { rerender } = render(
+      <AddUnderMinkSheet
+        isOpen={true}
+        onClose={vi.fn()}
+        booking={upperOnlyBooking}
+        initialMode="ADD_TO_CURRENT_ORDER"
+        pendingAfterPhotoUrl="https://cdn.test/u.jpg"
+        onConfirmAddRound={onConfirmAddRound}
+        onConfirmCreateNewBooking={onConfirmCreateNew}
+      />
+    );
+    expect(screen.getByText(/Book Thêm Mi Dưới \(Vòng 2\)/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('under-lash-type-retain'));
+    fireEvent.click(screen.getByTestId('confirm-add-under-lash-btn'));
+    await waitFor(() => {
+      expect(onConfirmAddRound).toHaveBeenCalledWith(
+        expect.objectContaining({
+          underMinkServiceType: 'Retain',
+          underMinkCurl: 'B',
+          afterPhotoUrl: 'https://cdn.test/u.jpg',
+        })
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-add-under-lash-btn')).not.toBeDisabled();
+    });
+
+    // Settled order forces CREATE_NEW_BOOKING mode
+    const settledBooking = makeDualBooking({
+      id: 999809,
+      status: 'DONE',
+      orderState: 'Completed',
+      attributes: { ...BASE_ATTRS, hasUnderMink: false, underMinkServiceType: undefined },
+      billing: {
+        subtotal: 770000,
+        serviceTotal: 770000,
+        productTotal: 0,
+        grandTotal: 770000,
+        paymentMethod: 'CASH',
+        tipAmount: 0,
+        tipCvShare: 0,
+        tipCcShare: 0,
+        settlementStatus: 'SETTLED_COMPLETED',
+      },
+    });
+    rerender(
+      <AddUnderMinkSheet
+        isOpen={true}
+        onClose={vi.fn()}
+        booking={settledBooking}
+        initialMode="ADD_TO_CURRENT_ORDER"
+        onConfirmAddRound={onConfirmAddRound}
+        onConfirmCreateNewBooking={onConfirmCreateNew}
+      />
+    );
+    expect(screen.getByText(/Book Ca Mi Dưới Mới/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('confirm-add-under-lash-btn'));
+    await waitFor(() => {
+      expect(onConfirmCreateNew).toHaveBeenCalledWith(
+        expect.objectContaining({
+          underMinkServiceType: 'Normal',
+        })
+      );
+    });
   });
 });

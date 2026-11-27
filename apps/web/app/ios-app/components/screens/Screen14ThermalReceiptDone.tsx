@@ -45,6 +45,7 @@ interface Screen14ThermalReceiptDoneProps {
   onRefreshDb?: () => Promise<unknown> | void;
   onFinishOrder: () => void;
   onBack?: () => void;
+  onOpenAddUnderMink?: () => void;
   simulationReplaySlot?: React.ReactNode;
 }
 
@@ -58,6 +59,7 @@ export function Screen14ThermalReceiptDone({
   onRefreshDb,
   onFinishOrder,
   onBack,
+  onOpenAddUnderMink,
   simulationReplaySlot,
 }: Screen14ThermalReceiptDoneProps) {
   const { themeMode } = useTheme();
@@ -484,6 +486,21 @@ export function Screen14ThermalReceiptDone({
             onClick={() => setIsPostCheckoutOpen(true)}
             onOpenTipQr={() => setIsPostCheckoutOpen(true)}
           />
+        )}
+
+        {onOpenAddUnderMink && (
+          <button
+            type="button"
+            data-testid="add-under-mink-cta-receipt"
+            onClick={onOpenAddUnderMink}
+            className={`w-full py-3 px-4 rounded-2xl border font-bold text-[13.5px] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 ${
+              isDark
+                ? 'bg-purple-950/35 border-purple-700/70 text-purple-200 hover:bg-purple-950/55'
+                : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+            }`}
+          >
+            <span>+ Book thêm ca Mi Dưới cho khách này</span>
+          </button>
         )}
 
         <button

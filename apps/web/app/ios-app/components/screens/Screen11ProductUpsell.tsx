@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { isPureUnderLashServiceName } from '@mos-lab/shared';
+import { Sparkles } from 'lucide-react';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
@@ -28,6 +30,7 @@ interface Screen11ProductUpsellProps {
     comboRedemption?: BookingItem['comboRedemption'] | null;
   }) => void;
   onGoToBilling: (payload?: UpsellGoToBillingPayload) => void;
+  onOpenAddUnderMink?: () => void;
 }
 
 export function Screen11ProductUpsell({
@@ -39,6 +42,7 @@ export function Screen11ProductUpsell({
   onUpdateCartProducts,
   onSelectComboWallet,
   onGoToBilling,
+  onOpenAddUnderMink,
 }: Screen11ProductUpsellProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
@@ -242,6 +246,25 @@ export function Screen11ProductUpsell({
           activeBookingPromotion={activeBookingPromotion}
           onOpenLockedWelcomeModal={() => setIsLockedWelcomeModalOpen(true)}
         />
+
+        {onOpenAddUnderMink &&
+          !isSettled &&
+          !booking?.attributes?.hasUnderMink &&
+          !isPureUnderLashServiceName(booking?.serviceName) && (
+            <button
+              type="button"
+              data-testid="add-under-mink-cta-upsell"
+              onClick={onOpenAddUnderMink}
+              className={`w-full py-3 px-4 rounded-2xl border font-bold text-[13px] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 ${
+                isDark
+                  ? 'bg-purple-950/35 border-purple-700/70 text-purple-200 hover:bg-purple-950/55'
+                  : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span>+ Book thêm dịch vụ Mi Dưới (Vòng 2) · Sau khi xong Mi Trên</span>
+            </button>
+          )}
 
         <UpsellUnderComboAndSummary
           isDark={isDark}

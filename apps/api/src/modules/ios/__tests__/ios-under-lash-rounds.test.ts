@@ -2,13 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import mysql from 'mysql2/promise';
 import {
+  bookingRequiresUnderLashRound,
   buildLegacyServiceProgressImageUrl,
   IosBookingProgress,
+  isPureUnderLashServiceName,
   resolveActiveServicingRound,
   SafeAny,
 } from '@mos-lab/shared';
 import { executeIosBookingAction } from '../services/ios-actions.service.js';
 import { IosAuthContext } from '../services/ios-auth.service.js';
+import { createIosDualModeBooking } from '../services/ios-booking-create.service.js';
+import { resolveEffectiveLiveOrderStateAndStatus } from '../services/ios-legacy-state-reconciler.service.js';
 import { LegacyOrderCatalogSnapshot } from '../services/ios-legacy-payload.mapper.js';
 import { createInMemoryConfigStore, createOverrideRepository } from '../services/ios-overrides.service.js';
 import {
@@ -346,4 +350,171 @@ test('Legacy CDN URL formula, 3-photo backward compat & WingsBeauty cross-app Ro
   );
   assert.equal(hydrated?.upperCompleted, true);
   assert.equal(hydrated?.activeServiceRound, 'UNDER');
+});
+
+test('ADD_UNDER_LASH_ROUND appends Round 2 onto PENDING_COUNTER_SETTLEMENT, rejects SETTLED_COMPLETED, and reconciles cleanly', async () => {
+  const store = createInMemoryConfigStore();
+  const repo = createOverrideRepository(store);
+  const harness = createDualServiceHarness();
+  harness.deps.resolveCatalog = async () => ({
+    orderExists: true,
+    orderId: 339903,
+    customerUserId: 109529,
+    clientStoreId: 6,
+    currentOrderState: 'CheckOut',
+    promotionId: null,
+    userUrlId: null,
+    existingOrderServiceIds: [7001],
+    upperService: {
+      serviceId: 104,
+      serviceGroup: 'LashesTop',
+      singlePriceId: 1040,
+      singlePriceAmount: 470000,
+      balancePriceId: 1049,
+      staffSurveySetId: 3,
+      customerSurveySetId: 4,
+    },
+    underService: {
+      serviceId: 127,
+      serviceGroup: 'LashesUnder',
+      singlePriceId: 1270,
+      singlePriceAmount: 390000,
+      balancePriceId: 1279,
+      staffSurveySetId: 3,
+      customerSurveySetId: 4,
+    },
+    products: [],
+    staffFiveStarSurveyAnswers: {},
+    customerHappySurveyAnswers: {},
+  });
+
+  // Seed a PENDING_COUNTER_SETTLEMENT upper-lash booking
+  await repo.saveBookingOverride(339903, {
+    bookingId: 339903,
+    customerId: 109529,
+    status: 'DONE',
+    orderState: 'Check-out',
+    serviceName: 'Dặm HyperLight 470K',
+    servicePrice: 470000,
+    serviceDuration: 60,
+    attributes: {
+      ...COMPLETE_ATTRS,
+      hasUnderMink: false,
+      underMinkServiceType: undefined,
+    },
+    progress: {
+      elapsedSeconds: 2700,
+      timerRunning: false,
+      afterPhotoUrl: 'https://cdn.test/upper-after.jpg',
+      completedAt: '2026-11-27T10:00:00.000Z',
+    },
+    billing: {
+      method: 'CASH',
+      finalAmount: 470000,
+      settlementStatus: 'PENDING_COUNTER_SETTLEMENT',
+      completedAt: '2026-11-27T10:05:00.000Z',
+    },
+  });
+
+  const addRes = await executeIosBookingAction(
+    cvlActor,
+    {
+      bookingId: 339903,
+      customerId: 109529,
+      action: 'ADD_UNDER_LASH_ROUND',
+      serviceName: 'Dặm HyperLight 470K',
+      servicePrice: 470000,
+      serviceDuration: 60,
+      attributes: {
+        hasUnderMink: true,
+        underMinkServiceType: 'Normal',
+        underMinkCurl: 'B',
+        underMinkLength: '7mm',
+        underMinkCount: '40 sợi',
+      },
+      progress: {
+        elapsedSeconds: 2700,
+        timerRunning: false,
+        afterPhotoUrl: 'https://cdn.test/upper-after.jpg',
+      },
+    },
+    repo,
+    harness.deps,
+    { enableLegacyStepSync: true }
+  );
+
+  assert.equal(addRes.statusCode, 200);
+  const ovr = addRes.payload.override as NonNullable<typeof addRes.payload.override>;
+  assert.equal(ovr.status, 'SERVICING');
+  assert.equal(ovr.orderState, 'Preparation');
+  assert.equal(ovr.serviceName, 'Dặm HyperLight 470K + Mi Dưới (Mới 390K)');
+  assert.equal(ovr.servicePrice, 860000);
+  assert.equal(ovr.upgradePrice, 0);
+  assert.equal(ovr.attributes?.hasUnderMink, true);
+  assert.equal(ovr.progress?.upperCompleted, true);
+  assert.equal(ovr.progress?.activeServiceRound, 'UNDER');
+  assert.equal(ovr.billing?.settlementStatus, undefined);
+  assert.equal(ovr.billing?.completedAt, undefined);
+
+  // Reconciler must keep active Round 2 even while Legacy DB shows CheckOut from Round 1
+  const reconciled = resolveEffectiveLiveOrderStateAndStatus({
+    dbOrderState: 'CheckOut',
+    override: ovr,
+    targetDate: '2026-11-27',
+    todayVn: '2026-11-27',
+  });
+  assert.equal(reconciled.status, 'SERVICING');
+  assert.equal(reconciled.state, 'Preparation');
+
+  // Legacy PHP must call ensureConsulted (/order/booking/consultation) + /order/service/next
+  assert.ok(harness.phpCalls.some((c) => c.endpoint === '/order/booking/consultation'));
+  assert.ok(harness.phpCalls.some((c) => c.endpoint === '/order/service/next'));
+
+  // Reject ADD_UNDER_LASH_ROUND once counter has finalized SETTLED_COMPLETED
+  await repo.saveBookingOverride(339904, {
+    bookingId: 339904,
+    customerId: 109529,
+    status: 'DONE',
+    orderState: 'Completed',
+    billing: { method: 'CASH', finalAmount: 470000, settlementStatus: 'SETTLED_COMPLETED' },
+  });
+  const blockedRes = await executeIosBookingAction(
+    cvlActor,
+    { bookingId: 339904, action: 'ADD_UNDER_LASH_ROUND' },
+    repo
+  );
+  assert.equal(blockedRes.statusCode, 409);
+});
+
+test('Standalone pure Under Lash booking is treated as 1 round and creates Simulation order cleanly', async () => {
+  const store = createInMemoryConfigStore();
+  const simCreate = await createIosDualModeBooking(
+    null,
+    cvlActor,
+    {
+      simulationMode: true,
+      storeId: 6,
+      date: '2026-11-27',
+      timeSlot: '16:15',
+      customerMode: 'NEW',
+      customerName: 'Khách Mi Dưới',
+      customerPhone: '0909888777',
+      serviceId: 127,
+      serviceName: 'Flawless Under Mink 390K (Mi Dưới Mới)',
+      serviceType: 'Normal',
+      servicePrice: 390000,
+      serviceDuration: 25,
+      attributes: {
+        underMinkCurl: 'B',
+        underMinkLength: '7mm',
+        underMinkCount: '40 sợi',
+      },
+    },
+    store
+  );
+  assert.equal(simCreate.statusCode, 200);
+  assert.equal(simCreate.payload.booking?.serviceName, 'Flawless Under Mink 390K (Mi Dưới Mới)');
+  assert.equal(simCreate.payload.booking?.servicePrice, 390000);
+  assert.equal(isPureUnderLashServiceName(simCreate.payload.booking?.serviceName), true);
+  assert.equal(bookingRequiresUnderLashRound(simCreate.payload.booking!), false);
 });

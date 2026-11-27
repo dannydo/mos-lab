@@ -193,6 +193,22 @@ async function resolveUpperServiceId(
   existingServiceId: number,
   params: ResolveLegacyCatalogParams
 ): Promise<number> {
+  if (existingServiceId === 127 || existingServiceId === 128) {
+    return existingServiceId;
+  }
+
+  const rawSvcLower = String(params.serviceName || '').toLowerCase();
+  const isPureUnder =
+    (rawSvcLower.includes('mi dưới') || rawSvcLower.includes('under mink') || rawSvcLower.includes('under lash')) &&
+    !rawSvcLower.includes('+');
+  if (isPureUnder) {
+    const isUnderRetain =
+      String(params.serviceType || '').toLowerCase() === 'retain' ||
+      rawSvcLower.includes('dặm') ||
+      rawSvcLower.includes('retain');
+    return isUnderRetain ? 128 : 127;
+  }
+
   const { upperDisplayName, isRetain, lineSlug, ivyLevel, candidateKeys } =
     inferLegacyUpperServiceKeyCandidates(params);
 
@@ -399,8 +415,11 @@ export async function resolveLegacyOrderCatalogSnapshot(
   const upperServiceId = await resolveUpperServiceId(pool, existingUpperServiceId, params);
   const upperService = await resolveServiceMatch(pool, upperServiceId, servicePrice, 'LashesTop');
 
+  const isPureUnderOrder =
+    upperService.serviceGroup === 'LashesUnder' || upperService.serviceId === 127 || upperService.serviceId === 128;
+
   let underService: LegacyCatalogServiceMatch | undefined;
-  if (params.hasUnderMink || selectedUnderCombo || osRows.length > 1) {
+  if (!isPureUnderOrder && (params.hasUnderMink || selectedUnderCombo || osRows.length > 1)) {
     let underServiceId = Number(osRows?.[1]?.service_id || 0);
     const targetUnderId = underMinkServiceType === 'Retain' ? 128 : 127;
     if (underServiceId <= 1 || underServiceId === 127 || underServiceId === 128) {

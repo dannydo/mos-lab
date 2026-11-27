@@ -259,6 +259,7 @@ export type IosBookingActionType =
   | 'SAVE_PROGRESS'
   | 'START_SERVICE'
   | 'NEXT_SERVICE_ROUND'
+  | 'ADD_UNDER_LASH_ROUND'
   | 'SAVE_SURVEY'
   | 'SAVE_UPSELL'
   | 'SAVE_PROMOTION'
@@ -403,6 +404,8 @@ export interface IosCreateBookingRequest {
   serviceName?: string;
   servicePrice?: number;
   serviceDuration?: number;
+  serviceType?: 'Normal' | 'Retain';
+  attributes?: Partial<IosBookingAttributes>;
   assignedStaffId?: number;
   bookingNote?: string;
   storeId?: number;

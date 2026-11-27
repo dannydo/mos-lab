@@ -108,6 +108,19 @@ export function resolveEffectiveLiveOrderStateAndStatus(params: {
     };
   }
 
+  if (
+    override.status === 'SERVICING' &&
+    override.progress?.activeServiceRound === 'UNDER' &&
+    override.progress?.upperCompleted === true &&
+    !override.progress?.underAfterPhotoUrl
+  ) {
+    return {
+      state: override.orderState || 'Preparation',
+      status: 'SERVICING',
+      revertedInLegacy: false,
+    };
+  }
+
   const dbRank = getLegacyOrderStageRank(dbState);
   const ovrRank = getLegacyOrderStageRank(override.orderState);
   if (dbRank > ovrRank && dbRank >= 1) {

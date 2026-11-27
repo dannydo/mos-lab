@@ -18,6 +18,10 @@ const IosCreateBookingSheet = dynamic(
   () => import('./modals/booking/IosCreateBookingSheet').then((m) => m.IosCreateBookingSheet),
   { ssr: false }
 );
+const AddUnderMinkSheet = dynamic(
+  () => import('./modals/booking/AddUnderMinkSheet').then((m) => m.AddUnderMinkSheet),
+  { ssr: false }
+);
 
 interface IosAppGlobalOverlaysProps {
   state: ReturnType<typeof useIosAppState>;
@@ -137,6 +141,18 @@ export function IosAppGlobalOverlays({
           targetDate={state.targetDateStr}
           actorStaffId={state.actor?.staffId}
           onCreated={state.handleBookingCreated}
+        />
+      )}
+
+      {state.addUnderMinkModal.isOpen && (
+        <AddUnderMinkSheet
+          isOpen={state.addUnderMinkModal.isOpen}
+          onClose={state.closeAddUnderMinkModal}
+          booking={state.activeBooking}
+          initialMode={state.addUnderMinkModal.mode}
+          pendingAfterPhotoUrl={state.addUnderMinkModal.pendingAfterPhotoUrl}
+          onConfirmAddRound={state.handleAddUnderLashRound}
+          onConfirmCreateNewBooking={state.handleBookNewUnderLashSession}
         />
       )}
 

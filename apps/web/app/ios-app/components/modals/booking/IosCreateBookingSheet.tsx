@@ -355,9 +355,10 @@ export function IosCreateBookingSheet({
             <label className="block text-[11px] font-extrabold uppercase tracking-wider opacity-70">
               Dịch vụ nối mi dự kiến
             </label>
-            <div className="max-h-36 overflow-y-auto grid grid-cols-1 gap-1.5 pr-0.5">
-              {services.slice(0, 12).map((svc) => {
+            <div className="max-h-44 overflow-y-auto grid grid-cols-1 gap-1.5 pr-0.5">
+              {services.slice(0, 24).map((svc) => {
                 const active = selectedService.serviceId === svc.serviceId;
+                const isUnderOnly = svc.serviceGroup === 'LashesUnder' || /chỉ\s*mi\s*dưới|mi\s*dưới/i.test(svc.serviceName);
                 return (
                   <button
                     key={svc.serviceId}
@@ -374,7 +375,14 @@ export function IosCreateBookingSheet({
                     }`}
                   >
                     <div className="min-w-0">
-                      <div className="text-[12px] font-bold truncate">{svc.serviceName}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[12px] font-bold truncate">{svc.serviceName}</span>
+                        {isUnderOnly && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-purple-500/15 text-purple-400 shrink-0">
+                            Mi Dưới
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] opacity-70 tabular-nums">{svc.durationMinute} phút</div>
                     </div>
                     <span className="text-[12px] font-black text-amber-500 tabular-nums shrink-0">
