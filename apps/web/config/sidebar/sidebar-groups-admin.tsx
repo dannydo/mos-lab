@@ -194,6 +194,7 @@ export function buildAdminAndReportSidebarGroups(params: {
         icon: <AppIcon icon={Warehouse} size="sm" />,
         children: [
           { key: 'inventory-items', label: 'Quản Lý Kho (Tồn & Luân Chuyển)', path: '/dashboard/inventory/items' },
+          { key: 'inventory-orders', label: 'Phiếu Xuất / Nhập Kho', path: '/dashboard/inventory/orders' },
           { key: 'inventory-limits', label: 'Định Mức Tồn Kho', path: '/dashboard/inventory/limits' },
           { key: 'inventory-assign', label: 'Vật Tư Đang Giao NV', path: '/dashboard/inventory/assign' },
           { key: 'inventory-assets', label: 'Theo Dõi Tài Sản', path: '/dashboard/inventory/assets' },

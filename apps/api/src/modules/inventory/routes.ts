@@ -20,6 +20,7 @@ import { processInventoryScanCode } from './services/inventory-scan.service.js';
 import { inventorySseBroker } from './services/inventory-sse.service.js';
 import { assignWarehouseItemToStaff, getWarehouseItemHistory } from './services/inventory-state.service.js';
 import { inventoryAdminRoutes } from './routes-admin.js';
+import { inventoryOrderRoutes } from './routes-orders.js';
 
 interface HttpErrorLike {
   statusCode?: number;
@@ -28,6 +29,7 @@ interface HttpErrorLike {
 
 export async function inventoryRoutes(fastify: FastifyInstance): Promise<void> {
   await inventoryAdminRoutes(fastify);
+  await inventoryOrderRoutes(fastify);
   fastify.get('/inventory/me/permissions', async (request, reply) => {
     const ctx = await resolveInventoryAuthContext(fastify, request, reply);
     if (!ctx) return;

@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
 import { Button, Select, Tabs, message } from 'antd';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, Printer, XCircle } from 'lucide-react';
 import type {
   InventoryCheckRecordDto,
   InventoryCheckState,
@@ -209,19 +210,21 @@ export function InventoryChecksDrawer({
       ),
     },
     {
-      title: 'Duyệt Phiếu',
+      title: 'Duyệt & In',
       key: 'actions',
-      width: 190,
+      width: 240,
       fixed: 'right',
       render: (_, r) => {
         const canAct = canApproveCheck && (r.check_state === 'New' || r.check_state === 'Checked');
-        if (!canAct) {
-          return <span className="text-xs text-slate-400">—</span>;
-        }
         const isBusy = actingId === r.inventory_warehouse_check_id;
         return (
           <div className="flex items-center gap-1.5">
-            {r.check_state === 'Checked' && (
+            <Link href={`/dashboard/inventory/print/check/${r.inventory_warehouse_check_id}`} target="_blank">
+              <Button size="small" icon={<AppIcon icon={Printer} size={14} />}>
+                In Biên Bản
+              </Button>
+            </Link>
+            {canAct && r.check_state === 'Checked' && (
               <Button
                 size="small"
                 type="primary"
@@ -232,15 +235,17 @@ export function InventoryChecksDrawer({
                 Duyệt
               </Button>
             )}
-            <Button
-              size="small"
-              danger
-              loading={isBusy}
-              icon={<AppIcon icon={XCircle} size={14} />}
-              onClick={() => void handleCancel(r.inventory_warehouse_check_id)}
-            >
-              Hủy
-            </Button>
+            {canAct && (
+              <Button
+                size="small"
+                danger
+                loading={isBusy}
+                icon={<AppIcon icon={XCircle} size={14} />}
+                onClick={() => void handleCancel(r.inventory_warehouse_check_id)}
+              >
+                Hủy
+              </Button>
+            )}
           </div>
         );
       },

@@ -1,10 +1,20 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import { Button, DatePicker, Input, Select, Tabs } from 'antd';
-import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Boxes, Package, RefreshCw, Search } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Boxes,
+  Package,
+  Printer,
+  RefreshCw,
+  Search,
+} from 'lucide-react';
 import {
   INVENTORY_ITEM_TYPES,
   isInventoryLifecycleEndValid,
@@ -316,9 +326,19 @@ export default function InventoryItemsPage() {
       <SectionCard
         title="Báo Cáo Tồn & Luân Chuyển Vòng Đời Vật Tư"
         extra={
-          <Button icon={<AppIcon icon={RefreshCw} size="sm" />} onClick={() => void loadLifecycle(page, limit)}>
-            Làm mới
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/dashboard/inventory/print/warehouse-report?dateFrom=${dateFrom}&dateTo=${dateTo}${
+                selectedWarehouseIds[0] ? `&warehouseId=${selectedWarehouseIds[0]}` : ''
+              }${itemTypeTab !== 'ALL' ? `&inventoryItemType=${itemTypeTab}` : ''}`}
+              target="_blank"
+            >
+              <Button icon={<AppIcon icon={Printer} size="sm" />}>In Báo Cáo</Button>
+            </Link>
+            <Button icon={<AppIcon icon={RefreshCw} size="sm" />} onClick={() => void loadLifecycle(page, limit)}>
+              Làm mới
+            </Button>
+          </div>
         }
       >
         <div className="space-y-3">

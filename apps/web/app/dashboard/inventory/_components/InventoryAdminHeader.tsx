@@ -7,6 +7,7 @@ import { Button, Select } from 'antd';
 import {
   ClipboardCheck,
   Database,
+  FileSpreadsheet,
   Layers,
   Package,
   QrCode,
@@ -21,6 +22,7 @@ import { AppIcon, PageHeader, StatusTag } from '../../../../components/ui';
 
 const NAV_ITEMS = [
   { href: '/dashboard/inventory/items', label: 'Quản Lý Kho', icon: Package },
+  { href: '/dashboard/inventory/orders', label: 'Phiếu Xuất / Nhập', icon: FileSpreadsheet },
   { href: '/dashboard/inventory/limits', label: 'Định Mức Tồn', icon: SlidersHorizontal },
   { href: '/dashboard/inventory/assign', label: 'Đang Giao NV', icon: UserCheck },
   { href: '/dashboard/inventory/assets', label: 'Tài Sản', icon: Layers },

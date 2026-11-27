@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
 import { Button } from 'antd';
-import { History } from 'lucide-react';
+import { History, QrCode } from 'lucide-react';
 import type {
   InventoryItemState,
   InventoryItemType,
@@ -210,16 +211,23 @@ export function InventoryItemsDrilldownDrawer({
     {
       title: 'Thao Tác',
       key: 'actions',
-      width: 110,
+      width: 175,
       fixed: 'right',
       render: (_, r) => (
-        <Button
-          size="small"
-          icon={<AppIcon icon={History} size={14} />}
-          onClick={() => onSelectHistoryItem(r.inventory_warehouse_item_id)}
-        >
-          Lịch sử
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="small"
+            icon={<AppIcon icon={History} size={14} />}
+            onClick={() => onSelectHistoryItem(r.inventory_warehouse_item_id)}
+          >
+            Lịch sử
+          </Button>
+          <Link href={`/dashboard/inventory/print/items-labels?ids=${r.inventory_warehouse_item_id}`} target="_blank">
+            <Button size="small" icon={<AppIcon icon={QrCode} size={14} />}>
+              Tem
+            </Button>
+          </Link>
+        </div>
       ),
     },
   ];

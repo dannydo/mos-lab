@@ -10674,7 +10674,7 @@
         "path": "/api/inventory/me/permissions",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 31
+        "line": 33
       }
     },
     {
@@ -10688,7 +10688,7 @@
         "path": "/api/inventory/warehouses",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 55
+        "line": 57
       }
     },
     {
@@ -10702,7 +10702,7 @@
         "path": "/api/inventory/staff/onboard",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 76
+        "line": 78
       }
     },
     {
@@ -10716,7 +10716,7 @@
         "path": "/api/inventory/scan/code",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 85
+        "line": 87
       }
     },
     {
@@ -10730,7 +10730,7 @@
         "path": "/api/inventory/warehouse/item/assign",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 106
+        "line": 108
       }
     },
     {
@@ -10744,7 +10744,7 @@
         "path": "/api/inventory/warehouse/check/scan",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 130
+        "line": 132
       }
     },
     {
@@ -10758,7 +10758,7 @@
         "path": "/api/inventory/warehouse/check/items",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 160
+        "line": 162
       }
     },
     {
@@ -10772,7 +10772,7 @@
         "path": "/api/inventory/warehouse/check/finish",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 195
+        "line": 197
       }
     },
     {
@@ -10786,7 +10786,7 @@
         "path": "/api/inventory/warehouse/check/reset",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 213
+        "line": 215
       }
     },
     {
@@ -10800,7 +10800,7 @@
         "path": "/api/inventory/warehouse/item/:warehouseItemId/history",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 231
+        "line": 233
       }
     },
     {
@@ -10814,7 +10814,7 @@
         "path": "/api/inventory/media/scan/:scanCodeId",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 253
+        "line": 255
       }
     },
     {
@@ -10828,7 +10828,7 @@
         "path": "/api/inventory/events",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 259
+        "line": 261
       }
     },
     {
@@ -15158,6 +15158,58 @@
       }
     },
     {
+      "id": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "type": "Component",
+      "label": "App Page: /dashboard/inventory/orders/[orderId]/assign",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/inventory/orders/[orderId]/assign/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/inventory/orders/[orderId]/assign",
+        "apiCallsCount": 6,
+        "apiCalls": [
+          "inventory.getOrderDetail",
+          "inventory.scanCode",
+          "inventory.lookupScanCodeByLotId",
+          "inventory.selectActiveOrder",
+          "inventory.assignOrder",
+          "inventory.deleteOrderItem"
+        ]
+      }
+    },
+    {
+      "id": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "type": "Component",
+      "label": "App Page: /dashboard/inventory/orders/[orderId]/scan",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/inventory/orders/[orderId]/scan/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/inventory/orders/[orderId]/scan",
+        "apiCallsCount": 8,
+        "apiCalls": [
+          "inventory.getOrderDetail",
+          "inventory.scanCode",
+          "inventory.lookupScanCodeByLotId",
+          "inventory.checkAllOrderItems",
+          "inventory.importOrderItems",
+          "inventory.finishOrder",
+          "inventory.deleteOrderItem",
+          "inventory.addOrderItemQuantity"
+        ]
+      }
+    },
+    {
+      "id": "page:/dashboard/inventory/orders",
+      "type": "Component",
+      "label": "App Page: /dashboard/inventory/orders",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/inventory/orders/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/inventory/orders",
+        "apiCallsCount": 2,
+        "apiCalls": ["inventory.getOrders", "inventory.cancelOrder"]
+      }
+    },
+    {
       "id": "page:/dashboard/inventory",
       "type": "Component",
       "label": "App Page: /dashboard/inventory",
@@ -15167,6 +15219,66 @@
         "routePath": "/dashboard/inventory",
         "apiCallsCount": 0,
         "apiCalls": []
+      }
+    },
+    {
+      "id": "page:/dashboard/inventory/print/check/[checkId]",
+      "type": "Component",
+      "label": "App Page: /dashboard/inventory/print/check/[checkId]",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/inventory/print/check/[checkId]/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/inventory/print/check/[checkId]",
+        "apiCallsCount": 1,
+        "apiCalls": ["inventory.getCheckPrintData"]
+      }
+    },
+    {
+      "id": "page:/dashboard/inventory/print/items-labels",
+      "type": "Component",
+      "label": "App Page: /dashboard/inventory/print/items-labels",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/inventory/print/items-labels/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/inventory/print/items-labels",
+        "apiCallsCount": 1,
+        "apiCalls": ["inventory.getItemPrintLabels"]
+      }
+    },
+    {
+      "id": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "type": "Component",
+      "label": "App Page: /dashboard/inventory/print/order/[orderId]/labels",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/inventory/print/order/[orderId]/labels/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/inventory/print/order/[orderId]/labels",
+        "apiCallsCount": 1,
+        "apiCalls": ["inventory.getOrderPrintLabels"]
+      }
+    },
+    {
+      "id": "page:/dashboard/inventory/print/order/[orderId]",
+      "type": "Component",
+      "label": "App Page: /dashboard/inventory/print/order/[orderId]",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/inventory/print/order/[orderId]/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/inventory/print/order/[orderId]",
+        "apiCallsCount": 1,
+        "apiCalls": ["inventory.getOrderDetail"]
+      }
+    },
+    {
+      "id": "page:/dashboard/inventory/print/warehouse-report",
+      "type": "Component",
+      "label": "App Page: /dashboard/inventory/print/warehouse-report",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/inventory/print/warehouse-report/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/inventory/print/warehouse-report",
+        "apiCallsCount": 1,
+        "apiCalls": ["inventory.getWarehouseReportPrint"]
       }
     },
     {
@@ -27609,6 +27721,234 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "InventoryScanTabConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryLabelPrintMode",
+      "type": "SharedType",
+      "label": "InventoryLabelPrintMode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryLabelPrintMode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCompanyInfoDto",
+      "type": "SharedType",
+      "label": "InventoryCompanyInfoDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCompanyInfoDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryOrderActionFlagsDto",
+      "type": "SharedType",
+      "label": "InventoryOrderActionFlagsDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryOrderActionFlagsDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryOrderItemDto",
+      "type": "SharedType",
+      "label": "InventoryOrderItemDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryOrderItemDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryOrderDto",
+      "type": "SharedType",
+      "label": "InventoryOrderDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryOrderDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryOrdersListResponse",
+      "type": "SharedType",
+      "label": "InventoryOrdersListResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryOrdersListResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryOrderDetailResponse",
+      "type": "SharedType",
+      "label": "InventoryOrderDetailResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryOrderDetailResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryOrderItemsListResponse",
+      "type": "SharedType",
+      "label": "InventoryOrderItemsListResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryOrderItemsListResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventorySaveOrderLineInput",
+      "type": "SharedType",
+      "label": "InventorySaveOrderLineInput",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventorySaveOrderLineInput",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventorySaveOrderRequest",
+      "type": "SharedType",
+      "label": "InventorySaveOrderRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventorySaveOrderRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryItemStockMapResponse",
+      "type": "SharedType",
+      "label": "InventoryItemStockMapResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryItemStockMapResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryPrintLabelItemDto",
+      "type": "SharedType",
+      "label": "InventoryPrintLabelItemDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryPrintLabelItemDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryPrintLabelsResponse",
+      "type": "SharedType",
+      "label": "InventoryPrintLabelsResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryPrintLabelsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCheckPrintItemDto",
+      "type": "SharedType",
+      "label": "InventoryCheckPrintItemDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCheckPrintItemDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCheckPrintResponse",
+      "type": "SharedType",
+      "label": "InventoryCheckPrintResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCheckPrintResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryWarehouseReportRowDto",
+      "type": "SharedType",
+      "label": "InventoryWarehouseReportRowDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryWarehouseReportRowDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryWarehouseReportPrintResponse",
+      "type": "SharedType",
+      "label": "InventoryWarehouseReportPrintResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryWarehouseReportPrintResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryOrderActionPayload",
+      "type": "SharedType",
+      "label": "InventoryOrderActionPayload",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryOrderActionPayload",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryOrderLookupStockRequest",
+      "type": "SharedType",
+      "label": "InventoryOrderLookupStockRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryOrderLookupStockRequest",
         "package": "@mos-lab/shared"
       }
     },
@@ -51300,6 +51640,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/inventory/inventory-wave3.test.ts",
+      "type": "File",
+      "label": "inventory-wave3.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/inventory-wave3.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6254,
+        "lineCount": 153,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/inventory/routes-admin.ts",
       "type": "File",
       "label": "routes-admin.ts",
@@ -51307,8 +51660,21 @@
       "filePath": "apps/api/src/modules/inventory/routes-admin.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11462,
-        "lineCount": 320,
+        "sizeBytes": 11516,
+        "lineCount": 326,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/routes-orders.ts",
+      "type": "File",
+      "label": "routes-orders.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/routes-orders.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13870,
+        "lineCount": 316,
         "ext": ".ts"
       }
     },
@@ -51320,8 +51686,8 @@
       "filePath": "apps/api/src/modules/inventory/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10625,
-        "lineCount": 285,
+        "sizeBytes": 10723,
+        "lineCount": 287,
         "ext": ".ts"
       }
     },
@@ -51333,8 +51699,8 @@
       "filePath": "apps/api/src/modules/inventory/services/inventory-admin-ops.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17039,
-        "lineCount": 433,
+        "sizeBytes": 17135,
+        "lineCount": 448,
         "ext": ".ts"
       }
     },
@@ -51359,8 +51725,8 @@
       "filePath": "apps/api/src/modules/inventory/services/inventory-catalog.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14467,
-        "lineCount": 374,
+        "sizeBytes": 14601,
+        "lineCount": 393,
         "ext": ".ts"
       }
     },
@@ -51411,8 +51777,8 @@
       "filePath": "apps/api/src/modules/inventory/services/inventory-lifecycle-drilldown.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13197,
-        "lineCount": 306,
+        "sizeBytes": 13257,
+        "lineCount": 312,
         "ext": ".ts"
       }
     },
@@ -51424,8 +51790,8 @@
       "filePath": "apps/api/src/modules/inventory/services/inventory-lifecycle.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22773,
-        "lineCount": 510,
+        "sizeBytes": 22779,
+        "lineCount": 511,
         "ext": ".ts"
       }
     },
@@ -51439,6 +51805,58 @@
       "metadata": {
         "sizeBytes": 3860,
         "lineCount": 99,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-order-mutation.service.ts",
+      "type": "File",
+      "label": "inventory-order-mutation.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-order-mutation.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 19407,
+        "lineCount": 441,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-order-query.service.ts",
+      "type": "File",
+      "label": "inventory-order-query.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-order-query.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 28888,
+        "lineCount": 639,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-order-transition.service.ts",
+      "type": "File",
+      "label": "inventory-order-transition.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-order-transition.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11816,
+        "lineCount": 285,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-print.service.ts",
+      "type": "File",
+      "label": "inventory-print.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-print.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 21193,
+        "lineCount": 465,
         "ext": ".ts"
       }
     },
@@ -66894,8 +67312,21 @@
       "filePath": "apps/web/app/dashboard/inventory/__tests__/inventory-wave2.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2594,
-        "lineCount": 71,
+        "sizeBytes": 2530,
+        "lineCount": 63,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/__tests__/inventory-wave3.test.tsx",
+      "type": "File",
+      "label": "inventory-wave3.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/__tests__/inventory-wave3.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2573,
+        "lineCount": 54,
         "ext": ".tsx"
       }
     },
@@ -66907,8 +67338,8 @@
       "filePath": "apps/web/app/dashboard/inventory/_components/InventoryAdminHeader.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5237,
-        "lineCount": 138,
+        "sizeBytes": 5309,
+        "lineCount": 137,
         "ext": ".tsx"
       }
     },
@@ -66920,8 +67351,8 @@
       "filePath": "apps/web/app/dashboard/inventory/_components/InventoryChecksDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9570,
-        "lineCount": 295,
+        "sizeBytes": 9989,
+        "lineCount": 311,
         "ext": ".tsx"
       }
     },
@@ -66946,8 +67377,21 @@
       "filePath": "apps/web/app/dashboard/inventory/_components/InventoryItemsDrilldownDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7838,
-        "lineCount": 263,
+        "sizeBytes": 8121,
+        "lineCount": 265,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/_components/QrCodeImage.tsx",
+      "type": "File",
+      "label": "QrCodeImage.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/_components/QrCodeImage.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 913,
+        "lineCount": 38,
         "ext": ".tsx"
       }
     },
@@ -66959,8 +67403,21 @@
       "filePath": "apps/web/app/dashboard/inventory/_components/useInventoryAdminContext.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3630,
-        "lineCount": 121,
+        "sizeBytes": 3600,
+        "lineCount": 117,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/_components/useInventorySse.ts",
+      "type": "File",
+      "label": "useInventorySse.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/_components/useInventorySse.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1619,
+        "lineCount": 54,
         "ext": ".ts"
       }
     },
@@ -66972,8 +67429,8 @@
       "filePath": "apps/web/app/dashboard/inventory/assets/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8935,
-        "lineCount": 260,
+        "sizeBytes": 8834,
+        "lineCount": 248,
         "ext": ".tsx"
       }
     },
@@ -66985,8 +67442,8 @@
       "filePath": "apps/web/app/dashboard/inventory/assign/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9522,
-        "lineCount": 269,
+        "sizeBytes": 9422,
+        "lineCount": 261,
         "ext": ".tsx"
       }
     },
@@ -66998,8 +67455,8 @@
       "filePath": "apps/web/app/dashboard/inventory/catalog/_components/CatalogModals.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13124,
-        "lineCount": 345,
+        "sizeBytes": 13135,
+        "lineCount": 340,
         "ext": ".tsx"
       }
     },
@@ -67011,8 +67468,8 @@
       "filePath": "apps/web/app/dashboard/inventory/catalog/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17540,
-        "lineCount": 547,
+        "sizeBytes": 17497,
+        "lineCount": 539,
         "ext": ".tsx"
       }
     },
@@ -67024,8 +67481,8 @@
       "filePath": "apps/web/app/dashboard/inventory/items/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15952,
-        "lineCount": 455,
+        "sizeBytes": 16417,
+        "lineCount": 456,
         "ext": ".tsx"
       }
     },
@@ -67037,8 +67494,73 @@
       "filePath": "apps/web/app/dashboard/inventory/limits/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12322,
-        "lineCount": 362,
+        "sizeBytes": 12315,
+        "lineCount": 358,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/orders/[orderId]/assign/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/orders/[orderId]/assign/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13044,
+        "lineCount": 346,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/orders/[orderId]/scan/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/orders/[orderId]/scan/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 17612,
+        "lineCount": 479,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/orders/_components/OrderEditorModal.tsx",
+      "type": "File",
+      "label": "OrderEditorModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/orders/_components/OrderEditorModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 21587,
+        "lineCount": 557,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/orders/_components/OrderItemsModal.tsx",
+      "type": "File",
+      "label": "OrderItemsModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/orders/_components/OrderItemsModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6370,
+        "lineCount": 193,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/orders/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/orders/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14671,
+        "lineCount": 420,
         "ext": ".tsx"
       }
     },
@@ -67056,6 +67578,71 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/inventory/print/check/[checkId]/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/print/check/[checkId]/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8333,
+        "lineCount": 198,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/print/items-labels/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/print/items-labels/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6552,
+        "lineCount": 148,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/print/order/[orderId]/labels/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/print/order/[orderId]/labels/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6348,
+        "lineCount": 141,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/print/order/[orderId]/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/print/order/[orderId]/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9790,
+        "lineCount": 227,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/print/warehouse-report/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/print/warehouse-report/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12672,
+        "lineCount": 274,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/inventory/scan-logs/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -67063,8 +67650,8 @@
       "filePath": "apps/web/app/dashboard/inventory/scan-logs/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10424,
-        "lineCount": 308,
+        "sizeBytes": 10252,
+        "lineCount": 281,
         "ext": ".tsx"
       }
     },
@@ -77209,6 +77796,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/api/inventory-orders.api.ts",
+      "type": "File",
+      "label": "inventory-orders.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/inventory-orders.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11793,
+        "lineCount": 356,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/api/inventory.api.ts",
       "type": "File",
       "label": "inventory.api.ts",
@@ -77216,8 +77816,8 @@
       "filePath": "apps/web/lib/api/inventory.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14762,
-        "lineCount": 461,
+        "sizeBytes": 14851,
+        "lineCount": 464,
         "ext": ".ts"
       }
     },
@@ -79172,6 +79772,19 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/inventory/orders-and-print.ts",
+      "type": "File",
+      "label": "orders-and-print.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 8006,
+        "lineCount": 264,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/inventory/permissions.ts",
       "type": "File",
       "label": "permissions.ts",
@@ -79192,8 +79805,8 @@
       "filePath": "packages/shared/src/types/inventory/reports-and-catalog.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7900,
-        "lineCount": 269,
+        "sizeBytes": 7875,
+        "lineCount": 257,
         "ext": ".ts"
       }
     },
@@ -79218,8 +79831,8 @@
       "filePath": "packages/shared/src/types/inventory.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 181,
-        "lineCount": 5,
+        "sizeBytes": 230,
+        "lineCount": 6,
         "ext": ".ts"
       }
     },
@@ -87321,8 +87934,64 @@
       "label": "PAGE_OF"
     },
     {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:ws:apps/web",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:ws:apps/web",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:ws:apps/web",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
       "id": "edge:page:/dashboard/inventory:ws:apps/web",
       "source": "page:/dashboard/inventory",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:ws:apps/web",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:ws:apps/web",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:ws:apps/web",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:ws:apps/web",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:ws:apps/web",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -94575,6 +95244,139 @@
     {
       "id": "edge:type:@mos-lab/shared:InventoryScanTabConfig:ws:packages/shared",
       "source": "type:@mos-lab/shared:InventoryScanTabConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryLabelPrintMode:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryLabelPrintMode",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCompanyInfoDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCompanyInfoDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryOrderActionFlagsDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryOrderActionFlagsDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryOrderItemDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryOrderItemDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryOrderDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryOrderDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryOrdersListResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryOrdersListResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryOrderDetailResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryOrderDetailResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryOrderItemsListResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryOrderItemsListResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventorySaveOrderLineInput:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventorySaveOrderLineInput",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventorySaveOrderRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventorySaveOrderRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryItemStockMapResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryItemStockMapResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryPrintLabelItemDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryPrintLabelItemDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryPrintLabelsResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryPrintLabelsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCheckPrintItemDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCheckPrintItemDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCheckPrintResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCheckPrintResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryWarehouseReportRowDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryWarehouseReportRowDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryWarehouseReportPrintResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryWarehouseReportPrintResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryOrderActionPayload:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryOrderActionPayload",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryOrderLookupStockRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryOrderLookupStockRequest",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -112997,8 +113799,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/inventory/inventory-wave3.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/inventory-wave3.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/inventory/routes-admin.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/inventory/routes-admin.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/routes-orders.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/routes-orders.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -113055,6 +113871,34 @@
     {
       "id": "edge:file:apps/api/src/modules/inventory/services/inventory-lifecycle.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/inventory/services/inventory-lifecycle.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-order-mutation.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-order-mutation.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-order-query.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-order-query.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-order-transition.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-order-transition.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-print.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-print.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -118695,6 +119539,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/inventory/__tests__/inventory-wave3.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/__tests__/inventory-wave3.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/inventory/_components/InventoryAdminHeader.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/inventory/_components/InventoryAdminHeader.tsx",
       "target": "ws:packages/shared",
@@ -118725,6 +119576,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/inventory/_components/useInventoryAdminContext.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/inventory/_components/useInventoryAdminContext.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/inventory/_components/useInventorySse.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/_components/useInventorySse.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -118767,6 +119625,76 @@
     {
       "id": "edge:file:apps/web/app/dashboard/inventory/limits/page.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/inventory/limits/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/inventory/orders/[orderId]/assign/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/orders/[orderId]/assign/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/inventory/orders/[orderId]/scan/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/orders/[orderId]/scan/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/inventory/orders/_components/OrderEditorModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/orders/_components/OrderEditorModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/inventory/orders/_components/OrderItemsModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/orders/_components/OrderItemsModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/inventory/orders/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/orders/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/inventory/print/check/[checkId]/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/print/check/[checkId]/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/inventory/print/items-labels/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/print/items-labels/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/inventory/print/order/[orderId]/labels/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/print/order/[orderId]/labels/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/inventory/print/order/[orderId]/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/print/order/[orderId]/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/inventory/print/warehouse-report/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/print/warehouse-report/page.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -121896,6 +122824,13 @@
     {
       "id": "edge:file:apps/web/lib/api/funds.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/funds.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/inventory-orders.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/inventory-orders.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -132282,6 +133217,748 @@
       "label": "CALLS inventory.getLimits"
     },
     {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:GET:/api/inventory/me/permissions",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:GET:/api/inventory/warehouses",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:GET:/api/inventory/warehouses",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:GET:/api/inventory/staff/onboard",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:GET:/api/inventory/staff/onboard",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:POST:/api/inventory/scan/code",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:POST:/api/inventory/scan/code",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:POST:/api/inventory/warehouse/item/assign",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:POST:/api/inventory/warehouse/item/assign",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:GET:/api/inventory/warehouse/check/scan",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:GET:/api/inventory/warehouse/check/scan",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:GET:/api/inventory/warehouse/check/items",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:GET:/api/inventory/warehouse/check/items",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:POST:/api/inventory/warehouse/check/finish",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:POST:/api/inventory/warehouse/check/finish",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:POST:/api/inventory/warehouse/check/reset",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:POST:/api/inventory/warehouse/check/reset",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:GET:/api/inventory/events",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:GET:/api/inventory/events",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/assign:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/inventory/orders/[orderId]/assign",
+      "target": "route:GET:/api/pilot/inventory",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:GET:/api/inventory/me/permissions",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:GET:/api/inventory/warehouses",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:GET:/api/inventory/warehouses",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:GET:/api/inventory/staff/onboard",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:GET:/api/inventory/staff/onboard",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:POST:/api/inventory/scan/code",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:POST:/api/inventory/scan/code",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:POST:/api/inventory/warehouse/item/assign",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:POST:/api/inventory/warehouse/item/assign",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:GET:/api/inventory/warehouse/check/scan",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:GET:/api/inventory/warehouse/check/scan",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:GET:/api/inventory/warehouse/check/items",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:GET:/api/inventory/warehouse/check/items",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:POST:/api/inventory/warehouse/check/finish",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:POST:/api/inventory/warehouse/check/finish",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:POST:/api/inventory/warehouse/check/reset",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:POST:/api/inventory/warehouse/check/reset",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:GET:/api/inventory/events",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:GET:/api/inventory/events",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders/[orderId]/scan:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/inventory/orders/[orderId]/scan",
+      "target": "route:GET:/api/pilot/inventory",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:POST:/api/fal/logs/:orderServiceId/explanation",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:POST:/api/fal/logs/:orderServiceId/explanation",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:POST:/api/fal/logs/:orderServiceId/approval",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:POST:/api/fal/logs/:orderServiceId/approval",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:GET:/api/inventory/me/permissions",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:GET:/api/inventory/warehouses",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:GET:/api/inventory/warehouses",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:GET:/api/inventory/staff/onboard",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:GET:/api/inventory/staff/onboard",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:POST:/api/inventory/scan/code",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:POST:/api/inventory/scan/code",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:POST:/api/inventory/warehouse/item/assign",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:POST:/api/inventory/warehouse/item/assign",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:GET:/api/inventory/warehouse/check/scan",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:GET:/api/inventory/warehouse/check/scan",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:GET:/api/inventory/warehouse/check/items",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:GET:/api/inventory/warehouse/check/items",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:POST:/api/inventory/warehouse/check/finish",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:POST:/api/inventory/warehouse/check/finish",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:POST:/api/inventory/warehouse/check/reset",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:POST:/api/inventory/warehouse/check/reset",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:GET:/api/inventory/events",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:GET:/api/inventory/events",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/orders:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/inventory/orders",
+      "target": "route:GET:/api/pilot/inventory",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrders"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:GET:/api/inventory/me/permissions",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:GET:/api/inventory/warehouses",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:GET:/api/inventory/warehouses",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:GET:/api/inventory/staff/onboard",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:GET:/api/inventory/staff/onboard",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:POST:/api/inventory/scan/code",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:POST:/api/inventory/scan/code",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:POST:/api/inventory/warehouse/item/assign",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:POST:/api/inventory/warehouse/item/assign",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:GET:/api/inventory/warehouse/check/scan",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:GET:/api/inventory/warehouse/check/scan",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:GET:/api/inventory/warehouse/check/items",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:GET:/api/inventory/warehouse/check/items",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:POST:/api/inventory/warehouse/check/finish",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:POST:/api/inventory/warehouse/check/finish",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:POST:/api/inventory/warehouse/check/reset",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:POST:/api/inventory/warehouse/check/reset",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:GET:/api/inventory/events",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:GET:/api/inventory/events",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/check/[checkId]:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/inventory/print/check/[checkId]",
+      "target": "route:GET:/api/pilot/inventory",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getCheckPrintData"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:GET:/api/inventory/me/permissions",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:GET:/api/inventory/warehouses",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:GET:/api/inventory/warehouses",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:GET:/api/inventory/staff/onboard",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:GET:/api/inventory/staff/onboard",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:POST:/api/inventory/scan/code",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:POST:/api/inventory/scan/code",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:POST:/api/inventory/warehouse/item/assign",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:POST:/api/inventory/warehouse/item/assign",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:GET:/api/inventory/warehouse/check/scan",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:GET:/api/inventory/warehouse/check/scan",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:GET:/api/inventory/warehouse/check/items",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:GET:/api/inventory/warehouse/check/items",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:POST:/api/inventory/warehouse/check/finish",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:POST:/api/inventory/warehouse/check/finish",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:POST:/api/inventory/warehouse/check/reset",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:POST:/api/inventory/warehouse/check/reset",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:GET:/api/inventory/events",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:GET:/api/inventory/events",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/items-labels:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/inventory/print/items-labels",
+      "target": "route:GET:/api/pilot/inventory",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getItemPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:GET:/api/inventory/me/permissions",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:GET:/api/inventory/warehouses",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:GET:/api/inventory/warehouses",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:GET:/api/inventory/staff/onboard",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:GET:/api/inventory/staff/onboard",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:POST:/api/inventory/scan/code",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:POST:/api/inventory/scan/code",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:POST:/api/inventory/warehouse/item/assign",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:POST:/api/inventory/warehouse/item/assign",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:GET:/api/inventory/warehouse/check/scan",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:GET:/api/inventory/warehouse/check/scan",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:GET:/api/inventory/warehouse/check/items",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:GET:/api/inventory/warehouse/check/items",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:POST:/api/inventory/warehouse/check/finish",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:POST:/api/inventory/warehouse/check/finish",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:POST:/api/inventory/warehouse/check/reset",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:POST:/api/inventory/warehouse/check/reset",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:GET:/api/inventory/events",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:GET:/api/inventory/events",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]/labels:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/inventory/print/order/[orderId]/labels",
+      "target": "route:GET:/api/pilot/inventory",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderPrintLabels"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:GET:/api/inventory/me/permissions",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:GET:/api/inventory/warehouses",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:GET:/api/inventory/warehouses",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:GET:/api/inventory/staff/onboard",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:GET:/api/inventory/staff/onboard",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:POST:/api/inventory/scan/code",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:POST:/api/inventory/scan/code",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:POST:/api/inventory/warehouse/item/assign",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:POST:/api/inventory/warehouse/item/assign",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:GET:/api/inventory/warehouse/check/scan",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:GET:/api/inventory/warehouse/check/scan",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:GET:/api/inventory/warehouse/check/items",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:GET:/api/inventory/warehouse/check/items",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:POST:/api/inventory/warehouse/check/finish",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:POST:/api/inventory/warehouse/check/finish",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:POST:/api/inventory/warehouse/check/reset",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:POST:/api/inventory/warehouse/check/reset",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:GET:/api/inventory/events",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:GET:/api/inventory/events",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/order/[orderId]:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/inventory/print/order/[orderId]",
+      "target": "route:GET:/api/pilot/inventory",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getOrderDetail"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:GET:/api/inventory/me/permissions",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:GET:/api/inventory/warehouses",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:GET:/api/inventory/warehouses",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:GET:/api/inventory/staff/onboard",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:GET:/api/inventory/staff/onboard",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:POST:/api/inventory/scan/code",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:POST:/api/inventory/scan/code",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:POST:/api/inventory/warehouse/item/assign",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:POST:/api/inventory/warehouse/item/assign",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:GET:/api/inventory/warehouse/check/scan",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:GET:/api/inventory/warehouse/check/scan",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:GET:/api/inventory/warehouse/check/items",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:GET:/api/inventory/warehouse/check/items",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:POST:/api/inventory/warehouse/check/finish",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:POST:/api/inventory/warehouse/check/finish",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:POST:/api/inventory/warehouse/check/reset",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:POST:/api/inventory/warehouse/check/reset",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:GET:/api/inventory/events",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:GET:/api/inventory/events",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/print/warehouse-report:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/inventory/print/warehouse-report",
+      "target": "route:GET:/api/pilot/inventory",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getWarehouseReportPrint"
+    },
+    {
       "id": "edge:page:/dashboard/inventory/scan-logs:route:GET:/api/inventory/me/permissions",
       "source": "page:/dashboard/inventory/scan-logs",
       "target": "route:GET:/api/inventory/me/permissions",
@@ -136112,31 +137789,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 6223,
-    "totalEdges": 8002,
+    "totalNodes": 6271,
+    "totalEdges": 8154,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
       "FastifyRoute": 804,
-      "Component": 77,
-      "SharedType": 1646,
+      "Component": 85,
+      "SharedType": 1665,
       "DesignToken": 12,
       "UIComponent": 816,
-      "File": 2682
+      "File": 2703
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1841,
+      "EXPORTS": 1860,
       "HANDLES_ROUTE": 804,
-      "RENDERS": 893,
+      "RENDERS": 901,
       "USES_TOKEN": 818,
-      "IMPORTS": 1635,
+      "IMPORTS": 1654,
       "QUERIES_MODEL": 613,
-      "API_CALL": 1398
+      "API_CALL": 1504
     },
     "fastifyRouteCount": 804,
     "prismaModelCount": 183,
-    "nextPageCount": 77,
-    "sharedTypeCount": 1646
+    "nextPageCount": 85,
+    "sharedTypeCount": 1665
   },
   "routes": [
     {

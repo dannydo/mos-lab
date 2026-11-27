@@ -28,6 +28,7 @@ const STRICT_ADMIN_ONLY_KEYS = new Set([
   'pnl-simulator',
   'inventory-parent',
   'inventory-items',
+  'inventory-orders',
   'inventory-limits',
   'inventory-assign',
   'inventory-assets',
