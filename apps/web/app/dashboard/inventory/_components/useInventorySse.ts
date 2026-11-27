@@ -42,6 +42,8 @@ export function useInventorySse(opts: {
     listen('check-update');
     listen('output-assign');
     listen('order-add');
+    listen('job-completed');
+    listen('order-push-digest');
 
     return () => {
       setConnected(false);

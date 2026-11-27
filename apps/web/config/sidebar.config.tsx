@@ -34,6 +34,7 @@ const STRICT_ADMIN_ONLY_KEYS = new Set([
   'inventory-assets',
   'inventory-scan-logs',
   'inventory-catalog',
+  'inventory-jobs',
 ]);
 
 export function getSidebarGroups(

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Button, Select } from 'antd';
 import {
   ClipboardCheck,
+  Clock,
   Database,
   FileSpreadsheet,
   Layers,
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/inventory/assets', label: 'Tài Sản', icon: Layers },
   { href: '/dashboard/inventory/scan-logs', label: 'Quét Mã QR', icon: QrCode },
   { href: '/dashboard/inventory/catalog', label: 'Danh Mục SKU/Kho', icon: Database },
+  { href: '/dashboard/inventory/jobs', label: 'Cron Jobs', icon: Clock },
 ];
 
 const ROLE_OPTIONS: Array<{ value: InventoryRolePreviewKey; label: string }> = [

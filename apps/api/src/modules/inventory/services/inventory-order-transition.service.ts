@@ -18,6 +18,7 @@ import {
   type WarehouseItemRow,
 } from './inventory-order-mutation.service.js';
 import { inventorySseBroker } from './inventory-sse.service.js';
+import { runReportWarehouseJob } from './inventory-job-reports.service.js';
 
 export async function transitionWarehouseOrderState(
   ctx: InventoryAuthContext,
@@ -157,6 +158,7 @@ export async function importCheckedOrderItems(
   ctx: InventoryAuthContext,
   orderId: number
 ): Promise<InventoryOrderDetailResponse> {
+  const affectedWarehouseIds = new Set<number>();
   await withInventoryTransaction(async (conn) => {
     const orderRows = await queryInventory<OrderHeaderRow[]>(
       `SELECT * FROM inventory_warehouse_order WHERE id = ? LIMIT 1`,
@@ -243,6 +245,8 @@ export async function importCheckedOrderItems(
       }
 
       if (targetWhItemId > 0) {
+        if (oi.from_inventory_warehouse_id) affectedWarehouseIds.add(Number(oi.from_inventory_warehouse_id));
+        if (oi.to_inventory_warehouse_id) affectedWarehouseIds.add(Number(oi.to_inventory_warehouse_id));
         await executeInventory(
           `UPDATE inventory_warehouse_order_item SET to_inventory_warehouse_item_id = ?, imported_staff_id = ?, date_imported = NOW() WHERE id = ?`,
           [targetWhItemId, ctx.actorLegacyUserId, oi.id],
@@ -275,6 +279,11 @@ export async function importCheckedOrderItems(
     await recalculateOrderTotals(orderId, conn);
   });
 
+  if (affectedWarehouseIds.size > 0) {
+    void Promise.all(
+      [...affectedWarehouseIds].map((whId) => runReportWarehouseJob({ warehouseId: whId, dryRun: false }))
+    ).catch(() => undefined);
+  }
   inventorySseBroker.publish('check-update', { orderId, mode: 'import' });
   return getWarehouseOrderDetail(ctx, orderId, { mode: 'check' });
 }

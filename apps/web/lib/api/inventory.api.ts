@@ -1,5 +1,6 @@
 import api, { resolveMediaUrl } from '../api';
 import type { ApiRequestOptions } from './base';
+import { inventoryJobsApi } from './inventory-jobs.api';
 import { inventoryOrdersApi } from './inventory-orders.api';
 import type {
   InventoryAssignRequest,
@@ -459,5 +460,6 @@ export const inventoryApi = {
     },
 
     ...inventoryOrdersApi,
+    ...inventoryJobsApi,
   },
 };

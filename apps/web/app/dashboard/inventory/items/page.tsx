@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
-import { Button, DatePicker, Input, Select, Tabs } from 'antd';
+import { Button, DatePicker, Input, Select, Tabs, message } from 'antd';
 import {
   AlertTriangle,
   ArrowDownToLine,
@@ -13,6 +13,7 @@ import {
   Package,
   Printer,
   RefreshCw,
+  RotateCcw,
   Search,
 } from 'lucide-react';
 import {
@@ -23,7 +24,15 @@ import {
   type InventoryLifecycleMode,
   type InventoryLifecycleRowDto,
 } from '@mos-lab/shared';
-import { AppIcon, DataTable, SectionCard, StatCard, StatePanel, StatusTag } from '../../../../components/ui';
+import {
+  AdaptiveModal,
+  AppIcon,
+  DataTable,
+  SectionCard,
+  StatCard,
+  StatePanel,
+  StatusTag,
+} from '../../../../components/ui';
 import { apiClient } from '../../../../lib/api-client';
 import { InventoryAdminHeader } from '../_components/InventoryAdminHeader';
 import { InventoryChecksDrawer } from '../_components/InventoryChecksDrawer';
@@ -53,6 +62,7 @@ export default function InventoryItemsPage() {
   const showPrice = ctx.hasPermission('view-price');
   const canApproveChecks = ctx.hasPermission('warehouse-check-approve');
   const canMutateState = ctx.hasPermission('item-state-global') || ctx.hasPermission('item-state');
+  const canRegenerate = ctx.hasPermission('edit-order-global');
 
   const [itemTypeTab, setItemTypeTab] = useState<'ALL' | InventoryItemType>('ALL');
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs().endOf('month')]);
@@ -72,6 +82,9 @@ export default function InventoryItemsPage() {
   const [drilldown, setDrilldown] = useState<DrilldownState>({ open: false, mode: 'end' });
   const [historyItemId, setHistoryItemId] = useState<number | null>(null);
   const [checksOpen, setChecksOpen] = useState(false);
+  const [regenOpen, setRegenOpen] = useState(false);
+  const [regenBusy, setRegenBusy] = useState(false);
+  const [regenPreview, setRegenPreview] = useState<string | null>(null);
 
   const dateFrom = dateRange[0].format('YYYY-MM-DD');
   const dateTo = dateRange[1].format('YYYY-MM-DD');
@@ -326,7 +339,18 @@ export default function InventoryItemsPage() {
       <SectionCard
         title="Báo Cáo Tồn & Luân Chuyển Vòng Đời Vật Tư"
         extra={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {canRegenerate && (
+              <Button
+                icon={<AppIcon icon={RotateCcw} size="sm" />}
+                onClick={() => {
+                  setRegenPreview(null);
+                  setRegenOpen(true);
+                }}
+              >
+                Tái Tạo Báo Cáo
+              </Button>
+            )}
             <Link
               href={`/dashboard/inventory/print/warehouse-report?dateFrom=${dateFrom}&dateTo=${dateTo}${
                 selectedWarehouseIds[0] ? `&warehouseId=${selectedWarehouseIds[0]}` : ''
@@ -459,6 +483,82 @@ export default function InventoryItemsPage() {
         previewRole={ctx.previewRole}
         previewStoreId={ctx.previewStoreId}
       />
+
+      <AdaptiveModal
+        open={regenOpen}
+        onCancel={() => setRegenOpen(false)}
+        intent="confirm"
+        zIndex={1050}
+        title="Tái Tạo Chuỗi Báo Cáo Vòng Đời Kho"
+        footer={[
+          <Button key="close" onClick={() => setRegenOpen(false)}>
+            Đóng
+          </Button>,
+          <Button
+            key="dry"
+            loading={regenBusy}
+            onClick={async () => {
+              setRegenBusy(true);
+              try {
+                const res = await apiClient.inventory.regenerateStateReport({
+                  date_to: dateTo,
+                  warehouseId: selectedWarehouseIds[0],
+                  dryRun: true,
+                  previewRole: ctx.previewRole,
+                  previewStoreId: ctx.previewStoreId,
+                });
+                const chainedSummary = (res.result.chainedResults || []).map((c) => c.summary).join(' | ');
+                setRegenPreview([res.result.summary, chainedSummary].filter(Boolean).join(' -> '));
+              } catch (err: unknown) {
+                message.error(err instanceof Error ? err.message : 'Chạy thử tái tạo thất bại');
+              } finally {
+                setRegenBusy(false);
+              }
+            }}
+          >
+            Chạy Thử (Dry-Run)
+          </Button>,
+          <Button
+            key="exec"
+            type="primary"
+            loading={regenBusy}
+            onClick={async () => {
+              setRegenBusy(true);
+              try {
+                const res = await apiClient.inventory.regenerateStateReport({
+                  date_to: dateTo,
+                  warehouseId: selectedWarehouseIds[0],
+                  dryRun: false,
+                  previewRole: ctx.previewRole,
+                  previewStoreId: ctx.previewStoreId,
+                });
+                message.success(res.result.summary);
+                setRegenOpen(false);
+                void loadLifecycle(page, limit);
+              } catch (err: unknown) {
+                message.error(err instanceof Error ? err.message : 'Tái tạo báo cáo thất bại');
+              } finally {
+                setRegenBusy(false);
+              }
+            }}
+          >
+            Tái Tạo Thực
+          </Button>,
+        ]}
+      >
+        <div className="space-y-3 py-2 text-xs text-slate-600 dark:text-slate-300">
+          <div>
+            Chạy chuỗi liên hoàn <span className="font-mono font-semibold">State → Item → Warehouse</span> cho tháng
+            chứa ngày <span className="font-mono font-semibold">{dateTo}</span>
+            {selectedWarehouseIds[0] ? ` (Kho #${selectedWarehouseIds[0]})` : ' (Toàn bộ kho)'}.
+          </div>
+          {regenPreview && (
+            <div className="rounded-lg border border-sky-200 bg-sky-50/70 p-2.5 text-slate-700 dark:border-sky-800 dark:bg-sky-950/40 dark:text-slate-200">
+              {regenPreview}
+            </div>
+          )}
+        </div>
+      </AdaptiveModal>
     </div>
   );
 }

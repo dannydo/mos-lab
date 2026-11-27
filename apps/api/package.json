@@ -13,6 +13,7 @@
     "prisma:migrate:crm": "prisma migrate dev --schema=prisma/crm.prisma --name init",
     "schema:apply:crm": "prisma db push --schema=prisma/crm.prisma --skip-generate",
     "safe-dev:seed-payroll-approvers": "tsx src/safe-dev/seed-payroll-adjustment-approvers.ts",
+    "inventory:cron": "tsx src/scripts/inventory-cron.ts",
     "data-migrations:validate": "tsx src/scripts/run-data-migrations.ts --validate",
     "data-migrations:plan": "tsx src/scripts/run-data-migrations.ts --plan",
     "data-migrations:run": "tsx src/scripts/run-data-migrations.ts",

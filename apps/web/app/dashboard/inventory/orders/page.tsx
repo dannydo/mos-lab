@@ -6,6 +6,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import { Button, DatePicker, Input, Select, Tabs, message } from 'antd';
 import {
+  Bot,
   CheckSquare,
   Edit3,
   Eye,
@@ -21,7 +22,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { InventoryOrderDto, InventoryOrderState } from '@mos-lab/shared';
-import { AppIcon, DataTable, SectionCard, StatePanel, StatusTag } from '../../../../components/ui';
+import { AppIcon, DataTable, SectionCard, StatePanel, StatusTag, AdaptiveModal } from '../../../../components/ui';
 import { apiClient } from '../../../../lib/api-client';
 import { InventoryAdminHeader } from '../_components/InventoryAdminHeader';
 import { formatVnd } from '../_components/InventoryItemsDrilldownDrawer';
@@ -51,6 +52,7 @@ export default function InventoryOrdersPage() {
   const ctx = useInventoryAdminContext();
   const showPrice = ctx.hasPermission('view-price');
   const canMerge = ctx.hasPermission('merge-order');
+  const canAutoOrder = ctx.hasPermission('edit-order-global') || ctx.hasPermission('order-approve');
 
   const [tab, setTab] = useState<'pending' | 'completed' | 'all'>('pending');
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs().endOf('month')]);
@@ -72,6 +74,10 @@ export default function InventoryOrdersPage() {
     order: InventoryOrderDto | null;
   }>({ open: false, mode: 'create', order: null });
   const [itemsModalOrderId, setItemsModalOrderId] = useState<number | null>(null);
+  const [autoOrderOpen, setAutoOrderOpen] = useState(false);
+  const [autoOrderWhId, setAutoOrderWhId] = useState<number | undefined>(undefined);
+  const [autoOrderBusy, setAutoOrderBusy] = useState(false);
+  const [autoOrderPreview, setAutoOrderPreview] = useState<string | null>(null);
 
   const dateFrom = dateRange[0].format('YYYY-MM-DD');
   const dateTo = dateRange[1].format('YYYY-MM-DD');
@@ -287,6 +293,18 @@ export default function InventoryOrdersPage() {
                 Gộp {selectedOrderIds.length} Phiếu
               </Button>
             )}
+            {canAutoOrder && (
+              <Button
+                icon={<AppIcon icon={Bot} size={14} />}
+                onClick={() => {
+                  setAutoOrderWhId(selectedWhIds[0]);
+                  setAutoOrderPreview(null);
+                  setAutoOrderOpen(true);
+                }}
+              >
+                Đặt Hàng Tự Động
+              </Button>
+            )}
             <Button
               type="primary"
               icon={<AppIcon icon={Plus} size={14} />}
@@ -407,6 +425,98 @@ export default function InventoryOrdersPage() {
         previewStoreId={ctx.previewStoreId}
         onClose={() => setItemsModalOrderId(null)}
       />
+
+      <AdaptiveModal
+        open={autoOrderOpen}
+        onCancel={() => setAutoOrderOpen(false)}
+        intent="confirm"
+        zIndex={1050}
+        title="Đặt Hàng Tự Động Theo Định Mức Kho"
+        footer={[
+          <Button key="close" onClick={() => setAutoOrderOpen(false)}>
+            Đóng
+          </Button>,
+          <Button
+            key="dry"
+            loading={autoOrderBusy}
+            onClick={async () => {
+              if (!autoOrderWhId) {
+                message.warning('Vui lòng chọn kho cần kiểm tra đặt hàng tự động');
+                return;
+              }
+              setAutoOrderBusy(true);
+              try {
+                const res = await apiClient.inventory.triggerAutoOrder({
+                  inventory_warehouse_id: autoOrderWhId,
+                  dryRun: true,
+                  previewRole: ctx.previewRole,
+                  previewStoreId: ctx.previewStoreId,
+                });
+                setAutoOrderPreview(res.result.summary);
+              } catch (err: unknown) {
+                message.error(err instanceof Error ? err.message : 'Xem trước đặt hàng thất bại');
+              } finally {
+                setAutoOrderBusy(false);
+              }
+            }}
+          >
+            Xem Trước (Dry-Run)
+          </Button>,
+          <Button
+            key="run"
+            type="primary"
+            loading={autoOrderBusy}
+            onClick={async () => {
+              if (!autoOrderWhId) {
+                message.warning('Vui lòng chọn kho cần tạo đơn tự động');
+                return;
+              }
+              setAutoOrderBusy(true);
+              try {
+                const res = await apiClient.inventory.triggerAutoOrder({
+                  inventory_warehouse_id: autoOrderWhId,
+                  dryRun: false,
+                  previewRole: ctx.previewRole,
+                  previewStoreId: ctx.previewStoreId,
+                });
+                message.success(res.result.summary);
+                setAutoOrderOpen(false);
+                void loadOrders(page, limit);
+              } catch (err: unknown) {
+                message.error(err instanceof Error ? err.message : 'Tạo đơn tự động thất bại');
+              } finally {
+                setAutoOrderBusy(false);
+              }
+            }}
+          >
+            Tạo Đơn Tự Động
+          </Button>,
+        ]}
+      >
+        <div className="space-y-3 py-2 text-sm">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">
+              Chọn kho áp dụng (cập nhật max_count & lập phiếu nháp New nếu đạt ngưỡng) *
+            </label>
+            <Select
+              className="w-full"
+              placeholder="Chọn kho chi nhánh / kho tổng"
+              value={autoOrderWhId}
+              getPopupContainer={(n) => n.parentElement || document.body}
+              options={ctx.warehouses.map((w) => ({
+                value: w.inventory_warehouse_id,
+                label: w.inventory_warehouse_name,
+              }))}
+              onChange={(v) => setAutoOrderWhId(Number(v))}
+            />
+          </div>
+          {autoOrderPreview && (
+            <div className="rounded-lg border border-sky-200 bg-sky-50/70 p-2.5 text-xs text-slate-700 dark:border-sky-800 dark:bg-sky-950/40 dark:text-slate-200">
+              {autoOrderPreview}
+            </div>
+          )}
+        </div>
+      </AdaptiveModal>
     </div>
   );
 }

@@ -10674,7 +10674,7 @@
         "path": "/api/inventory/me/permissions",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 33
+        "line": 35
       }
     },
     {
@@ -10688,7 +10688,7 @@
         "path": "/api/inventory/warehouses",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 57
+        "line": 59
       }
     },
     {
@@ -10702,7 +10702,7 @@
         "path": "/api/inventory/staff/onboard",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 78
+        "line": 80
       }
     },
     {
@@ -10716,7 +10716,7 @@
         "path": "/api/inventory/scan/code",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 87
+        "line": 89
       }
     },
     {
@@ -10730,7 +10730,7 @@
         "path": "/api/inventory/warehouse/item/assign",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 108
+        "line": 110
       }
     },
     {
@@ -10744,7 +10744,7 @@
         "path": "/api/inventory/warehouse/check/scan",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 132
+        "line": 134
       }
     },
     {
@@ -10758,7 +10758,7 @@
         "path": "/api/inventory/warehouse/check/items",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 162
+        "line": 164
       }
     },
     {
@@ -10772,7 +10772,7 @@
         "path": "/api/inventory/warehouse/check/finish",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 197
+        "line": 199
       }
     },
     {
@@ -10786,7 +10786,7 @@
         "path": "/api/inventory/warehouse/check/reset",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 215
+        "line": 217
       }
     },
     {
@@ -10800,7 +10800,7 @@
         "path": "/api/inventory/warehouse/item/:warehouseItemId/history",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 233
+        "line": 235
       }
     },
     {
@@ -10814,7 +10814,7 @@
         "path": "/api/inventory/media/scan/:scanCodeId",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 255
+        "line": 257
       }
     },
     {
@@ -10828,7 +10828,7 @@
         "path": "/api/inventory/events",
         "module": "inventory",
         "handler": "inlineHandler",
-        "line": 261
+        "line": 263
       }
     },
     {
@@ -15141,8 +15141,20 @@
       "filePath": "apps/web/app/dashboard/inventory/items/page.tsx",
       "metadata": {
         "routePath": "/dashboard/inventory/items",
-        "apiCallsCount": 1,
-        "apiCalls": ["inventory.getLifecycle"]
+        "apiCallsCount": 2,
+        "apiCalls": ["inventory.getLifecycle", "inventory.regenerateStateReport"]
+      }
+    },
+    {
+      "id": "page:/dashboard/inventory/jobs",
+      "type": "Component",
+      "label": "App Page: /dashboard/inventory/jobs",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/inventory/jobs/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/inventory/jobs",
+        "apiCallsCount": 2,
+        "apiCalls": ["inventory.getJobsStatus", "inventory.runJob"]
       }
     },
     {
@@ -15205,8 +15217,8 @@
       "filePath": "apps/web/app/dashboard/inventory/orders/page.tsx",
       "metadata": {
         "routePath": "/dashboard/inventory/orders",
-        "apiCallsCount": 2,
-        "apiCalls": ["inventory.getOrders", "inventory.cancelOrder"]
+        "apiCallsCount": 3,
+        "apiCalls": ["inventory.getOrders", "inventory.cancelOrder", "inventory.triggerAutoOrder"]
       }
     },
     {
@@ -27721,6 +27733,126 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "InventoryScanTabConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryJobKey",
+      "type": "SharedType",
+      "label": "InventoryJobKey",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/jobs.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryJobKey",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryJobCategory",
+      "type": "SharedType",
+      "label": "InventoryJobCategory",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/jobs.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryJobCategory",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryJobTriggerSource",
+      "type": "SharedType",
+      "label": "InventoryJobTriggerSource",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/jobs.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryJobTriggerSource",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryJobDefinitionDto",
+      "type": "SharedType",
+      "label": "InventoryJobDefinitionDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/jobs.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryJobDefinitionDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryJobRunRequest",
+      "type": "SharedType",
+      "label": "InventoryJobRunRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/jobs.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryJobRunRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryJobRunResultDto",
+      "type": "SharedType",
+      "label": "InventoryJobRunResultDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/jobs.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryJobRunResultDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryJobHistoryEntryDto",
+      "type": "SharedType",
+      "label": "InventoryJobHistoryEntryDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/jobs.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryJobHistoryEntryDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryJobsStatusResponse",
+      "type": "SharedType",
+      "label": "InventoryJobsStatusResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/jobs.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryJobsStatusResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryAutoOrderRequest",
+      "type": "SharedType",
+      "label": "InventoryAutoOrderRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/jobs.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryAutoOrderRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryRegenerateStateRequest",
+      "type": "SharedType",
+      "label": "InventoryRegenerateStateRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/jobs.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryRegenerateStateRequest",
         "package": "@mos-lab/shared"
       }
     },
@@ -51647,8 +51779,21 @@
       "filePath": "apps/api/src/modules/inventory/inventory-wave3.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6254,
-        "lineCount": 153,
+        "sizeBytes": 6290,
+        "lineCount": 162,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/inventory-wave4.test.ts",
+      "type": "File",
+      "label": "inventory-wave4.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/inventory-wave4.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4818,
+        "lineCount": 142,
         "ext": ".ts"
       }
     },
@@ -51666,6 +51811,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/inventory/routes-jobs.ts",
+      "type": "File",
+      "label": "routes-jobs.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/routes-jobs.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4437,
+        "lineCount": 115,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/inventory/routes-orders.ts",
       "type": "File",
       "label": "routes-orders.ts",
@@ -51673,8 +51831,8 @@
       "filePath": "apps/api/src/modules/inventory/routes-orders.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13870,
-        "lineCount": 316,
+        "sizeBytes": 14315,
+        "lineCount": 367,
         "ext": ".ts"
       }
     },
@@ -51686,8 +51844,8 @@
       "filePath": "apps/api/src/modules/inventory/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10723,
-        "lineCount": 287,
+        "sizeBytes": 10815,
+        "lineCount": 289,
         "ext": ".ts"
       }
     },
@@ -51770,6 +51928,58 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-job-automation.service.ts",
+      "type": "File",
+      "label": "inventory-job-automation.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-job-automation.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 22494,
+        "lineCount": 496,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-job-reports.service.ts",
+      "type": "File",
+      "label": "inventory-job-reports.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-job-reports.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 19225,
+        "lineCount": 430,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-job-warehouse-reports.service.ts",
+      "type": "File",
+      "label": "inventory-job-warehouse-reports.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-job-warehouse-reports.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 24441,
+        "lineCount": 464,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-jobs-runner.service.ts",
+      "type": "File",
+      "label": "inventory-jobs-runner.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-jobs-runner.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7397,
+        "lineCount": 214,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/inventory/services/inventory-lifecycle-drilldown.service.ts",
       "type": "File",
       "label": "inventory-lifecycle-drilldown.service.ts",
@@ -51816,8 +52026,8 @@
       "filePath": "apps/api/src/modules/inventory/services/inventory-order-mutation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19407,
-        "lineCount": 441,
+        "sizeBytes": 19927,
+        "lineCount": 493,
         "ext": ".ts"
       }
     },
@@ -51829,8 +52039,21 @@
       "filePath": "apps/api/src/modules/inventory/services/inventory-order-query.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 28888,
-        "lineCount": 639,
+        "sizeBytes": 27649,
+        "lineCount": 622,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-order-stock.service.ts",
+      "type": "File",
+      "label": "inventory-order-stock.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-order-stock.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1696,
+        "lineCount": 40,
         "ext": ".ts"
       }
     },
@@ -51842,8 +52065,8 @@
       "filePath": "apps/api/src/modules/inventory/services/inventory-order-transition.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11816,
-        "lineCount": 285,
+        "sizeBytes": 12394,
+        "lineCount": 290,
         "ext": ".ts"
       }
     },
@@ -51855,8 +52078,8 @@
       "filePath": "apps/api/src/modules/inventory/services/inventory-print.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21193,
-        "lineCount": 465,
+        "sizeBytes": 21342,
+        "lineCount": 501,
         "ext": ".ts"
       }
     },
@@ -58023,6 +58246,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/scripts/inventory-cron.ts",
+      "type": "File",
+      "label": "inventory-cron.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/inventory-cron.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2573,
+        "lineCount": 69,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/scripts/lib/apply-legacy-indexes.test.ts",
       "type": "File",
       "label": "apply-legacy-indexes.test.ts",
@@ -58212,8 +58448,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17998,
-        "lineCount": 446,
+        "sizeBytes": 18150,
+        "lineCount": 448,
         "ext": ".ts"
       }
     },
@@ -67325,8 +67561,21 @@
       "filePath": "apps/web/app/dashboard/inventory/__tests__/inventory-wave3.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2573,
-        "lineCount": 54,
+        "sizeBytes": 2542,
+        "lineCount": 49,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/__tests__/inventory-wave4.test.tsx",
+      "type": "File",
+      "label": "inventory-wave4.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/__tests__/inventory-wave4.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2191,
+        "lineCount": 52,
         "ext": ".tsx"
       }
     },
@@ -67338,8 +67587,8 @@
       "filePath": "apps/web/app/dashboard/inventory/_components/InventoryAdminHeader.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5309,
-        "lineCount": 137,
+        "sizeBytes": 5392,
+        "lineCount": 139,
         "ext": ".tsx"
       }
     },
@@ -67390,8 +67639,8 @@
       "filePath": "apps/web/app/dashboard/inventory/_components/QrCodeImage.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 913,
-        "lineCount": 38,
+        "sizeBytes": 899,
+        "lineCount": 36,
         "ext": ".tsx"
       }
     },
@@ -67416,8 +67665,8 @@
       "filePath": "apps/web/app/dashboard/inventory/_components/useInventorySse.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1619,
-        "lineCount": 54,
+        "sizeBytes": 1681,
+        "lineCount": 56,
         "ext": ".ts"
       }
     },
@@ -67481,8 +67730,21 @@
       "filePath": "apps/web/app/dashboard/inventory/items/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16417,
-        "lineCount": 456,
+        "sizeBytes": 20079,
+        "lineCount": 557,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/inventory/jobs/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/inventory/jobs/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 18128,
+        "lineCount": 503,
         "ext": ".tsx"
       }
     },
@@ -67507,8 +67769,8 @@
       "filePath": "apps/web/app/dashboard/inventory/orders/[orderId]/assign/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13044,
-        "lineCount": 346,
+        "sizeBytes": 13099,
+        "lineCount": 350,
         "ext": ".tsx"
       }
     },
@@ -67520,8 +67782,8 @@
       "filePath": "apps/web/app/dashboard/inventory/orders/[orderId]/scan/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17612,
-        "lineCount": 479,
+        "sizeBytes": 17809,
+        "lineCount": 491,
         "ext": ".tsx"
       }
     },
@@ -67533,8 +67795,8 @@
       "filePath": "apps/web/app/dashboard/inventory/orders/_components/OrderEditorModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21587,
-        "lineCount": 557,
+        "sizeBytes": 21986,
+        "lineCount": 587,
         "ext": ".tsx"
       }
     },
@@ -67546,8 +67808,8 @@
       "filePath": "apps/web/app/dashboard/inventory/orders/_components/OrderItemsModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6370,
-        "lineCount": 193,
+        "sizeBytes": 6438,
+        "lineCount": 199,
         "ext": ".tsx"
       }
     },
@@ -67559,8 +67821,8 @@
       "filePath": "apps/web/app/dashboard/inventory/orders/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14671,
-        "lineCount": 420,
+        "sizeBytes": 18977,
+        "lineCount": 523,
         "ext": ".tsx"
       }
     },
@@ -67585,8 +67847,8 @@
       "filePath": "apps/web/app/dashboard/inventory/print/check/[checkId]/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8333,
-        "lineCount": 198,
+        "sizeBytes": 8345,
+        "lineCount": 199,
         "ext": ".tsx"
       }
     },
@@ -67598,8 +67860,8 @@
       "filePath": "apps/web/app/dashboard/inventory/print/items-labels/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6552,
-        "lineCount": 148,
+        "sizeBytes": 6873,
+        "lineCount": 164,
         "ext": ".tsx"
       }
     },
@@ -67611,8 +67873,8 @@
       "filePath": "apps/web/app/dashboard/inventory/print/order/[orderId]/labels/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6348,
-        "lineCount": 141,
+        "sizeBytes": 6659,
+        "lineCount": 155,
         "ext": ".tsx"
       }
     },
@@ -67624,8 +67886,8 @@
       "filePath": "apps/web/app/dashboard/inventory/print/order/[orderId]/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9790,
-        "lineCount": 227,
+        "sizeBytes": 9824,
+        "lineCount": 230,
         "ext": ".tsx"
       }
     },
@@ -67637,8 +67899,8 @@
       "filePath": "apps/web/app/dashboard/inventory/print/warehouse-report/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12672,
-        "lineCount": 274,
+        "sizeBytes": 12867,
+        "lineCount": 298,
         "ext": ".tsx"
       }
     },
@@ -77796,6 +78058,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/api/inventory-jobs.api.ts",
+      "type": "File",
+      "label": "inventory-jobs.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/inventory-jobs.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2234,
+        "lineCount": 76,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/api/inventory-orders.api.ts",
       "type": "File",
       "label": "inventory-orders.api.ts",
@@ -77803,7 +78078,7 @@
       "filePath": "apps/web/lib/api/inventory-orders.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11793,
+        "sizeBytes": 11792,
         "lineCount": 356,
         "ext": ".ts"
       }
@@ -77816,8 +78091,8 @@
       "filePath": "apps/web/lib/api/inventory.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14851,
-        "lineCount": 464,
+        "sizeBytes": 14933,
+        "lineCount": 466,
         "ext": ".ts"
       }
     },
@@ -79772,6 +80047,19 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/inventory/jobs.ts",
+      "type": "File",
+      "label": "jobs.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/inventory/jobs.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 7965,
+        "lineCount": 243,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/inventory/orders-and-print.ts",
       "type": "File",
       "label": "orders-and-print.ts",
@@ -79779,8 +80067,8 @@
       "filePath": "packages/shared/src/types/inventory/orders-and-print.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 8006,
-        "lineCount": 264,
+        "sizeBytes": 7991,
+        "lineCount": 256,
         "ext": ".ts"
       }
     },
@@ -79818,7 +80106,7 @@
       "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7869,
+        "sizeBytes": 7909,
         "lineCount": 262,
         "ext": ".ts"
       }
@@ -79831,8 +80119,8 @@
       "filePath": "packages/shared/src/types/inventory.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 230,
-        "lineCount": 6,
+        "sizeBytes": 267,
+        "lineCount": 7,
         "ext": ".ts"
       }
     },
@@ -87927,6 +88215,13 @@
       "label": "PAGE_OF"
     },
     {
+      "id": "edge:page:/dashboard/inventory/jobs:ws:apps/web",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
       "id": "edge:page:/dashboard/inventory/limits:ws:apps/web",
       "source": "page:/dashboard/inventory/limits",
       "target": "ws:apps/web",
@@ -95244,6 +95539,76 @@
     {
       "id": "edge:type:@mos-lab/shared:InventoryScanTabConfig:ws:packages/shared",
       "source": "type:@mos-lab/shared:InventoryScanTabConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryJobKey:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryJobKey",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryJobCategory:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryJobCategory",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryJobTriggerSource:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryJobTriggerSource",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryJobDefinitionDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryJobDefinitionDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryJobRunRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryJobRunRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryJobRunResultDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryJobRunResultDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryJobHistoryEntryDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryJobHistoryEntryDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryJobsStatusResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryJobsStatusResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryAutoOrderRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryAutoOrderRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryRegenerateStateRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryRegenerateStateRequest",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -113806,8 +114171,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/inventory/inventory-wave4.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/inventory-wave4.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/inventory/routes-admin.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/inventory/routes-admin.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/routes-jobs.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/routes-jobs.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -113862,6 +114241,34 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-job-automation.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-job-automation.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-job-reports.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-job-reports.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-job-warehouse-reports.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-job-warehouse-reports.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-jobs-runner.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-jobs-runner.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/inventory/services/inventory-lifecycle-drilldown.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/inventory/services/inventory-lifecycle-drilldown.service.ts",
       "target": "ws:packages/shared",
@@ -113885,6 +114292,13 @@
     {
       "id": "edge:file:apps/api/src/modules/inventory/services/inventory-order-query.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/inventory/services/inventory-order-query.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-order-stock.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-order-stock.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -119546,6 +119960,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/inventory/__tests__/inventory-wave4.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/__tests__/inventory-wave4.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/inventory/_components/InventoryAdminHeader.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/inventory/_components/InventoryAdminHeader.tsx",
       "target": "ws:packages/shared",
@@ -119618,6 +120039,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/inventory/items/page.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/inventory/items/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/inventory/jobs/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/inventory/jobs/page.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -122824,6 +123252,13 @@
     {
       "id": "edge:file:apps/web/lib/api/funds.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/funds.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/inventory-jobs.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/inventory-jobs.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -133126,6 +133561,97 @@
       "label": "CALLS inventory.getLifecycle"
     },
     {
+      "id": "edge:page:/dashboard/inventory/jobs:route:GET:/api/inventory/me/permissions",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/jobs:route:GET:/api/inventory/warehouses",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:GET:/api/inventory/warehouses",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/jobs:route:GET:/api/inventory/staff/onboard",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:GET:/api/inventory/staff/onboard",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/jobs:route:POST:/api/inventory/scan/code",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:POST:/api/inventory/scan/code",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/jobs:route:POST:/api/inventory/warehouse/item/assign",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:POST:/api/inventory/warehouse/item/assign",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/jobs:route:GET:/api/inventory/warehouse/check/scan",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:GET:/api/inventory/warehouse/check/scan",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/jobs:route:GET:/api/inventory/warehouse/check/items",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:GET:/api/inventory/warehouse/check/items",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/jobs:route:POST:/api/inventory/warehouse/check/finish",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:POST:/api/inventory/warehouse/check/finish",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/jobs:route:POST:/api/inventory/warehouse/check/reset",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:POST:/api/inventory/warehouse/check/reset",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/jobs:route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/jobs:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/jobs:route:GET:/api/inventory/events",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:GET:/api/inventory/events",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
+      "id": "edge:page:/dashboard/inventory/jobs:route:GET:/api/pilot/inventory",
+      "source": "page:/dashboard/inventory/jobs",
+      "target": "route:GET:/api/pilot/inventory",
+      "type": "API_CALL",
+      "label": "CALLS inventory.getJobsStatus"
+    },
+    {
       "id": "edge:page:/dashboard/inventory/limits:route:GET:/api/inventory/me/permissions",
       "source": "page:/dashboard/inventory/limits",
       "target": "route:GET:/api/inventory/me/permissions",
@@ -137789,31 +138315,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 6271,
-    "totalEdges": 8154,
+    "totalNodes": 6294,
+    "totalEdges": 8188,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
       "FastifyRoute": 804,
-      "Component": 85,
-      "SharedType": 1665,
+      "Component": 86,
+      "SharedType": 1675,
       "DesignToken": 12,
       "UIComponent": 816,
-      "File": 2703
+      "File": 2715
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1860,
+      "EXPORTS": 1870,
       "HANDLES_ROUTE": 804,
-      "RENDERS": 901,
+      "RENDERS": 902,
       "USES_TOKEN": 818,
-      "IMPORTS": 1654,
+      "IMPORTS": 1664,
       "QUERIES_MODEL": 613,
-      "API_CALL": 1504
+      "API_CALL": 1517
     },
     "fastifyRouteCount": 804,
     "prismaModelCount": 183,
-    "nextPageCount": 85,
-    "sharedTypeCount": 1665
+    "nextPageCount": 86,
+    "sharedTypeCount": 1675
   },
   "routes": [
     {

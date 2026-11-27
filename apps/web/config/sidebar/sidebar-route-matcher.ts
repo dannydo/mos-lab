@@ -68,6 +68,7 @@ export function getSelectedMenuKey(
   if (pathname.includes('/dashboard/inventory/assets')) return 'inventory-assets';
   if (pathname.includes('/dashboard/inventory/scan-logs')) return 'inventory-scan-logs';
   if (pathname.includes('/dashboard/inventory/catalog')) return 'inventory-catalog';
+  if (pathname.includes('/dashboard/inventory/jobs')) return 'inventory-jobs';
   if (pathname.includes('/dashboard/inventory')) return 'inventory-items';
   if (pathname.includes('/dashboard/catalog')) return 'catalog';
   if (pathname.includes('/dashboard/architecture')) return 'architecture';

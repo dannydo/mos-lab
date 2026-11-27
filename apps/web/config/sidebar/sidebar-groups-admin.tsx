@@ -200,6 +200,7 @@ export function buildAdminAndReportSidebarGroups(params: {
           { key: 'inventory-assets', label: 'Theo Dõi Tài Sản', path: '/dashboard/inventory/assets' },
           { key: 'inventory-scan-logs', label: 'Lịch Sử Quét Mã QR', path: '/dashboard/inventory/scan-logs' },
           { key: 'inventory-catalog', label: 'Danh Mục SKU / Thương Hiệu / Kho', path: '/dashboard/inventory/catalog' },
+          { key: 'inventory-jobs', label: 'Cron Jobs & Tự Động Hóa', path: '/dashboard/inventory/jobs' },
         ],
       },
       {

@@ -57,6 +57,7 @@ import { iosRoutes } from './modules/ios/routes.js';
 import { wingsGardenRoutes } from './modules/wings-garden/routes.js';
 import { inventoryRoutes } from './modules/inventory/routes.js';
 import { closeInventoryPool } from './modules/inventory/services/inventory-db.js';
+import { startInventoryCronScheduler } from './modules/inventory/services/inventory-jobs-runner.service.js';
 import { startBugReportCleanup } from './modules/bug-reports/bug-report.service.js';
 import { RequestClassificationService } from './modules/bug-reports/request-classification.service.js';
 import { RequestConversationService } from './modules/bug-reports/request-conversation.service.js';
@@ -430,6 +431,7 @@ const start = async () => {
 
       // Start shared pool claim TTL and maintenance worker
       CampaignService.startMaintenanceWorker(server);
+      startInventoryCronScheduler(server);
     }
 
     const port = Number(process.env.PORT) || 3001;

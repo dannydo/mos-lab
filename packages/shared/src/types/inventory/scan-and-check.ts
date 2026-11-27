@@ -255,7 +255,7 @@ export interface InventoryCheckScanQuery {
 }
 
 export interface InventorySseEventPayload {
-  type: 'check-update' | 'output-assign' | 'order-add';
+  type: 'check-update' | 'output-assign' | 'order-add' | 'job-completed' | 'order-push-digest';
   timestamp: string;
   payload: Record<string, unknown>;
 }
