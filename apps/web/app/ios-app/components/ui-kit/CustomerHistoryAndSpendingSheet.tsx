@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertCircle, Cake, Calendar, CreditCard, History, RefreshCw, X } from 'lucide-react';
 import {
+  canViewCustomerTipHistory,
   getCustomerBirthdayThisMonthStatus,
   type IosBookingItem,
   type IosCustomerHistoryResponse,
@@ -238,6 +239,16 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
   const customerNotes = data?.notes || booking.cvlNotes || [];
   const birthdayStatus = getCustomerBirthdayThisMonthStatus(data?.customerDateOfBirth ?? booking.customerDateOfBirth);
   const effectiveTab: IosCustomerHistoryTab = customerFacingMode ? 'LASH_PHOTOS' : activeTab;
+  const storedUserRole = (() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.localStorage.getItem('mos_user');
+      return raw ? (JSON.parse(raw)?.role as string | undefined) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const canViewTipHistory = Boolean(data?.canViewTipHistory ?? canViewCustomerTipHistory(storedUserRole));
 
   const getTabCount = (key: IosCustomerHistoryTab) => {
     if (key === 'LASH_PHOTOS') return visits.length || (booking.lashHistory?.length ?? 0);
@@ -513,6 +524,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                       index={i}
                       mode="ALL"
                       isDark={isDark}
+                      showTip={canViewTipHistory}
                     />
                   ))
                 ))}
@@ -530,6 +542,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                       index={i}
                       mode="PAYMENTS"
                       isDark={isDark}
+                      showTip={canViewTipHistory}
                     />
                   ))
                 ))}
@@ -547,6 +560,7 @@ export const CustomerHistoryAndSpendingSheet: React.FC<CustomerHistoryAndSpendin
                       index={i}
                       mode="FIX"
                       isDark={isDark}
+                      showTip={canViewTipHistory}
                     />
                   ))
                 ))}

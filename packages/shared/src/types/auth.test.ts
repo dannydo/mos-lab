@@ -7,6 +7,7 @@ import {
   canAccessIosConsultationApp,
   canDirectlySettleCounterPayment,
   canSwitchIosBranch,
+  canViewCustomerTipHistory,
   resolveAssignedSalonStoreId,
   resolveLockedIosRoleForUser,
 } from './auth.js';
@@ -229,5 +230,41 @@ describe('Auth Role Invariants & Routing Tests', () => {
     assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'CV' }), false);
     assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'CC' }), true);
     assert.equal(canSwitchIosBranch({ isAdmin: true, iosRole: 'STORE' }), true);
+  });
+
+  it('restricts customer tip history visibility strictly to FM, CHO, and Admin/SuperAdmin (MOS-FEAT-267)', () => {
+    // Allowed roles
+    assert.equal(canViewCustomerTipHistory('fm'), true);
+    assert.equal(canViewCustomerTipHistory('FM'), true);
+    assert.equal(canViewCustomerTipHistory('cho'), true);
+    assert.equal(canViewCustomerTipHistory('CHO'), true);
+    assert.equal(canViewCustomerTipHistory('admin'), true);
+    assert.equal(canViewCustomerTipHistory('super_admin'), true);
+    assert.equal(canViewCustomerTipHistory('superadmin'), true);
+
+    // Blocked roles (CV, CVL, CVLL, CC, Telesales/Booker, CS, Manager, Boss, HR, QA, empty)
+    assert.equal(canViewCustomerTipHistory('cv'), false);
+    assert.equal(canViewCustomerTipHistory('cvl'), false);
+    assert.equal(canViewCustomerTipHistory('CV🪶'), false);
+    assert.equal(canViewCustomerTipHistory('cvll'), false);
+    assert.equal(canViewCustomerTipHistory('🪶CV🪶'), false);
+    assert.equal(canViewCustomerTipHistory('technician'), false);
+    assert.equal(canViewCustomerTipHistory('cc'), false);
+    assert.equal(canViewCustomerTipHistory('consultant'), false);
+    assert.equal(canViewCustomerTipHistory('telesales'), false);
+    assert.equal(canViewCustomerTipHistory('booker'), false);
+    assert.equal(canViewCustomerTipHistory('cs'), false);
+    assert.equal(canViewCustomerTipHistory('control'), false);
+    assert.equal(canViewCustomerTipHistory('manager'), false);
+    assert.equal(canViewCustomerTipHistory('boss'), false);
+    assert.equal(canViewCustomerTipHistory('hr'), false);
+    assert.equal(canViewCustomerTipHistory(null), false);
+    assert.equal(canViewCustomerTipHistory(undefined), false);
+    assert.equal(canViewCustomerTipHistory(''), false);
+
+    // Customer detail read routes allow Today/Schedule/Customers menu scopes
+    const detailKeys = resolveMenuKeysForApiPath('/api/customers/33732/summary');
+    assert.equal(detailKeys.includes('today'), true);
+    assert.equal(detailKeys.includes('customers-all'), true);
   });
 });

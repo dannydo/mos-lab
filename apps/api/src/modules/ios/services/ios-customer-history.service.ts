@@ -1,6 +1,7 @@
 import type mysql from 'mysql2/promise';
 import {
   canAccessIosConsultationApp,
+  canViewCustomerTipHistory,
   canViewUnmaskedCustomerPhone,
   IosCustomerHistoryResponse,
   isAdminOrSuperAdminRole,
@@ -59,6 +60,7 @@ export async function getIosCustomerHistory(
   const isAdmin = authUser.careerTier === 'ADMIN' || isAdminOrSuperAdminRole(authUser.role || '');
   const isCvlStrict = authUser.careerTier === 'CVL' && !isAdmin;
   const canViewPhone = !isCvlStrict && canViewUnmaskedCustomerPhone(authUser.careerTier || authUser.role);
+  const canViewTipHistory = canViewCustomerTipHistory(authUser.role);
   const now = options?.now || new Date();
   const pool = (deps?.getPool || getLegacyPool)();
 
@@ -419,6 +421,7 @@ export async function getIosCustomerHistory(
       profileRow: profileRows[0],
       rawPhone: String(contactRows[0]?.phone_number || '').trim(),
       canViewPhone,
+      canViewTipHistory,
       diamondBalance,
       orderRows,
       paymentRows: mergedPaymentRows,

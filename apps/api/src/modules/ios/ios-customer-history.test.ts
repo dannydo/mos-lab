@@ -434,3 +434,64 @@ test('MOS-FEAT-249: attaches order_note CC consultant note only to completed vis
   assert.equal(completedVisit?.ccNoteStaffName, 'Nguyễn Quang Khải');
   assert.equal(upcomingVisit?.ccNote, null);
 });
+
+test('MOS-FEAT-267: redacts customer tip history for CVL, CVLL, and CC while allowing Admin/SuperAdmin', async () => {
+  const adminActor: IosAuthContext = {
+    id: 1,
+    legacyStaffId: 13783,
+    role: 'super_admin',
+    careerTier: 'ADMIN',
+  };
+  const cvlActor: IosAuthContext = {
+    id: 22,
+    legacyStaffId: 13783,
+    role: 'cvl',
+    careerTier: 'CVL',
+  };
+  const cvllActor: IosAuthContext = {
+    id: 23,
+    legacyStaffId: 13783,
+    role: 'cvll',
+    careerTier: 'CVLL',
+  };
+  const ccActor: IosAuthContext = {
+    id: 38,
+    legacyStaffId: 38,
+    role: 'consultant',
+    careerTier: 'CC',
+  };
+
+  const adminRes = await getIosCustomerHistory(
+    adminActor,
+    33732,
+    { bookingId: 9001, now: new Date('2026-11-16T07:00:00.000Z') },
+    { getPool: () => createMockPool(SAMPLE_MOCK_DB) }
+  );
+  assert.equal(adminRes.statusCode, 200);
+  assert.equal(adminRes.payload.canViewTipHistory, true);
+  assert.equal(adminRes.payload.visits.find((v) => v.orderId === 8001)?.tipAmount, 50000);
+  assert.equal(adminRes.payload.payments.find((v) => v.orderId === 8001)?.tipAmount, 50000);
+
+  for (const actor of [cvlActor, cvllActor, ccActor]) {
+    const res = await getIosCustomerHistory(
+      actor,
+      33732,
+      { bookingId: 9001, now: new Date('2026-11-16T07:00:00.000Z') },
+      { getPool: () => createMockPool(SAMPLE_MOCK_DB) }
+    );
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.payload.canViewTipHistory, false);
+    assert.equal(
+      res.payload.visits.every((v) => v.tipAmount === 0),
+      true
+    );
+    assert.equal(
+      res.payload.payments.every((v) => v.tipAmount === 0),
+      true
+    );
+    assert.equal(
+      res.payload.fixVisits.every((v) => v.tipAmount === 0),
+      true
+    );
+  }
+});

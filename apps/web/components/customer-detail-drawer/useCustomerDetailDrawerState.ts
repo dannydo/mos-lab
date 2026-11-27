@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from 'antd';
-import { isAdminOrSuperAdminRole, shouldMaskCustomerPhone } from '@mos-lab/shared';
+import { canViewCustomerTipHistory, isAdminOrSuperAdminRole, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { useTheme } from '~/context/ThemeContext';
 import { useOmiCall } from '~/context/OmiCallContext';
 import { useResponsiveTier } from '~/hooks/useResponsiveTier';
@@ -65,6 +65,10 @@ export function useCustomerDetailDrawerState({
   }, [currentUser]);
 
   const isMaskedRole = useMemo(() => shouldMaskCustomerPhone(currentUser?.role), [currentUser]);
+  const canViewTipHistory = useMemo(
+    () => Boolean(detail.data?.permissions?.canViewTipHistory ?? canViewCustomerTipHistory(currentUser?.role)),
+    [detail.data?.permissions?.canViewTipHistory, currentUser]
+  );
 
   const [rescheduleAlert, setRescheduleAlert] = useState<RescheduleAlertState | null>(null);
 
@@ -176,6 +180,7 @@ export function useCustomerDetailDrawerState({
     currentUser,
     isManagerOrAdmin,
     isMaskedRole,
+    canViewTipHistory,
     activeTabKey,
     handleTabChange,
     isNoteModalOpen,

@@ -421,4 +421,41 @@ describe('CustomerHistoryAndSpendingSheet (MOS-FEAT-235)', () => {
     expect(screen.queryByTestId('history-cc-note-9001')).toBeNull();
     expect(screen.queryByText(/Không hiển thị khi chưa completed/)).toBeNull();
   });
+
+  it('hides customer tip history for CVL/CC and shows it only when canViewTipHistory is allowed [MOS-FEAT-267]', async () => {
+    window.localStorage.setItem('mos_user', JSON.stringify({ id: 22, role: 'cvl' }));
+    vi.mocked(apiClient.ios.getCustomerHistory).mockResolvedValueOnce({
+      ...MOCK_HISTORY_RESPONSE,
+      canViewTipHistory: false,
+    });
+
+    const { rerender } = render(
+      <CustomerHistoryAndSpendingSheet isOpen={true} initialTab="PAYMENTS" onClose={vi.fn()} booking={SAMPLE_BOOKING} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('history-row-PAYMENTS-8002')).toBeDefined();
+    });
+    expect(screen.queryByText(/Tip: \+50\.000/)).toBeNull();
+
+    window.localStorage.setItem('mos_user', JSON.stringify({ id: 1, role: 'fm' }));
+    vi.mocked(apiClient.ios.getCustomerHistory).mockResolvedValueOnce({
+      ...MOCK_HISTORY_RESPONSE,
+      canViewTipHistory: true,
+    });
+
+    rerender(
+      <CustomerHistoryAndSpendingSheet
+        isOpen={true}
+        initialTab="PAYMENTS"
+        onClose={vi.fn()}
+        booking={{ ...SAMPLE_BOOKING, id: 9002 }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Tip: \+50\.000 đ/)).toBeDefined();
+    });
+    window.localStorage.removeItem('mos_user');
+  });
 });
