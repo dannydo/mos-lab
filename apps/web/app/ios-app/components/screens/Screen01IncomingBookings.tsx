@@ -2,7 +2,8 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import type { IosCustomerHistoryTab } from '@mos-lab/shared';
-import { canSwitchIosBranch } from '@mos-lab/shared';
+import { canDirectlySettleCounterPayment, canSwitchIosBranch } from '@mos-lab/shared';
+import { PendingCounterSettlementBanner } from './incoming/PendingCounterSettlementBanner';
 import { BookingItem, resolveCustomerBookingTab, sortDoneBookingsWithCheckoutFirst } from '../../state/mockData';
 import {
   ActiveActorProfile,
@@ -378,6 +379,15 @@ export function Screen01IncomingBookings({
           })}
         </div>
       </div>
+
+      <PendingCounterSettlementBanner
+        bookings={bookings}
+        bookingSegment={bookingSegment}
+        isDark={isDark}
+        canDirectCounterSettle={canDirectlySettleCounterPayment(actor?.tier || (isAdmin ? 'ADMIN' : role))}
+        onSelectDoneTab={() => setBookingSegment('DONE')}
+        onSelectBooking={onSelectBooking}
+      />
 
       {/* 3. Customer Booking Cards (Số thứ tự đặt góc Avatar, không tốn diện tích card!) */}
       <div

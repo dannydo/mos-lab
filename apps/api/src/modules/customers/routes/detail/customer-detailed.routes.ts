@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
+import { canViewCustomerTipHistory, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { requireAuth } from '../../../../middlewares/auth.js';
 import { daysSinceVisit } from '../../../projections/customer-visit-projection.service.js';
 import { BookingReschedulePermissionService } from '../../services/booking-reschedule-permission.service.js';
@@ -80,6 +80,7 @@ export async function registerCustomerDetailedRoute(fastify: FastifyInstance) {
             : null;
       const daysSince = latestVisitDate ? daysSinceVisit(latestVisitDate) : null;
       const isMaskedRole = shouldMaskCustomerPhone(request.user?.role);
+      const canViewTipHistory = canViewCustomerTipHistory(request.user?.role);
 
       return {
         customer: {
@@ -130,9 +131,9 @@ export async function registerCustomerDetailedRoute(fastify: FastifyInstance) {
           comboWalletBalance,
           gemBalance,
           avgFrequency,
-          totalTips,
-          tipRate,
-          avgTip,
+          totalTips: canViewTipHistory ? totalTips : 0,
+          tipRate: canViewTipHistory ? tipRate : 0,
+          avgTip: canViewTipHistory ? avgTip : 0,
         },
         comboBalances: comboBalances.map((cb) => ({
           id: String(cb.id),
@@ -153,28 +154,30 @@ export async function registerCustomerDetailedRoute(fastify: FastifyInstance) {
         notes: activity.formattedNotes,
         calls: activity.formattedCalls,
         gemTransactions: formatDetailedGemTransactions(gemTransactions),
-        tipTransactions: completedOrders.map((o) => {
-          const payInfo = orderPaymentMap.get(Number(o.id));
-          const orderSvs = activity.orderServicesByOrderId.get(Number(o.id)) || [];
-          const checkOutStaffId = orderSvs.find((os) => os.check_out_staff_id)?.check_out_staff_id;
-          const firstCvStaffId = o.technicianId || orderSvs.find((os) => os.assigned_staff_id)?.assigned_staff_id;
+        tipTransactions: canViewTipHistory
+          ? completedOrders.map((o) => {
+              const payInfo = orderPaymentMap.get(Number(o.id));
+              const orderSvs = activity.orderServicesByOrderId.get(Number(o.id)) || [];
+              const checkOutStaffId = orderSvs.find((os) => os.check_out_staff_id)?.check_out_staff_id;
+              const firstCvStaffId = o.technicianId || orderSvs.find((os) => os.assigned_staff_id)?.assigned_staff_id;
 
-          return {
-            id: Number(o.id),
-            orderKey: o.orderKey,
-            bookingDate: o.bookingDate ? new Date(o.bookingDate).toISOString().replace('Z', '+07:00') : null,
-            totalPrice: Number(o.totalPrice || 0),
-            tipAmount: payInfo ? payInfo.tips : 0,
-            technicianName: (() => {
-              if (!firstCvStaffId) return null;
-              const name = activity.staffNamesMap.get(Number(firstCvStaffId));
-              if (!name) return null;
-              const isInactive = activity.staffInactiveMap.get(Number(firstCvStaffId));
-              return isInactive ? `${name} (Đã nghỉ)` : name;
-            })(),
-            ccOutName: checkOutStaffId ? activity.staffNamesMap.get(Number(checkOutStaffId)) || null : null,
-          };
-        }),
+              return {
+                id: Number(o.id),
+                orderKey: o.orderKey,
+                bookingDate: o.bookingDate ? new Date(o.bookingDate).toISOString().replace('Z', '+07:00') : null,
+                totalPrice: Number(o.totalPrice || 0),
+                tipAmount: payInfo ? payInfo.tips : 0,
+                technicianName: (() => {
+                  if (!firstCvStaffId) return null;
+                  const name = activity.staffNamesMap.get(Number(firstCvStaffId));
+                  if (!name) return null;
+                  const isInactive = activity.staffInactiveMap.get(Number(firstCvStaffId));
+                  return isInactive ? `${name} (Đã nghỉ)` : name;
+                })(),
+                ccOutName: checkOutStaffId ? activity.staffNamesMap.get(Number(checkOutStaffId)) || null : null,
+              };
+            })
+          : [],
         revenueTransactions: completedOrders.map((o) => {
           const payInfo = orderPaymentMap.get(Number(o.id));
           const orderSvs = activity.orderServicesByOrderId.get(Number(o.id)) || [];
@@ -186,7 +189,7 @@ export async function registerCustomerDetailedRoute(fastify: FastifyInstance) {
             orderKey: o.orderKey,
             bookingDate: o.bookingDate ? new Date(o.bookingDate).toISOString().replace('Z', '+07:00') : null,
             totalPrice: Number(o.totalPrice || 0),
-            tipAmount: payInfo ? payInfo.tips : 0,
+            tipAmount: canViewTipHistory && payInfo ? payInfo.tips : 0,
             debtAmount: payInfo ? payInfo.debt : 0,
             technicianName: (() => {
               if (!firstCvStaffId) return null;
@@ -203,6 +206,9 @@ export async function registerCustomerDetailedRoute(fastify: FastifyInstance) {
         }),
         referrer,
         referredUsers: formattedReferred,
+        permissions: {
+          canViewTipHistory,
+        },
       };
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get detailed customer error:');

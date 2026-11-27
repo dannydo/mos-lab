@@ -397,4 +397,37 @@ export const MOS_BIBLE_CUSTOMER_AND_COMBO_COMMANDMENTS: readonly MosBibleCommand
       },
     ],
   },
+  {
+    id: 'TIP-002',
+    book: 'CUSTOMER',
+    title: 'Bảo mật Quá khứ Tip Khách hàng — Chỉ FM, CHO & Admin được xem',
+    summary:
+      'Thông tin quá khứ tiền tip của khách hàng (tổng tip, tỷ lệ tip, lịch sử giao dịch tip và tip từng đơn cũ) chỉ hiển thị cho Floor Manager (FM), CHO và Admin / Super Admin; ẩn hoàn toàn ở cả API lẫn UI đối với CV, CVL, CVLL, CC, Booker và CS.',
+    commandments: [
+      'Trong Lịch sử khách hàng trên `/ios-app` (tab THANH TOÁN & API `/api/ios/customers/:id/history`) và Hồ sơ chi tiết khách hàng CRM (`CustomerDetailDrawer`: thẻ Tips, `TipHistoryModal`, cột Tip trong `RevenueHistoryModal`, API `/api/customers/:id/summary` & `/detailed`), chỉ role `fm`, `cho`, `admin`, `super_admin` (`canViewCustomerTipHistory`) mới được xem dữ liệu tip quá khứ.',
+      'Tất cả các role vận hành/tư vấn trực tiếp (`cv`, `cvl`, `cvll`, `cc`, `telesales`, `booker`, `cs`, `manager`, ...) đều bị chặn cả ở tầng API (trả về 0đ / mảng rỗng) lẫn tầng giao diện để đảm bảo trải nghiệm phục vụ công bằng, không thiên vị khách theo lịch sử tip.',
+      'Riêng hiển thị `♥ Tip` trên tab ĐÃ XONG (`DONE`) trong ngày tại `/ios-app` được giữ nguyên cho nhân sự vừa phục vụ đối soát ca làm trong ngày.',
+      'Role `fm` (và `cho`) được cấp quyền đọc hồ sơ khách hàng (`GET /api/customers/:id/summary` và `/detailed`) để vận hành và kiểm tra thông tin khách tại sàn.',
+    ],
+    rationale:
+      'Ngăn ngừa tình trạng nhân sự phục vụ/tư vấn đánh giá hoặc phân biệt đối xử khách hàng dựa trên việc khách từng tip nhiều hay ít trong quá khứ, đồng thời vẫn cho phép FM, CHO và Admin theo dõi vận hành.',
+    examples: [
+      'CVL hoặc CC mở Lịch sử khách hàng trên `/ios-app` tab THANH TOÁN: API trả `tipAmount: 0` và UI không hiển thị dòng `Tip: +50.000 đ`; trong khi thẻ ca ĐÃ XONG hôm nay vẫn hiện `♥ 50K` để đối soát ca.',
+      'FM hoặc Super Admin mở `CustomerDetailDrawer` trên CRM: thấy đầy đủ thẻ KPI Tips, `TipHistoryModal` và cột Tip; ngược lại Booker hoặc CS mở cùng khách hàng sẽ không thấy thẻ Tips và cột Tip.',
+    ],
+    tags: ['tip', 'quá khứ tip', 'bảo mật', 'FM', 'CHO', 'CVL', 'CC', 'trải nghiệm khách hàng'],
+    routeScopes: ['/ios-app', '/dashboard/customers', '/dashboard/today', '/dashboard/appointments'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-11-27',
+    sources: [
+      { label: 'mOS Mission MOS-FEAT-267', reference: 'mOS Inbox · MOS-FEAT-267' },
+      { label: 'Guard quyền xem quá khứ tip', reference: 'packages/shared/src/types/auth.ts · canViewCustomerTipHistory' },
+      { label: 'API lịch sử KH iOS', reference: 'apps/api/src/modules/ios/services/ios-customer-history.service.ts' },
+      {
+        label: 'API chi tiết KH CRM',
+        reference: 'apps/api/src/modules/customers/routes/detail/customer-detailed.routes.ts',
+      },
+    ],
+  },
 ];

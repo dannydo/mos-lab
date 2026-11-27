@@ -34,6 +34,7 @@ export interface CustomerDetailBodyProps {
   activeTabKey: string;
   currentUser: CustomerDetailCurrentUser | null;
   isManagerOrAdmin: boolean;
+  canViewTipHistory?: boolean;
   unpinLoading: boolean;
   onClose: () => void;
   onSelectCustomerId: (customerId: number) => void;
@@ -82,6 +83,7 @@ export const CustomerDetailBody: React.FC<CustomerDetailBodyProps> = ({
   activeTabKey,
   currentUser,
   isManagerOrAdmin,
+  canViewTipHistory = false,
   unpinLoading,
   onClose,
   onSelectCustomerId,
@@ -198,11 +200,13 @@ export const CustomerDetailBody: React.FC<CustomerDetailBodyProps> = ({
                 <KpiStatsCard
                   stats={stats}
                   themeMode={themeMode}
+                  canViewTipHistory={canViewTipHistory}
                   onOpenGemModal={() => {
                     onOpenGemModal();
                     void onLoadDetailedData();
                   }}
                   onOpenTipModal={() => {
+                    if (!canViewTipHistory) return;
                     onOpenTipModal();
                     void onLoadDetailedData();
                   }}

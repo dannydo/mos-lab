@@ -8,13 +8,14 @@ import { formatCompactVND } from '../../../lib/format-utils';
 interface KpiStatsCardProps {
   stats: SafeAny;
   themeMode: 'light' | 'dark';
+  canViewTipHistory?: boolean;
   onOpenGemModal: () => void;
   onOpenTipModal: () => void;
   onOpenRevenueModal: () => void;
 }
 
 export const KpiStatsCard: React.FC<KpiStatsCardProps> = React.memo(
-  ({ stats, themeMode, onOpenGemModal, onOpenTipModal, onOpenRevenueModal }) => {
+  ({ stats, themeMode, canViewTipHistory = false, onOpenGemModal, onOpenTipModal, onOpenRevenueModal }) => {
     const cardStyle = (color: string) => ({
       background: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
       padding: '12px 14px',
@@ -160,7 +161,10 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = React.memo(
           <div
             className="customer-kpi-metric"
             onClick={onOpenGemModal}
-            style={cardStyle('#0ea5e9') as React.CSSProperties}
+            style={{
+              ...(cardStyle('#0ea5e9') as React.CSSProperties),
+              ...(!canViewTipHistory ? { gridColumn: '1 / -1' } : {}),
+            }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
               e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(14, 165, 233, 0.15)';
@@ -199,49 +203,52 @@ export const KpiStatsCard: React.FC<KpiStatsCardProps> = React.memo(
             </div>
           </div>
 
-          {/* Box 4: Tips */}
-          <div
-            className="customer-kpi-metric"
-            onClick={onOpenTipModal}
-            style={cardStyle('#22c55e') as React.CSSProperties}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(34, 197, 94, 0.15)';
-              e.currentTarget.style.borderColor = '#22c55e';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow =
-                themeMode === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.02)';
-              e.currentTarget.style.borderColor = themeMode === 'dark' ? '#334155' : '#e2e8f0';
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <span style={labelStyle}>Tips</span>
-              <div
-                style={{
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: '50%',
-                  background: themeMode === 'dark' ? 'rgba(34, 197, 94, 0.1)' : '#f0fdf4',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <DollarOutlined style={{ color: '#22c55e', fontSize: '13px' }} />
+          {/* Box 4: Tips (chỉ hiển thị với FM, CHO, Admin/Super Admin) */}
+          {canViewTipHistory && (
+            <div
+              className="customer-kpi-metric"
+              data-testid="customer-kpi-tips-card"
+              onClick={onOpenTipModal}
+              style={cardStyle('#22c55e') as React.CSSProperties}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(34, 197, 94, 0.15)';
+                e.currentTarget.style.borderColor = '#22c55e';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow =
+                  themeMode === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.02)';
+                e.currentTarget.style.borderColor = themeMode === 'dark' ? '#334155' : '#e2e8f0';
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <span style={labelStyle}>Tips</span>
+                <div
+                  style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    background: themeMode === 'dark' ? 'rgba(34, 197, 94, 0.1)' : '#f0fdf4',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <DollarOutlined style={{ color: '#22c55e', fontSize: '13px' }} />
+                </div>
+              </div>
+              <div>
+                <div style={{ ...valueStyle, fontVariantNumeric: 'tabular-nums' }}>
+                  {formatCompactVND(stats?.totalTips || 0)}
+                </div>
+                <div style={{ ...subtextStyle, fontVariantNumeric: 'tabular-nums' }}>
+                  {stats?.tipRate || 0}% (Avg {formatCompactVND(stats?.avgTip || 0).replace(/\sđ$/, '')})
+                </div>
               </div>
             </div>
-            <div>
-              <div style={{ ...valueStyle, fontVariantNumeric: 'tabular-nums' }}>
-                {formatCompactVND(stats?.totalTips || 0)}
-              </div>
-              <div style={{ ...subtextStyle, fontVariantNumeric: 'tabular-nums' }}>
-                {stats?.tipRate || 0}% (Avg {formatCompactVND(stats?.avgTip || 0).replace(/\sđ$/, '')})
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </Card>
     );

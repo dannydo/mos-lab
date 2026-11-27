@@ -445,7 +445,7 @@ export function getDoneBookingSummary(b: BookingItem) {
   const durationMinutes = rawElapsed >= 20 && rawElapsed <= 150 ? rawElapsed : b.serviceDuration || 60;
   const timeAndDurationStr = `${bookingTimeStr} · ${durationMinutes}p`;
 
-  // 2. Dòng TIỀN (Chỉ số quan trọng nhất: tổng cả Combo Mi Trên + Combo Mi Dưới nếu mua 2 gói)
+  // 2. Dòng TIỀN (Chỉ số quan trọng nhất: tổng cả Combo Mi Trên + Combo Mi Dưới nếu mua 2 gói + SP/VAT/Tip)
   const debtAmount = Number(b.debtAmount || b.billing?.debtAmount || 0);
   const hasDebt = debtAmount > 0;
 
@@ -456,10 +456,15 @@ export function getDoneBookingSummary(b: BookingItem) {
   const upgradeOrPaidAmount = Number(
     b.upgradePrice && b.upgradePrice > 0 ? b.upgradePrice : isComboLive ? 0 : b.servicePrice
   );
+  const productTotal = Number(b.billing?.productTotal || 0);
+  const vatAmount = Number(b.billing?.vatAmount || 0);
 
   // 3. Điểm CVL & Tip & Trạng thái hạch toán (Completed vs Chờ Quầy chốt Tiền mặt/POS)
   const cvPoints = resolveBookingCvRotationPoints(b);
   const tipAmount = Number(b.billing?.tipAmount || 0);
+  const grandTotal = Number(b.billing?.grandTotal || 0);
+  const pendingCounterAmount =
+    grandTotal > 0 ? grandTotal : Math.max(0, soldComboPrice + upgradeOrPaidAmount + productTotal + vatAmount + tipAmount);
   const settlementStatus = b.billing?.settlementStatus;
   const isPendingCheckout = isDoneBookingPendingCheckout(b);
   const paymentMethod = b.billing?.paymentMethod;
@@ -470,10 +475,30 @@ export function getDoneBookingSummary(b: BookingItem) {
     debtAmount,
     soldComboPrice,
     upgradeOrPaidAmount,
+    productTotal,
+    vatAmount,
+    grandTotal,
+    pendingCounterAmount,
     cvPoints,
     tipAmount,
     settlementStatus,
     isPendingCheckout,
     paymentMethod,
   };
+}
+
+/** Format gọn phương thức thanh toán chờ Quầy chốt trên card Đã xong. */
+export function formatPendingCounterMethodShort(method?: string): string | null {
+  switch (String(method || '').toUpperCase()) {
+    case 'CASH':
+      return 'TM';
+    case 'POS':
+      return 'POS';
+    case 'VIETQR':
+      return 'QR';
+    case 'MIXED':
+      return 'Hỗn hợp';
+    default:
+      return null;
+  }
 }

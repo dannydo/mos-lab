@@ -37,6 +37,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     isMaskedRole,
     canMakeCall,
     isManagerOrAdmin,
+    canViewTipHistory,
     restoreLoading,
     deleteLoading,
     legacyProfileUrl,
@@ -185,11 +186,16 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         activeTabKey={activeTabKey}
         currentUser={currentUser}
         isManagerOrAdmin={isManagerOrAdmin}
+        canViewTipHistory={canViewTipHistory}
         unpinLoading={unpinLoading}
         onClose={onClose}
         onSelectCustomerId={setCurrentCustomerId}
         onOpenGemModal={() => setIsGemModalOpen(true)}
-        onOpenTipModal={() => setIsTipModalOpen(true)}
+        onOpenTipModal={() => {
+          if (canViewTipHistory) {
+            setIsTipModalOpen(true);
+          }
+        }}
         onOpenRevenueModal={() => setIsRevenueModalOpen(true)}
         onOpenComboModal={() => setIsComboModalOpen(true)}
         onLoadDetailedData={loadDetailedData}
@@ -229,6 +235,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
         gemModalWidth={gemModalWidth}
         handleGemModalDragStart={handleGemModalDragStart}
         isTipModalOpen={isTipModalOpen}
+        canViewTipHistory={canViewTipHistory}
         onCloseTipModal={() => setIsTipModalOpen(false)}
         tipModalWidth={tipModalWidth}
         handleTipModalDragStart={handleTipModalDragStart}

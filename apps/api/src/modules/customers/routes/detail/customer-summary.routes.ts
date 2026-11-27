@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { SafeAny, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
+import { SafeAny, canViewCustomerTipHistory, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { requireAuth } from '../../../../middlewares/auth.js';
 import { daysSinceVisit } from '../../../projections/customer-visit-projection.service.js';
 import { TeamService } from '../../../teams/team.service.js';
@@ -32,11 +32,13 @@ export async function registerCustomerSummaryRoute(fastify: FastifyInstance) {
 
       // Super Admin inherits the complete Admin customer-detail scope. Keep
       // the assignment boundary only for roles that are not administrators.
+      // FM and CHO retain read access to customer profile summaries (MOS-FEAT-267).
       const canRescheduleAnyCustomer = await BookingReschedulePermissionService.hasGlobalRescheduleAccess(
         fastify,
         user
       );
-      if (!canRescheduleAnyCustomer) {
+      const isManagementViewer = ['fm', 'cho'].includes(String(user.role || '').trim().toLowerCase());
+      if (!canRescheduleAnyCustomer && !isManagementViewer) {
         if (CustomerAccessService.isTelesales(user)) {
           if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) {
             return;
@@ -221,11 +223,12 @@ export async function registerCustomerSummaryRoute(fastify: FastifyInstance) {
         avgFrequency = Number((totalDays / (sortedBookingDates.length - 1)).toFixed(1));
       }
 
-      // Fetch tip summary from order_payment
+      // Fetch tip summary from order_payment (strictly restricted to FM, CHO, and Admin/Super Admin)
+      const canViewTipHistory = canViewCustomerTipHistory(user.role);
       const completedOrderIds = completedOrders.map((o) => Number(o.id));
       let totalTips = 0;
       let tipCount = 0;
-      if (completedOrderIds.length > 0) {
+      if (canViewTipHistory && completedOrderIds.length > 0) {
         const tipRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT SUM(tip_amount) as totalTips, COUNT(CASE WHEN tip_amount > 0 THEN 1 END) as tipCount
           FROM \`order_payment\`
@@ -237,8 +240,8 @@ export async function registerCustomerSummaryRoute(fastify: FastifyInstance) {
         }
       }
 
-      const tipRate = totalVisits > 0 ? Number(((tipCount / totalVisits) * 100).toFixed(1)) : 0;
-      const avgTip = tipCount > 0 ? Math.round(totalTips / tipCount) : 0;
+      const tipRate = canViewTipHistory && totalVisits > 0 ? Number(((tipCount / totalVisits) * 100).toFixed(1)) : 0;
+      const avgTip = canViewTipHistory && tipCount > 0 ? Math.round(totalTips / tipCount) : 0;
       const gemBalance = gemBalanceRow.length > 0 ? Number(gemBalanceRow[0].amount) : 0;
       const comboWalletBalance = activeComboBalances.reduce(
         (sum, combo) => sum + Number(combo.totalNormalBalanceAmount || 0) + Number(combo.totalRetainBalanceAmount || 0),
@@ -384,6 +387,9 @@ export async function registerCustomerSummaryRoute(fastify: FastifyInstance) {
         })),
         referrer,
         referredUsers: Array.from(friendsGrouped.values()),
+        permissions: {
+          canViewTipHistory,
+        },
       };
     } catch (error: SafeAny) {
       fastify.log.error(error as Error, 'Get summary customer error:');

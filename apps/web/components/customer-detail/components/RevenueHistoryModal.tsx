@@ -29,6 +29,7 @@ interface RevenueHistoryModalProps {
   onCancel: () => void;
   customer: { id: number; name: string } | null | undefined;
   revenueTransactions: RevenueTransaction[];
+  canViewTipHistory?: boolean;
   modalWidth: number;
   handleModalDragStart: (e: React.MouseEvent, direction: 'left' | 'right') => void;
 }
@@ -98,6 +99,7 @@ export const RevenueHistoryModal: React.FC<RevenueHistoryModalProps> = ({
   onCancel,
   customer,
   revenueTransactions,
+  canViewTipHistory = false,
   modalWidth,
   handleModalDragStart,
 }) => {
@@ -275,7 +277,9 @@ export const RevenueHistoryModal: React.FC<RevenueHistoryModalProps> = ({
     },
   ];
 
-  const columns = rawColumns.map((col) => ({
+  const visibleColumns = canViewTipHistory ? rawColumns : rawColumns.filter((col) => col.key !== 'tipAmount');
+
+  const columns = visibleColumns.map((col) => ({
     ...col,
     onHeaderCell: (column: unknown) => {
       const c = column as { key: string; width: number };

@@ -138,6 +138,7 @@ export interface IosCustomerHistoryResponse {
   customerPhone: string;
   customerCode?: string | null;
   customerDateOfBirth?: string | null;
+  canViewTipHistory?: boolean;
   summary: IosCustomerHistorySummary;
   visits: IosCustomerHistoryVisitItem[];
   payments: IosCustomerHistoryVisitItem[];
