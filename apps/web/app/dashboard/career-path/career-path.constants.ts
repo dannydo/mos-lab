@@ -160,7 +160,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         },
         {
           name: 'Kho, Phòng 5 Giác Quan, Diện Mạo & Tua/6 Ca TV',
-          desc: 'Lệch kho ≤ 1%, điểm phòng ≥ 98đ, phong thái chuẩn chỉnh, HI ≥ 92% và đủ 6 ca tư vấn/tuần',
+          desc: 'Lệch kho ≤ 1%, điểm phòng ≥ 98đ, phong thái chuẩn (đồng phục · mi nối · son), HI ≥ 92% và đủ 6 ca tư vấn/tuần',
         },
       ],
       perks: [

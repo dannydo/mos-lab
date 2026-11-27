@@ -122,8 +122,8 @@ export const PILLAR_SPECS: readonly PillarMeta[] = [
     shortLabel: 'Diện mạo',
     rewards: [0, 150_000, 300_000, 450_000],
     maxSliderVnd: 1_000_000,
-    targets: ['Đủ đồng phục', 'Son · Tóc gọn', 'Chuẩn 100%'],
-    hint: 'Đồng phục chuẩn chỉnh, trang điểm nhẹ suốt ca',
+    targets: ['Đồng phục · Mi nối', 'Son · Tóc gọn', 'Chuẩn 100%'],
+    hint: 'Đồng phục chuẩn chỉnh, có mi nối, son & trang điểm nhẹ suốt ca',
   },
   {
     key: 'turn',

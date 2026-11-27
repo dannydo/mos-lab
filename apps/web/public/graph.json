@@ -61009,8 +61009,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path-page-modules/CareerPathDrawers.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8236,
-        "lineCount": 230,
+        "sizeBytes": 8208,
+        "lineCount": 227,
         "ext": ".tsx"
       }
     },
@@ -61061,7 +61061,7 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23110,
+        "sizeBytes": 23138,
         "lineCount": 442,
         "ext": ".ts"
       }
@@ -61217,8 +61217,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage3FmConfigTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24000,
-        "lineCount": 604,
+        "sizeBytes": 23962,
+        "lineCount": 592,
         "ext": ".tsx"
       }
     },
@@ -61230,8 +61230,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/careerConfigTypesAndHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7714,
-        "lineCount": 242,
+        "sizeBytes": 7707,
+        "lineCount": 238,
         "ext": ".ts"
       }
     },
@@ -61581,7 +61581,7 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11846,
+        "sizeBytes": 11877,
         "lineCount": 259,
         "ext": ".tsx"
       }
@@ -76245,8 +76245,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/fm-and-management.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6065,
-        "lineCount": 44,
+        "sizeBytes": 6132,
+        "lineCount": 55,
         "ext": ".ts"
       }
     },
@@ -76284,8 +76284,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/hydrate-career-commandments.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 20924,
-        "lineCount": 198,
+        "sizeBytes": 20919,
+        "lineCount": 195,
         "ext": ".ts"
       }
     },
@@ -77077,8 +77077,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 14092,
-        "lineCount": 420,
+        "sizeBytes": 14102,
+        "lineCount": 422,
         "ext": ".ts"
       }
     },

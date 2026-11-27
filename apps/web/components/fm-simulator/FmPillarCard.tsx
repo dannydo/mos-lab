@@ -90,7 +90,7 @@ export const METRIC_SLIDER_SPECS: Record<MetricPillarKey, MetricSliderSpec> = {
   },
 };
 
-const GROOMING_STANDARDS = ['Đồng phục', 'Son', 'Tóc gọn'] as const;
+const GROOMING_STANDARDS = ['Đồng phục', 'Mi nối', 'Son', 'Tóc gọn'] as const;
 
 function AutonomyRowStepper({
   icon,
