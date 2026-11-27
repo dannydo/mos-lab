@@ -97,3 +97,4 @@ export * from './utils/ios-birthday.js';
 export * from './types/ios-promotions.js';
 export * from './types/ios-app.js';
 export * from './types/wings-garden.js';
+export * from './types/inventory.js';

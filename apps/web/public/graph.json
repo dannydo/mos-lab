@@ -10664,6 +10664,174 @@
       }
     },
     {
+      "id": "route:GET:/api/inventory/me/permissions",
+      "type": "FastifyRoute",
+      "label": "GET /api/inventory/me/permissions",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/inventory/me/permissions",
+        "module": "inventory",
+        "handler": "inlineHandler",
+        "line": 32
+      }
+    },
+    {
+      "id": "route:GET:/api/inventory/warehouses",
+      "type": "FastifyRoute",
+      "label": "GET /api/inventory/warehouses",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/inventory/warehouses",
+        "module": "inventory",
+        "handler": "inlineHandler",
+        "line": 56
+      }
+    },
+    {
+      "id": "route:GET:/api/inventory/staff/onboard",
+      "type": "FastifyRoute",
+      "label": "GET /api/inventory/staff/onboard",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/inventory/staff/onboard",
+        "module": "inventory",
+        "handler": "inlineHandler",
+        "line": 77
+      }
+    },
+    {
+      "id": "route:POST:/api/inventory/scan/code",
+      "type": "FastifyRoute",
+      "label": "POST /api/inventory/scan/code",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/inventory/scan/code",
+        "module": "inventory",
+        "handler": "inlineHandler",
+        "line": 86
+      }
+    },
+    {
+      "id": "route:POST:/api/inventory/warehouse/item/assign",
+      "type": "FastifyRoute",
+      "label": "POST /api/inventory/warehouse/item/assign",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/inventory/warehouse/item/assign",
+        "module": "inventory",
+        "handler": "inlineHandler",
+        "line": 107
+      }
+    },
+    {
+      "id": "route:GET:/api/inventory/warehouse/check/scan",
+      "type": "FastifyRoute",
+      "label": "GET /api/inventory/warehouse/check/scan",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/inventory/warehouse/check/scan",
+        "module": "inventory",
+        "handler": "inlineHandler",
+        "line": 131
+      }
+    },
+    {
+      "id": "route:GET:/api/inventory/warehouse/check/items",
+      "type": "FastifyRoute",
+      "label": "GET /api/inventory/warehouse/check/items",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/inventory/warehouse/check/items",
+        "module": "inventory",
+        "handler": "inlineHandler",
+        "line": 161
+      }
+    },
+    {
+      "id": "route:POST:/api/inventory/warehouse/check/finish",
+      "type": "FastifyRoute",
+      "label": "POST /api/inventory/warehouse/check/finish",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/inventory/warehouse/check/finish",
+        "module": "inventory",
+        "handler": "inlineHandler",
+        "line": 196
+      }
+    },
+    {
+      "id": "route:POST:/api/inventory/warehouse/check/reset",
+      "type": "FastifyRoute",
+      "label": "POST /api/inventory/warehouse/check/reset",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/inventory/warehouse/check/reset",
+        "module": "inventory",
+        "handler": "inlineHandler",
+        "line": 214
+      }
+    },
+    {
+      "id": "route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "type": "FastifyRoute",
+      "label": "GET /api/inventory/warehouse/item/:warehouseItemId/history",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/inventory/warehouse/item/:warehouseItemId/history",
+        "module": "inventory",
+        "handler": "inlineHandler",
+        "line": 232
+      }
+    },
+    {
+      "id": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "FastifyRoute",
+      "label": "GET /api/inventory/media/scan/:scanCodeId",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/inventory/media/scan/:scanCodeId",
+        "module": "inventory",
+        "handler": "inlineHandler",
+        "line": 254
+      }
+    },
+    {
+      "id": "route:GET:/api/inventory/events",
+      "type": "FastifyRoute",
+      "label": "GET /api/inventory/events",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/inventory/events",
+        "module": "inventory",
+        "handler": "inlineHandler",
+        "line": 260
+      }
+    },
+    {
       "id": "route:GET:/api/ios/photos/:filename",
       "type": "FastifyRoute",
       "label": "GET /api/ios/photos/:filename",
@@ -27246,6 +27414,390 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:InventoryWarehouseType",
+      "type": "SharedType",
+      "label": "InventoryWarehouseType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/enums.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryWarehouseType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryItemType",
+      "type": "SharedType",
+      "label": "InventoryItemType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/enums.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryItemType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCheckableItemType",
+      "type": "SharedType",
+      "label": "InventoryCheckableItemType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/enums.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCheckableItemType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryItemState",
+      "type": "SharedType",
+      "label": "InventoryItemState",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/enums.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryItemState",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCheckState",
+      "type": "SharedType",
+      "label": "InventoryCheckState",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/enums.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCheckState",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCheckTab",
+      "type": "SharedType",
+      "label": "InventoryCheckTab",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/enums.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCheckTab",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryOrderState",
+      "type": "SharedType",
+      "label": "InventoryOrderState",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/enums.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryOrderState",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryScanMode",
+      "type": "SharedType",
+      "label": "InventoryScanMode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/enums.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryScanMode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryScanTabConfig",
+      "type": "SharedType",
+      "label": "InventoryScanTabConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/enums.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryScanTabConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryPermissionAction",
+      "type": "SharedType",
+      "label": "InventoryPermissionAction",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/permissions.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryPermissionAction",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:LegacyInventoryPermissionRule",
+      "type": "SharedType",
+      "label": "LegacyInventoryPermissionRule",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/permissions.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "LegacyInventoryPermissionRule",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryRolePreviewKey",
+      "type": "SharedType",
+      "label": "InventoryRolePreviewKey",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/permissions.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryRolePreviewKey",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryRolePreviewPreset",
+      "type": "SharedType",
+      "label": "InventoryRolePreviewPreset",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/permissions.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryRolePreviewPreset",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryWarehouseDto",
+      "type": "SharedType",
+      "label": "InventoryWarehouseDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryWarehouseDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryStaffOptionDto",
+      "type": "SharedType",
+      "label": "InventoryStaffOptionDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryStaffOptionDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryItemSummaryDto",
+      "type": "SharedType",
+      "label": "InventoryItemSummaryDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryItemSummaryDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryWarehouseItemDetailDto",
+      "type": "SharedType",
+      "label": "InventoryWarehouseItemDetailDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryWarehouseItemDetailDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryPermissionsResponse",
+      "type": "SharedType",
+      "label": "InventoryPermissionsResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryPermissionsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryScanRequest",
+      "type": "SharedType",
+      "label": "InventoryScanRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryScanRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryScanResponse",
+      "type": "SharedType",
+      "label": "InventoryScanResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryScanResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryAssignRequest",
+      "type": "SharedType",
+      "label": "InventoryAssignRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryAssignRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryAssignResponse",
+      "type": "SharedType",
+      "label": "InventoryAssignResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryAssignResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCheckSkuRowDto",
+      "type": "SharedType",
+      "label": "InventoryCheckSkuRowDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCheckSkuRowDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCheckSummaryDto",
+      "type": "SharedType",
+      "label": "InventoryCheckSummaryDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCheckSummaryDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCheckScanResponse",
+      "type": "SharedType",
+      "label": "InventoryCheckScanResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCheckScanResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCheckPhysicalItemDto",
+      "type": "SharedType",
+      "label": "InventoryCheckPhysicalItemDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCheckPhysicalItemDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCheckItemsResponse",
+      "type": "SharedType",
+      "label": "InventoryCheckItemsResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCheckItemsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCheckActionResponse",
+      "type": "SharedType",
+      "label": "InventoryCheckActionResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCheckActionResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryItemHistoryEntryDto",
+      "type": "SharedType",
+      "label": "InventoryItemHistoryEntryDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryItemHistoryEntryDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryItemHistoryResponse",
+      "type": "SharedType",
+      "label": "InventoryItemHistoryResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryItemHistoryResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventoryCheckScanQuery",
+      "type": "SharedType",
+      "label": "InventoryCheckScanQuery",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventoryCheckScanQuery",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:InventorySseEventPayload",
+      "type": "SharedType",
+      "label": "InventorySseEventPayload",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InventorySseEventPayload",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:IosBookingItem",
       "type": "SharedType",
       "label": "IosBookingItem",
@@ -36470,6 +37022,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "types",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:CustomerDetailTipVisibility.test",
+      "type": "UIComponent",
+      "label": "<CustomerDetailTipVisibility.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/__tests__/CustomerDetailTipVisibility.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CustomerDetailTipVisibility.test",
         "isPrimitive": false
       }
     },
@@ -49413,8 +49977,8 @@
       "filePath": "apps/api/src/modules/customers/routes/detail/customer-detailed.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9790,
-        "lineCount": 216,
+        "sizeBytes": 10205,
+        "lineCount": 222,
         "ext": ".ts"
       }
     },
@@ -49439,8 +50003,21 @@
       "filePath": "apps/api/src/modules/customers/routes/detail/customer-summary.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17483,
-        "lineCount": 397,
+        "sizeBytes": 17973,
+        "lineCount": 403,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/detail/customer-tip-visibility.routes.test.ts",
+      "type": "File",
+      "label": "customer-tip-visibility.routes.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/detail/customer-tip-visibility.routes.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7092,
+        "lineCount": 201,
         "ext": ".ts"
       }
     },
@@ -50342,6 +50919,149 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/inventory/inventory-wave1.test.ts",
+      "type": "File",
+      "label": "inventory-wave1.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/inventory-wave1.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6814,
+        "lineCount": 132,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/routes.ts",
+      "type": "File",
+      "label": "routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10533,
+        "lineCount": 286,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-auth.service.ts",
+      "type": "File",
+      "label": "inventory-auth.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-auth.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7370,
+        "lineCount": 221,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-check-queries.service.ts",
+      "type": "File",
+      "label": "inventory-check-queries.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-check-queries.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 13877,
+        "lineCount": 276,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-check.service.ts",
+      "type": "File",
+      "label": "inventory-check.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-check.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 20395,
+        "lineCount": 398,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-db.ts",
+      "type": "File",
+      "label": "inventory-db.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-db.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2646,
+        "lineCount": 101,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-media.service.ts",
+      "type": "File",
+      "label": "inventory-media.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-media.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3870,
+        "lineCount": 100,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-query.service.ts",
+      "type": "File",
+      "label": "inventory-query.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-query.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11704,
+        "lineCount": 302,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-scan.service.ts",
+      "type": "File",
+      "label": "inventory-scan.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-scan.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14585,
+        "lineCount": 381,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-sse.service.ts",
+      "type": "File",
+      "label": "inventory-sse.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-sse.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1184,
+        "lineCount": 48,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/inventory/services/inventory-state.service.ts",
+      "type": "File",
+      "label": "inventory-state.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/inventory/services/inventory-state.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 20183,
+        "lineCount": 563,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/__tests__/ios-customer-lash-portfolio.test.ts",
       "type": "File",
       "label": "ios-customer-lash-portfolio.test.ts",
@@ -50453,8 +51173,8 @@
       "filePath": "apps/api/src/modules/ios/ios-customer-history.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14599,
-        "lineCount": 437,
+        "sizeBytes": 16353,
+        "lineCount": 498,
         "ext": ".ts"
       }
     },
@@ -50830,8 +51550,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-history.mapper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17389,
-        "lineCount": 483,
+        "sizeBytes": 17498,
+        "lineCount": 486,
         "ext": ".ts"
       }
     },
@@ -50843,8 +51563,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-customer-history.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15912,
-        "lineCount": 436,
+        "sizeBytes": 16036,
+        "lineCount": 439,
         "ext": ".ts"
       }
     },
@@ -55445,8 +56165,8 @@
       "filePath": "apps/api/src/safe-dev/runtime.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 1379,
-        "lineCount": 41,
+        "sizeBytes": 1591,
+        "lineCount": 45,
         "ext": ".ts"
       }
     },
@@ -55510,8 +56230,8 @@
       "filePath": "apps/api/src/scripts/apply-dashboard-phase1-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6603,
-        "lineCount": 198,
+        "sizeBytes": 5310,
+        "lineCount": 167,
         "ext": ".ts"
       }
     },
@@ -55523,8 +56243,8 @@
       "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase10-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2437,
-        "lineCount": 69,
+        "sizeBytes": 904,
+        "lineCount": 34,
         "ext": ".ts"
       }
     },
@@ -55536,8 +56256,8 @@
       "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase2-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3124,
-        "lineCount": 99,
+        "sizeBytes": 1453,
+        "lineCount": 59,
         "ext": ".ts"
       }
     },
@@ -55549,8 +56269,8 @@
       "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase3-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3847,
-        "lineCount": 101,
+        "sizeBytes": 2296,
+        "lineCount": 63,
         "ext": ".ts"
       }
     },
@@ -55562,8 +56282,8 @@
       "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase4-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2576,
-        "lineCount": 74,
+        "sizeBytes": 1067,
+        "lineCount": 39,
         "ext": ".ts"
       }
     },
@@ -55575,8 +56295,8 @@
       "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase5-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2527,
-        "lineCount": 74,
+        "sizeBytes": 1027,
+        "lineCount": 39,
         "ext": ".ts"
       }
     },
@@ -55588,8 +56308,8 @@
       "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase6-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2191,
-        "lineCount": 64,
+        "sizeBytes": 727,
+        "lineCount": 29,
         "ext": ".ts"
       }
     },
@@ -55601,8 +56321,8 @@
       "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase7-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2481,
-        "lineCount": 74,
+        "sizeBytes": 1015,
+        "lineCount": 39,
         "ext": ".ts"
       }
     },
@@ -55614,8 +56334,8 @@
       "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase8-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2957,
-        "lineCount": 93,
+        "sizeBytes": 1383,
+        "lineCount": 56,
         "ext": ".ts"
       }
     },
@@ -55627,8 +56347,8 @@
       "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase9-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2780,
-        "lineCount": 81,
+        "sizeBytes": 1153,
+        "lineCount": 44,
         "ext": ".ts"
       }
     },
@@ -56452,6 +57172,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/scripts/lib/apply-legacy-indexes.test.ts",
+      "type": "File",
+      "label": "apply-legacy-indexes.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/lib/apply-legacy-indexes.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2790,
+        "lineCount": 85,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/scripts/lib/apply-legacy-indexes.ts",
+      "type": "File",
+      "label": "apply-legacy-indexes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/lib/apply-legacy-indexes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4582,
+        "lineCount": 107,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/scripts/publish-cc-pilot-history.ts",
       "type": "File",
       "label": "publish-cc-pilot-history.ts",
@@ -56615,8 +57361,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17699,
-        "lineCount": 439,
+        "sizeBytes": 17998,
+        "lineCount": 446,
         "ext": ".ts"
       }
     },
@@ -72163,8 +72909,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20807,
-        "lineCount": 508,
+        "sizeBytes": 21280,
+        "lineCount": 518,
         "ext": ".tsx"
       }
     },
@@ -72332,8 +73078,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14622,
-        "lineCount": 414,
+        "sizeBytes": 15130,
+        "lineCount": 419,
         "ext": ".tsx"
       }
     },
@@ -72384,8 +73130,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/ScreenInventoryStock.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7803,
-        "lineCount": 225,
+        "sizeBytes": 516,
+        "lineCount": 25,
         "ext": ".tsx"
       }
     },
@@ -72689,6 +73435,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/screens/__tests__/inventory-wave1.test.tsx",
+      "type": "File",
+      "label": "inventory-wave1.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/__tests__/inventory-wave1.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7350,
+        "lineCount": 216,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/screens/checkin/CheckInBottomActionBar.tsx",
       "type": "File",
       "label": "CheckInBottomActionBar.tsx",
@@ -72878,8 +73637,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/CheckoutStatusBanners.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3108,
-        "lineCount": 80,
+        "sizeBytes": 5497,
+        "lineCount": 130,
         "ext": ".tsx"
       }
     },
@@ -73469,6 +74228,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/screens/incoming/PendingCounterSettlementBanner.tsx",
+      "type": "File",
+      "label": "PendingCounterSettlementBanner.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/incoming/PendingCounterSettlementBanner.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4137,
+        "lineCount": 108,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/screens/incoming/__tests__/IncomingBookingCardBirthday.test.tsx",
       "type": "File",
       "label": "IncomingBookingCardBirthday.test.tsx",
@@ -73478,6 +74250,19 @@
       "metadata": {
         "sizeBytes": 5477,
         "lineCount": 170,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/incoming/__tests__/PendingCounterSettlementCardAndBanner.test.tsx",
+      "type": "File",
+      "label": "PendingCounterSettlementCardAndBanner.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/incoming/__tests__/PendingCounterSettlementCardAndBanner.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5943,
+        "lineCount": 168,
         "ext": ".tsx"
       }
     },
@@ -73502,8 +74287,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/card/IncomingCardRightColumn.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9793,
-        "lineCount": 229,
+        "sizeBytes": 11382,
+        "lineCount": 257,
         "ext": ".tsx"
       }
     },
@@ -73515,8 +74300,112 @@
       "filePath": "apps/web/app/ios-app/components/screens/incoming/incomingBookingHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16922,
-        "lineCount": 480,
+        "sizeBytes": 17753,
+        "lineCount": 505,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/inventory/InventoryAssignStaffModal.tsx",
+      "type": "File",
+      "label": "InventoryAssignStaffModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryAssignStaffModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8217,
+        "lineCount": 217,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/inventory/InventoryMobileShell.tsx",
+      "type": "File",
+      "label": "InventoryMobileShell.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryMobileShell.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9817,
+        "lineCount": 247,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/inventory/InventoryScannerScreen.tsx",
+      "type": "File",
+      "label": "InventoryScannerScreen.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryScannerScreen.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14729,
+        "lineCount": 385,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseCheckItemScreen.tsx",
+      "type": "File",
+      "label": "InventoryWarehouseCheckItemScreen.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseCheckItemScreen.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5304,
+        "lineCount": 138,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseCheckScanScreen.tsx",
+      "type": "File",
+      "label": "InventoryWarehouseCheckScanScreen.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseCheckScanScreen.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15811,
+        "lineCount": 391,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseItemHistoryScreen.tsx",
+      "type": "File",
+      "label": "InventoryWarehouseItemHistoryScreen.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseItemHistoryScreen.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11171,
+        "lineCount": 276,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/inventory/InventoryWarehousePickerSheet.tsx",
+      "type": "File",
+      "label": "InventoryWarehousePickerSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryWarehousePickerSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3487,
+        "lineCount": 92,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/inventory/inventory-audio.ts",
+      "type": "File",
+      "label": "inventory-audio.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/inventory/inventory-audio.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1646,
+        "lineCount": 47,
         "ext": ".ts"
       }
     },
@@ -74061,8 +74950,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/CustomerHistoryAndSpendingSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25440,
-        "lineCount": 627,
+        "sizeBytes": 26001,
+        "lineCount": 641,
         "ext": ".tsx"
       }
     },
@@ -74347,8 +75236,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/__tests__/CustomerHistoryAndSpendingSheet.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14673,
-        "lineCount": 425,
+        "sizeBytes": 15948,
+        "lineCount": 462,
         "ext": ".tsx"
       }
     },
@@ -74451,8 +75340,8 @@
       "filePath": "apps/web/app/ios-app/components/ui-kit/customer-history/CustomerHistoryCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12879,
-        "lineCount": 322,
+        "sizeBytes": 12930,
+        "lineCount": 324,
         "ext": ".tsx"
       }
     },
@@ -74503,8 +75392,8 @@
       "filePath": "apps/web/app/ios-app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20781,
-        "lineCount": 531,
+        "sizeBytes": 20934,
+        "lineCount": 538,
         "ext": ".tsx"
       }
     },
@@ -75699,8 +76588,21 @@
       "filePath": "apps/web/lib/api/index.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1958,
-        "lineCount": 70,
+        "sizeBytes": 2058,
+        "lineCount": 73,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/lib/api/inventory.api.ts",
+      "type": "File",
+      "label": "inventory.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/inventory.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5726,
+        "lineCount": 177,
         "ext": ".ts"
       }
     },
@@ -76232,8 +77134,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/customer-and-combo.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 32858,
-        "lineCount": 401,
+        "sizeBytes": 36090,
+        "lineCount": 434,
         "ext": ".ts"
       }
     },
@@ -76297,8 +77199,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/people-catalog-and-store.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 29934,
-        "lineCount": 432,
+        "sizeBytes": 32271,
+        "lineCount": 458,
         "ext": ".ts"
       }
     },
@@ -76726,8 +77628,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3763,
-        "lineCount": 99,
+        "sizeBytes": 3830,
+        "lineCount": 101,
         "ext": ".ts"
       }
     },
@@ -77064,8 +77966,8 @@
       "filePath": "packages/shared/src/types/auth.test.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10870,
-        "lineCount": 234,
+        "sizeBytes": 12935,
+        "lineCount": 271,
         "ext": ".ts"
       }
     },
@@ -77077,8 +77979,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 14102,
-        "lineCount": 422,
+        "sizeBytes": 14767,
+        "lineCount": 436,
         "ext": ".ts"
       }
     },
@@ -77642,6 +78544,58 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/inventory/enums.ts",
+      "type": "File",
+      "label": "enums.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/inventory/enums.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 3011,
+        "lineCount": 107,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/inventory/permissions.ts",
+      "type": "File",
+      "label": "permissions.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/inventory/permissions.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 7943,
+        "lineCount": 225,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/inventory/scan-and-check.ts",
+      "type": "File",
+      "label": "scan-and-check.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/inventory/scan-and-check.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 7869,
+        "lineCount": 262,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/inventory.ts",
+      "type": "File",
+      "label": "inventory.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/inventory.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 129,
+        "lineCount": 4,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/ios-app/booking-contracts.ts",
       "type": "File",
       "label": "booking-contracts.ts",
@@ -77675,8 +78629,8 @@
       "filePath": "packages/shared/src/types/ios-app/customer-history.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3704,
-        "lineCount": 149,
+        "sizeBytes": 3735,
+        "lineCount": 150,
         "ext": ".ts"
       }
     },
@@ -77779,8 +78733,8 @@
       "filePath": "packages/shared/src/types/menu-access/menu-access-guards.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 13984,
-        "lineCount": 392,
+        "sizeBytes": 14386,
+        "lineCount": 410,
         "ext": ".ts"
       }
     },
@@ -83459,6 +84413,90 @@
     {
       "id": "edge:route:POST:/api/holiday-work/performance-events/:eventId/review:ws:apps/api",
       "source": "route:POST:/api/holiday-work/performance-events/:eventId/review",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/inventory/me/permissions:ws:apps/api",
+      "source": "route:GET:/api/inventory/me/permissions",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/inventory/warehouses:ws:apps/api",
+      "source": "route:GET:/api/inventory/warehouses",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/inventory/staff/onboard:ws:apps/api",
+      "source": "route:GET:/api/inventory/staff/onboard",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/inventory/scan/code:ws:apps/api",
+      "source": "route:POST:/api/inventory/scan/code",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/inventory/warehouse/item/assign:ws:apps/api",
+      "source": "route:POST:/api/inventory/warehouse/item/assign",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/inventory/warehouse/check/scan:ws:apps/api",
+      "source": "route:GET:/api/inventory/warehouse/check/scan",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/inventory/warehouse/check/items:ws:apps/api",
+      "source": "route:GET:/api/inventory/warehouse/check/items",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/inventory/warehouse/check/finish:ws:apps/api",
+      "source": "route:POST:/api/inventory/warehouse/check/finish",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/inventory/warehouse/check/reset:ws:apps/api",
+      "source": "route:POST:/api/inventory/warehouse/check/reset",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/inventory/warehouse/item/:warehouseItemId/history:ws:apps/api",
+      "source": "route:GET:/api/inventory/warehouse/item/:warehouseItemId/history",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/inventory/media/scan/:scanCodeId:ws:apps/api",
+      "source": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/inventory/events:ws:apps/api",
+      "source": "route:GET:/api/inventory/events",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -92802,6 +93840,230 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:InventoryWarehouseType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryWarehouseType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryItemType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryItemType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCheckableItemType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCheckableItemType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryItemState:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryItemState",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCheckState:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCheckState",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCheckTab:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCheckTab",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryOrderState:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryOrderState",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryScanMode:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryScanMode",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryScanTabConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryScanTabConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryPermissionAction:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryPermissionAction",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:LegacyInventoryPermissionRule:ws:packages/shared",
+      "source": "type:@mos-lab/shared:LegacyInventoryPermissionRule",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryRolePreviewKey:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryRolePreviewKey",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryRolePreviewPreset:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryRolePreviewPreset",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryWarehouseDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryWarehouseDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryStaffOptionDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryStaffOptionDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryItemSummaryDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryItemSummaryDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryWarehouseItemDetailDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryWarehouseItemDetailDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryPermissionsResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryPermissionsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryScanRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryScanRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryScanResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryScanResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryAssignRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryAssignRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryAssignResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryAssignResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCheckSkuRowDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCheckSkuRowDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCheckSummaryDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCheckSummaryDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCheckScanResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCheckScanResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCheckPhysicalItemDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCheckPhysicalItemDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCheckItemsResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCheckItemsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCheckActionResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCheckActionResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryItemHistoryEntryDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryItemHistoryEntryDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryItemHistoryResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryItemHistoryResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventoryCheckScanQuery:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventoryCheckScanQuery",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:InventorySseEventPayload:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InventorySseEventPayload",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:IosBookingItem:ws:packages/shared",
       "source": "type:@mos-lab/shared:IosBookingItem",
       "target": "ws:packages/shared",
@@ -99321,6 +100583,20 @@
     {
       "id": "edge:uicomp:types:token:color:primary",
       "source": "uicomp:types",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CustomerDetailTipVisibility.test:ws:apps/web",
+      "source": "uicomp:CustomerDetailTipVisibility.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CustomerDetailTipVisibility.test:token:color:primary",
+      "source": "uicomp:CustomerDetailTipVisibility.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -110554,6 +111830,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/customers/routes/detail/customer-tip-visibility.routes.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/detail/customer-tip-visibility.routes.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/customers/routes/helpers.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/customers/routes/helpers.ts",
       "target": "ws:packages/shared",
@@ -110864,6 +112147,69 @@
     {
       "id": "edge:file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/holiday-work/services/holiday-work-planning.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/inventory-wave1.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/inventory-wave1.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-auth.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-auth.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-check-queries.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-check-queries.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-check.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-check.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-query.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-query.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-scan.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-scan.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-sse.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-sse.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/inventory/services/inventory-state.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/inventory/services/inventory-state.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -118597,6 +119943,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/__tests__/inventory-wave1.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/__tests__/inventory-wave1.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/screens/checkin/CheckInModals.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/checkin/CheckInModals.tsx",
       "target": "ws:packages/shared",
@@ -118816,6 +120169,55 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/screens/incoming/card/IncomingCardAvatarCluster.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/incoming/card/IncomingCardAvatarCluster.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/inventory/InventoryAssignStaffModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/inventory/InventoryAssignStaffModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/inventory/InventoryMobileShell.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/inventory/InventoryMobileShell.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/inventory/InventoryScannerScreen.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/inventory/InventoryScannerScreen.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseCheckItemScreen.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseCheckItemScreen.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseCheckScanScreen.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseCheckScanScreen.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseItemHistoryScreen.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseItemHistoryScreen.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/inventory/InventoryWarehousePickerSheet.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/inventory/InventoryWarehousePickerSheet.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -119530,6 +120932,13 @@
     {
       "id": "edge:file:apps/web/lib/api/funds.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/funds.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/inventory.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/inventory.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -125030,6 +126439,20 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/chat:route:GET:/api/inventory/me/permissions",
+      "source": "page:/chat",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/chat:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/chat",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/chat:route:GET:/api/ios/photos/:filename",
       "source": "page:/chat",
       "target": "route:GET:/api/ios/photos/:filename",
@@ -128404,6 +129827,20 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/inventory/me/permissions",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/ios/photos/:filename",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/ios/photos/:filename",
@@ -131358,6 +132795,20 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/inventory/me/permissions",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/ios/photos/:filename",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:GET:/api/ios/photos/:filename",
@@ -132786,6 +134237,20 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/wings-garden:route:GET:/api/inventory/me/permissions",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/inventory/me/permissions",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/wings-garden:route:GET:/api/inventory/media/scan/:scanCodeId",
+      "source": "page:/wings-garden",
+      "target": "route:GET:/api/inventory/media/scan/:scanCodeId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/wings-garden:route:GET:/api/ios/photos/:filename",
       "source": "page:/wings-garden",
       "target": "route:GET:/api/ios/photos/:filename",
@@ -133130,31 +134595,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 6098,
-    "totalEdges": 7802,
+    "totalNodes": 6173,
+    "totalEdges": 7875,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
-      "FastifyRoute": 792,
+      "FastifyRoute": 804,
       "Component": 70,
-      "SharedType": 1592,
+      "SharedType": 1624,
       "DesignToken": 12,
-      "UIComponent": 815,
-      "File": 2631
+      "UIComponent": 816,
+      "File": 2661
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1787,
-      "HANDLES_ROUTE": 792,
-      "RENDERS": 885,
-      "USES_TOKEN": 817,
-      "IMPORTS": 1597,
+      "EXPORTS": 1819,
+      "HANDLES_ROUTE": 804,
+      "RENDERS": 886,
+      "USES_TOKEN": 818,
+      "IMPORTS": 1616,
       "QUERIES_MODEL": 613,
-      "API_CALL": 1311
+      "API_CALL": 1319
     },
-    "fastifyRouteCount": 792,
+    "fastifyRouteCount": 804,
     "prismaModelCount": 183,
     "nextPageCount": 70,
-    "sharedTypeCount": 1592
+    "sharedTypeCount": 1624
   },
   "routes": [
     {
@@ -136824,6 +138289,90 @@
       "filePath": "apps/api/src/modules/holiday-work/routes.ts",
       "handler": "preHandler",
       "moduleName": "holiday-work"
+    },
+    {
+      "method": "GET",
+      "path": "/api/inventory/me/permissions",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "inventory"
+    },
+    {
+      "method": "GET",
+      "path": "/api/inventory/warehouses",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "inventory"
+    },
+    {
+      "method": "GET",
+      "path": "/api/inventory/staff/onboard",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "inventory"
+    },
+    {
+      "method": "POST",
+      "path": "/api/inventory/scan/code",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "inventory"
+    },
+    {
+      "method": "POST",
+      "path": "/api/inventory/warehouse/item/assign",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "inventory"
+    },
+    {
+      "method": "GET",
+      "path": "/api/inventory/warehouse/check/scan",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "inventory"
+    },
+    {
+      "method": "GET",
+      "path": "/api/inventory/warehouse/check/items",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "inventory"
+    },
+    {
+      "method": "POST",
+      "path": "/api/inventory/warehouse/check/finish",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "inventory"
+    },
+    {
+      "method": "POST",
+      "path": "/api/inventory/warehouse/check/reset",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "inventory"
+    },
+    {
+      "method": "GET",
+      "path": "/api/inventory/warehouse/item/:warehouseItemId/history",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "inventory"
+    },
+    {
+      "method": "GET",
+      "path": "/api/inventory/media/scan/:scanCodeId",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "inventory"
+    },
+    {
+      "method": "GET",
+      "path": "/api/inventory/events",
+      "filePath": "apps/api/src/modules/inventory/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "inventory"
     },
     {
       "method": "GET",

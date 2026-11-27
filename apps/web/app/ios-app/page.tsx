@@ -188,7 +188,13 @@ function IosAppInner() {
 
     // 3. Vai trò Quản Lý Kho (INVENTORY)
     if (state.role === 'INVENTORY') {
-      return <ScreenInventoryStock onOpenSettings={() => state.setIsSettingsOpen(true)} />;
+      return (
+        <ScreenInventoryStock
+          isAdmin={state.isAdmin}
+          defaultStoreId={state.selectedStoreId}
+          onOpenSettings={() => state.setIsSettingsOpen(true)}
+        />
+      );
     }
 
     // 4. Tab Thu nhập tạm tính (Paystub) cho CVL / CVLL / CV
@@ -435,6 +441,7 @@ function IosAppInner() {
 
   const showTabBar =
     !state.isSettingsOpen &&
+    state.role !== 'INVENTORY' &&
     (state.activeTab === 'paystub' ||
       state.currentStep === IOS_STEPS.INCOMING ||
       state.currentStep === IOS_STEPS.CV_RECEIVE);

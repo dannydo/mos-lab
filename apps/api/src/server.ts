@@ -55,6 +55,8 @@ import { fundRoutes } from './modules/funds/routes.js';
 import notificationRoutes from './modules/notifications/routes.js';
 import { iosRoutes } from './modules/ios/routes.js';
 import { wingsGardenRoutes } from './modules/wings-garden/routes.js';
+import { inventoryRoutes } from './modules/inventory/routes.js';
+import { closeInventoryPool } from './modules/inventory/services/inventory-db.js';
 import { startBugReportCleanup } from './modules/bug-reports/bug-report.service.js';
 import { RequestClassificationService } from './modules/bug-reports/request-classification.service.js';
 import { RequestConversationService } from './modules/bug-reports/request-conversation.service.js';
@@ -380,6 +382,11 @@ const start = async () => {
     await server.register(notificationRoutes, { prefix: '/api' });
     await server.register(iosRoutes, { prefix: '/api' });
     await server.register(wingsGardenRoutes, { prefix: '/api' });
+    await server.register(inventoryRoutes, { prefix: '/api' });
+
+    server.addHook('onClose', async () => {
+      await closeInventoryPool();
+    });
 
     if (isSafeDev()) {
       server.log.info('Safe Dev enabled: background jobs and external synchronization are disabled.');
