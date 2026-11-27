@@ -13,6 +13,11 @@ import {
   resolveBranchInfo,
   resolveCvTipSplitFromRows,
 } from './career-helpers.js';
+import {
+  calculateCvlSerumLineBonus,
+  computeCashCollectedComboAmount,
+  queryCvlDebtCollectionDetails,
+} from './career-cvl-debt-rewards.helper.js';
 
 function resolveRewardDateRange(targetMonthOrRange?: string | { startStr: string; endStr: string }) {
   let month: string;
@@ -62,7 +67,7 @@ function resolveRewardDateRange(targetMonthOrRange?: string | { startStr: string
     endStr,
     rangeStartDate,
     rangeEndDate,
-    endOp: isCustomRange ? '<=' : '<',
+    endOp: (isCustomRange ? '<=' : '<') as '<=' | '<',
   };
 }
 
@@ -157,6 +162,15 @@ export async function calculateCvPlusRewardsForStaff(
     },
   });
 
+  const progression = crmStaff
+    ? await fastify.prisma.crm.crmCareerProgression.findUnique({
+        where: { staffId: crmStaff.id },
+        select: { currentRole: true },
+      })
+    : null;
+  const isCvllRole = progression?.currentRole === 'CV_PLUS_PLUS' || crmStaff?.role === 'cv_plus_plus';
+  const activeCvReq = isCvllRole ? { ...(config.cvToCvPlus || config.cvToCc), ...config.cvPlusToCvPlusPlus } : cvReq;
+
   const targetLegacyStaffId = crmStaff?.legacyStaffId || staffId;
   let staffName = crmStaff?.displayName;
   let staffPhone = crmStaff?.phone;
@@ -237,12 +251,14 @@ export async function calculateCvPlusRewardsForStaff(
   }
 
   // 4. Query Combos sold by this staff (Kinh Thánh mOS Điều răn CV-002: Ai Checkout người đó được nhận thưởng Combo theo thang CVL)
+  // Đồng thời trừ phần nợ chưa thu (`user_debt.debt_amount`) để chỉ tính thưởng trên thực thu, tránh trả trùng khi thu nợ sau.
   const combos = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
     `
       SELECT 
         osc.id,
         osc.order_id,
         osc.total_price,
+        COALESCE(ud_agg.unpaid_debt_amount, 0) AS unpaid_debt_amount,
         o.id as order_code,
         o.booking_date_start,
         os.assigned_staff_id,
@@ -253,6 +269,12 @@ export async function calculateCvPlusRewardsForStaff(
       FROM order_service_combo osc
       JOIN \`order\` o ON o.id = osc.order_id
       JOIN order_service os ON os.order_id = osc.order_id AND ${effectiveCheckoutAttributionSql}
+      LEFT JOIN (
+        SELECT order_id, SUM(GREATEST(0, COALESCE(debt_amount, 0))) AS unpaid_debt_amount
+        FROM \`user_debt\`
+        WHERE date_cancelled IS NULL
+        GROUP BY order_id
+      ) ud_agg ON ud_agg.order_id = osc.order_id
       LEFT JOIN user_profile up ON up.user_id = o.user_id
       LEFT JOIN service s ON s.id = osc.service_id
       LEFT JOIN service_language sl ON sl.service_id = osc.service_id AND sl.language_id = 1
@@ -287,16 +309,21 @@ export async function calculateCvPlusRewardsForStaff(
       comboName: String(item.combo_name),
       price: Number(item.total_price || 0),
     }));
-    const price = comboItems.reduce((sum, item) => sum + item.price, 0);
-    const bonus = calculateComboBonus(price, cvReq);
+    const grossPrice = comboItems.reduce((sum, item) => sum + item.price, 0);
     const first = group[0];
+    const { actualCollected, deductedDebt } = computeCashCollectedComboAmount(
+      grossPrice,
+      Number(first.unpaid_debt_amount || 0)
+    );
+    const bonus = calculateComboBonus(actualCollected, activeCvReq);
     comboDetails.push({
       orderId,
       orderCode: String(first.order_code),
       orderDate: String(first.booking_date_start),
       customerName: first.client_name ? String(first.client_name) : undefined,
       comboName: comboItems.map((item) => item.comboName).join(' + '),
-      price,
+      price: actualCollected,
+      ...(deductedDebt > 0 ? { grossPrice, unpaidDebtAmount: deductedDebt } : {}),
       bonus,
       comboCount: comboItems.length,
       comboItems,
@@ -305,6 +332,19 @@ export async function calculateCvPlusRewardsForStaff(
 
   const rawComboBonusTotal = comboDetails.reduce((sum, c) => sum + c.bonus, 0);
   const comboSoldCount = comboDetails.length;
+
+  // 4.5. Query Combo Debt Collections (user_debt_payment) — không cộng vào tử số comboSoldCount
+  const debtSummary = await queryCvlDebtCollectionDetails({
+    fastify,
+    targetLegacyStaffId,
+    startStr,
+    endStr,
+    endOp,
+    mode,
+    cvReq: activeCvReq,
+    allActiveTrainingPairs,
+    menteeTrainingPairs,
+  });
 
   // Self combo conversion rate on NOT_COMBO_LIVE customer segment (Kinh Thánh mOS Điều răn CV-002)
   // Quy tắc:
@@ -386,6 +426,7 @@ export async function calculateCvPlusRewardsForStaff(
 
   // 6.5. Query Products / Serums sold by this staff (Dưỡng mi Yeppeum per Kinh Thánh mOS CV-002: Ai Checkout người đó được nhận)
   let rawProductBonusTotal = 0;
+  let serumsSoldCount = 0;
   try {
     const productRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
       `
@@ -414,43 +455,24 @@ export async function calculateCvPlusRewardsForStaff(
       endStr
     );
 
-    const serumOrigBonus = cvReq?.serumOriginalPriceBonus ?? 100000;
-    const serumDiscBonus = cvReq?.serumDiscountedPriceBonus ?? 50000;
-    const serumDeepDiscBonus = cvReq?.serumDeepDiscountPriceBonus ?? 10000;
-    const serumFreeBonus = cvReq?.serumFreePriceBonus ?? 1000;
-
     for (const pr of productRows) {
-      const qty = Number(pr.quantity) || 1;
-      const pricePerUnit = (Number(pr.total_price) || 0) / qty;
-      // Quy chế Dưỡng Mi Yeppeum (Kinh Thánh mOS Điều răn CV-002 cập nhật theo Danny):
-      // 1.1M (Giá gốc) -> 100K (100.000đ)
-      // Giảm giá < 50% (> 550.000đ) -> 50K (50.000đ)
-      // Giảm >= 50% (<= 550.000đ & > 0đ) -> 10K (10.000đ)
-      // Free (0đ) -> 1K (1.000đ)
-      let itemBonus = serumFreeBonus;
-      if (pricePerUnit >= 1000000) {
-        itemBonus = serumOrigBonus;
-      } else if (pricePerUnit > 550000) {
-        itemBonus = serumDiscBonus;
-      } else if (pricePerUnit > 0) {
-        itemBonus = serumDeepDiscBonus;
-      } else {
-        itemBonus = serumFreeBonus;
-      }
-      rawProductBonusTotal += itemBonus * qty;
+      const { qty, lineBonus } = calculateCvlSerumLineBonus(pr.total_price, pr.quantity, cvReq);
+      serumsSoldCount += qty;
+      rawProductBonusTotal += lineBonus;
     }
   } catch (prodErr) {
     fastify.log.warn({ prodErr, targetLegacyStaffId }, 'Could not calculate product bonuses for CVL');
   }
 
   // Penalty enforcement rule:
-  // If selfComboRate < minComboTarget, maintain CV base hourly wage (no +2k increase) and forfeit combo/product bonus.
+  // If selfComboRate < minComboTarget, maintain CV base hourly wage (no +2k increase) and forfeit combo/debt/product bonus.
   const baseWageCvPlus = isPenalized ? baseWageCv : workingHours * cvPlusBaseHourly;
   const comboBonusTotal = isPenalized ? 0 : rawComboBonusTotal;
+  const debtCollectionBonusTotal = isPenalized ? 0 : debtSummary.rawDebtCollectionBonusTotal;
   const productBonusTotal = isPenalized ? 0 : rawProductBonusTotal;
 
   const totalCvIncome = baseWageCv + tipCv;
-  const totalCvPlusIncome = baseWageCvPlus + tipCvPlus + comboBonusTotal + productBonusTotal;
+  const totalCvPlusIncome = baseWageCvPlus + tipCvPlus + comboBonusTotal + debtCollectionBonusTotal + productBonusTotal;
   const deltaGain = totalCvPlusIncome - totalCvIncome;
   const deltaPercentage = totalCvIncome > 0 ? deltaGain / totalCvIncome : 0;
 
@@ -475,12 +497,17 @@ export async function calculateCvPlusRewardsForStaff(
     tipCv,
     tipCvPlus,
     comboBonusTotal,
+    debtCollectionBonusTotal,
+    debtCollectionCount: debtSummary.debtCollectionCount,
+    debtCollectedAmount: debtSummary.debtCollectedAmount,
     productBonusTotal,
+    serumsSoldCount,
     totalCvIncome,
     totalCvPlusIncome,
     deltaGain,
     deltaPercentage: Math.round(deltaPercentage * 1000) / 1000,
     comboDetails,
+    debtCollectionDetails: debtSummary.debtCollectionDetails,
   };
 
   // 8. Persist if requested

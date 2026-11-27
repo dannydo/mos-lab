@@ -6,6 +6,8 @@ import type {
   FmFloorFarmConfig,
 } from './career-requirements.types.js';
 
+export const DEFAULT_COMBO_MIN_COLLECTED_AMOUNT = 500_000;
+
 const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
   minOrders: 330, // 330 bộ mi trong 3 tháng liền (chuẩn 110 bộ/tháng)
   minConsecutiveMonths: 3,
@@ -26,8 +28,11 @@ const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
   serumDiscountedPriceBonus: 50000, // 50K/cây giá khuyến mãi nhẹ (< 50%)
   serumDeepDiscountPriceBonus: 10000, // 10K/cây giá giảm sâu (>= 50%)
   serumFreePriceBonus: 1000, // 1K/cây tặng miễn phí (Free 0đ)
-  comboUnder2mBonus: 50000, // < 2M = 50K
+  comboUnder2mBonus: 50000, // < 2M = 50K (tối thiểu thực thu 500K)
   comboStepPerMillionBonus: 50000, // Mỗi 1M kế tiếp (từ 2M trở lên) = +50K
+  comboMinCollectedAmount: DEFAULT_COMBO_MIN_COLLECTED_AMOUNT, // Tối thiểu thực thu 500K mới tính thưởng Combo & Thu nợ Combo
+  comboDebtBonusMode: 'TIER_LADDER', // Thu nợ Combo mặc định dùng bậc thang thực thu như gói Combo
+  comboDebtBonusRate: 0.015, // 1.5% nếu chọn chế độ PERCENTAGE
   hourlyWage: 27500, // 27.500đ/h (+2.000đ/h so với CV 25.500đ/h)
   tipShareRatio: 0.9, // 90% = 70% làm mi + 20% tư vấn
   enforceComboPenalty: true, // Chế tài nếu combo < 21%: khóa lương tăng thêm và thưởng bán hàng, chỉ giữ 20% tip tư vấn
@@ -61,8 +66,11 @@ const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS: CvPlusToCvPlusPlusRequirements = {
   serumDiscountedPriceBonus: 50000, // 50K/cây giá khuyến mãi nhẹ (< 50%)
   serumDeepDiscountPriceBonus: 10000, // 10K/cây giá giảm sâu (>= 50%)
   serumFreePriceBonus: 1000, // 1K/cây tặng miễn phí (Free 0đ)
-  comboUnder2mBonus: 50000, // < 2M = 50K
+  comboUnder2mBonus: 50000, // < 2M = 50K (tối thiểu thực thu 500K)
   comboStepPerMillionBonus: 50000, // Mỗi 1M kế tiếp (từ 2M trở lên) = +50K
+  comboMinCollectedAmount: DEFAULT_COMBO_MIN_COLLECTED_AMOUNT, // Tối thiểu thực thu 500K mới tính thưởng Combo & Thu nợ Combo
+  comboDebtBonusMode: 'TIER_LADDER', // Thu nợ Combo mặc định dùng bậc thang thực thu như gói Combo
+  comboDebtBonusRate: 0.015, // 1.5% nếu chọn chế độ PERCENTAGE
   crossConsultCvShareRate: 0, // Mô hình 100/0: CVLL nhận 100% Combo & Sản phẩm, CV/CVL nhận 0đ
   exemptCvlDenominatorOnCrossConsult: true, // Miễn trừ mẫu số Not Combo Live cho CVL khi nhờ CVLL chốt hộ
   enforceMandatoryOwnQueue: true, // Bắt buộc đi tua khách mình; bỏ tua bị phạt theo quy định
@@ -258,10 +266,26 @@ export const DEFAULT_CAREER_PROGRESSION_CONFIG: CareerProgressionConfig = {
   },
 };
 
+function resolveComboMinCollectedAmount(minCollected?: number | null): number {
+  if (minCollected !== undefined && minCollected !== null && Number.isFinite(minCollected)) {
+    return Math.max(0, Math.round(Number(minCollected)));
+  }
+  return DEFAULT_COMBO_MIN_COLLECTED_AMOUNT;
+}
+
+function formatCompactMinThresholdLabel(minCollected: number): string {
+  if (minCollected < 1_000_000) {
+    return `${Math.round(minCollected / 1000)}K`;
+  }
+  const millions = minCollected / 1_000_000;
+  return `${Number.isInteger(millions) ? millions.toFixed(0) : Number(millions.toFixed(1))}M`;
+}
+
 /**
- * Tính tiền thưởng hoa hồng Combo bậc thang theo tổng giá trị gói trong đơn (Kinh Thánh mOS Điều răn CV-002 v2.8.0):
+ * Tính tiền thưởng hoa hồng Combo bậc thang theo tổng giá trị thực thu trong đơn (Kinh Thánh mOS Điều răn CV-002 v2.11.0):
  * - Nếu khách mua 2 (hoặc nhiều) gói Combo cùng lúc trong 1 đơn hàng (cùng order_id), cộng gộp tổng tiền các gói lại trước rồi thưởng theo công thức.
- * - Dưới 2M (< 2.000.000đ): comboUnder2mBonus (mặc định 50.000đ)
+ * - Tối thiểu thực thu comboMinCollectedAmount (mặc định 500.000đ): dưới ngưỡng = 0đ.
+ * - Từ ngưỡng tối thiểu đến dưới 2M (500K - < 2.000.000đ): comboUnder2mBonus (mặc định 50.000đ)
  * - Mỗi 1M kế tiếp từ mốc 2M trở lên: +comboStepPerMillionBonus (mặc định +50.000đ/1M)
  *   => 2M-<3M: 100K | 3M-<4M: 150K | 4M-<5M: 200K | 8M-<9M: 400K | 11M-<12M: 550K...
  */
@@ -270,11 +294,13 @@ export function calculateComboBonus(
   config?: {
     comboUnder2mBonus?: number;
     comboStepPerMillionBonus?: number;
+    comboMinCollectedAmount?: number;
     comboUnder3mBonus?: number;
     comboUnder4mBonus?: number;
   } | null
 ): number {
-  if (!price || price <= 0) return 0;
+  const minCollected = resolveComboMinCollectedAmount(config?.comboMinCollectedAmount);
+  if (!price || price <= 0 || price < minCollected) return 0;
   const under2m = config?.comboUnder2mBonus ?? 50_000;
   const step = config?.comboStepPerMillionBonus ?? 50_000;
 
@@ -284,10 +310,43 @@ export function calculateComboBonus(
 }
 
 /**
- * Định dạng nhãn bậc thang Combo theo bước nhảy 1M từ mốc 2M (<2M, 2M-<3M, 3M-<4M, ..., 8M-<9M, 11M-<12M)
+ * Định dạng nhãn bậc thang Combo theo ngưỡng tối thiểu và bước nhảy 1M từ mốc 2M
+ * (<500K, 500K-<2M, 2M-<3M, 3M-<4M, ..., 8M-<9M, 11M-<12M)
  */
-export function formatComboTierBracketLabel(price: number): string {
-  if (!price || price < 2_000_000) return '<2M';
+export function formatComboTierBracketLabel(price: number, minCollected = DEFAULT_COMBO_MIN_COLLECTED_AMOUNT): string {
+  const safeMin = resolveComboMinCollectedAmount(minCollected);
+  const minLabel = formatCompactMinThresholdLabel(safeMin);
+  if (!price || price <= 0 || (safeMin > 0 && price < safeMin)) {
+    return safeMin > 0 ? `<${minLabel}` : '<2M';
+  }
+  if (price < 2_000_000) {
+    return safeMin > 0 ? `${minLabel}-<2M` : '<2M';
+  }
   const floorM = Math.floor(price / 1_000_000);
   return `${floorM}M-<${floorM + 1}M`;
+}
+
+/**
+ * Tính thưởng thu nợ Combo cho CVL/CVLL theo cấu hình CAREER_PROGRESSION_RULES:
+ * - Bắt buộc thực thu >= comboMinCollectedAmount (mặc định 500.000đ); dưới ngưỡng = 0đ.
+ * - Mặc định TIER_LADDER: áp dụng đúng bậc thang CVL trên số tiền thực thu (500K-<2M = 50K, mỗi +1M = +50K).
+ * - Tùy chọn PERCENTAGE: Math.round(collectedAmount * comboDebtBonusRate) (mặc định 1.5%).
+ */
+export function calculateComboDebtBonus(
+  collectedAmount: number,
+  config?: {
+    comboDebtBonusMode?: 'TIER_LADDER' | 'PERCENTAGE';
+    comboDebtBonusRate?: number;
+    comboUnder2mBonus?: number;
+    comboStepPerMillionBonus?: number;
+    comboMinCollectedAmount?: number;
+  } | null
+): number {
+  const minCollected = resolveComboMinCollectedAmount(config?.comboMinCollectedAmount);
+  if (!collectedAmount || collectedAmount <= 0 || collectedAmount < minCollected) return 0;
+  if (config?.comboDebtBonusMode === 'PERCENTAGE') {
+    const rate = Number.isFinite(config.comboDebtBonusRate) ? Math.max(0, Number(config.comboDebtBonusRate)) : 0.015;
+    return Math.round(collectedAmount * rate);
+  }
+  return calculateComboBonus(collectedAmount, config);
 }

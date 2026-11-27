@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Target, Sparkles, ShieldCheck, Flame, DollarSign, HandCoins } from 'lucide-react';
-import type { CareerProgressionConfig } from '@mos-lab/shared';
+import { DEFAULT_COMBO_MIN_COLLECTED_AMOUNT, type CareerProgressionConfig } from '@mos-lab/shared';
 import {
   type CvPlusToCvPlusPlusConfig,
   type Stage2SalesSummary,
@@ -11,6 +11,7 @@ import {
 } from './careerConfigTypesAndHelpers';
 import {
   CareerConfigComboPenaltyBox,
+  CareerConfigDebtBonusBox,
   CareerConfigSectionCard,
   CareerConfigSliderField,
   CareerConfigSwitchCard,
@@ -182,9 +183,16 @@ export function CareerStage2ConfigTab({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
             <CareerConfigVndInputField
-              label="Tổng đơn < 2 Triệu:"
+              label="Thực thu tối thiểu:"
+              value={cvPlusToCvPlusPlus.comboMinCollectedAmount ?? DEFAULT_COMBO_MIN_COLLECTED_AMOUNT}
+              step={50000}
+              min={0}
+              onChange={(val) => updateStage2({ comboMinCollectedAmount: val })}
+            />
+            <CareerConfigVndInputField
+              label="Từ ngưỡng – < 2 Triệu:"
               value={cvPlusToCvPlusPlus.comboUnder2mBonus ?? 50000}
               step={5000}
               min={0}
@@ -208,6 +216,16 @@ export function CareerStage2ConfigTab({
             step={1}
             value={summary.combosPerMonth}
             onChange={(val) => updateStage2({ expectedCombosPerMonth: val })}
+          />
+
+          <CareerConfigDebtBonusBox
+            mode={cvPlusToCvPlusPlus.comboDebtBonusMode ?? 'TIER_LADDER'}
+            rate={cvPlusToCvPlusPlus.comboDebtBonusRate ?? 0.015}
+            comboUnder2mBonus={cvPlusToCvPlusPlus.comboUnder2mBonus ?? 50000}
+            comboStepPerMillionBonus={cvPlusToCvPlusPlus.comboStepPerMillionBonus ?? 50000}
+            comboMinCollectedAmount={cvPlusToCvPlusPlus.comboMinCollectedAmount ?? DEFAULT_COMBO_MIN_COLLECTED_AMOUNT}
+            onChangeMode={(mode) => updateStage2({ comboDebtBonusMode: mode })}
+            onChangeRate={(rate) => updateStage2({ comboDebtBonusRate: rate })}
           />
         </div>
 

@@ -81,10 +81,10 @@ export const MobileHeaderRoomBar: React.FC<MobileHeaderRoomBarProps> = ({
   onOpenPushSettings,
   onClose,
 }) => {
-  const { makeCall, canAccessOmiCall, isAdmin } = useOmiCall();
+  const { makeCall, canAccessOmiCall } = useOmiCall();
   const omiCallTarget = useMemo(
-    () => (canAccessOmiCall && isAdmin ? resolveDmOmiCallTarget(activeConversation, staffDirectory) : null),
-    [canAccessOmiCall, isAdmin, activeConversation, staffDirectory]
+    () => (canAccessOmiCall ? resolveDmOmiCallTarget(activeConversation, staffDirectory) : null),
+    [canAccessOmiCall, activeConversation, staffDirectory]
   );
 
   return (
@@ -182,10 +182,10 @@ export const MobileHeaderRoomBar: React.FC<MobileHeaderRoomBarProps> = ({
             pinnedCount={pinnedCount}
             filesCount={filesCount}
             isPushSubscribed={isPushSubscribed}
-            canOmiCall={canAccessOmiCall && isAdmin}
+            canOmiCall={canAccessOmiCall}
             omiCallTarget={omiCallTarget}
             onCallOmiCallPhone={
-              canAccessOmiCall && isAdmin
+              canAccessOmiCall
                 ? (phone, label, avatar) =>
                     void makeCall(phone, label, undefined, avatar || undefined, undefined, { autoEnableAdmin: true })
                 : undefined

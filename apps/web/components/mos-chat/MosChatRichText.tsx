@@ -116,7 +116,7 @@ const MosChatRichTextWithContext: React.FC<MosChatRichTextProps> = (props) => {
 };
 
 export const MosChatRichText: React.FC<MosChatRichTextProps> = React.memo((props) => {
-  const { makeCall, canAccessOmiCall, isAdmin } = useOmiCall();
+  const { makeCall, canAccessOmiCall } = useOmiCall();
   const handleInlinePhoneCall = useCallback(
     (rawPhone: string) => {
       const clean = normalizeDialablePhone(rawPhone);
@@ -126,8 +126,7 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = React.memo((props
     [makeCall]
   );
 
-  const effectiveOnOmiCallPhone =
-    props.onOmiCallPhone ?? (canAccessOmiCall && isAdmin ? handleInlinePhoneCall : undefined);
+  const effectiveOnOmiCallPhone = props.onOmiCallPhone ?? (canAccessOmiCall ? handleInlinePhoneCall : undefined);
 
   if (props.staffDirectory !== undefined && props.currentUser !== undefined && props.memberNicknames !== undefined) {
     return <MosChatRichTextPure {...props} onOmiCallPhone={effectiveOnOmiCallPhone} />;

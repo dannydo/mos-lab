@@ -120,6 +120,7 @@ export class CcMentorPayoutService {
         const menteeDeltaHourlyWage = isMenteeUnlocked ? Math.round(regularHours * wageDiffPerHour) : 0;
         const menteeDeltaTipBonus = ownConsultDeltaTip + transferredCcTip;
         const menteeComboBonusTotal = isMenteeUnlocked ? snapshot.comboBonusTotal : 0;
+        const menteeDebtCollectionBonusTotal = isMenteeUnlocked ? snapshot.debtCollectionBonusTotal || 0 : 0;
         const menteeSerumBonusTotal = isMenteeUnlocked ? snapshot.productBonusTotal : 0;
 
         const breakdown = calculateCcMentorTrainingBonus({
@@ -135,6 +136,7 @@ export class CcMentorPayoutService {
           menteeDeltaHourlyWage,
           menteeDeltaTipBonus,
           menteeComboBonusTotal,
+          menteeDebtCollectionBonusTotal,
           menteeSerumBonusTotal,
         });
 

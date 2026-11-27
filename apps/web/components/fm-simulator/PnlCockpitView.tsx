@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Activity,
   Award,
@@ -28,14 +28,19 @@ import {
   AppleSurface,
   AppleToggleRow,
 } from './ApplePrimitives';
+import { FmHubModePanel } from './FmHubModePanel';
+import { FmInfoTrigger } from './FmInfoGuideModal';
+import { FmRevPerCvLockRow } from './FmRevPerCvLockRow';
 import {
   AUTONOMY_HARD_MAX_PCT,
   BRANCH_SPECS,
   BranchKey,
+  FM_ROOKIE_GRACE_DAYS,
   FmLevel,
   FmSimulationResult,
   PnlSimulationResult,
   SimulatorInput,
+  computeLockedRevVnd,
   createUniformStars,
   formatM,
   resolveAutonomyStar,
@@ -66,7 +71,31 @@ export function PnlCockpitView({
 }: PnlCockpitViewProps) {
   const spec = BRANCH_SPECS[input.branch];
   const revM = Math.round(input.revVnd / 1_000_000);
+  const currentRevPerCvM = Math.max(20, Math.min(80, Math.round(fm.revPerMatureCvVnd / 1_000_000)));
+  const [revPerCvLocked, setRevPerCvLocked] = useState(false);
+  const [lockedRevPerCvM, setLockedRevPerCvM] = useState(currentRevPerCvM);
+  const displayedRevPerCvM = revPerCvLocked ? lockedRevPerCvM : currentRevPerCvM;
   const revPctBase = Math.max(1, input.revVnd);
+
+  const handleToggleRevLock = () => {
+    if (revPerCvLocked) {
+      setRevPerCvLocked(false);
+      return;
+    }
+    setLockedRevPerCvM(currentRevPerCvM);
+    setRevPerCvLocked(true);
+    onChange({
+      revVnd: computeLockedRevVnd(input.cvs, input.rookieCvs, currentRevPerCvM),
+    });
+  };
+
+  const handleRevPerCvChange = (nextM: number) => {
+    setLockedRevPerCvM(nextM);
+    setRevPerCvLocked(true);
+    onChange({
+      revVnd: computeLockedRevVnd(input.cvs, input.rookieCvs, nextM),
+    });
+  };
 
   const handleAutonomyChange = (nextPct: number, nextKeyholders = input.cvllKeyholders) => {
     const capped = Math.min(AUTONOMY_HARD_MAX_PCT, Math.max(0, nextPct));
@@ -126,6 +155,7 @@ export function PnlCockpitView({
         <AppleKpiHero
           icon={<TrendingUp className="h-3.5 w-3.5 text-blue-500" />}
           label="Doanh thu sàn"
+          infoSlot={<FmInfoTrigger guideId="ctrl-revenue" label="Doanh thu sàn" />}
           value={formatM(pnl.revVnd, 0)}
           hint={`${formatM(fm.revPerCvVnd, 1)} / CV · ${fm.fmCount} FM`}
           tone="blue"
@@ -133,6 +163,7 @@ export function PnlCockpitView({
         <AppleKpiHero
           icon={<Users className="h-3.5 w-3.5 text-amber-500" />}
           label="Tổng chi nhân sự"
+          infoSlot={<FmInfoTrigger guideId="pnl-people" label="Tổng chi nhân sự" />}
           value={formatM(pnl.totalPeopleCostVnd, 1)}
           hint={`${pnl.peoplePctOfRev.toFixed(1)}% doanh thu`}
           tone="amber"
@@ -140,6 +171,7 @@ export function PnlCockpitView({
         <AppleKpiHero
           icon={<Wallet className="h-3.5 w-3.5 text-emerald-500" />}
           label="Dư ròng trước mặt bằng"
+          infoSlot={<FmInfoTrigger guideId="pnl-residual" label="Dư ròng trước mặt bằng" />}
           value={formatM(pnl.netResidualVnd, 1)}
           hint={`${pnl.netResidualPct.toFixed(1)}% biên giữ lại`}
           tone={pnl.isProfitable ? 'emerald' : 'rose'}
@@ -147,8 +179,9 @@ export function PnlCockpitView({
         <AppleKpiHero
           icon={<Award className="h-3.5 w-3.5 text-violet-500" />}
           label="Quỹ 1 FM (hạch toán)"
+          infoSlot={<FmInfoTrigger guideId="kpi-income" label="Quỹ 1 FM (hạch toán)" />}
           value={formatM(fm.fmIncomeOneVnd, 2)}
-          hint={`FM ${input.fmLevel} · ${fm.totalEffectiveStars}/21★`}
+          hint={`FM ${input.fmLevel} · ${fm.totalEffectiveStars}/24★`}
           tone="neutral"
         />
       </div>
@@ -163,8 +196,11 @@ export function PnlCockpitView({
               const target = BRANCH_SPECS[branch];
               onChange({
                 branch,
-                revVnd: target.presetDefaultRev,
+                revVnd: revPerCvLocked
+                  ? computeLockedRevVnd(target.presetDefaultCvs, 0, lockedRevPerCvM)
+                  : target.presetDefaultRev,
                 cvs: target.presetDefaultCvs,
+                rookieCvs: 0,
               });
             }}
             options={[
@@ -178,30 +214,70 @@ export function PnlCockpitView({
             id="pnl-rev-slider"
             icon={<TrendingUp className="h-3.5 w-3.5 text-blue-500" />}
             label="Doanh thu tháng"
+            infoSlot={<FmInfoTrigger guideId="ctrl-revenue" label="Doanh thu tháng" />}
             valueText={`${revM}M`}
             value={revM}
-            min={300}
-            max={950}
+            min={250}
+            max={1100}
             step={10}
             hint={`Hòa vốn ${spec.shortName}: ${formatM(spec.breakevenVnd, 0)}`}
-            onChange={(nextM) => onChange({ revVnd: nextM * 1_000_000 })}
+            onChange={(nextM) => {
+              if (revPerCvLocked) setRevPerCvLocked(false);
+              onChange({ revVnd: nextM * 1_000_000 });
+            }}
+          />
+
+          <FmRevPerCvLockRow
+            revPerCvM={displayedRevPerCvM}
+            locked={revPerCvLocked}
+            matureCvs={fm.matureCvs}
+            rookieCvs={input.rookieCvs}
+            revVnd={input.revVnd}
+            onToggleLock={handleToggleRevLock}
+            onChangeRevPerCvM={handleRevPerCvChange}
           />
 
           <AppleStepperRow
             icon={<Users className="h-3.5 w-3.5 text-neutral-500" />}
             label="Quân số sàn"
-            hint={`Min cổng giường: ${spec.minCvsGate} · ≥13 tách 2 FM`}
+            infoSlot={<FmInfoTrigger guideId="ctrl-cvs" label="Quân số sàn" />}
+            hint={`Min cổng giường: ${spec.minCvsGate} · ≥13 chính thức & ≥650M tách 2 FM`}
             value={input.cvs}
             min={6}
             max={18}
             suffix=" CV"
-            onChange={(cvs) => onChange({ cvs })}
+            onChange={(cvs) => {
+              const nextRookies = Math.min(input.rookieCvs, Math.max(0, cvs - 1));
+              onChange({
+                cvs,
+                rookieCvs: nextRookies,
+                ...(revPerCvLocked ? { revVnd: computeLockedRevVnd(cvs, nextRookies, lockedRevPerCvM) } : {}),
+              });
+            }}
+          />
+
+          <AppleStepperRow
+            icon={<UserPlus className="h-3.5 w-3.5 text-emerald-500" />}
+            label={`CV mới ≤ ${FM_ROOKIE_GRACE_DAYS} ngày (Miễn mẫu số)`}
+            infoSlot={<FmInfoTrigger guideId="ctrl-rookies" label={`CV mới ≤ ${FM_ROOKIE_GRACE_DAYS} ngày`} />}
+            hint="Cộng DT, không làm loãng REV/CV & Maps"
+            value={input.rookieCvs}
+            min={0}
+            max={Math.max(0, input.cvs - 1)}
+            suffix=" mới"
+            onChange={(rookieCvs) =>
+              onChange({
+                rookieCvs,
+                ...(revPerCvLocked ? { revVnd: computeLockedRevVnd(input.cvs, rookieCvs, lockedRevPerCvM) } : {}),
+              })
+            }
           />
 
           <AppleSliderRow
             id="pnl-autonomy-slider"
             icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />}
             label="Tỷ lệ Tự lái (Trần 60%)"
+            infoSlot={<FmInfoTrigger guideId="ctrl-autonomy-pct" label="Tỷ lệ Tự lái" />}
             valueText={`${pnl.team.effectiveAutonomyPct}%`}
             value={input.autonomyPct}
             min={0}
@@ -214,6 +290,7 @@ export function PnlCockpitView({
           <AppleStepperRow
             icon={<Crown className="h-3.5 w-3.5 text-amber-500" />}
             label="Số CVLL Keyholder"
+            infoSlot={<FmInfoTrigger guideId="ctrl-cvll-keyholders" label="Số CVLL Keyholder" />}
             hint="Mở mốc 1★/2★ (≥1) và 3★ (≥2)"
             value={input.cvllKeyholders}
             min={0}
@@ -223,9 +300,12 @@ export function PnlCockpitView({
 
           {/* Self-contained FM Assumptions inside P&L */}
           <div className="space-y-2.5 border-t border-black/5 pt-3 dark:border-white/10">
+            <FmHubModePanel input={input} fm={fm} onChange={onChange} />
+
             <div className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">
               <Star className="h-3.5 w-3.5 text-amber-500" />
               <span>Giả định bậc FM &amp; mức Sao hạch toán</span>
+              <FmInfoTrigger guideId="ctrl-fm-level" label="Giả định bậc FM & mức Sao" />
             </div>
 
             <AppleSegmented<string>
@@ -246,9 +326,9 @@ export function PnlCockpitView({
               onChange={(next) => handleStarTierSelect(Number(next) as 0 | 1 | 2 | 3)}
               options={[
                 { value: '0', label: '0★' },
-                { value: '1', label: '1★ · 1.5M' },
-                { value: '2', label: '2★ · 3.1M' },
-                { value: '3', label: '3★ · 4.6M' },
+                { value: '1', label: '1★ · 1.7M' },
+                { value: '2', label: '2★ · 3.4M' },
+                { value: '3', label: '3★ · 5.05M' },
               ]}
               className="w-full"
             />
@@ -258,6 +338,7 @@ export function PnlCockpitView({
             <AppleToggleRow
               icon={<HeartHandshake className="h-3.5 w-3.5 text-blue-500" />}
               label="BHXH Doanh nghiệp"
+              infoSlot={<FmInfoTrigger guideId="pnl-toggles" label="BHXH Doanh nghiệp" />}
               hint="1.04M/Sàn · 1.16M/Quản lý"
               checked={input.includeEmployerSs}
               onChange={(includeEmployerSs) => onChange({ includeEmployerSs })}
@@ -265,6 +346,7 @@ export function PnlCockpitView({
             <AppleToggleRow
               icon={<UserCheck className="h-3.5 w-3.5 text-violet-500" />}
               label="KPI Thưởng CHO"
+              infoSlot={<FmInfoTrigger guideId="pnl-toggles" label="KPI Thưởng CHO" />}
               hint="Cứng 11M + Vượt hòa vốn 3% + Khách mới"
               checked={input.choBonusEnabled}
               onChange={(choBonusEnabled) => onChange({ choBonusEnabled })}
@@ -273,6 +355,7 @@ export function PnlCockpitView({
               <AppleStepperRow
                 icon={<UserPlus className="h-3.5 w-3.5 text-emerald-500" />}
                 label="Khách mới / tháng"
+                infoSlot={<FmInfoTrigger guideId="pnl-toggles" label="Khách mới / tháng" />}
                 hint="≥ 40 khách mới nhận 3.5M"
                 value={input.newCustomers}
                 min={10}
@@ -379,6 +462,7 @@ export function PnlCockpitView({
               amountText={formatM(pnl.fmTotalCashVnd, 1)}
               pctOfRev={(pnl.fmTotalCashVnd / revPctBase) * 100}
               tone="violet"
+              hint={`${(fm.revPoolRate * 100).toFixed(2)}% DT/FM · ${fm.matureCvs} chính thức${fm.rookieCvs > 0 ? ` + ${fm.rookieCvs} mới` : ''}`}
             />
 
             <AppleProgressRow
@@ -399,6 +483,15 @@ export function PnlCockpitView({
                 tone="blue"
               />
             ) : null}
+
+            <AppleProgressRow
+              icon={<Sparkles className="h-3.5 w-3.5 text-amber-500" />}
+              label="Quỹ Shop & Weekly Quest (Văn hóa)"
+              amountText={formatM(pnl.shopCultureFundVnd, 1)}
+              pctOfRev={pnl.shopCulturePctOfRev}
+              tone="amber"
+              hint={`Ngoài lương FM · Fun ${formatM(fm.funFundVnd * fm.fmCount, 1)} + Quest ${formatM(fm.weeklyQuestFundVnd, 1)}`}
+            />
           </AppleSurface>
         </div>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isCanonicalSuperAdminIdentity, isTelesalesRole } from '@mos-lab/shared';
 import { message } from 'antd';
 import {
   defaultOmiCallFallback,
@@ -44,12 +44,11 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
   const isAdmin = Boolean(
     currentUser &&
-    (isSuperAdminRole(currentUser.role) ||
+    (isAdminOrSuperAdminRole(currentUser.role) ||
       isCanonicalSuperAdminIdentity({ username: currentUser.username, email: currentUser.email }))
   );
   const isGrowthMember = Boolean(
-    currentUser &&
-    (currentUser.isGrowthMember === true || currentUser.role === 'telesales' || currentUser.role === 'booker')
+    currentUser && (currentUser.isGrowthMember === true || isTelesalesRole(currentUser.role))
   );
   const canAccessOmiCall = isAdmin || isGrowthMember;
 
@@ -103,6 +102,33 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     }
     return false;
   });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!canAccessOmiCall) {
+      setAdminOmiCallEnabledState(false);
+      setFloatingLauncherVisibleState(false);
+      setOmicallReadyState(false);
+      setShouldInit(false);
+      return;
+    }
+
+    if (isAdmin) {
+      const enabled = readAdminOmiCallEnabled();
+      const autoInit = enabled && localStorage.getItem('mos_omicall_auto_init') === 'true';
+      setAdminOmiCallEnabledState(enabled);
+      setFloatingLauncherVisibleState(enabled && readFloatingLauncherVisibility());
+      setOmicallReadyState(autoInit);
+      setShouldInit(Boolean(localStorage.getItem('mos_token') && autoInit));
+      return;
+    }
+
+    const autoInit = localStorage.getItem('mos_omicall_auto_init') === 'true';
+    setAdminOmiCallEnabledState(false);
+    setFloatingLauncherVisibleState(readFloatingLauncherVisibility());
+    setOmicallReadyState(autoInit);
+    setShouldInit(Boolean(localStorage.getItem('mos_token') && autoInit));
+  }, [currentUser?.id, canAccessOmiCall, isAdmin]);
   const [lastRegisterEvent, setLastRegisterEvent] = useState<SafeAny>(null);
 
   // Global CallLogModal states

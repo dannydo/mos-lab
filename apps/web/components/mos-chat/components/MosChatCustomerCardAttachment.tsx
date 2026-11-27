@@ -25,7 +25,7 @@ export const MosChatCustomerCardAttachment: React.FC<MosChatCustomerCardAttachme
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
   const chatContext = useContext(MosChatContext);
-  const { makeCall, canAccessOmiCall, isAdmin } = useOmiCall();
+  const { makeCall, canAccessOmiCall } = useOmiCall();
   const dialableCardPhone = card.phone ? normalizeDialablePhone(card.phone) : '';
   const handleOpen = onOpenCustomer || chatContext?.openCustomerDetail;
 
@@ -123,7 +123,7 @@ export const MosChatCustomerCardAttachment: React.FC<MosChatCustomerCardAttachme
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
-        {canAccessOmiCall && isAdmin && dialableCardPhone && (
+        {canAccessOmiCall && dialableCardPhone && (
           <Tooltip title={`Gọi OmiCall tới ${card.name} (${card.phone})`}>
             <button
               type="button"

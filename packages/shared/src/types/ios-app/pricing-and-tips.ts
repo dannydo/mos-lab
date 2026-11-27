@@ -66,8 +66,9 @@ export function validateNaturalLashConsultationSave(params: {
 }
 
 /**
- * Thưởng hoa hồng Combo CVL theo công thức đơn giản hóa động từ CAREER_PROGRESSION_RULES (Kinh Thánh mOS Điều răn CV-002 v2.8.0):
- * - Dưới 2M (< 2.000.000đ): comboUnder2mBonus (mặc định 50.000đ)
+ * Thưởng hoa hồng Combo CVL theo công thức đơn giản hóa động từ CAREER_PROGRESSION_RULES (Kinh Thánh mOS Điều răn CV-002 v2.11.0):
+ * - Tối thiểu thực thu comboMinCollectedAmount (mặc định 500.000đ): dưới ngưỡng = 0đ
+ * - Từ ngưỡng tối thiểu đến dưới 2M (500K - < 2.000.000đ): comboUnder2mBonus (mặc định 50.000đ)
  * - Mỗi 1M kế tiếp từ mốc 2M trở lên: +comboStepPerMillionBonus (mặc định +50.000đ/1M)
  */
 export function calculateCvComboTierBonus(comboPrice: number, rules?: Partial<CvToCvPlusRequirements> | null): number {

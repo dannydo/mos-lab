@@ -1,6 +1,7 @@
 export type BranchKey = 'dt' | 'ep';
 export type FmLevel = 1 | 2 | 3;
-export type PillarKey = 'maps' | 'fal' | 'autonomy' | 'inventory' | 'room' | 'grooming' | 'turn';
+export type FmStaffingMode = 'auto' | 'single' | 'hub';
+export type PillarKey = 'maps' | 'fal' | 'autonomy' | 'inventory' | 'room' | 'grooming' | 'turn' | 'bonding';
 
 export interface BranchSpec {
   readonly id: BranchKey;
@@ -44,7 +45,26 @@ export const FM_BASE_SALARY_BY_LEVEL: Record<FmLevel, number> = {
 
 export const FM_STANDARD_WORK_DAYS = 26;
 export const FM_COVER_SHIFT_BONUS_VND = 400_000;
+export const FM_SECOND_FM_MIN_MATURE_CVS = 13;
+export const FM_SECOND_FM_MIN_REV_VND = 650_000_000;
+export const FM_CVLL_KEYHOLDER_ALLOWANCE_VND = 1_000_000;
+export const FM_PHASE2_OVERLOAD_REV_VND = 800_000_000;
+export const FM_PHASE2_ROOKIE_RATIO_THRESHOLD = 0.4;
+export const FM_ROOKIE_ESTIMATED_REV_VND = 25_000_000;
+export const FM_ROOKIE_GRACE_DAYS = 45;
+export const FM_ROOKIE_BOUNTY_PROBATION_DAYS = 60;
+export const FM_EFFICIENCY_BENCHMARK_REV_VND = 48_000_000;
+export const FM_EFFICIENCY_MIN_MULTIPLIER = 0.7;
+export const FM_EFFICIENCY_MAX_MULTIPLIER = 1.15;
+export const FM_BOUNTY_ROOKIE_PASS_VND = 500_000;
+export const FM_BOUNTY_CVL_PROMO_VND = 1_000_000;
+export const FM_BOUNTY_CVLL_PROMO_VND = 2_000_000;
+export const FM_BOUNTY_FM2_MENTOR_VND = 3_000_000;
 export const FM_FUN_FUND_PER_CONSULT_VND = 80_000;
+export const FM_DEFAULT_WEEKLY_QUEST_REWARD_VND = 400_000;
+export const FM_DEFAULT_WEEKLY_QUESTS_PER_WEEK = 3;
+export const FM_WEEKS_PER_MONTH = 4;
+export const FM_BONDING_STAR_THRESHOLDS = [70, 80, 90] as const;
 export const FM_DAILY_QUEST_CAP_VND = 110_000;
 export const AUTONOMY_HARD_MAX_PCT = 60;
 export const CUSTOMERS_PER_CV_MONTHLY = 100;
@@ -133,6 +153,15 @@ export const PILLAR_SPECS: readonly PillarMeta[] = [
     maxSliderVnd: 1_000_000,
     targets: ['HI ≥ 75% · 6 ca', 'HI ≥ 85% · 6 ca', 'HI ≥ 92% · 6 ca'],
     hint: 'Chia tua công bằng & đủ 6 ca tư vấn/tuần',
+  },
+  {
+    key: 'bonding',
+    label: 'Gắn Kết & Tiệc Tháng',
+    shortLabel: 'Tiệc Tháng',
+    rewards: [0, 150_000, 300_000, 450_000],
+    maxSliderVnd: 1_000_000,
+    targets: ['≥ 70% · Check-in MXH', '≥ 80% · Check-in MXH', '≥ 90% · Check-in MXH'],
+    hint: 'Tổ chức ăn uống ≥1 lần/tháng từ Quỹ Shop + ảnh check-in MXH (0 tiệc/thiếu ảnh = mất 1 Khiên)',
   },
 ];
 

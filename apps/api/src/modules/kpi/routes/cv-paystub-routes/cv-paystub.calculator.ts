@@ -119,8 +119,10 @@ function buildSingleCvPaystubRecord(staff: SafeAny, endPart: string, indexed: Cv
     cvTipBonus = tipData.baseTechTip;
     const deltaTipBonus = tipData.consultDeltaTip;
     const comboBonusTotal = isUnlocked ? cvPlusSnapshot.comboBonusTotal : 0;
+    const debtCollectionBonusTotal = isUnlocked ? cvPlusSnapshot.debtCollectionBonusTotal || 0 : 0;
     const serumBonusTotal = isUnlocked ? cvPlusSnapshot.productBonusTotal : 0;
-    const totalAdditionalIncome = deltaHourlyWage + deltaTipBonus + comboBonusTotal + serumBonusTotal;
+    const totalAdditionalIncome =
+      deltaHourlyWage + deltaTipBonus + comboBonusTotal + debtCollectionBonusTotal + serumBonusTotal;
 
     cvPlusBreakdown = {
       isCvPlus: true,
@@ -133,7 +135,11 @@ function buildSingleCvPaystubRecord(staff: SafeAny, endPart: string, indexed: Cv
       deltaHourlyWage,
       deltaTipBonus,
       comboBonusTotal,
+      debtCollectionBonusTotal,
+      debtCollectionCount: cvPlusSnapshot.debtCollectionCount || 0,
+      debtCollectedAmount: cvPlusSnapshot.debtCollectedAmount || 0,
       serumBonusTotal,
+      serumsSoldCount: cvPlusSnapshot.serumsSoldCount || 0,
       totalAdditionalIncome,
       comboDetails: (cvPlusSnapshot.comboDetails ?? []).map((detail) => ({
         orderId: detail.orderId,
@@ -142,10 +148,13 @@ function buildSingleCvPaystubRecord(staff: SafeAny, endPart: string, indexed: Cv
         customerName: detail.customerName,
         comboName: detail.comboName ?? '',
         price: detail.price,
+        grossPrice: detail.grossPrice,
+        unpaidDebtAmount: detail.unpaidDebtAmount,
         bonus: detail.bonus,
         comboCount: detail.comboCount,
         comboItems: detail.comboItems,
       })),
+      debtCollectionDetails: cvPlusSnapshot.debtCollectionDetails ?? [],
     };
   }
 
@@ -164,7 +173,11 @@ function buildSingleCvPaystubRecord(staff: SafeAny, endPart: string, indexed: Cv
       holidayPaystubAdjustment +
       parkingAllowance +
       offMonthWage +
-      (cvPlusBreakdown ? cvPlusBreakdown.comboBonusTotal + cvPlusBreakdown.serumBonusTotal : 0)
+      (cvPlusBreakdown
+        ? cvPlusBreakdown.comboBonusTotal +
+          (cvPlusBreakdown.debtCollectionBonusTotal || 0) +
+          cvPlusBreakdown.serumBonusTotal
+        : 0)
   );
 
   // Social Security deduction (10.5% for employee)

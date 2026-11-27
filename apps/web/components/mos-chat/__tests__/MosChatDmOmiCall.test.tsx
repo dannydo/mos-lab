@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import type { MosChatConversation, MosChatStaffMember } from '@mos-lab/shared';
 import { resolveDmOmiCallTarget } from '../utils/resolveDmOmiCallTarget';
 import { MosChatDesktopHeader, type MosChatDesktopHeaderProps } from '../components/MosChatDesktopHeader';
-import { MosChatRichTextPure } from '../MosChatRichText';
+import { MosChatRichText, MosChatRichTextPure } from '../MosChatRichText';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 
 const mockOmiCallState = vi.hoisted(() => ({
@@ -306,19 +306,55 @@ describe('MosChatDesktopHeader universal OmiCall dialer popover', () => {
     );
   });
 
-  it('does not render OmiCall button when canAccessOmiCall or isAdmin is false', () => {
+  it('does not render OmiCall button when canAccessOmiCall is false', () => {
     mockOmiCallState.canAccessOmiCall = false;
-    const { rerender } = render(<MosChatDesktopHeader {...buildHeaderProps()} />);
+    render(<MosChatDesktopHeader {...buildHeaderProps()} />);
     expect(screen.queryByTestId('mos-chat-header-omicall-btn')).toBeNull();
+  });
 
+  it('renders OmiCall dialer for telesales/growth users (canAccessOmiCall=true, isAdmin=false) without staff phone management', async () => {
     mockOmiCallState.canAccessOmiCall = true;
     mockOmiCallState.isAdmin = false;
-    rerender(<MosChatDesktopHeader {...buildHeaderProps()} />);
-    expect(screen.queryByTestId('mos-chat-header-omicall-btn')).toBeNull();
+    const telesalesUser = { id: 18, username: 'dn2016438@gmail.com', role: 'telesales', isGrowthMember: true };
+    const sanitizedDirectory = staffDirectory.map(({ phone: _p, phones: _ps, ...rest }) => rest);
+
+    render(
+      <MosChatDesktopHeader
+        {...buildHeaderProps({
+          currentUser: telesalesUser,
+          staffDirectory: sanitizedDirectory,
+        })}
+      />
+    );
+
+    const btn = screen.getByTestId('mos-chat-header-omicall-btn');
+    fireEvent.click(btn);
+
+    const customInput = await screen.findByTestId('mos-chat-omicall-custom-input');
+    expect(screen.queryByText('Lưu thêm SĐT')).toBeNull();
+
+    fireEvent.change(customInput, { target: { value: '0912 345 678' } });
+    fireEvent.click(screen.getByTestId('mos-chat-omicall-custom-dial-btn'));
+
+    expect(mockOmiCallState.makeCall).toHaveBeenCalledTimes(1);
+    expect(mockOmiCallState.makeCall).toHaveBeenCalledWith(
+      '0912345678',
+      '0912345678',
+      undefined,
+      'https://cdn.wingslashes.com/han.jpg',
+      undefined,
+      { autoEnableAdmin: true }
+    );
   });
 });
 
 describe('MosChatRichTextPure inline clickable phone numbers', () => {
+  beforeEach(() => {
+    mockOmiCallState.makeCall.mockReset();
+    mockOmiCallState.canAccessOmiCall = true;
+    mockOmiCallState.isAdmin = true;
+  });
+
   it('renders clickable OmiCall button for Vietnamese phone numbers when onOmiCallPhone is passed', () => {
     const onOmiCallPhone = vi.fn();
     render(
@@ -341,5 +377,43 @@ describe('MosChatRichTextPure inline clickable phone numbers', () => {
     render(<MosChatRichTextPure content="Số mới của Bảo Hân là 0989062401 nhé" isDark={true} />);
     expect(screen.queryByTestId('mos-chat-inline-phone-call')).toBeNull();
     expect(screen.getByText(/0989062401/)).toBeTruthy();
+  });
+
+  it('enables inline OmiCall click in MosChatRichText when canAccessOmiCall is true (even if isAdmin is false) and disables when false', () => {
+    mockOmiCallState.canAccessOmiCall = true;
+    mockOmiCallState.isAdmin = false;
+    const { rerender } = render(
+      <MosChatRichText
+        content="Khách hẹn gọi 0912345678"
+        isDark={true}
+        staffDirectory={staffDirectory}
+        currentUser={{ id: 18, username: 'dn2016438@gmail.com', role: 'telesales' }}
+        memberNicknames={{}}
+      />
+    );
+
+    const inlinePhoneBtn = screen.getByTestId('mos-chat-inline-phone-call');
+    fireEvent.click(inlinePhoneBtn);
+    expect(mockOmiCallState.makeCall).toHaveBeenCalledTimes(1);
+    expect(mockOmiCallState.makeCall).toHaveBeenCalledWith(
+      '0912345678',
+      '0912345678',
+      undefined,
+      undefined,
+      undefined,
+      { autoEnableAdmin: true }
+    );
+
+    mockOmiCallState.canAccessOmiCall = false;
+    rerender(
+      <MosChatRichText
+        content="Khách hẹn gọi 0912345678"
+        isDark={true}
+        staffDirectory={staffDirectory}
+        currentUser={{ id: 21, username: 'cv', role: 'cv' }}
+        memberNicknames={{}}
+      />
+    );
+    expect(screen.queryByTestId('mos-chat-inline-phone-call')).toBeNull();
   });
 });

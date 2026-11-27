@@ -359,3 +359,95 @@ test('simulates Production policies: locks CV strictly while preserving BK_TELES
 
   MenuAccessService.invalidateRuntimeCache();
 });
+
+test('allows all staff roles to read Báo Cáo CV when unrestricted while blocking non-admin mutations', async () => {
+  MenuAccessService.invalidateRuntimeCache();
+  const policiesWithOpenCv = [
+    { menuKey: 'category:reports', isRestricted: false, rules: [] },
+    { menuKey: 'cv', isRestricted: false, rules: [] },
+    { menuKey: 'cc', isRestricted: true, rules: [{ subjectType: 'TEAM', subjectId: 1 }] },
+  ];
+
+  const mockFastify = {
+    prisma: {
+      crm: {
+        crmMenuAccessPolicy: {
+          findMany: async (args?: { where?: { isRestricted?: boolean } }) =>
+            args?.where?.isRestricted ? policiesWithOpenCv.filter((p) => p.isRestricted) : policiesWithOpenCv,
+        },
+        crmStaff: {
+          findUnique: async ({ where }: { where: { id: number } }) => {
+            if (where.id === 10) return { legacyStaffId: 100, role: 'cc' };
+            if (where.id === 20) return { legacyStaffId: 200, role: 'cv' };
+            if (where.id === 40) return { legacyStaffId: 400, role: 'bk_telesales' };
+            return null;
+          },
+        },
+        crmTeamMember: {
+          findMany: async ({ where }: { where: { crmStaffId?: number; OR?: Array<{ crmStaffId?: number }> } }) => {
+            const id = where.crmStaffId ?? where.OR?.[0]?.crmStaffId;
+            if (id === 10) return [{ teamId: 1 }];
+            if (id === 40) return [{ teamId: 4 }];
+            return [];
+          },
+        },
+        crmTeam: {
+          findMany: async () => [
+            { id: 1, parentTeamId: null, departmentId: 1 },
+            { id: 4, parentTeamId: null, departmentId: 3 },
+          ],
+        },
+      },
+    },
+  } as any;
+
+  for (const actor of [
+    { id: 10, role: 'cc' },
+    { id: 40, role: 'bk_telesales' },
+    { id: 20, role: 'cv' },
+  ]) {
+    assert.equal((await MenuAccessService.checkApiAccess(mockFastify, actor, '/api/kpi/cv-xoay', 'GET')).allowed, true);
+    assert.equal(
+      (await MenuAccessService.checkApiAccess(mockFastify, actor, '/api/kpi/cv-paystub', 'GET')).allowed,
+      true
+    );
+    assert.equal(
+      (await MenuAccessService.checkApiAccess(mockFastify, actor, '/api/kpi/cv-speed/matrix', 'GET')).allowed,
+      true
+    );
+    assert.equal(
+      (await MenuAccessService.checkApiAccess(mockFastify, actor, '/api/kpi/cv-speed/predict', 'POST')).allowed,
+      true
+    );
+
+    assert.equal(
+      (await MenuAccessService.checkApiAccess(mockFastify, actor, '/api/kpi/cv-allowances', 'POST')).allowed,
+      false
+    );
+    assert.equal(
+      (await MenuAccessService.checkApiAccess(mockFastify, actor, '/api/kpi/cv-allowances/1', 'DELETE')).allowed,
+      false
+    );
+    assert.equal(
+      (await MenuAccessService.checkApiAccess(mockFastify, actor, '/api/kpi/cv-config', 'POST')).allowed,
+      false
+    );
+    assert.equal(
+      (await MenuAccessService.checkApiAccess(mockFastify, actor, '/api/kpi/cv-speed/seed', 'POST')).allowed,
+      false
+    );
+  }
+
+  assert.equal(
+    (await MenuAccessService.checkApiAccess(mockFastify, { id: 1, role: 'admin' }, '/api/kpi/cv-allowances', 'POST'))
+      .allowed,
+    true
+  );
+  assert.equal(
+    (await MenuAccessService.checkApiAccess(mockFastify, { id: 1, role: 'admin' }, '/api/kpi/cv-speed/seed', 'POST'))
+      .allowed,
+    true
+  );
+
+  MenuAccessService.invalidateRuntimeCache();
+});

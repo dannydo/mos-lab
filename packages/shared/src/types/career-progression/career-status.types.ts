@@ -254,9 +254,27 @@ export interface CvPlusComboDetail {
   customerName?: string;
   comboName?: string;
   price: number;
+  grossPrice?: number;
+  unpaidDebtAmount?: number;
   bonus: number;
   comboCount?: number;
   comboItems?: Array<{ comboName: string; price: number }>;
+}
+
+/**
+ * Chi tiết ca thu nợ gói Combo cũ của CVL / CVLL (không tính vào tử số tỷ lệ chốt Combo 20%)
+ */
+export interface CvPlusDebtCollectionDetail {
+  debtPaymentId: number;
+  userDebtId: number;
+  orderId: number;
+  origOrderId?: number;
+  orderCode?: string;
+  orderDate: string;
+  customerName?: string;
+  comboName?: string;
+  collectedAmount: number;
+  bonus: number;
 }
 
 /**
@@ -283,12 +301,17 @@ export interface CvPlusRewardSnapshot {
   tipCv: number;
   tipCvPlus: number;
   comboBonusTotal: number;
+  debtCollectionBonusTotal: number;
+  debtCollectionCount: number;
+  debtCollectedAmount: number;
   productBonusTotal: number;
+  serumsSoldCount: number;
   totalCvIncome: number;
   totalCvPlusIncome: number;
   deltaGain: number;
   deltaPercentage: number;
   comboDetails: CvPlusComboDetail[];
+  debtCollectionDetails: CvPlusDebtCollectionDetail[];
 }
 
 /**

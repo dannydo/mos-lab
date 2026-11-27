@@ -1,3 +1,4 @@
+import { resolveBondingStarFromDinner } from '@mos-lab/shared';
 import {
   AUTONOMY_HARD_MAX_PCT,
   BRANCH_SPECS,
@@ -10,128 +11,50 @@ import {
   EMPLOYER_SS_FLOOR_VND,
   EMPLOYER_SS_MGMT_VND,
   FM_BASE_SALARY_BY_LEVEL,
+  FM_BOUNTY_CVLL_PROMO_VND,
+  FM_BOUNTY_CVL_PROMO_VND,
+  FM_BOUNTY_FM2_MENTOR_VND,
+  FM_BOUNTY_ROOKIE_PASS_VND,
   FM_COVER_SHIFT_BONUS_VND,
+  FM_CVLL_KEYHOLDER_ALLOWANCE_VND,
   FM_DAILY_QUEST_CAP_VND,
+  FM_DEFAULT_WEEKLY_QUEST_REWARD_VND,
   FM_FUN_FUND_PER_CONSULT_VND,
   FM_MIN_CEO_HR_MEETINGS_PER_WEEK,
+  FM_PHASE2_OVERLOAD_REV_VND,
+  FM_PHASE2_ROOKIE_RATIO_THRESHOLD,
+  FM_ROOKIE_ESTIMATED_REV_VND,
+  FM_SECOND_FM_MIN_MATURE_CVS,
+  FM_SECOND_FM_MIN_REV_VND,
   FM_STANDARD_WORK_DAYS,
   type FmLevel,
+  type FmStaffingMode,
   LASH_PROD_BONUS_RATE,
   PILLAR_SPECS,
   type PillarKey,
   type StarsByPillar,
 } from './fm-simulator.constants';
+import {
+  DEFAULT_PILLAR_METRICS,
+  type PillarMaxRewards,
+  type PillarMetrics,
+  type TeamSplitResult,
+  resolveAutonomyStar,
+  resolveMapsTargets,
+  resolvePerFmRevRate,
+  resolvePillarTierRewards,
+  splitFloorTeam,
+} from './fm-simulator.helpers';
 
 export * from './fm-simulator.constants';
-
-export function createUniformStars(star: 0 | 1 | 2 | 3): StarsByPillar {
-  return {
-    maps: star,
-    fal: star,
-    autonomy: star,
-    inventory: star,
-    room: star,
-    grooming: star,
-    turn: star,
-  };
-}
-
-export type PillarMaxRewards = Record<PillarKey, number>;
-
-export type MetricPillarKey = 'maps' | 'fal' | 'inventory' | 'room' | 'turn';
-
-export interface PillarMetrics {
-  readonly mapsReviews5Star: number;
-  readonly falRatePct: number;
-  readonly inventoryVariancePct: number;
-  readonly roomScore: number;
-  readonly turnHiPct: number;
-}
-
-export function resolveMapsTargets(cvs: number): readonly [number, number, number, number] {
-  const safeCvs = Math.max(1, Math.round(cvs));
-  return [0, safeCvs * 2, safeCvs * 3, safeCvs * 4];
-}
-
-export const DEFAULT_PILLAR_METRICS: PillarMetrics = {
-  mapsReviews5Star: BRANCH_SPECS.dt.presetDefaultCvs * 3,
-  falRatePct: 1.0,
-  inventoryVariancePct: 2.0,
-  roomScore: 96,
-  turnHiPct: 88,
-};
-
-export function resolveStarFromPillarMetric(
-  key: MetricPillarKey,
-  value: number,
-  cvs = BRANCH_SPECS.dt.presetDefaultCvs
-): 0 | 1 | 2 | 3 {
-  if (key === 'maps') {
-    const [, t1, t2, t3] = resolveMapsTargets(cvs);
-    if (value >= t3) return 3;
-    if (value >= t2) return 2;
-    if (value >= t1) return 1;
-    return 0;
-  }
-  if (key === 'fal') {
-    if (value <= 0.5) return 3;
-    if (value <= 1.0) return 2;
-    if (value <= 1.5) return 1;
-    return 0;
-  }
-  if (key === 'inventory') {
-    if (value <= 1.0) return 3;
-    if (value <= 2.0) return 2;
-    if (value <= 3.0) return 1;
-    return 0;
-  }
-  if (key === 'room') {
-    if (value >= 98) return 3;
-    if (value >= 95) return 2;
-    if (value >= 90) return 1;
-    return 0;
-  }
-  if (value >= 92) return 3;
-  if (value >= 85) return 2;
-  if (value >= 75) return 1;
-  return 0;
-}
-
-export function resolveDefaultMetricForStar(
-  key: MetricPillarKey,
-  star: 0 | 1 | 2 | 3,
-  cvs = BRANCH_SPECS.dt.presetDefaultCvs
-): number {
-  if (key === 'maps') {
-    return resolveMapsTargets(cvs)[star];
-  }
-  const table: Record<Exclude<MetricPillarKey, 'maps'>, readonly [number, number, number, number]> = {
-    fal: [2.0, 1.5, 1.0, 0.5],
-    inventory: [4.0, 3.0, 2.0, 1.0],
-    room: [85, 92, 96, 98],
-    turn: [70, 78, 88, 95],
-  };
-  return table[key][star];
-}
-
-export function createMetricsForUniformStar(
-  star: 0 | 1 | 2 | 3,
-  cvs = BRANCH_SPECS.dt.presetDefaultCvs
-): PillarMetrics {
-  return {
-    mapsReviews5Star: resolveDefaultMetricForStar('maps', star, cvs),
-    falRatePct: resolveDefaultMetricForStar('fal', star, cvs),
-    inventoryVariancePct: resolveDefaultMetricForStar('inventory', star, cvs),
-    roomScore: resolveDefaultMetricForStar('room', star, cvs),
-    turnHiPct: resolveDefaultMetricForStar('turn', star, cvs),
-  };
-}
+export * from './fm-simulator.helpers';
 
 export interface SimulatorInput {
   readonly branch: BranchKey;
   readonly revVnd: number;
   readonly cvs: number;
   readonly fmLevel: FmLevel;
+  readonly fmStaffingMode?: FmStaffingMode;
   readonly workDays: number;
   readonly coverShifts: number;
   readonly worms: number;
@@ -149,6 +72,16 @@ export interface SimulatorInput {
   readonly includeEmployerSs: boolean;
   readonly choBonusEnabled: boolean;
   readonly newCustomers: number;
+  readonly bondingDinnerOrganized: boolean;
+  readonly bondingHasSocialCheckin: boolean;
+  readonly bondingParticipationPct: number;
+  readonly weeklyQuestsCompletedInMonth: number;
+  readonly weeklyQuestRewardVnd: number;
+  readonly rookieCvs: number;
+  readonly bountyRookiePassCount: number;
+  readonly bountyCvlPromoCount: number;
+  readonly bountyCvllPromoCount: number;
+  readonly bountyFm2MentorCount: number;
 }
 
 export const DEFAULT_SIMULATOR_INPUT: SimulatorInput = {
@@ -156,6 +89,7 @@ export const DEFAULT_SIMULATOR_INPUT: SimulatorInput = {
   revVnd: BRANCH_SPECS.dt.presetDefaultRev,
   cvs: BRANCH_SPECS.dt.presetDefaultCvs,
   fmLevel: 2,
+  fmStaffingMode: 'auto',
   workDays: 26,
   coverShifts: 0,
   worms: 0,
@@ -175,81 +109,23 @@ export const DEFAULT_SIMULATOR_INPUT: SimulatorInput = {
     room: 2,
     grooming: 2,
     turn: 2,
+    bonding: 2,
   },
   pillarMetrics: DEFAULT_PILLAR_METRICS,
   includeEmployerSs: true,
   choBonusEnabled: true,
   newCustomers: 45,
+  bondingDinnerOrganized: true,
+  bondingHasSocialCheckin: true,
+  bondingParticipationPct: 80,
+  weeklyQuestsCompletedInMonth: 8,
+  weeklyQuestRewardVnd: FM_DEFAULT_WEEKLY_QUEST_REWARD_VND,
+  rookieCvs: 0,
+  bountyRookiePassCount: 0,
+  bountyCvlPromoCount: 0,
+  bountyCvllPromoCount: 0,
+  bountyFm2MentorCount: 0,
 };
-
-export interface TeamSplitResult {
-  readonly nCv: number;
-  readonly nCvl: number;
-  readonly nCvll: number;
-  readonly effectiveAutonomyPct: number;
-  readonly cvllActual: number;
-}
-
-export function splitFloorTeam(cvs: number, autonomyPctInput: number, cvllKeyholders: number): TeamSplitResult {
-  const safeCvs = Math.max(0, Math.round(cvs));
-  const clampedAutonomy = Math.max(0, Math.min(AUTONOMY_HARD_MAX_PCT, autonomyPctInput));
-  const maxAutonomous = Math.floor(safeCvs * (AUTONOMY_HARD_MAX_PCT / 100));
-  const rawAutonomous = Math.round((safeCvs * clampedAutonomy) / 100);
-  const totalAutonomous = Math.min(maxAutonomous, rawAutonomous);
-  const nCvll = Math.min(totalAutonomous, Math.max(0, Math.round(cvllKeyholders)));
-  const nCvl = Math.max(0, totalAutonomous - nCvll);
-  const nCv = Math.max(0, safeCvs - nCvl - nCvll);
-  const effectiveAutonomyPct = safeCvs > 0 ? Math.round((totalAutonomous / safeCvs) * 100) : 0;
-  return {
-    nCv,
-    nCvl,
-    nCvll,
-    effectiveAutonomyPct,
-    cvllActual: nCvll,
-  };
-}
-
-export function resolveAutonomyStar(autonomyPct: number, cvllKeyholders: number): 0 | 1 | 2 | 3 {
-  const pct = Math.min(AUTONOMY_HARD_MAX_PCT, Math.max(0, autonomyPct));
-  if (pct >= 60 && cvllKeyholders >= 2) return 3;
-  if (pct >= 50 && cvllKeyholders >= 1) return 2;
-  if (pct >= 40 && cvllKeyholders >= 1) return 1;
-  return 0;
-}
-
-export function resolveAutonomyBoundsForStar(star: 0 | 1 | 2 | 3): {
-  autonomyPct: number;
-  cvllKeyholders: number;
-} {
-  if (star === 3) return { autonomyPct: 60, cvllKeyholders: 2 };
-  if (star === 2) return { autonomyPct: 50, cvllKeyholders: 1 };
-  if (star === 1) return { autonomyPct: 40, cvllKeyholders: 1 };
-  return { autonomyPct: 25, cvllKeyholders: 0 };
-}
-
-export function resolveRevPoolRate(revPerCvVnd: number): number {
-  if (revPerCvVnd >= 52_000_000) return 0.022;
-  if (revPerCvVnd >= 48_000_000) return 0.02;
-  if (revPerCvVnd >= 44_000_000) return 0.015;
-  if (revPerCvVnd >= 40_000_000) return 0.01;
-  return 0.005;
-}
-
-export function resolvePillarTierRewards(
-  key: PillarKey,
-  max3StarVnd?: number
-): readonly [number, number, number, number] {
-  const spec = PILLAR_SPECS.find((p) => p.key === key);
-  if (!spec) return [0, 0, 0, 0];
-  if (max3StarVnd === undefined || max3StarVnd === spec.rewards[3]) {
-    return spec.rewards;
-  }
-  const r3 = Math.max(0, Math.round(max3StarVnd / 50_000) * 50_000);
-  if (r3 === 0) return [0, 0, 0, 0];
-  const r1 = Math.round(r3 / 3 / 50_000) * 50_000;
-  const r2 = Math.min(r3, Math.max(r1, Math.round((r3 * 2) / 3 / 50_000) * 50_000));
-  return [0, r1, r2, r3];
-}
 
 export interface FmPillarBreakdown {
   readonly key: PillarKey;
@@ -263,18 +139,35 @@ export interface FmPillarBreakdown {
   readonly note: string | null;
 }
 
+export interface FmPhase2Signals {
+  readonly overloadSignal: boolean;
+  readonly rookieHeavySignal: boolean;
+  readonly hubBenchSignal: boolean;
+  readonly activeCount: number;
+}
+
 export interface FmSimulationResult {
   readonly gate1Passed: boolean;
   readonly ceoHrGatePassed: boolean;
   readonly occupancyRatio: number;
   readonly minCvsGate: number;
   readonly fmCount: 1 | 2;
+  readonly fmStaffingMode: FmStaffingMode;
+  readonly matureCvs: number;
+  readonly rookieCvs: number;
   readonly fmBaseOneVnd: number;
   readonly revPerCvVnd: number;
+  readonly revPerMatureCvVnd: number;
+  readonly effMultiplier: number;
   readonly revPoolRate: number;
   readonly branchRevPoolVnd: number;
   readonly revShareOneFmVnd: number;
   readonly coverBonusOneFmVnd: number;
+  readonly graduationBountyOneFmVnd: number;
+  readonly cvllKeyholderAllowanceVnd: number;
+  readonly secondFmQuarterlyBenchCostVnd: number;
+  readonly singleVsHubMonthlySavingsVnd: number;
+  readonly phase2Signals: FmPhase2Signals;
   readonly mapsCapFromWorms: 0 | 1 | 2 | 3;
   readonly netWorms: number;
   readonly pillarBreakdowns: readonly FmPillarBreakdown[];
@@ -289,6 +182,10 @@ export interface FmSimulationResult {
   readonly fmIncomeOneVnd: number;
   readonly fmIncomeAllVnd: number;
   readonly funFundVnd: number;
+  readonly weeklyQuestFundVnd: number;
+  readonly shopFundMonthlyVnd: number;
+  readonly bondingShieldPenaltyCount: 0 | 1;
+  readonly effectiveShieldsLost: number;
   readonly dailyQuestClaimableVnd: number;
   readonly claimedWalletVnd: number;
   readonly holidayAutopilotUnlocked: boolean;
@@ -297,7 +194,11 @@ export interface FmSimulationResult {
 export function simulateFm(input: SimulatorInput): FmSimulationResult {
   const spec = BRANCH_SPECS[input.branch];
   const cvs = Math.max(1, Math.round(input.cvs));
-  const fmCount: 1 | 2 = cvs >= 13 ? 2 : 1;
+  const rookieCvs = Math.max(0, Math.min(cvs - 1, Math.round(input.rookieCvs ?? 0)));
+  const matureCvs = Math.max(1, cvs - rookieCvs);
+  const fmStaffingMode: FmStaffingMode = input.fmStaffingMode ?? 'auto';
+  const autoTwoFm = matureCvs >= FM_SECOND_FM_MIN_MATURE_CVS && input.revVnd >= FM_SECOND_FM_MIN_REV_VND;
+  const fmCount: 1 | 2 = fmStaffingMode === 'single' ? 1 : fmStaffingMode === 'hub' ? 2 : autoTwoFm ? 2 : 1;
   const gate1Passed = cvs >= spec.minCvsGate;
   const occupancyRatio = Math.min(1.5, cvs / spec.beds);
 
@@ -306,23 +207,37 @@ export function simulateFm(input: SimulatorInput): FmSimulationResult {
   const fmBaseOneVnd = Math.round(baseFull * workRatio);
 
   const revPerCvVnd = input.revVnd / cvs;
-  const revPoolRate = gate1Passed ? resolveRevPoolRate(revPerCvVnd) : 0;
-  const branchRevPoolVnd = gate1Passed ? Math.round(input.revVnd * revPoolRate) : 0;
-
-  // Gate 3: 1 FM = 100%; 2 FM = 30% each (60% fixed) + 40% team pool = 50% each on parity
-  const revShareOneFmVnd = fmCount === 1 ? branchRevPoolVnd : Math.round(branchRevPoolVnd * 0.5);
+  const estimatedRookieRevVnd = Math.min(input.revVnd * 0.4, rookieCvs * FM_ROOKIE_ESTIMATED_REV_VND);
+  const revPerMatureCvVnd =
+    rookieCvs > 0 ? Math.max(revPerCvVnd, (input.revVnd - estimatedRookieRevVnd) / matureCvs) : revPerCvVnd;
+  const rateEval = resolvePerFmRevRate(cvs, revPerMatureCvVnd, spec.beds);
+  const revPoolRate = gate1Passed ? rateEval.ratePerFm : 0;
+  const revShareOneFmVnd = gate1Passed ? Math.round(input.revVnd * revPoolRate) : 0;
+  const branchRevPoolVnd = revShareOneFmVnd * fmCount;
   const coverBonusOneFmVnd = fmCount === 2 ? Math.max(0, Math.round(input.coverShifts)) * FM_COVER_SHIFT_BONUS_VND : 0;
+  const graduationBountyOneFmVnd = gate1Passed
+    ? Math.max(0, Math.round(input.bountyRookiePassCount ?? 0)) * FM_BOUNTY_ROOKIE_PASS_VND +
+      Math.max(0, Math.round(input.bountyCvlPromoCount ?? 0)) * FM_BOUNTY_CVL_PROMO_VND +
+      Math.max(0, Math.round(input.bountyCvllPromoCount ?? 0)) * FM_BOUNTY_CVLL_PROMO_VND +
+      Math.max(0, Math.round(input.bountyFm2MentorCount ?? 0)) * FM_BOUNTY_FM2_MENTOR_VND
+    : 0;
 
   const netWorms = Math.max(0, Math.round(input.worms) - Math.round(input.butterflies));
   const mapsCapFromWorms: 0 | 1 | 2 | 3 = netWorms === 0 ? 3 : netWorms === 1 ? 2 : netWorms === 2 ? 1 : 0;
   const autonomyStar = resolveAutonomyStar(input.autonomyPct, input.cvllKeyholders);
   const ceoHrMeetings = Math.max(0, Math.round(input.ceoHrMeetingsPerWeek));
   const ceoHrGatePassed = ceoHrMeetings >= FM_MIN_CEO_HR_MEETINGS_PER_WEEK;
-  const mapsTargets = resolveMapsTargets(cvs);
+  const mapsTargets = resolveMapsTargets(matureCvs);
+  const bondingEval = resolveBondingStarFromDinner({
+    organized: input.bondingDinnerOrganized,
+    hasSocialCheckin: input.bondingHasSocialCheckin,
+    attendancePct: input.bondingParticipationPct,
+  });
 
   const pillarBreakdowns: FmPillarBreakdown[] = PILLAR_SPECS.map((pillar) => {
     const tierRewards = resolvePillarTierRewards(pillar.key, input.pillarMaxRewards?.[pillar.key]);
-    const requested = pillar.key === 'autonomy' ? autonomyStar : input.stars[pillar.key];
+    const requested =
+      pillar.key === 'autonomy' ? autonomyStar : pillar.key === 'bonding' ? bondingEval.star : input.stars[pillar.key];
     let effective = requested;
     let note: string | null = null;
 
@@ -345,6 +260,17 @@ export function simulateFm(input: SimulatorInput): FmSimulationResult {
         note = `${pct}% · 0 CVLL (cần ≥1 CVLL)`;
       } else {
         note = `${pct}% · ${input.cvllKeyholders} CVLL`;
+      }
+    } else if (pillar.key === 'bonding') {
+      const pct = Math.max(0, Math.min(100, Math.round(input.bondingParticipationPct)));
+      if (!input.bondingDinnerOrganized) {
+        note = 'Chưa tổ chức đi ăn (mất 1 Khiên Tuần)';
+      } else if (!input.bondingHasSocialCheckin) {
+        note = 'Thiếu ảnh check-in MXH (mất 1 Khiên Tuần)';
+      } else if (bondingEval.star === 0) {
+        note = `${pct}% tham gia (cần ≥70% đạt 1★)`;
+      } else {
+        note = `${pct}% tham gia · Đủ check-in MXH`;
       }
     }
 
@@ -374,18 +300,49 @@ export function simulateFm(input: SimulatorInput): FmSimulationResult {
 
   const latePenaltyRaw =
     Math.max(0, Math.round(input.late24To48Count)) * 200_000 + Math.max(0, Math.round(input.lateOver48Count)) * 300_000;
-  const clampedShields = Math.max(0, Math.min(4, Math.round(input.shieldsLost)));
-  const shieldLossVnd = Math.round(rawStarPoolVnd * (clampedShields * 0.25));
+  const bondingShieldPenaltyCount: 0 | 1 = bondingEval.missingDinnerShieldPenalty;
+  const effectiveShieldsLost = Math.max(0, Math.min(4, Math.round(input.shieldsLost) + bondingShieldPenaltyCount));
+  const shieldLossVnd = Math.round(rawStarPoolVnd * (effectiveShieldsLost * 0.25));
   const afterShield = Math.max(0, rawStarPoolVnd - shieldLossVnd);
   const latePenaltyVnd = Math.min(afterShield, latePenaltyRaw);
   const netStarPoolOneFmVnd = Math.max(0, afterShield - latePenaltyVnd);
 
-  const fmIncomeOneVnd = fmBaseOneVnd + revShareOneFmVnd + coverBonusOneFmVnd + netStarPoolOneFmVnd;
-  const fmIncomeAllVnd = fmIncomeOneVnd * fmCount;
+  const fmIncomeOneVnd =
+    fmBaseOneVnd + revShareOneFmVnd + coverBonusOneFmVnd + graduationBountyOneFmVnd + netStarPoolOneFmVnd;
+  const fmIncomeAllVnd =
+    (fmBaseOneVnd + revShareOneFmVnd + coverBonusOneFmVnd + netStarPoolOneFmVnd) * fmCount + graduationBountyOneFmVnd;
 
   const funFundVnd = Math.max(0, Math.round(input.consultShifts)) * FM_FUN_FUND_PER_CONSULT_VND;
+  const weeklyQuestFundVnd =
+    Math.max(0, Math.round(input.weeklyQuestsCompletedInMonth)) * Math.max(0, Math.round(input.weeklyQuestRewardVnd));
+  const shopFundMonthlyVnd = funFundVnd * fmCount + weeklyQuestFundVnd;
   const dailyQuestClaimableVnd = gate1Passed ? Math.min(netStarPoolOneFmVnd, FM_DAILY_QUEST_CAP_VND * 26) : 0;
   const claimedWalletVnd = dailyQuestClaimableVnd + funFundVnd;
+
+  const cvllKeyholderAllowanceVnd =
+    fmCount === 1 && cvs >= FM_SECOND_FM_MIN_MATURE_CVS
+      ? Math.min(2, Math.max(0, Math.round(input.cvllKeyholders))) * FM_CVLL_KEYHOLDER_ALLOWANCE_VND
+      : 0;
+  const secondFmMonthlyTotalCostVnd =
+    fmBaseOneVnd +
+    revShareOneFmVnd +
+    netStarPoolOneFmVnd +
+    (input.includeEmployerSs ? EMPLOYER_SS_MGMT_VND : 0) +
+    funFundVnd;
+  const secondFmQuarterlyBenchCostVnd = secondFmMonthlyTotalCostVnd * 3;
+  const singleVsHubMonthlySavingsVnd = Math.max(0, secondFmMonthlyTotalCostVnd - cvllKeyholderAllowanceVnd);
+
+  const falMetric = input.pillarMetrics?.falRatePct ?? DEFAULT_PILLAR_METRICS.falRatePct;
+  const mapsEffective = pillarBreakdowns.find((p) => p.key === 'maps')?.effectiveStar ?? 0;
+  const overloadSignal = input.revVnd >= FM_PHASE2_OVERLOAD_REV_VND && (falMetric > 1.0 || mapsEffective < 2);
+  const rookieHeavySignal = rookieCvs / cvs > FM_PHASE2_ROOKIE_RATIO_THRESHOLD;
+  const hubBenchSignal = fmStaffingMode === 'hub' || autoTwoFm;
+  const phase2Signals: FmPhase2Signals = {
+    overloadSignal,
+    rookieHeavySignal,
+    hubBenchSignal,
+    activeCount: Number(overloadSignal) + Number(rookieHeavySignal) + Number(hubBenchSignal),
+  };
 
   return {
     gate1Passed,
@@ -393,12 +350,22 @@ export function simulateFm(input: SimulatorInput): FmSimulationResult {
     occupancyRatio,
     minCvsGate: spec.minCvsGate,
     fmCount,
+    fmStaffingMode,
+    matureCvs,
+    rookieCvs,
     fmBaseOneVnd,
     revPerCvVnd,
+    revPerMatureCvVnd,
+    effMultiplier: rateEval.effMultiplier,
     revPoolRate,
     branchRevPoolVnd,
     revShareOneFmVnd,
     coverBonusOneFmVnd,
+    graduationBountyOneFmVnd,
+    cvllKeyholderAllowanceVnd,
+    secondFmQuarterlyBenchCostVnd,
+    singleVsHubMonthlySavingsVnd,
+    phase2Signals,
     mapsCapFromWorms,
     netWorms,
     pillarBreakdowns,
@@ -413,6 +380,10 @@ export function simulateFm(input: SimulatorInput): FmSimulationResult {
     fmIncomeOneVnd,
     fmIncomeAllVnd,
     funFundVnd,
+    weeklyQuestFundVnd,
+    shopFundMonthlyVnd,
+    bondingShieldPenaltyCount,
+    effectiveShieldsLost,
     dailyQuestClaimableVnd,
     claimedWalletVnd,
     holidayAutopilotUnlocked: autonomyStar >= 2 && gate1Passed && ceoHrGatePassed,
@@ -424,6 +395,7 @@ export interface PnlSimulationResult {
   readonly revVnd: number;
   readonly breakevenVnd: number;
   readonly floorFixedVnd: number;
+  readonly keyholderAllowanceVnd: number;
   readonly floorLashBonusVnd: number;
   readonly floorComboBonusVnd: number;
   readonly floorTotalCashVnd: number;
@@ -437,6 +409,8 @@ export interface PnlSimulationResult {
   readonly choTotalCashVnd: number;
   readonly employerSsVnd: number;
   readonly totalPeopleCostVnd: number;
+  readonly shopCultureFundVnd: number;
+  readonly shopCulturePctOfRev: number;
   readonly peoplePctOfRev: number;
   readonly netResidualVnd: number;
   readonly netResidualPct: number;
@@ -447,14 +421,19 @@ export function simulateBranchPnl(input: SimulatorInput, fmResult?: FmSimulation
   const fm = fmResult ?? simulateFm(input);
   const spec = BRANCH_SPECS[input.branch];
   const revVnd = Math.max(0, input.revVnd);
-  const team = splitFloorTeam(input.cvs, input.autonomyPct, input.cvllKeyholders);
+  const matureTeam = splitFloorTeam(fm.matureCvs, input.autonomyPct, input.cvllKeyholders);
+  const team: TeamSplitResult = {
+    ...matureTeam,
+    nCv: matureTeam.nCv + fm.rookieCvs,
+  };
 
   const floorFixedVnd =
     team.nCv * CV_FIXED_COST_VND + team.nCvl * CVL_FIXED_COST_VND + team.nCvll * CVLL_FIXED_COST_VND;
+  const keyholderAllowanceVnd = fm.cvllKeyholderAllowanceVnd;
 
   const floorLashBonusVnd = Math.round(revVnd * LASH_PROD_BONUS_RATE);
   const floorComboBonusVnd = Math.round(revVnd * COMBO_PROD_BONUS_RATE);
-  const floorTotalCashVnd = floorFixedVnd + floorLashBonusVnd + floorComboBonusVnd;
+  const floorTotalCashVnd = floorFixedVnd + keyholderAllowanceVnd + floorLashBonusVnd + floorComboBonusVnd;
 
   const totalFloorHeadcount = Math.max(1, team.nCv + team.nCvl + team.nCvll);
   const variablePerFloorVnd = Math.round((floorLashBonusVnd + floorComboBonusVnd) / totalFloorHeadcount);
@@ -471,25 +450,27 @@ export function simulateBranchPnl(input: SimulatorInput, fmResult?: FmSimulation
     const revOverBeBonus = Math.round((revVnd - spec.breakevenVnd) * 0.03);
     const newCustBonus = input.newCustomers >= 40 ? 3_500_000 : Math.round(input.newCustomers * 50_000);
     const angelTier =
-      fm.revPerCvVnd >= 52_000_000
+      fm.revPerMatureCvVnd >= 52_000_000
         ? 4_500_000
-        : fm.revPerCvVnd >= 48_000_000
+        : fm.revPerMatureCvVnd >= 48_000_000
           ? 3_500_000
-          : fm.revPerCvVnd >= 44_000_000
+          : fm.revPerMatureCvVnd >= 44_000_000
             ? 2_500_000
             : 1_500_000;
     choBonusVnd = beMilestone + revOverBeBonus + newCustBonus + angelTier;
   }
   const choTotalCashVnd = CHO_BASE_SALARY_VND + choBonusVnd;
 
-  const mgmtCount = fm.fmCount + 1; // FM(s) + 1 CHO
+  const mgmtCount = fm.fmCount + 1;
   const employerSsVnd = input.includeEmployerSs
     ? totalFloorHeadcount * EMPLOYER_SS_FLOOR_VND + mgmtCount * EMPLOYER_SS_MGMT_VND
     : 0;
 
   const totalPeopleCostVnd = floorTotalCashVnd + fmTotalCashVnd + choTotalCashVnd + employerSsVnd;
+  const shopCultureFundVnd = fm.shopFundMonthlyVnd;
+  const shopCulturePctOfRev = revVnd > 0 ? (shopCultureFundVnd / revVnd) * 100 : 0;
   const peoplePctOfRev = revVnd > 0 ? (totalPeopleCostVnd / revVnd) * 100 : 0;
-  const netResidualVnd = revVnd - totalPeopleCostVnd;
+  const netResidualVnd = revVnd - totalPeopleCostVnd - shopCultureFundVnd;
   const netResidualPct = revVnd > 0 ? (netResidualVnd / revVnd) * 100 : 0;
 
   return {
@@ -497,6 +478,7 @@ export function simulateBranchPnl(input: SimulatorInput, fmResult?: FmSimulation
     revVnd,
     breakevenVnd: spec.breakevenVnd,
     floorFixedVnd,
+    keyholderAllowanceVnd,
     floorLashBonusVnd,
     floorComboBonusVnd,
     floorTotalCashVnd,
@@ -510,20 +492,11 @@ export function simulateBranchPnl(input: SimulatorInput, fmResult?: FmSimulation
     choTotalCashVnd,
     employerSsVnd,
     totalPeopleCostVnd,
+    shopCultureFundVnd,
+    shopCulturePctOfRev,
     peoplePctOfRev,
     netResidualVnd,
     netResidualPct,
     isProfitable: netResidualVnd >= 0,
   };
-}
-
-export function formatM(vnd: number, decimals = 1): string {
-  const millions = vnd / 1_000_000;
-  const sign = millions < 0 ? '-' : '';
-  const abs = Math.abs(millions);
-  return `${sign}${abs.toFixed(decimals)}M`;
-}
-
-export function formatK(vnd: number): string {
-  return `${Math.round(vnd / 1_000).toLocaleString('en-US')}K`;
 }

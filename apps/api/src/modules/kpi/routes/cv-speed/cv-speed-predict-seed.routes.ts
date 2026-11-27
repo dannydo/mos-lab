@@ -3,6 +3,7 @@ import {
   ConfidenceLevel,
   CvSpeedPrediction,
   CvSpeedSeedResult,
+  isAdminOrSuperAdminRole,
   LashServiceMode,
   ModelLayer,
   SafeAny,
@@ -128,7 +129,13 @@ export function registerCvSpeedPredictAndSeedRoutes(fastify: FastifyInstance, ad
   });
 
   // 7. POST /seed
-  addRoute('post', '/seed', async (_request: SafeAny, reply: SafeAny) => {
+  addRoute('post', '/seed', async (request: SafeAny, reply: SafeAny) => {
+    if (!isAdminOrSuperAdminRole(request.user?.role)) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Chỉ Admin mới có quyền chạy seed dữ liệu tốc độ CV.',
+      });
+    }
     try {
       const result: CvSpeedSeedResult = await runNightlyCvSpeedSeed(fastify.prisma.crm, fastify.prisma.legacy);
       clearCvSpeedCache();

@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { BookOpen, SlidersHorizontal } from 'lucide-react';
 import { AppleSimulatorShell, type StudioTabItem } from './AppleSimulatorShell';
+import { FmGuideProvider } from './FmInfoGuideModal';
 import { PnlCockpitView, type PnlPresetKey } from './PnlCockpitView';
 import { RulesBlueprintView } from './RulesBlueprintView';
 import {
@@ -102,33 +103,35 @@ export function PnlSimulatorStudio({
   };
 
   return (
-    <AppleSimulatorShell<PnlTab>
-      title="Mô Phỏng P&L Toàn Sàn"
-      subtitle={`${spec.name} · ${input.cvs} CV · Thực tế T08–T10/2026`}
-      standaloneMobile={standaloneMobile}
-      embedded={embedded}
-      mobileHref="/pnl-simulator"
-      peerLink={embedded ? undefined : { href: '/dashboard/fm-simulator', label: 'FM Studio' }}
-      tabs={PNL_TABS}
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      onReset={handleReset}
-      renderPanel={(compact) =>
-        activeTab === 'cockpit' ? (
-          <PnlCockpitView
-            input={input}
-            fm={fmResult}
-            pnl={pnlResult}
-            starTier={starTier}
-            compact={compact}
-            onChange={handleChange}
-            onChangeStarTier={setStarTier}
-            onApplyPreset={handleApplyPreset}
-          />
-        ) : (
-          <RulesBlueprintView compact={compact} mode="pnl" />
-        )
-      }
-    />
+    <FmGuideProvider>
+      <AppleSimulatorShell<PnlTab>
+        title="Mô Phỏng P&L Toàn Sàn"
+        subtitle={`${spec.name} · ${input.cvs} CV · Thực tế T08–T10/2026`}
+        standaloneMobile={standaloneMobile}
+        embedded={embedded}
+        mobileHref="/pnl-simulator"
+        peerLink={embedded ? undefined : { href: '/dashboard/fm-simulator', label: 'FM Studio' }}
+        tabs={PNL_TABS}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onReset={handleReset}
+        renderPanel={(compact) =>
+          activeTab === 'cockpit' ? (
+            <PnlCockpitView
+              input={input}
+              fm={fmResult}
+              pnl={pnlResult}
+              starTier={starTier}
+              compact={compact}
+              onChange={handleChange}
+              onChangeStarTier={setStarTier}
+              onApplyPreset={handleApplyPreset}
+            />
+          ) : (
+            <RulesBlueprintView compact={compact} mode="pnl" />
+          )
+        }
+      />
+    </FmGuideProvider>
   );
 }

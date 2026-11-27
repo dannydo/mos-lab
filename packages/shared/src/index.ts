@@ -73,7 +73,12 @@ export * from './types/bk-game.js';
 export * from './types/ai-assistant.js';
 export * from './types/pilot.js';
 export * from './types/career-progression.js';
-export { calculateComboBonus, formatComboTierBracketLabel } from './types/career-progression.js';
+export {
+  DEFAULT_COMBO_MIN_COLLECTED_AMOUNT,
+  calculateComboBonus,
+  calculateComboDebtBonus,
+  formatComboTierBracketLabel,
+} from './types/career-progression.js';
 export * from './types/pinned-links.js';
 export * from './types/telesale-target.js';
 export * from './types/mos-chat.js';
@@ -97,3 +102,4 @@ export * from './utils/ios-birthday.js';
 export * from './types/ios-promotions.js';
 export * from './types/ios-app.js';
 export * from './types/wings-garden.js';
+export * from './types/fm-quests.js';

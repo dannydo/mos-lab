@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { InputNumber, Slider, Switch } from 'antd';
+import { InputNumber, Select, Slider, Switch } from 'antd';
 import { ShieldAlert } from 'lucide-react';
+import { DEFAULT_COMBO_MIN_COLLECTED_AMOUNT, calculateComboDebtBonus, type ComboDebtBonusMode } from '@mos-lab/shared';
 import { CvFeather1Badge, CvFeather2Badge } from '~/app/ios-app/components/ui-kit/CvFeatherLabels';
 import { formatThousandsInput, parseThousandsInput } from './careerConfigTypesAndHelpers';
 
@@ -243,6 +244,95 @@ export function CareerConfigComboPenaltyBox({
         <Switch checked={checked} onChange={onChange} />
       </div>
       <div className="text-[10px] text-rose-700 dark:text-rose-300 leading-relaxed">{description}</div>
+    </div>
+  );
+}
+
+interface CareerConfigDebtBonusBoxProps {
+  mode?: ComboDebtBonusMode;
+  rate?: number;
+  comboUnder2mBonus?: number;
+  comboStepPerMillionBonus?: number;
+  comboMinCollectedAmount?: number;
+  onChangeMode: (mode: ComboDebtBonusMode) => void;
+  onChangeRate: (rate: number) => void;
+}
+
+export function CareerConfigDebtBonusBox({
+  mode = 'TIER_LADDER',
+  rate = 0.015,
+  comboUnder2mBonus = 50000,
+  comboStepPerMillionBonus = 50000,
+  comboMinCollectedAmount = DEFAULT_COMBO_MIN_COLLECTED_AMOUNT,
+  onChangeMode,
+  onChangeRate,
+}: CareerConfigDebtBonusBoxProps) {
+  const safeRatePct = Number(((rate ?? 0.015) * 100).toFixed(2));
+  const minCollected = Math.max(0, Math.round(Number(comboMinCollectedAmount ?? DEFAULT_COMBO_MIN_COLLECTED_AMOUNT)));
+  const minLabel =
+    minCollected < 1_000_000
+      ? `${Math.round(minCollected / 1000)}K`
+      : `${Number((minCollected / 1_000_000).toFixed(1))}M`;
+  const under2mLabel = `${Math.round(comboUnder2mBonus / 1000)}K`;
+  const stepLabel = `${Math.round(comboStepPerMillionBonus / 1000)}K`;
+  const sample153 = calculateComboDebtBonus(1_527_500, {
+    comboDebtBonusMode: mode,
+    comboDebtBonusRate: rate,
+    comboUnder2mBonus,
+    comboStepPerMillionBonus,
+    comboMinCollectedAmount: minCollected,
+  });
+  const sample416 = calculateComboDebtBonus(4_158_000, {
+    comboDebtBonusMode: mode,
+    comboDebtBonusRate: rate,
+    comboUnder2mBonus,
+    comboStepPerMillionBonus,
+    comboMinCollectedAmount: minCollected,
+  });
+
+  return (
+    <div className="pt-2.5 border-t border-purple-200/60 dark:border-purple-800/50 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+          💳 Thưởng Thu Nợ Combo (Thực thu):
+        </span>
+        <span className="text-[10px] font-semibold text-teal-600 dark:text-teal-400 tabular-nums">
+          1.53M → +{sample153.toLocaleString('vi-VN')}đ · 4.16M → +{sample416.toLocaleString('vi-VN')}đ
+        </span>
+      </div>
+      <div className={`grid ${mode === 'PERCENTAGE' ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
+        <Select<ComboDebtBonusMode>
+          size="small"
+          value={mode}
+          onChange={onChangeMode}
+          options={[
+            {
+              value: 'TIER_LADDER',
+              label:
+                minCollected > 0
+                  ? `Bậc thang thực thu (${minLabel}–<2M=${under2mLabel}, +${stepLabel}/1M)`
+                  : `Bậc thang thực thu (<2M=${under2mLabel}, +${stepLabel}/1M)`,
+            },
+            { value: 'PERCENTAGE', label: 'Tỷ lệ % số tiền thu nợ' },
+          ]}
+        />
+        {mode === 'PERCENTAGE' && (
+          <InputNumber
+            size="small"
+            className="w-full"
+            min={0}
+            max={10}
+            step={0.5}
+            value={safeRatePct}
+            addonAfter="%"
+            onChange={(val) => onChangeRate(Math.max(0, Number(val || 0)) / 100)}
+          />
+        )}
+      </div>
+      <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 leading-relaxed tabular-nums">
+        * Tối thiểu thực thu {minCollected.toLocaleString('vi-VN')}đ mới tính thưởng. Bán gói mới có nợ chỉ thưởng trên
+        thực thu (tránh trả trùng). Ca thu nợ không cộng vào tử số % chốt Combo.
+      </p>
     </div>
   );
 }

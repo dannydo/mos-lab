@@ -247,6 +247,9 @@ export function resolveMenuKeysForApiPath(apiPath: string): string[] {
   if (clean.startsWith('/career')) {
     return ['career-path'];
   }
+  if (clean.startsWith('/fm-quests')) {
+    return ['__SESSION_ALLOWED__'];
+  }
 
   // 4. Other KPI & Reports & Gamification
   if (

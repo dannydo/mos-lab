@@ -76,6 +76,9 @@ export const DEFAULT_CV_TO_CC_CONFIG: CvToCcConfig = {
   serumFreePriceBonus: 1000,
   comboUnder2mBonus: 50000,
   comboStepPerMillionBonus: 50000,
+  comboMinCollectedAmount: 500000,
+  comboDebtBonusMode: 'TIER_LADDER',
+  comboDebtBonusRate: 0.015,
 };
 
 export const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS_CONFIG: CvPlusToCvPlusPlusConfig = {
@@ -108,6 +111,9 @@ export const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS_CONFIG: CvPlusToCvPlusPlusConfig = 
   serumFreePriceBonus: 1000,
   comboUnder2mBonus: 50000,
   comboStepPerMillionBonus: 50000,
+  comboMinCollectedAmount: 500000,
+  comboDebtBonusMode: 'TIER_LADDER',
+  comboDebtBonusRate: 0.015,
   crossConsultCvShareRate: 0,
   exemptCvlDenominatorOnCrossConsult: true,
   enforceMandatoryOwnQueue: true,

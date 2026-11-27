@@ -1,3 +1,4 @@
+import type { CvPlusDebtCollectionDetail } from './career-progression.js';
 import type { FalReadModel } from './fal.js';
 import type { HolidayPayBreakdown } from './holiday-work.js';
 
@@ -217,6 +218,9 @@ export interface CvPlusPaystubBreakdown {
   deltaHourlyWage: number;
   deltaTipBonus: number;
   comboBonusTotal: number;
+  debtCollectionBonusTotal?: number;
+  debtCollectionCount?: number;
+  debtCollectedAmount?: number;
   serumBonusTotal: number;
   serumsSoldCount?: number;
   totalAdditionalIncome: number;
@@ -227,10 +231,13 @@ export interface CvPlusPaystubBreakdown {
     customerName?: string;
     comboName: string;
     price: number;
+    grossPrice?: number;
+    unpaidDebtAmount?: number;
     bonus: number;
     comboCount?: number;
     comboItems?: Array<{ comboName: string; price: number }>;
   }>;
+  debtCollectionDetails?: CvPlusDebtCollectionDetail[];
 }
 
 export interface CvOtherAllowanceItem {

@@ -45,6 +45,7 @@ export interface CcTrainingMentorshipBreakdown {
   menteeDeltaHourlyWage: number;
   menteeDeltaTipBonus: number;
   menteeComboBonusTotal: number;
+  menteeDebtCollectionBonusTotal?: number;
   menteeSerumBonusTotal: number;
   menteeTotalAdditionalIncome: number;
   mentorFixedEarned: number;
@@ -110,6 +111,7 @@ export interface CalculateMentorTrainingBonusInput {
   menteeDeltaHourlyWage: number;
   menteeDeltaTipBonus: number;
   menteeComboBonusTotal: number;
+  menteeDebtCollectionBonusTotal?: number;
   menteeSerumBonusTotal: number;
 }
 
@@ -131,6 +133,7 @@ export function calculateCcMentorTrainingBonus(
     menteeDeltaHourlyWage,
     menteeDeltaTipBonus,
     menteeComboBonusTotal,
+    menteeDebtCollectionBonusTotal,
     menteeSerumBonusTotal,
   } = input;
 
@@ -155,8 +158,9 @@ export function calculateCcMentorTrainingBonus(
   const safeDeltaHourly = isUnlocked ? Math.max(0, Math.round(menteeDeltaHourlyWage || 0)) : 0;
   const safeDeltaTip = Math.max(0, Math.round(menteeDeltaTipBonus || 0));
   const safeComboBonus = isUnlocked ? Math.max(0, Math.round(menteeComboBonusTotal || 0)) : 0;
+  const safeDebtBonus = isUnlocked ? Math.max(0, Math.round(menteeDebtCollectionBonusTotal || 0)) : 0;
   const safeSerumBonus = isUnlocked ? Math.max(0, Math.round(menteeSerumBonusTotal || 0)) : 0;
-  const menteeTotalAdditionalIncome = safeDeltaHourly + safeDeltaTip + safeComboBonus + safeSerumBonus;
+  const menteeTotalAdditionalIncome = safeDeltaHourly + safeDeltaTip + safeComboBonus + safeDebtBonus + safeSerumBonus;
 
   const mentorFixedEarned = isUnlocked ? fixedAllowance : 0;
   const mentorShareEarned = isUnlocked ? Math.round(menteeTotalAdditionalIncome * shareRate) : 0;
@@ -180,6 +184,7 @@ export function calculateCcMentorTrainingBonus(
     menteeDeltaHourlyWage: safeDeltaHourly,
     menteeDeltaTipBonus: safeDeltaTip,
     menteeComboBonusTotal: safeComboBonus,
+    menteeDebtCollectionBonusTotal: safeDebtBonus,
     menteeSerumBonusTotal: safeSerumBonus,
     menteeTotalAdditionalIncome,
     mentorFixedEarned,
