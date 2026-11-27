@@ -61,6 +61,12 @@ export function getSelectedMenuKey(
   if (pathname.includes('/dashboard/staff/menu-access')) return 'menu-access';
   if (pathname.includes('/dashboard/staff')) return 'staff-directory';
   if (pathname.includes('/dashboard/referrals')) return 'referrals';
+  if (pathname.includes('/dashboard/inventory/limits')) return 'inventory-limits';
+  if (pathname.includes('/dashboard/inventory/assign')) return 'inventory-assign';
+  if (pathname.includes('/dashboard/inventory/assets')) return 'inventory-assets';
+  if (pathname.includes('/dashboard/inventory/scan-logs')) return 'inventory-scan-logs';
+  if (pathname.includes('/dashboard/inventory/catalog')) return 'inventory-catalog';
+  if (pathname.includes('/dashboard/inventory')) return 'inventory-items';
   if (pathname.includes('/dashboard/catalog')) return 'catalog';
   if (pathname.includes('/dashboard/architecture')) return 'architecture';
   if (pathname.includes('/dashboard/design-system')) return 'design-system';

@@ -372,7 +372,7 @@ async function addMissingCheckItems(
   );
 }
 
-async function transitionCheckStateInTx(
+export async function transitionCheckStateInTx(
   conn: InventoryDbConnection,
   ctx: InventoryAuthContext,
   checkId: number,

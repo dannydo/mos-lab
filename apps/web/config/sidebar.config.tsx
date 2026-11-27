@@ -24,7 +24,16 @@ const ZERO_TRUST_EXPLICIT_GRANT_KEYS = new Set([
   'bug-reports',
 ]);
 // Strictly Admin-Only keys: NEVER unlockable for non-admins via menuVisibility overrides
-const STRICT_ADMIN_ONLY_KEYS = new Set(['pnl-simulator']);
+const STRICT_ADMIN_ONLY_KEYS = new Set([
+  'pnl-simulator',
+  'inventory-parent',
+  'inventory-items',
+  'inventory-limits',
+  'inventory-assign',
+  'inventory-assets',
+  'inventory-scan-logs',
+  'inventory-catalog',
+]);
 
 export function getSidebarGroups(
   userRole: string = '',
