@@ -264,8 +264,19 @@ export async function inventoryRoutes(fastify: FastifyInstance): Promise<void> {
     const ctx = await resolveInventorySseAuthContext(fastify, request, reply);
     if (!ctx) return;
 
+    const corsHeaders: Record<string, string | number | string[]> = {};
+    for (const [k, v] of Object.entries(reply.getHeaders())) {
+      if (v !== undefined) corsHeaders[k] = v;
+    }
+    if (!corsHeaders['access-control-allow-origin'] && typeof request.headers.origin === 'string') {
+      corsHeaders['Access-Control-Allow-Origin'] = request.headers.origin;
+      corsHeaders['Access-Control-Allow-Credentials'] = 'true';
+      corsHeaders['Vary'] = 'Origin';
+    }
+
     reply.raw.writeHead(200, {
-      'Content-Type': 'text/event-stream',
+      ...corsHeaders,
+      'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
