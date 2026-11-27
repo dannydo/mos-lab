@@ -8,6 +8,7 @@ import type {
 } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
+import { getActiveMaiDebugPayload } from '../shared/hooks/useMaiDebugSettings';
 import { convertAttachmentToDataUrl } from '../shared/utils/convertAttachmentToDataUrl';
 
 export function buildOptimisticChatMessage({
@@ -150,6 +151,7 @@ export async function dispatchPrivateAiMessage({
   senderName,
   myRole,
   aiSessionId,
+  isStrictDannySuperAdmin = false,
 }: {
   text: string;
   customerCard?: MosChatCustomerCard | null;
@@ -157,6 +159,7 @@ export async function dispatchPrivateAiMessage({
   senderName: string;
   myRole: string;
   aiSessionId: string | null;
+  isStrictDannySuperAdmin?: boolean;
 }): Promise<{
   sessionId?: string;
   message: MosChatMessage;
@@ -178,6 +181,7 @@ export async function dispatchPrivateAiMessage({
         userName: senderName,
         myRole,
       },
+      ...getActiveMaiDebugPayload(Boolean(isStrictDannySuperAdmin)),
     });
     const botMsg: MosChatMessage = {
       id: aiRes?.message?.id || `msg-ai-${Date.now()}`,
@@ -286,6 +290,7 @@ export async function dispatchRoomOrThreadAiMention({
   aiSessionId,
   isReadOnly,
   setAiSessionId,
+  isStrictDannySuperAdmin = false,
 }: {
   message: string;
   scope: string;
@@ -295,6 +300,7 @@ export async function dispatchRoomOrThreadAiMention({
   aiSessionId: string | null;
   isReadOnly: boolean;
   setAiSessionId: (id: string | null) => void;
+  isStrictDannySuperAdmin?: boolean;
 }): Promise<void> {
   const imageDataUrl = await convertAttachmentToDataUrl(firstAttachment);
   const aiRes = await apiClient.ai.sendMessage({
@@ -307,8 +313,69 @@ export async function dispatchRoomOrThreadAiMention({
       userName: senderName,
       myRole,
     },
+    ...getActiveMaiDebugPayload(Boolean(isStrictDannySuperAdmin)),
   });
   if (aiRes?.session?.id && !isReadOnly) {
     setAiSessionId(aiRes.session.id);
   }
+}
+
+export async function dispatchPrivateThreadAiReply({
+  aiSessionId,
+  setAiSessionId,
+  rootMsg,
+  targetMsgId,
+  senderName,
+  myRole,
+  queryText,
+  firstAttachment,
+  isStrictDannySuperAdmin = false,
+}: {
+  aiSessionId: string | null;
+  setAiSessionId: (id: string | null) => void;
+  rootMsg?: MosChatMessage;
+  targetMsgId: string;
+  senderName: string;
+  myRole: string;
+  queryText: string;
+  firstAttachment?: MosChatImageAttachment;
+  isStrictDannySuperAdmin?: boolean;
+}): Promise<MosChatThreadReply> {
+  const contextPayload = buildThreadAiContextPayload({
+    headerLabel: '[Bối cảnh Luồng thảo luận (Thread) với mOS AI]:',
+    rootMsg,
+    senderName,
+    queryText,
+  });
+  const imageDataUrl = await convertAttachmentToDataUrl(firstAttachment);
+  const aiRes = await apiClient.ai.sendMessage({
+    sessionId: aiSessionId || undefined,
+    message: contextPayload,
+    scope: `mos-chat-private-thread:${targetMsgId}`,
+    imageDataUrl,
+    context: {
+      page: `mos-chat-private-thread:${targetMsgId}`,
+      userName: senderName,
+      myRole,
+    },
+    ...getActiveMaiDebugPayload(Boolean(isStrictDannySuperAdmin)),
+  });
+  if (aiRes?.session?.id) {
+    setAiSessionId(aiRes.session.id);
+  }
+  return {
+    id: aiRes?.message?.id || `th-ai-${Date.now()}`,
+    senderId: 'wings-ai-copilot',
+    senderName: '🤖 MAI',
+    senderRole: 'mOS AI',
+    senderAvatar: 'MAI',
+    roleColor: '#8b5cf6',
+    text: (aiRes?.message?.content || 'MAI đã ghi nhận phản hồi trong luồng của bạn.')
+      .replace(/<action[\s\S]*?<\/action>/gi, '')
+      .replace(/<\/?action[^>]*>/gi, '')
+      .trim(),
+    isAiBot: true,
+    timeLabel: dayjs().format('HH:mm'),
+    createdAt: new Date().toISOString(),
+  };
 }

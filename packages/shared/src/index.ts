@@ -31,6 +31,7 @@ export * from './types/fal-adjustment.js';
 export * from './types/payroll-adjustment.js';
 export * from './types/payroll-adjustment-lab.js';
 export * from './constants/index.js';
+export * from './constants/ag-models.js';
 export * from './types/table-config.js';
 export * from './types/cc-xoay.js';
 export * from './types/cc-thuong.js';

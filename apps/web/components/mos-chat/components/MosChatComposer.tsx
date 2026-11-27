@@ -348,8 +348,10 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
         {isMobile ? (
           <MosChatComposerMobile
             token={token}
+            isDark={isDark}
             activeConversation={activeConversation}
             canUseAiCopilot={canUseAiCopilot}
+            isStrictDannySuperAdmin={isStrictDannySuperAdmin}
             surfaceRaised={surfaceRaised}
             borderStrong={borderStrong}
             mobileActionOpen={mobileActionOpen}

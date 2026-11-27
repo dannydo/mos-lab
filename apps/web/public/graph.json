@@ -5690,7 +5690,21 @@
         "path": "/api/ag-task-bridge/chat/next",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 20
+        "line": 21
+      }
+    },
+    {
+      "id": "route:GET:/api/ai/ag-models",
+      "type": "FastifyRoute",
+      "label": "GET /api/ai/ag-models",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ai/routes/ai-chat-sessions.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/ai/ag-models",
+        "module": "ai",
+        "handler": "inlineHandler",
+        "line": 13
       }
     },
     {
@@ -38430,6 +38444,18 @@
       }
     },
     {
+      "id": "uicomp:MaiDebugControlPill.test",
+      "type": "UIComponent",
+      "label": "<MaiDebugControlPill.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MaiDebugControlPill.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MaiDebugControlPill.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MissionGateCard.test",
       "type": "UIComponent",
       "label": "<MissionGateCard.test />",
@@ -38990,6 +39016,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useChatRealtimeSync.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MaiDebugControlPill",
+      "type": "UIComponent",
+      "label": "<MaiDebugControlPill />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MaiDebugControlPill.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MaiDebugControlPill",
         "isPrimitive": false
       }
     },
@@ -41954,6 +41992,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useChatUploadQueue",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMaiDebugSettings",
+      "type": "UIComponent",
+      "label": "<useMaiDebugSettings />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/shared/hooks/useMaiDebugSettings.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMaiDebugSettings",
         "isPrimitive": false
       }
     },
@@ -45806,8 +45856,8 @@
       "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4241,
-        "lineCount": 107,
+        "sizeBytes": 8511,
+        "lineCount": 204,
         "ext": ".ts"
       }
     },
@@ -45819,8 +45869,21 @@
       "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22273,
-        "lineCount": 625,
+        "sizeBytes": 22570,
+        "lineCount": 639,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/ag-models-registry.ts",
+      "type": "File",
+      "label": "ag-models-registry.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/ag-models-registry.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5664,
+        "lineCount": 195,
         "ext": ".ts"
       }
     },
@@ -45832,8 +45895,8 @@
       "filePath": "apps/api/src/modules/ai/ai-service/ai-chat-context.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6823,
-        "lineCount": 212,
+        "sizeBytes": 7578,
+        "lineCount": 230,
         "ext": ".ts"
       }
     },
@@ -45845,8 +45908,8 @@
       "filePath": "apps/api/src/modules/ai/ai-service/ai-chat-delivery.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5739,
-        "lineCount": 179,
+        "sizeBytes": 6255,
+        "lineCount": 191,
         "ext": ".ts"
       }
     },
@@ -45858,8 +45921,21 @@
       "filePath": "apps/api/src/modules/ai/ai-service/ai-chat-orchestrator.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3763,
-        "lineCount": 117,
+        "sizeBytes": 5461,
+        "lineCount": 160,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/ai-service/ai-debug-mode.ts",
+      "type": "File",
+      "label": "ai-debug-mode.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/ai-service/ai-debug-mode.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9844,
+        "lineCount": 257,
         "ext": ".ts"
       }
     },
@@ -45871,8 +45947,8 @@
       "filePath": "apps/api/src/modules/ai/ai-service/ai-engine-runner.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7360,
-        "lineCount": 203,
+        "sizeBytes": 9804,
+        "lineCount": 266,
         "ext": ".ts"
       }
     },
@@ -45949,8 +46025,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4526,
-        "lineCount": 131,
+        "sizeBytes": 4577,
+        "lineCount": 133,
         "ext": ".ts"
       }
     },
@@ -45975,8 +46051,8 @@
       "filePath": "apps/api/src/modules/ai/routes/ag-task-bridge.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5506,
-        "lineCount": 130,
+        "sizeBytes": 6193,
+        "lineCount": 143,
         "ext": ".ts"
       }
     },
@@ -45988,8 +46064,8 @@
       "filePath": "apps/api/src/modules/ai/routes/ai-chat-sessions.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5528,
-        "lineCount": 145,
+        "sizeBytes": 6998,
+        "lineCount": 180,
         "ext": ".ts"
       }
     },
@@ -46027,8 +46103,8 @@
       "filePath": "apps/api/src/modules/ai/routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17172,
-        "lineCount": 445,
+        "sizeBytes": 20603,
+        "lineCount": 554,
         "ext": ".ts"
       }
     },
@@ -50902,8 +50978,8 @@
       "filePath": "apps/api/src/modules/ios/__tests__/ios-under-lash-rounds.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11463,
-        "lineCount": 350,
+        "sizeBytes": 17184,
+        "lineCount": 521,
         "ext": ".ts"
       }
     },
@@ -51123,8 +51199,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-action-wallet.helper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3061,
-        "lineCount": 70,
+        "sizeBytes": 3087,
+        "lineCount": 71,
         "ext": ".ts"
       }
     },
@@ -51149,8 +51225,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-actions.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21546,
-        "lineCount": 539,
+        "sizeBytes": 22011,
+        "lineCount": 550,
         "ext": ".ts"
       }
     },
@@ -51181,6 +51257,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/services/ios-booking-create-lookup.helper.ts",
+      "type": "File",
+      "label": "ios-booking-create-lookup.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-booking-create-lookup.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6839,
+        "lineCount": 187,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/services/ios-booking-create.service.ts",
       "type": "File",
       "label": "ios-booking-create.service.ts",
@@ -51188,8 +51277,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-booking-create.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 24536,
-        "lineCount": 648,
+        "sizeBytes": 19768,
+        "lineCount": 516,
         "ext": ".ts"
       }
     },
@@ -51396,8 +51485,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-catalog.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20528,
-        "lineCount": 560,
+        "sizeBytes": 21275,
+        "lineCount": 579,
         "ext": ".ts"
       }
     },
@@ -51409,8 +51498,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-payload.mapper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19445,
-        "lineCount": 492,
+        "sizeBytes": 19695,
+        "lineCount": 498,
         "ext": ".ts"
       }
     },
@@ -51435,8 +51524,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-state-reconciler.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10379,
-        "lineCount": 309,
+        "sizeBytes": 10715,
+        "lineCount": 322,
         "ext": ".ts"
       }
     },
@@ -51448,8 +51537,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-step-sync.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20678,
-        "lineCount": 568,
+        "sizeBytes": 20747,
+        "lineCount": 570,
         "ext": ".ts"
       }
     },
@@ -51591,8 +51680,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-progress-sync.helper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18079,
-        "lineCount": 471,
+        "sizeBytes": 18254,
+        "lineCount": 476,
         "ext": ".ts"
       }
     },
@@ -51710,6 +51799,19 @@
       "metadata": {
         "sizeBytes": 18788,
         "lineCount": 478,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-under-lash-add.helper.ts",
+      "type": "File",
+      "label": "ios-under-lash-add.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-under-lash-add.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6502,
+        "lineCount": 165,
         "ext": ".ts"
       }
     },
@@ -72430,8 +72532,8 @@
       "filePath": "apps/web/app/ios-app/components/IosAppGlobalOverlays.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6407,
-        "lineCount": 167,
+        "sizeBytes": 7044,
+        "lineCount": 183,
         "ext": ".tsx"
       }
     },
@@ -72488,6 +72590,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/modals/booking/AddUnderMinkSheet.tsx",
+      "type": "File",
+      "label": "AddUnderMinkSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/modals/booking/AddUnderMinkSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 18685,
+        "lineCount": 414,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/modals/booking/IosCreateBookingSheet.tsx",
       "type": "File",
       "label": "IosCreateBookingSheet.tsx",
@@ -72495,8 +72610,8 @@
       "filePath": "apps/web/app/ios-app/components/modals/booking/IosCreateBookingSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21297,
-        "lineCount": 484,
+        "sizeBytes": 21808,
+        "lineCount": 492,
         "ext": ".tsx"
       }
     },
@@ -72794,8 +72909,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23331,
-        "lineCount": 529,
+        "sizeBytes": 24405,
+        "lineCount": 550,
         "ext": ".tsx"
       }
     },
@@ -72807,8 +72922,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen10CustomerSurvey.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21144,
-        "lineCount": 454,
+        "sizeBytes": 22167,
+        "lineCount": 474,
         "ext": ".tsx"
       }
     },
@@ -72820,8 +72935,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13501,
-        "lineCount": 355,
+        "sizeBytes": 14579,
+        "lineCount": 378,
         "ext": ".tsx"
       }
     },
@@ -72833,8 +72948,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15130,
-        "lineCount": 419,
+        "sizeBytes": 15237,
+        "lineCount": 422,
         "ext": ".tsx"
       }
     },
@@ -72859,8 +72974,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22044,
-        "lineCount": 512,
+        "sizeBytes": 22777,
+        "lineCount": 529,
         "ext": ".tsx"
       }
     },
@@ -73171,8 +73286,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/__tests__/UnderLashTwoRoundServicing.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8184,
-        "lineCount": 199,
+        "sizeBytes": 12260,
+        "lineCount": 315,
         "ext": ".tsx"
       }
     },
@@ -73366,8 +73481,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/CheckoutReceiptSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21638,
-        "lineCount": 507,
+        "sizeBytes": 22657,
+        "lineCount": 526,
         "ext": ".tsx"
       }
     },
@@ -73665,7 +73780,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/LashMaterialAndDesignSteps.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12381,
+        "sizeBytes": 12412,
         "lineCount": 272,
         "ext": ".tsx"
       }
@@ -75030,8 +75145,8 @@
       "filePath": "apps/web/app/ios-app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20781,
-        "lineCount": 531,
+        "sizeBytes": 21431,
+        "lineCount": 542,
         "ext": ".tsx"
       }
     },
@@ -75160,8 +75275,8 @@
       "filePath": "apps/web/app/ios-app/state/iosBookingMerge.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16875,
-        "lineCount": 386,
+        "sizeBytes": 16901,
+        "lineCount": 387,
         "ext": ".ts"
       }
     },
@@ -75283,6 +75398,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/state/useIosAddUnderMink.ts",
+      "type": "File",
+      "label": "useIosAddUnderMink.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/state/useIosAddUnderMink.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13370,
+        "lineCount": 336,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/state/useIosAppState.ts",
       "type": "File",
       "label": "useIosAppState.ts",
@@ -75290,8 +75418,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosAppState.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21153,
-        "lineCount": 637,
+        "sizeBytes": 21503,
+        "lineCount": 644,
         "ext": ".ts"
       }
     },
@@ -75329,8 +75457,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosBookingsSync.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21353,
-        "lineCount": 590,
+        "sizeBytes": 22699,
+        "lineCount": 615,
         "ext": ".ts"
       }
     },
@@ -76070,8 +76198,8 @@
       "filePath": "apps/web/lib/api/ai.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3155,
-        "lineCount": 88,
+        "sizeBytes": 3381,
+        "lineCount": 93,
         "ext": ".ts"
       }
     },
@@ -77220,6 +77348,19 @@
       }
     },
     {
+      "id": "file:packages/shared/src/constants/ag-models.ts",
+      "type": "File",
+      "label": "ag-models.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/constants/ag-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 9738,
+        "lineCount": 332,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/constants/index.ts",
       "type": "File",
       "label": "index.ts",
@@ -77266,8 +77407,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3900,
-        "lineCount": 106,
+        "sizeBytes": 3942,
+        "lineCount": 107,
         "ext": ".ts"
       }
     },
@@ -77565,8 +77706,8 @@
       "filePath": "packages/shared/src/types/ai-assistant.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3173,
-        "lineCount": 125,
+        "sizeBytes": 3348,
+        "lineCount": 133,
         "ext": ".ts"
       }
     },
@@ -78202,8 +78343,8 @@
       "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 13291,
-        "lineCount": 482,
+        "sizeBytes": 13401,
+        "lineCount": 485,
         "ext": ".ts"
       }
     },
@@ -78995,8 +79136,8 @@
       "filePath": "packages/shared/src/utils/ios-servicing-rounds.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3561,
-        "lineCount": 118,
+        "sizeBytes": 8320,
+        "lineCount": 239,
         "ext": ".ts"
       }
     },
@@ -81527,6 +81668,13 @@
     {
       "id": "edge:route:GET:/api/ag-task-bridge/chat/next:ws:apps/api",
       "source": "route:GET:/api/ag-task-bridge/chat/next",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/ai/ag-models:ws:apps/api",
+      "source": "route:GET:/api/ai/ag-models",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -102028,6 +102176,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MaiDebugControlPill.test:ws:apps/web",
+      "source": "uicomp:MaiDebugControlPill.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MaiDebugControlPill.test:token:color:primary",
+      "source": "uicomp:MaiDebugControlPill.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MissionGateCard.test:ws:apps/web",
       "source": "uicomp:MissionGateCard.test",
       "target": "ws:apps/web",
@@ -102681,6 +102843,20 @@
     {
       "id": "edge:uicomp:useChatRealtimeSync.test:token:color:primary",
       "source": "uicomp:useChatRealtimeSync.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MaiDebugControlPill:ws:apps/web",
+      "source": "uicomp:MaiDebugControlPill",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MaiDebugControlPill:token:color:primary",
+      "source": "uicomp:MaiDebugControlPill",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -106139,6 +106315,20 @@
     {
       "id": "edge:uicomp:useChatUploadQueue:token:color:primary",
       "source": "uicomp:useChatUploadQueue",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMaiDebugSettings:ws:apps/web",
+      "source": "uicomp:useMaiDebugSettings",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMaiDebugSettings:token:color:primary",
+      "source": "uicomp:useMaiDebugSettings",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -109728,6 +109918,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ai/ag-models-registry.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/ag-models-registry.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ai/ai-service/ai-chat-context.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ai/ai-service/ai-chat-context.ts",
       "target": "ws:packages/shared",
@@ -109744,6 +109941,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ai/ai-service/ai-chat-orchestrator.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ai/ai-service/ai-chat-orchestrator.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ai/ai-service/ai-debug-mode.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/ai-service/ai-debug-mode.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -111926,6 +112130,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-booking-create-lookup.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-booking-create-lookup.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-booking-create.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-booking-create.service.ts",
       "target": "ws:packages/shared",
@@ -112180,6 +112391,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-staff-stats.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-staff-stats.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-under-lash-add.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-under-lash-add.helper.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -119374,6 +119592,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/modals/booking/AddUnderMinkSheet.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/modals/booking/AddUnderMinkSheet.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/modals/booking/IosCreateBookingSheet.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/modals/booking/IosCreateBookingSheet.tsx",
       "target": "ws:packages/shared",
@@ -119432,6 +119657,20 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen10CustomerSurvey.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen10CustomerSurvey.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -120146,6 +120385,13 @@
     {
       "id": "edge:file:apps/web/app/ios-app/state/useCheckoutItemizedPromotions.ts:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/state/useCheckoutItemizedPromotions.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/state/useIosAddUnderMink.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/state/useIosAddUnderMink.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -134068,28 +134314,28 @@
     }
   ],
   "stats": {
-    "totalNodes": 6143,
-    "totalEdges": 7857,
+    "totalNodes": 6154,
+    "totalEdges": 7872,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
-      "FastifyRoute": 792,
+      "FastifyRoute": 793,
       "Component": 70,
       "SharedType": 1611,
       "DesignToken": 12,
-      "UIComponent": 828,
-      "File": 2644
+      "UIComponent": 831,
+      "File": 2651
     },
     "edgeTypeCounts": {
       "EXPORTS": 1806,
-      "HANDLES_ROUTE": 792,
-      "RENDERS": 898,
-      "USES_TOKEN": 830,
-      "IMPORTS": 1606,
+      "HANDLES_ROUTE": 793,
+      "RENDERS": 901,
+      "USES_TOKEN": 833,
+      "IMPORTS": 1614,
       "QUERIES_MODEL": 614,
       "API_CALL": 1311
     },
-    "fastifyRouteCount": 792,
+    "fastifyRouteCount": 793,
     "prismaModelCount": 183,
     "nextPageCount": 70,
     "sharedTypeCount": 1611
@@ -135275,6 +135521,13 @@
       "method": "GET",
       "path": "/api/ag-task-bridge/chat/next",
       "filePath": "apps/api/src/modules/ai/routes/ag-task-bridge.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ai"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai/ag-models",
+      "filePath": "apps/api/src/modules/ai/routes/ai-chat-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "ai"
     },

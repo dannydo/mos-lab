@@ -15,6 +15,9 @@ export interface AiChatMessage {
   suggestedAction?: AiChatAction | null;
   suggestedActions?: AiChatAction[] | null;
   source?: 'ag' | 'gemini' | 'fallback';
+  debugMode?: boolean;
+  modelId?: string;
+  modelLabel?: string;
   createdAt: string;
 }
 
@@ -47,6 +50,8 @@ export interface AiAssistantChatRequest {
   scope?: string;
   imageDataUrl?: string;
   context?: AiChatContext;
+  debugMode?: boolean;
+  modelId?: string;
 }
 
 export interface AiAssistantChatResponse {
@@ -55,6 +60,9 @@ export interface AiAssistantChatResponse {
   session: AiChatSession;
   source: 'ag' | 'gemini' | 'fallback';
   engine?: 'ag' | 'gemini' | 'fallback';
+  debugMode?: boolean;
+  modelId?: string;
+  modelLabel?: string;
 }
 
 export interface CreateAiSessionRequest {

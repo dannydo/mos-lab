@@ -14,11 +14,16 @@ import {
   UserRoundPlus,
   X,
 } from 'lucide-react';
-import type { MosChatCustomerCard, MosChatMessage, SafeAny } from '@mos-lab/shared';
+import type { MosChatConversation, MosChatCustomerCard, MosChatMessage, SafeAny } from '@mos-lab/shared';
+import { MaiDebugControlPill } from './MaiDebugControlPill';
 import { syncTextareaHeightSmart } from './MosChatComposer';
 
 export interface MosChatThreadComposerMobileProps {
   activeThreadMessage: MosChatMessage;
+  activeConversation?: MosChatConversation | null;
+  AI_COPILOT_CONV_ID?: string;
+  isDark?: boolean;
+  isStrictDannySuperAdmin?: boolean;
   token: SafeAny;
   surfaceRaised: string;
   borderStrong: string;
@@ -58,6 +63,10 @@ export interface MosChatThreadComposerMobileProps {
 
 export const MosChatThreadComposerMobile: React.FC<MosChatThreadComposerMobileProps> = ({
   activeThreadMessage,
+  activeConversation,
+  AI_COPILOT_CONV_ID = 'ai-mai-copilot',
+  isDark = true,
+  isStrictDannySuperAdmin = false,
   token,
   surfaceRaised,
   borderStrong,
@@ -236,6 +245,21 @@ export const MosChatThreadComposerMobile: React.FC<MosChatThreadComposerMobilePr
       )}
 
       {formatBarOpenThread && renderAppleNotesFormatToolbar('thread', 'inline')}
+
+      {isStrictDannySuperAdmin && (
+        <div className="flex items-center gap-1.5 pb-0.5">
+          <MaiDebugControlPill
+            isStrictDannySuperAdmin={isStrictDannySuperAdmin}
+            isDark={isDark}
+            isAiPrivateConv={activeConversation?.id === AI_COPILOT_CONV_ID}
+            compact
+            onEnsureMaiMention={() => {
+              applyThreadTextUpdate((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
+              threadInputRef.current?.focus();
+            }}
+          />
+        </div>
+      )}
 
       <div className="flex items-center gap-1.5">
         <button

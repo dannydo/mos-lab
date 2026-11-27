@@ -23,6 +23,9 @@ export interface AgChatBridgeJob {
   targetChatThreadId?: string;
   userName?: string;
   delivered?: boolean;
+  model?: string;
+  debugMode?: boolean;
+  timeoutMs?: number;
 }
 
 interface PendingBridgeJobEntry {
@@ -510,7 +513,15 @@ export class AgChatBridgeService {
     title?: string,
     timeoutMs = 90_000,
     sessionId?: string,
-    metadata?: { scope?: string; targetChatConvId?: string; targetChatThreadId?: string; userName?: string }
+    metadata?: {
+      scope?: string;
+      targetChatConvId?: string;
+      targetChatThreadId?: string;
+      userName?: string;
+      model?: string;
+      debugMode?: boolean;
+      executionTimeoutMs?: number;
+    }
   ): Promise<{ conversationId: string; response: ParsedAiResponse; jobId: string }> {
     if (!this.isRemotePollerActive()) {
       return Promise.reject(new Error('No active remote Antigravity bridge poller connected'));
@@ -528,6 +539,9 @@ export class AgChatBridgeService {
         targetChatConvId: metadata?.targetChatConvId,
         targetChatThreadId: metadata?.targetChatThreadId,
         userName: metadata?.userName,
+        model: metadata?.model,
+        debugMode: metadata?.debugMode,
+        timeoutMs: metadata?.executionTimeoutMs,
       };
 
       if (this.archivedJobs.size >= 100) {

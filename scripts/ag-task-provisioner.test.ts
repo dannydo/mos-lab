@@ -492,6 +492,13 @@ test('resolveAntigravityPlanModel and resolveAgentApiModelArg map hydrogen, orch
   assert.equal(resolveAgentApiModelArg('orchestrator_carbon'), 'gemini-pro-orchestrator');
   assert.equal(resolveAgentApiModelArg('orchestrator_argon'), 'gemini-pro-orchestrator-argon');
   assert.equal(resolveAgentApiModelArg('flash'), 'gemini-3.8-flash-high');
+  assert.equal(resolveAgentApiModelArg('gemini-4-neon-high'), 'gemini-4-neon-high');
+  assert.equal(resolveAgentApiModelArg('gemini-4-carbon-medium'), 'gemini-4-carbon-medium');
+  assert.equal(resolveAgentApiModelArg('gemini-4-hydrogen-xhigh'), 'gemini-4-hydrogen-xhigh');
+  assert.equal(resolveAgentApiModelArg('gemini-pro-orchestrator-neon'), 'gemini-pro-orchestrator-neon');
+  assert.equal(resolveAgentApiModelArg('claude-opus-5-5-high'), 'claude-opus-5-5-high');
+  assert.equal(resolveAgentApiModelArg('claude-sonnet-5-5-medium'), 'claude-sonnet-5-5-medium');
+  assert.equal(resolveAgentApiModelArg('gpt-oss-120b-medium'), 'gpt-oss-120b-medium');
 
   const mockFetcher: typeof fetch = async () =>
     new Response(

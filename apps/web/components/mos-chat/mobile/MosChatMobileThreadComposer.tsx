@@ -25,11 +25,14 @@ import type {
   MosChatMissionActionType,
   MosChatMissionSummary,
   MosChatThreadReply,
+  SafeAny,
 } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { getFileExtension, isImageAttachment } from '../utils/chat-helpers';
 import { formatVideoDuration, isVideoAttachment } from '../utils/chat-video';
 import type { PendingChatUploadItem } from '../shared/hooks/useChatUploadQueue';
+import { MaiDebugControlPill } from '../components/MaiDebugControlPill';
+import { isStrictSuperAdminClientUser } from '../shared/hooks/useMaiDebugSettings';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
 import { MosChatMobileUploadStrip } from './MosChatMobileUploadStrip';
 
@@ -53,6 +56,8 @@ export interface MosChatMobileThreadComposerProps {
   setReplyingToReply: React.Dispatch<React.SetStateAction<MosChatThreadReply | null>>;
   hasAnyPendingAction: boolean;
   mission: MosChatMissionSummary | null;
+  currentUser?: SafeAny;
+  isAiPrivateConv?: boolean;
   isStrictDannySuperAdmin: boolean;
   canApproveImplementation: boolean;
   canSuperAdminApproveCommit: boolean;
@@ -88,6 +93,8 @@ export const MosChatMobileThreadComposer: React.FC<MosChatMobileThreadComposerPr
   setReplyingToReply,
   hasAnyPendingAction,
   mission,
+  currentUser,
+  isAiPrivateConv = false,
   isStrictDannySuperAdmin,
   canApproveImplementation,
   canSuperAdminApproveCommit,
@@ -202,6 +209,21 @@ export const MosChatMobileThreadComposer: React.FC<MosChatMobileThreadComposerPr
         onSelectMention={(nextText) => setText(nextText)}
         textareaRef={textareaRef}
       />
+
+      {isStrictSuperAdminClientUser(currentUser) && (
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <MaiDebugControlPill
+            isStrictDannySuperAdmin={isStrictSuperAdminClientUser(currentUser)}
+            isDark={isDark}
+            isAiPrivateConv={isAiPrivateConv}
+            compact
+            onEnsureMaiMention={() => {
+              setText((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
+              textareaRef.current?.focus();
+            }}
+          />
+        </div>
+      )}
 
       {replyingToReply && (
         <div className="flex items-center justify-between bg-[var(--mos-surface-muted)] border border-amber-500/30 rounded-xl px-3 py-1.5 mb-2 text-xs">

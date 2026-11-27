@@ -2,10 +2,31 @@ import { FastifyInstance } from 'fastify';
 import { AiAssistantChatRequest, CreateAiSessionRequest, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { requireAuth } from '../../../middlewares/auth.js';
 import { AiAssistantService } from '../ai.service.js';
+import { AgChatBridgeService } from '../ag-chat-bridge.service.js';
+import { getAvailableAgModels, getLiveAgModelIdSet } from '../ag-models-registry.js';
+import { isStrictSuperAdminUser, validateAiDebugAndModelRequest } from '../ai-service/ai-debug-mode.js';
 import { AI_SESSION_AUDIT_PURPOSE, AI_SESSION_AUDIT_REASON_MIN } from '../ai-session-access.js';
 import { isDannyOrSuperAdminUser } from '../../chat/chat-access.service.js';
 
 export function registerAiChatSessionRoutes(fastify: FastifyInstance) {
+  // Super Admin Only: List available Antigravity models for @MAI
+  fastify.get('/ai/ag-models', { preHandler: [requireAuth] }, async (request, reply) => {
+    if (!isStrictSuperAdminUser(request.user)) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Chỉ Super Admin mới được xem danh sách model Antigravity của @MAI.',
+      });
+    }
+    const isLocalAvailable = await AgChatBridgeService.isLocalAgAvailable();
+    const isRemoteActive = AgChatBridgeService.isRemotePollerActive();
+    const payload = await getAvailableAgModels({
+      isLocalAvailable,
+      isRemoteActive,
+      detectLsEnv: () => AgChatBridgeService.detectAntigravityLsEnv(),
+    });
+    return reply.send(payload);
+  });
+
   // AI Assistant Private Workspace (MOS-FEAT-47)
   fastify.get<{ Querystring: { scope?: string } }>(
     '/ai/chat/sessions',
@@ -112,11 +133,23 @@ export function registerAiChatSessionRoutes(fastify: FastifyInstance) {
       }
 
       const staffId = request.user.id;
-      const { message, sessionId, scope, context } = request.body || {};
+      const { message, sessionId, scope, context, debugMode, modelId } = request.body || {};
 
       if (!message || typeof message !== 'string' || !message.trim()) {
         return reply.status(400).send({
           error: 'Vui lòng cung cấp nội dung tin nhắn (message)',
+        });
+      }
+
+      const validation = validateAiDebugAndModelRequest(
+        request.user,
+        { message, debugMode, modelId },
+        getLiveAgModelIdSet()
+      );
+      if (!validation.ok) {
+        return reply.status(validation.status).send({
+          error: validation.error,
+          message: validation.message,
         });
       }
 
@@ -125,8 +158,10 @@ export function registerAiChatSessionRoutes(fastify: FastifyInstance) {
         staffId,
         {
           sessionId,
-          message,
+          message: validation.cleanedMessage,
           scope,
+          debugMode: validation.debugMode,
+          modelId: validation.modelId,
           context: {
             ...context,
             myStaffId: staffId,

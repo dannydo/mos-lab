@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { AiChatContext } from '@mos-lab/shared';
+import { buildDebugPromptForAg } from './ai-debug-mode.js';
 import { generateAssistantFallback } from './ai-fallback.js';
 import { extractThinkingAndAction, SYSTEM_PROMPT_ASSISTANT, type ParsedAiResponse } from './ai-prompt-and-parser.js';
 
@@ -8,7 +9,8 @@ export interface AgBridgeClient {
   executeLocalAgPrompt(
     conversationId: string | undefined,
     prompt: string,
-    title?: string
+    title?: string,
+    options?: { timeoutMs?: number; model?: string }
   ): Promise<{ conversationId: string; response: ParsedAiResponse } | null>;
   enqueueRemoteChatJob(
     conversationId: string | undefined,
@@ -21,6 +23,9 @@ export interface AgBridgeClient {
       targetChatConvId?: string;
       targetChatThreadId?: string;
       userName?: string;
+      model?: string;
+      debugMode?: boolean;
+      executionTimeoutMs?: number;
     }
   ): Promise<{ conversationId: string; response: ParsedAiResponse; jobId?: string } | null>;
   markJobDelivered(jobId: string): void;
@@ -42,9 +47,13 @@ export async function runAssistantEngines(params: {
   liveCustomerText: string;
   liveStaffCareerText: string;
   liveGoogleWorkspaceText: string;
+  liveRoomContextText?: string;
   agConversationId?: string;
   targetChatConvId?: string;
   targetChatThreadId?: string;
+  debugMode?: boolean;
+  modelId?: string;
+  includeRecentHistory?: boolean;
   agBridge: AgBridgeClient;
 }): Promise<EngineRunResult> {
   const {
@@ -57,11 +66,17 @@ export async function runAssistantEngines(params: {
     liveCustomerText,
     liveStaffCareerText,
     liveGoogleWorkspaceText,
+    liveRoomContextText = '',
     agConversationId,
     targetChatConvId,
     targetChatThreadId,
+    debugMode = false,
+    modelId,
+    includeRecentHistory = false,
     agBridge,
   } = params;
+
+  let debugBridgeFailureReason = '';
 
   // 1. PRIMARY ENGINE: Route through Antigravity (AG) Desktop Bridge
   try {
@@ -70,9 +85,29 @@ export async function runAssistantEngines(params: {
     )}, Số khách đang chọn=${context?.selectedCustomerCount || 0}]
 [Người dùng: ${context?.userName || 'Danny'} (ID: ${staffId}, Role: ${context?.myRole || 'staff'})]`;
 
-    const promptForAg = `${SYSTEM_PROMPT_ASSISTANT}
+    const historyHint =
+      includeRecentHistory && recentMessages.length > 1
+        ? `\n[Lịch sử trao đổi gần nhất]:\n${recentMessages
+            .slice(-5, -1)
+            .map((m) => `${m.role === 'assistant' ? 'MAI' : 'User'}: ${m.content.slice(0, 500)}`)
+            .join('\n')}\n`
+        : '';
 
-${liveCustomerText ? `${liveCustomerText}\n` : ''}${liveStaffCareerText ? `${liveStaffCareerText}\n` : ''}${liveGoogleWorkspaceText ? `${liveGoogleWorkspaceText}\n` : ''}${agContextInfo}
+    const promptForAg = debugMode
+      ? buildDebugPromptForAg({
+          trimmedMessage,
+          staffId,
+          context,
+          liveCustomerText,
+          liveStaffCareerText,
+          liveGoogleWorkspaceText,
+          liveRoomContextText,
+          recentMessages,
+          includeRecentHistory,
+        })
+      : `${SYSTEM_PROMPT_ASSISTANT}
+
+${liveCustomerText ? `${liveCustomerText}\n` : ''}${liveStaffCareerText ? `${liveStaffCareerText}\n` : ''}${liveGoogleWorkspaceText ? `${liveGoogleWorkspaceText}\n` : ''}${historyHint}${agContextInfo}
 
 [Yêu cầu]:
 ${trimmedMessage}
@@ -86,12 +121,19 @@ Quy định phản hồi:
 - Trả lời bằng tiếng Việt thân thiện, súc tích và chuẩn xác.
 - QUAN TRỌNG: Đây là phản hồi văn bản cho giao diện web mOS Chat / MAI, KHÔNG gọi lệnh speak âm thanh để tập trung phản hồi nhanh và chính xác nhất cho người dùng.`;
 
-    const agTitle = `[mOS AI - MAI] ${trimmedMessage.slice(0, 40)}`;
+    const agTitle = debugMode
+      ? `[mOS AG Debug - MAI] ${trimmedMessage.slice(0, 40)}`
+      : `[mOS AI - MAI] ${trimmedMessage.slice(0, 40)}`;
+    const localTimeoutMs = debugMode ? 420_000 : 240_000;
+    const remoteTimeoutMs = debugMode ? 360_000 : 150_000;
     const isTestEnv =
       process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST) || Boolean(process.env.JEST_WORKER_ID);
 
-    if (!isTestEnv && (await agBridge.isLocalAgAvailable())) {
-      const agResult = await agBridge.executeLocalAgPrompt(agConversationId, promptForAg, agTitle);
+    if ((!isTestEnv || debugMode) && (await agBridge.isLocalAgAvailable())) {
+      const agResult = await agBridge.executeLocalAgPrompt(agConversationId, promptForAg, agTitle, {
+        timeoutMs: localTimeoutMs,
+        model: modelId,
+      });
       if (agResult?.response?.content) {
         return {
           parsedResponse: agResult.response,
@@ -99,20 +141,23 @@ Quy định phản hồi:
           agConversationId: agResult.conversationId,
         };
       }
-    } else if (!isTestEnv) {
-      // Try remote bridge queue (when API is running on VPS and Danny's Mac daemon is polling)
+    } else if (!isTestEnv || debugMode) {
+      // Try remote bridge queue (when API is running on VPS and Danny's Mac/Win daemon is polling)
       try {
         const agResult = await agBridge.enqueueRemoteChatJob(
           agConversationId,
           promptForAg,
           agTitle,
-          150_000,
+          remoteTimeoutMs,
           sessionId,
           {
             scope,
             targetChatConvId,
             targetChatThreadId,
             userName: context?.userName,
+            model: modelId,
+            debugMode,
+            executionTimeoutMs: localTimeoutMs,
           }
         );
         if (agResult?.response?.content) {
@@ -125,12 +170,30 @@ Quy định phản hồi:
             agConversationId: agResult.conversationId,
           };
         }
-      } catch {
-        // Remote bridge timed out or no agent connected; will fall back below
+      } catch (remoteErr) {
+        debugBridgeFailureReason = remoteErr instanceof Error ? remoteErr.message : String(remoteErr);
       }
     }
-  } catch {
-    // Antigravity bridge execution failed, proceed to fallback
+  } catch (agErr) {
+    debugBridgeFailureReason = agErr instanceof Error ? agErr.message : String(agErr);
+  }
+
+  // CRITICAL: Never fall back to Gemini 2.5 Flash or static fallback in AG Debug Mode
+  // because Gemini cannot inspect local code or run tests and would fabricate answers.
+  if (debugMode) {
+    const detail = debugBridgeFailureReason ? ` (${debugBridgeFailureReason.slice(0, 180)})` : '';
+    return {
+      parsedResponse: {
+        content:
+          `⚠️ **Không thể chạy AG Debug Mode** vì cầu nối Antigravity (Win AG / Mac Bridge) hiện đang offline hoặc quá thời gian chờ${detail}.\n\n` +
+          `Anh Danny vui lòng kiểm tra daemon \`ag-task-provisioner\` và Antigravity Language Server rồi thử lại nhé (chế độ Debug không fallback sang Gemini để tránh trả lời mò).`,
+        thinking: null,
+        suggestedAction: null,
+        suggestedActions: [],
+      },
+      source: 'fallback',
+      agConversationId,
+    };
   }
 
   // 2. SECONDARY ENGINE FALLBACK: Gemini 2.5 Flash / Smart Domain Fallback

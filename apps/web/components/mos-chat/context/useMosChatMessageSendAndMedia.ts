@@ -17,6 +17,7 @@ import type {
 import { apiClient } from '../../../lib/api-client';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 import { formatBackendAiMessage } from '../utils/chat-helpers';
+import { getActiveMaiDebugPayload, isStrictSuperAdminClientUser } from '../shared/hooks/useMaiDebugSettings';
 import { convertAttachmentToDataUrl } from '../shared/utils/convertAttachmentToDataUrl';
 
 export interface UseMosChatMessageSendAndMediaParams {
@@ -105,6 +106,7 @@ export function useMosChatMessageSendAndMedia({
               userName: senderName,
               myRole: currentUser?.role || 'super_admin',
             },
+            ...getActiveMaiDebugPayload(isStrictSuperAdminClientUser(currentUser)),
           });
 
           if (aiRes?.session?.id) {
@@ -224,6 +226,7 @@ export function useMosChatMessageSendAndMedia({
                   userName: currentUser?.fullName || currentUser?.name || 'Tôi',
                   myRole: currentUser?.role || 'super_admin',
                 },
+                ...getActiveMaiDebugPayload(isStrictSuperAdminClientUser(currentUser)),
               });
               await fetchBootstrap();
             } catch {
@@ -338,6 +341,7 @@ export function useMosChatMessageSendAndMedia({
                   userName: currentUser?.fullName || currentUser?.name || 'Tôi',
                   myRole: currentUser?.role || 'super_admin',
                 },
+                ...getActiveMaiDebugPayload(isStrictSuperAdminClientUser(currentUser)),
               });
               await fetchBootstrap();
             } catch {

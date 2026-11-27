@@ -10,6 +10,7 @@ import type {
   AvatarScoreResponse,
   AvatarNudgeRequest,
   AvatarNudgeResponse,
+  ListAgModelsResponse,
 } from '@mos-lab/shared';
 
 export interface VoiceChatRequest {
@@ -65,9 +66,13 @@ export const aiApi = {
       const response = await api.delete<{ success: boolean }>(`/ai/chat/sessions/${sessionId}`);
       return response.data;
     },
+    listAgModels: async (): Promise<ListAgModelsResponse> => {
+      const response = await api.get<ListAgModelsResponse>('/ai/ag-models');
+      return response.data;
+    },
     sendMessage: async (data: AiAssistantChatRequest): Promise<AiAssistantChatResponse> => {
       const response = await api.post<AiAssistantChatResponse>('/ai/chat/message', data, {
-        timeout: 240_000,
+        timeout: data.debugMode ? 420_000 : 240_000,
       });
       return response.data;
     },

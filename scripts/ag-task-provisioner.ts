@@ -22,12 +22,13 @@ import {
 import { homedir, tmpdir } from 'node:os';
 import { basename, dirname, relative, resolve } from 'node:path';
 import { promisify } from 'node:util';
-import type {
-  InboxIdeTaskProvisioningRequest,
-  InboxImplementationModelTier,
-  InboxFollowUpWorkerJob,
-  InboxPlanWorkerJob,
-  InboxPlanDraft,
+import {
+  isAllowedAgModelId,
+  type InboxIdeTaskProvisioningRequest,
+  type InboxImplementationModelTier,
+  type InboxFollowUpWorkerJob,
+  type InboxPlanWorkerJob,
+  type InboxPlanDraft,
 } from '@mos-lab/shared';
 import { AgChatBridgeService, type AgChatBridgeJob } from '../apps/api/src/modules/ai/ag-chat-bridge.service.ts';
 
@@ -517,7 +518,14 @@ export function normalizeProvisionerModelTier(modelTier?: string | null): InboxI
 
 export function resolveAgentApiModelArg(modelTier?: string | null): string {
   const trimmed = (modelTier || '').trim();
-  if (trimmed.startsWith('gemini-') || trimmed.startsWith('MODEL_PLACEHOLDER_')) {
+  if (
+    trimmed.startsWith('gemini-') ||
+    trimmed.startsWith('claude-') ||
+    trimmed.startsWith('gpt-oss-') ||
+    trimmed.startsWith('MODEL_PLACEHOLDER_') ||
+    trimmed.startsWith('MODEL_OPENAI_') ||
+    isAllowedAgModelId(trimmed)
+  ) {
     return trimmed;
   }
   return AGENTAPI_MODEL_ID_BY_TIER[normalizeProvisionerModelTier(trimmed || process.env.MOS_AG_MODEL)];
@@ -1906,41 +1914,84 @@ export function resolveAgChatModel(env: NodeJS.ProcessEnv = process.env): string
   return resolveAgentApiModelArg(clean(env.MOS_AG_CHAT_MODEL, 120) || DEFAULT_AG_CHAT_MODEL);
 }
 
-let isChatWatcherRunning = false;
+const MAX_CONCURRENT_AG_CHAT_JOBS = 2;
+const MODEL_SYNC_INTERVAL_MS = 5 * 60 * 1000;
+let isPollingChatNext = false;
+let activeChatJobCount = 0;
+let lastModelsSyncedAt = 0;
 
-export async function runAgChatWatcher(deps: {
+export async function syncLiveAgModelsToBridge(deps: {
   apiUrl: string;
   token: string;
   provisionerId?: string;
-}): Promise<'IDLE' | 'ANSWERED'> {
-  if (isChatWatcherRunning) return 'IDLE';
-  isChatWatcherRunning = true;
-  let claimedJobId: string | null = null;
-
+}): Promise<boolean> {
   try {
-    let res: Response;
-    try {
-      res = await fetch(`${deps.apiUrl}/ag-task-bridge/chat/next`, {
-        headers: bridgeHeaders(deps.token, deps.provisionerId),
-      });
-    } catch {
-      return 'IDLE';
-    }
-    if (!res.ok) return 'IDLE';
+    const lsEnv = await AgChatBridgeService.detectAntigravityLsEnv();
+    const address = lsEnv.ANTIGRAVITY_LS_ADDRESS?.trim();
+    const csrfToken = lsEnv.ANTIGRAVITY_CSRF_TOKEN?.trim();
+    if (!address || !csrfToken) return false;
 
-    const payload = (await res.json()) as { success?: boolean; data?: AgChatBridgeJob | null };
-    const job = payload?.data;
-    if (!job || !job.id || !job.prompt) return 'IDLE';
-    claimedJobId = job.id;
+    const baseUrl = /^https?:\/\//i.test(address) ? address.replace(/\/$/, '') : `http://${address}`;
+    const res = await fetch(`${baseUrl}/exa.language_server_pb.LanguageServerService/GetCascadeModelConfigData`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-codeium-csrf-token': csrfToken,
+      },
+      body: JSON.stringify({}),
+      signal: AbortSignal.timeout(3_000),
+    });
+    if (!res.ok) return false;
+    const data = (await res.json()) as {
+      clientModelConfigs?: Array<{
+        label?: string;
+        modelId?: string;
+        disabled?: boolean;
+        tagTitle?: string;
+        tagDescription?: string;
+        modelOrAlias?: { model?: string };
+      }>;
+    };
+    const models = (data.clientModelConfigs || []).map((c) => ({
+      label: c.label,
+      modelId: c.modelId,
+      model: c.modelOrAlias?.model,
+      tagTitle: c.tagTitle,
+      tagDescription: c.tagDescription,
+      disabled: c.disabled,
+    }));
+    if (models.length === 0) return false;
 
+    const syncRes = await fetch(`${deps.apiUrl}/ag-task-bridge/models`, {
+      method: 'POST',
+      headers: {
+        ...bridgeHeaders(deps.token, deps.provisionerId),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ models }),
+      signal: AbortSignal.timeout(8_000),
+    });
+    return syncRes.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function executeClaimedChatJob(
+  deps: { apiUrl: string; token: string; provisionerId?: string },
+  job: AgChatBridgeJob
+): Promise<void> {
+  activeChatJobCount += 1;
+  try {
+    const resolvedModel = job.model ? resolveAgentApiModelArg(job.model) : resolveAgChatModel();
+    const resolvedTimeoutMs = job.timeoutMs || (job.debugMode ? 420_000 : 240_000);
     process.stdout.write(
-      `[${new Date().toISOString()}] [AgChatBridge] Received chat request (${job.id}). Executing via local Antigravity...\n`
+      `[${new Date().toISOString()}] [AgChatBridge] Executing chat request (${job.id}) model=${resolvedModel} debug=${Boolean(job.debugMode)}...\n`
     );
 
-    // MAI is an interactive chat: use a fast model (override with MOS_AG_CHAT_MODEL) instead of the heavy
-    // planning default (gemini-4-hydrogen-high), which took 70-160s per reply and made the API time out.
     const agResult = await AgChatBridgeService.executeLocalAgPrompt(job.conversationId, job.prompt, job.title, {
-      model: resolveAgChatModel(),
+      model: resolvedModel,
+      timeoutMs: resolvedTimeoutMs,
     });
 
     await fetch(`${deps.apiUrl}/ag-task-bridge/chat/${encodeURIComponent(job.id)}/complete`, {
@@ -1955,26 +2006,60 @@ export async function runAgChatWatcher(deps: {
     process.stdout.write(
       `[${new Date().toISOString()}] [AgChatBridge] Successfully completed chat request (${job.id})\n`
     );
-    return 'ANSWERED';
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`[${new Date().toISOString()}] [AgChatBridge] Error executing chat: ${reason}\n`);
-    if (claimedJobId) {
-      // Tell the API right away so it can fall back instead of waiting for its 90s bridge timeout.
-      await fetch(`${deps.apiUrl}/ag-task-bridge/chat/${encodeURIComponent(claimedJobId)}/fail`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${deps.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ reason }),
-        signal: AbortSignal.timeout(10_000),
-      }).catch(() => undefined);
+    process.stderr.write(`[${new Date().toISOString()}] [AgChatBridge] Error executing chat (${job.id}): ${reason}\n`);
+    await fetch(`${deps.apiUrl}/ag-task-bridge/chat/${encodeURIComponent(job.id)}/fail`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${deps.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ reason }),
+      signal: AbortSignal.timeout(10_000),
+    }).catch(() => undefined);
+  } finally {
+    activeChatJobCount = Math.max(0, activeChatJobCount - 1);
+  }
+}
+
+export async function runAgChatWatcher(deps: {
+  apiUrl: string;
+  token: string;
+  provisionerId?: string;
+}): Promise<'IDLE' | 'ANSWERED'> {
+  if (Date.now() - lastModelsSyncedAt > MODEL_SYNC_INTERVAL_MS) {
+    lastModelsSyncedAt = Date.now();
+    void syncLiveAgModelsToBridge(deps);
+  }
+  if (isPollingChatNext || activeChatJobCount >= MAX_CONCURRENT_AG_CHAT_JOBS) {
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    return 'IDLE';
+  }
+  isPollingChatNext = true;
+
+  let job: AgChatBridgeJob | null = null;
+  try {
+    const res = await fetch(`${deps.apiUrl}/ag-task-bridge/chat/next`, {
+      headers: bridgeHeaders(deps.token, deps.provisionerId),
+    });
+    if (!res.ok) return 'IDLE';
+    const payload = (await res.json()) as { success?: boolean; data?: AgChatBridgeJob | null };
+    if (payload?.data?.id && payload?.data?.prompt) {
+      job = payload.data;
     }
+  } catch {
     return 'IDLE';
   } finally {
-    isChatWatcherRunning = false;
+    isPollingChatNext = false;
   }
+
+  if (!job) return 'IDLE';
+
+  // Run claimed job concurrently (up to MAX_CONCURRENT_AG_CHAT_JOBS) so a long Debug session
+  // never blocks quick normal @MAI questions.
+  void executeClaimedChatJob(deps, job);
+  return 'ANSWERED';
 }
 
 export async function main() {

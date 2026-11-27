@@ -18,6 +18,8 @@ export interface ResolvedChatSession {
   };
   sessionMetadata: Record<string, unknown>;
   agConversationId?: string;
+  agModelId?: string;
+  agDebugMode?: boolean;
 }
 
 export interface TargetChatScope {
@@ -45,6 +47,12 @@ export function resolveTargetChatScope(scope?: string): TargetChatScope {
   return {};
 }
 
+function isRoomOrThreadScope(scope: string): boolean {
+  return (
+    scope.startsWith('mos-chat-space:') || scope.startsWith('mos-chat-conv:') || scope.startsWith('mos-chat-thread:')
+  );
+}
+
 export async function resolveOrCreateChatSession(
   crm: CrmPrismaClient,
   staffId: number,
@@ -56,15 +64,21 @@ export async function resolveOrCreateChatSession(
   }
 ): Promise<ResolvedChatSession> {
   const { sessionId, trimmedMessage, scope, context } = params;
+  const scopedRoomOrThread = isRoomOrThreadScope(scope);
   let session = sessionId
     ? await crm.crmAiChatSession.findFirst({
         where: { id: sessionId, staffId },
       })
     : null;
 
-  if (!session && scope === 'mos-chat-private') {
+  // Room / Thread @MAI calls must stay isolated per room/thread rather than leaking a private session's scope
+  if (session && scopedRoomOrThread && session.scope !== scope) {
+    session = null;
+  }
+
+  if (!session && (scope === 'mos-chat-private' || scopedRoomOrThread)) {
     session = await crm.crmAiChatSession.findFirst({
-      where: { staffId, scope: 'mos-chat-private' },
+      where: { staffId, scope },
       orderBy: { updatedAt: 'desc' },
     });
   }
@@ -98,8 +112,10 @@ export async function resolveOrCreateChatSession(
     : {};
   const agConversationId =
     typeof sessionMetadata.agConversationId === 'string' ? sessionMetadata.agConversationId : undefined;
+  const agModelId = typeof sessionMetadata.agModelId === 'string' ? sessionMetadata.agModelId : undefined;
+  const agDebugMode = typeof sessionMetadata.agDebugMode === 'boolean' ? sessionMetadata.agDebugMode : undefined;
 
-  return { session, sessionMetadata, agConversationId };
+  return { session, sessionMetadata, agConversationId, agModelId, agDebugMode };
 }
 
 export async function saveUserMessageAndLoadHistory(
