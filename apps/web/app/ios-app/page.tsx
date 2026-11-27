@@ -338,6 +338,9 @@ function IosAppInner() {
             onBack={() => state.setCurrentStep(IOS_STEPS.LASH_TIMER)}
             onSavePhoto={state.handleSaveAfterPhoto}
             onAutoSavePhoto={(url) => state.handleAutoSavePhoto('after', url)}
+            onOpenAddUnderMink={(afterPhotoUrl) =>
+              state.openAddUnderMinkModal({ mode: 'ADD_TO_CURRENT_ORDER', pendingAfterPhotoUrl: afterPhotoUrl })
+            }
             isSimulationMode={state.isSimulationMode}
           />
         );
@@ -349,6 +352,7 @@ function IosAppInner() {
             staffName={currentBooking.assignedStaffName}
             onBack={state.handleBackToAfterPhoto}
             onComplete={state.handleCompleteSurvey}
+            onOpenAddUnderMink={() => state.openAddUnderMinkModal({ mode: 'ADD_TO_CURRENT_ORDER' })}
           />
         );
       case IOS_STEPS.PRODUCT_UPSELL:
@@ -362,6 +366,7 @@ function IosAppInner() {
             onUpdateCartProducts={state.handleUpdateCartProducts}
             onSelectComboWallet={state.handleSelectComboWallet}
             onGoToBilling={state.handleGoToBilling}
+            onOpenAddUnderMink={() => state.openAddUnderMinkModal({ mode: 'ADD_TO_CURRENT_ORDER' })}
           />
         );
       case IOS_STEPS.CHECKOUT:
@@ -384,6 +389,7 @@ function IosAppInner() {
             onSelectComboWallet={state.handleSelectComboWallet}
             onUpdateCombos={state.handleUpdateCombos}
             onEditService={() => state.handleOpenConsultation(IOS_STEPS.CHECKOUT)}
+            onOpenAddUnderMink={() => state.openAddUnderMinkModal()}
             pendingReferral={state.pendingReferral}
           />
         );
@@ -408,6 +414,11 @@ function IosAppInner() {
             isReadOnlyMentorView={state.isReadOnlyMentorView}
             onRefreshDb={() => state.refreshDb()}
             onFinishOrder={state.handleFinishOrder}
+            onOpenAddUnderMink={
+              !state.isReadOnlyMentorView
+                ? () => state.openAddUnderMinkModal({ mode: 'CREATE_NEW_BOOKING' })
+                : undefined
+            }
             simulationReplaySlot={
               state.isSimulationMode ? (
                 <SimulationReceiptReplayBar

@@ -85,7 +85,7 @@ export function LashMaterialAndDesignSteps({
         >
           <div className="grid grid-cols-2 gap-2">
             {materialCatalog
-              .filter((mat) => mat.code !== 'UNDER_MINK')
+              .filter((mat) => mat.code !== 'UNDER_MINK' || selectedMaterial === mat.id)
               .map((mat) => {
                 const active = selectedMaterial === mat.id;
                 const startingPrice =
