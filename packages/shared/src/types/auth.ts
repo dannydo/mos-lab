@@ -203,6 +203,20 @@ export function canAccessFmSimulator(role?: string | null, teamCodes?: readonly 
   return ['fm', 'cho', 'boss'].includes(lower);
 }
 
+/**
+ * Strict visibility guard for customer historical tip data (MOS-FEAT-267):
+ * Only Floor Manager (`fm`), `cho`, and `admin` / `super_admin` may view a customer's
+ * historical tip summary, tip transactions, or tip amounts in customer history/detail views.
+ * CV, CVL, CVLL, CC, Booker/Telesales, CS, Manager, and all other roles are strictly blocked
+ * to preserve an unbiased customer service experience.
+ */
+export function canViewCustomerTipHistory(role?: string | null): boolean {
+  if (!role) return false;
+  if (isAdminOrSuperAdminRole(role)) return true;
+  const lower = String(role).trim().toLowerCase();
+  return lower === 'fm' || lower === 'cho';
+}
+
 export type LockedIosOperationalRole = 'CVL' | 'CVLL' | 'CC' | 'CV' | 'STORE' | 'INVENTORY';
 
 /**

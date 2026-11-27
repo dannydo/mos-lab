@@ -14,6 +14,7 @@ export {
   isSuperAdminRole,
   canDirectlySettleCounterPayment,
   canAccessIosConsultationApp,
+  canViewCustomerTipHistory,
   canSwitchIosBranch,
   resolveAssignedSalonStoreId,
   resolveLockedIosRoleForUser,

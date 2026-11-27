@@ -54,6 +54,7 @@ export interface CustomerDetailModalsProps {
   gemModalWidth: number;
   handleGemModalDragStart: (e: React.MouseEvent, direction: 'left' | 'right') => void;
   isTipModalOpen: boolean;
+  canViewTipHistory?: boolean;
   onCloseTipModal: () => void;
   tipModalWidth: number;
   handleTipModalDragStart: (e: React.MouseEvent, direction: 'left' | 'right') => void;
@@ -92,6 +93,7 @@ export const CustomerDetailModals: React.FC<CustomerDetailModalsProps> = ({
   gemModalWidth,
   handleGemModalDragStart,
   isTipModalOpen,
+  canViewTipHistory = false,
   onCloseTipModal,
   tipModalWidth,
   handleTipModalDragStart,
@@ -167,7 +169,7 @@ export const CustomerDetailModals: React.FC<CustomerDetailModalsProps> = ({
         />
       )}
 
-      {isTipModalOpen && (
+      {canViewTipHistory && isTipModalOpen && (
         <TipHistoryModal
           open={isTipModalOpen}
           onCancel={onCloseTipModal}
@@ -184,6 +186,7 @@ export const CustomerDetailModals: React.FC<CustomerDetailModalsProps> = ({
           onCancel={onCloseRevenueModal}
           customer={customer}
           revenueTransactions={detailData?.revenueTransactions || []}
+          canViewTipHistory={canViewTipHistory}
           modalWidth={revenueModalWidth}
           handleModalDragStart={handleRevenueModalDragStart}
         />

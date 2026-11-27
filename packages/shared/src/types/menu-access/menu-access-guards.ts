@@ -300,6 +300,24 @@ export function resolveMenuKeysForApiPath(apiPath: string): string[] {
       'cc',
     ];
   }
+  if (/^\/customers\/\d+\/(summary|detailed|bookings|notes|calls|assignment-timeline)$/.test(clean)) {
+    return [
+      'customers-all',
+      'my-customers',
+      'referrals',
+      'loca',
+      'nyc-main',
+      'nyc-campaigns-mgmt',
+      'cs-hub',
+      'bk',
+      'cs',
+      'telesale-target',
+      'today',
+      'dashboard',
+      'schedule-calendar',
+      'my-appointments',
+    ];
+  }
   if (clean.startsWith('/customers')) {
     return [
       'customers-all',

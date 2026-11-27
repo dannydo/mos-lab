@@ -33,11 +33,13 @@ export function CustomerHistoryVisitCard({
   index,
   mode,
   isDark,
+  showTip = false,
 }: {
   item: IosCustomerHistoryVisitItem;
   index: number;
   mode: 'ALL' | 'PAYMENTS' | 'FIX';
   isDark: boolean;
+  showTip?: boolean;
 }) {
   const isPaymentMode = mode === 'PAYMENTS';
   return (
@@ -155,7 +157,7 @@ export function CustomerHistoryVisitCard({
             <span className="text-amber-500">Combo/Giảm: -{formatVnd(item.discountAmount)}</span>
           )}
           {item.diamondUsed > 0 && <span className="text-sky-400">Dùng {item.diamondUsed} KC</span>}
-          {item.tipAmount > 0 && <span className="text-emerald-400">Tip: +{formatVnd(item.tipAmount)}</span>}
+          {showTip && item.tipAmount > 0 && <span className="text-emerald-400">Tip: +{formatVnd(item.tipAmount)}</span>}
           {item.debtAmount > 0 && (
             <span className="font-bold text-rose-500">Công nợ: {formatVnd(item.debtAmount)}</span>
           )}

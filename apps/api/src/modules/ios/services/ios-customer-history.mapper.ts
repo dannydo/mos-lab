@@ -157,6 +157,7 @@ export function buildCustomerHistoryPayload(params: {
   profileRow?: mysql.RowDataPacket;
   rawPhone: string;
   canViewPhone: boolean;
+  canViewTipHistory?: boolean;
   diamondBalance: number;
   orderRows: mysql.RowDataPacket[];
   paymentRows: mysql.RowDataPacket[];
@@ -174,6 +175,7 @@ export function buildCustomerHistoryPayload(params: {
     profileRow,
     rawPhone,
     canViewPhone,
+    canViewTipHistory = false,
     diamondBalance,
     orderRows,
     paymentRows,
@@ -406,7 +408,7 @@ export function buildCustomerHistoryPayload(params: {
       discountAmount: Math.max(0, Math.round(pay.discount)),
       prepaidAmount: Math.max(0, Math.round(pay.prepaid)),
       debtAmount: Math.max(0, Math.round(pay.debt)),
-      tipAmount: Math.max(0, Math.round(pay.tip)),
+      tipAmount: canViewTipHistory ? Math.max(0, Math.round(pay.tip)) : 0,
       paymentMethodLabel: buildPaymentMethodLabel({
         cash: pay.cash,
         card: pay.card,
@@ -472,6 +474,7 @@ export function buildCustomerHistoryPayload(params: {
     customerPhone,
     customerCode: profileRow?.passcode ? String(profileRow.passcode) : null,
     customerDateOfBirth: normalizeCustomerDateOfBirth(profileRow?.date_of_birth ?? null),
+    canViewTipHistory,
     summary,
     visits,
     payments,
