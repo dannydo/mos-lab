@@ -4,6 +4,7 @@ import React from 'react';
 import { Heart, Package, RotateCcw } from 'lucide-react';
 import type { BookingItem, resolveServicingSubStatus } from '../../../../state/mockData';
 import {
+  formatPendingCounterMethodShort,
   formatShortMoney,
   formatTime24h,
   getBookingCompletionInfo,
@@ -63,8 +64,8 @@ export function IncomingCardRightColumn({
               {doneSummary.timeAndDurationStr}
             </div>
 
-            {/* TẦNG 3: SỐ TIỀN DỰ KIẾN THU (Ẩn +pts và Tip cho tới khi Quầy hoàn tất) */}
-            <div className="flex items-center justify-end gap-1 leading-none">
+            {/* TẦNG 3: SỐ TIỀN DỰ KIẾN QUẦY THU (Bao gồm dịch vụ/combo/SP/VAT/Tip; ẩn +pts tới khi Quầy hoàn tất) */}
+            <div className="flex items-center justify-end gap-1 leading-none" data-testid={`card-done-amount-${b.id}`}>
               {doneSummary.hasDebt ? (
                 <span
                   className={`font-black text-[12px] tabular-nums tracking-tight inline-flex items-center ${
@@ -80,20 +81,47 @@ export function IncomingCardRightColumn({
                   }`}
                 >
                   <Package className="w-3 h-3 stroke-[2.2] shrink-0 mr-1" />
-                  {formatShortMoney(doneSummary.soldComboPrice)}
+                  {formatShortMoney(
+                    doneSummary.pendingCounterAmount > doneSummary.soldComboPrice
+                      ? doneSummary.pendingCounterAmount
+                      : doneSummary.soldComboPrice
+                  )}
                 </span>
-              ) : doneSummary.upgradeOrPaidAmount > 0 ? (
+              ) : doneSummary.pendingCounterAmount > 0 ? (
                 <span
                   className={`font-black text-[12px] tabular-nums tracking-tight ${
                     isDark ? 'text-amber-300' : 'text-amber-700'
                   }`}
                 >
-                  {formatShortMoney(doneSummary.upgradeOrPaidAmount)}
+                  {formatShortMoney(doneSummary.pendingCounterAmount)}
                 </span>
               ) : (
                 <span className="font-bold text-[11.5px] tabular-nums text-[var(--mos-text-muted)]">0đ</span>
               )}
             </div>
+
+            {/* TẦNG 4: PHƯƠNG THỨC & TIP CHỜ QUẦY CHỐT (VD: TM · ♥ 100K) */}
+            {(formatPendingCounterMethodShort(doneSummary.paymentMethod) || doneSummary.tipAmount > 0) && (
+              <div
+                data-testid={`card-pending-meta-${b.id}`}
+                className="text-[10px] font-bold tabular-nums tracking-tight leading-none whitespace-nowrap inline-flex items-center justify-end text-[var(--mos-text-muted)]"
+              >
+                {formatPendingCounterMethodShort(doneSummary.paymentMethod) && (
+                  <span>{formatPendingCounterMethodShort(doneSummary.paymentMethod)}</span>
+                )}
+                {doneSummary.tipAmount > 0 && (
+                  <span className="inline-flex items-center text-[var(--mos-accent)]">
+                    {formatPendingCounterMethodShort(doneSummary.paymentMethod) && <span className="mx-1">·</span>}
+                    <Heart
+                      className={`w-2.5 h-2.5 shrink-0 mr-0.5 ${
+                        isDark ? 'fill-rose-400 text-rose-400' : 'fill-rose-600 text-rose-600'
+                      }`}
+                    />
+                    {formatShortMoney(doneSummary.tipAmount)}
+                  </span>
+                )}
+              </div>
+            )}
           </>
         ) : (
           <>

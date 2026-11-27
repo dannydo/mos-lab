@@ -10,7 +10,7 @@ import {
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { IosStaffVisibilityToggle } from '../ui-kit/IosStaffVisibilityToggle';
-import { BookingItem } from '../../state/mockData';
+import { BookingItem, isDoneBookingPendingCheckout } from '../../state/mockData';
 import { ActiveActorProfile } from '../../state/useIosAppState';
 import { CheckoutComboWalletCard, type SelectComboWalletHandler } from './checkout/CheckoutComboWalletCard';
 import type { CvToCvPlusRequirements, SavePromotionTarget } from '../../state/useIosBillingCheckout';
@@ -234,6 +234,11 @@ export function Screen12CheckoutBilling({
           assignedStaff={assignedStaff}
           trainingMentorName={booking?.trainingMentorName}
           dualComboTotalBonus={dualComboBonus.totalBonus}
+          isPendingCounterSettlement={Boolean(booking && isDoneBookingPendingCheckout(booking))}
+          canDirectCounterSettle={canDirectlySettleCounterPayment(actor?.tier)}
+          pendingGrandTotal={amountDueAtCheckout > 0 ? amountDueAtCheckout : Number(booking?.billing?.grandTotal || 0)}
+          pendingTipAmount={tipAmount > 0 ? tipAmount : Number(booking?.billing?.tipAmount || 0)}
+          pendingPaymentMethod={booking?.billing?.paymentMethod || selectedMethod}
         />
 
         <CheckoutComboWalletCard
