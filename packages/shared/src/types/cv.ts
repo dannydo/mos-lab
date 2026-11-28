@@ -1,4 +1,5 @@
 import type { CvPlusDebtCollectionDetail } from './career-progression.js';
+import type { CcTrainingMentorshipBreakdown, CvlTrainingLifecycleStatus } from './cvl-training-mentorship.js';
 import type { FalReadModel } from './fal.js';
 import type { HolidayPayBreakdown } from './holiday-work.js';
 
@@ -205,6 +206,11 @@ export interface CvPaystubRecord extends HolidayPayBreakdown {
   congratulationMessage?: string;
   isCvPlus?: boolean;
   cvPlusBreakdown?: CvPlusPaystubBreakdown | null;
+  trainingMentorshipBonus?: number;
+  trainingMentorshipDetails?: CcTrainingMentorshipBreakdown[];
+  cvlTrainingStatus?: CvlTrainingLifecycleStatus | null;
+  cvlTrainingMentorName?: string | null;
+  cvlTrainingPairId?: string | null;
 }
 
 export interface CvPlusPaystubBreakdown {
@@ -234,6 +240,8 @@ export interface CvPlusPaystubBreakdown {
     grossPrice?: number;
     unpaidDebtAmount?: number;
     bonus: number;
+    shareFactor?: number;
+    consultRole?: 'BOTH' | 'IN' | 'OUT' | 'TRAINING';
     comboCount?: number;
     comboItems?: Array<{ comboName: string; price: number }>;
   }>;
@@ -274,6 +282,7 @@ export interface CvPaystubResponse {
     grandTotalIncome: number;
     totalSocialSecurityAmount?: number;
     grandTotalNetIncome?: number;
+    totalTrainingMentorshipBonus?: number;
   };
 }
 

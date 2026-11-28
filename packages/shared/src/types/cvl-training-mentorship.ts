@@ -1,11 +1,16 @@
 export const CVL_TRAINING_MENTORSHIP_CONFIG_KEY = 'CVL_TRAINING_MENTORSHIP_CONFIG';
 
+export type CvlTrainingMentorshipOutcome = 'ACTIVE' | 'GRADUATED' | 'EXTENDED' | 'RETURNED_TO_CV';
+
+export type CvlTrainingLifecycleStatus = 'OFFICIAL' | 'TRAINING' | 'PENDING_GRADUATION' | 'CV';
+
 export interface CvlTrainingMentorshipPair {
   id: string;
   menteeLegacyStaffId: number;
   menteeDisplayName: string;
   mentorLegacyStaffId: number;
   mentorDisplayName: string;
+  mentorRoleGroup?: 'CC' | 'CVL' | 'CVLL';
   storeCode: string;
   /** Inclusive YYYY-MM-DD start date of the training period */
   startDate: string;
@@ -18,6 +23,9 @@ export interface CvlTrainingMentorshipPair {
   /** Minimum combo conversion rate on Not Combo Live customers required to unlock mentor reward (default 0.2 = 20.0%) */
   minComboRateThreshold: number;
   isActive: boolean;
+  outcome?: CvlTrainingMentorshipOutcome;
+  resolvedAt?: string;
+  resolvedBy?: string;
   note?: string;
 }
 
@@ -57,7 +65,16 @@ export interface CvlTrainingMentorshipStaffOption {
   legacyStaffId: number;
   displayName: string;
   storeCode: string;
-  roleGroup: 'CC' | 'CVL';
+  roleGroup: 'CC' | 'CVL' | 'CVLL' | 'CV';
+}
+
+export interface CvlMenteeLifecycleSummary {
+  crmStaffId?: number;
+  status: CvlTrainingLifecycleStatus;
+  currentRole?: string;
+  activePairId?: string;
+  pendingPairId?: string;
+  mentorDisplayName?: string;
 }
 
 export interface CvlTrainingMentorshipConfigResponse {
@@ -66,6 +83,7 @@ export interface CvlTrainingMentorshipConfigResponse {
     ccMentors: CvlTrainingMentorshipStaffOption[];
     cvlMentees: CvlTrainingMentorshipStaffOption[];
   };
+  menteeLifecycleByStaffId?: Record<number, CvlMenteeLifecycleSummary>;
 }
 
 export const DEFAULT_CVL_TRAINING_MENTORSHIP_CONFIG: CvlTrainingMentorshipConfig = {
@@ -220,4 +238,94 @@ export function intersectDateRanges(
   const startDate = sA > sB ? sA : sB;
   const endDate = eA < eB ? eA : eB;
   return startDate <= endDate ? { startDate, endDate } : null;
+}
+
+/**
+ * Kiểm tra ràng buộc 1-kèm-1 nghiêm ngặt:
+ * - Mentor không được trùng với Mentee.
+ * - Trong các khoảng ngày [startDate, endDate] giao nhau, 1 Mentor chỉ kèm tối đa 1 Mentee
+ *   và 1 Mentee chỉ được kèm bởi tối đa 1 Mentor.
+ * - Các kỳ không giao nhau (vd Tháng 11 lịch sử vs Tháng 12 mới) được phép dùng cùng Mentor.
+ */
+export function validateStrictOneToOneMentorshipPairs(pairs: CvlTrainingMentorshipPair[]): {
+  valid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  const activePairs = (pairs || []).filter((p) => p.isActive && p.outcome !== 'RETURNED_TO_CV');
+
+  for (let i = 0; i < activePairs.length; i++) {
+    const a = activePairs[i];
+    if (!a.mentorLegacyStaffId || !a.menteeLegacyStaffId) {
+      errors.push(`Cặp "${a.id}": Thiếu thông tin Mentor hoặc Mentee.`);
+      continue;
+    }
+    if (a.mentorLegacyStaffId === a.menteeLegacyStaffId) {
+      errors.push(`${a.mentorDisplayName || `#${a.mentorLegacyStaffId}`}: Mentor và Mentee không được trùng nhau.`);
+      continue;
+    }
+    for (let j = i + 1; j < activePairs.length; j++) {
+      const b = activePairs[j];
+      if (!isDateRangeOverlapping(a.startDate, a.endDate, b.startDate, b.endDate)) {
+        continue;
+      }
+      if (a.mentorLegacyStaffId === b.mentorLegacyStaffId) {
+        errors.push(
+          `Mentor ${a.mentorDisplayName || `#${a.mentorLegacyStaffId}`} chỉ được kèm 1 Mentee trong cùng thời gian (trùng ${a.menteeDisplayName} [${a.startDate}..${a.endDate}] và ${b.menteeDisplayName} [${b.startDate}..${b.endDate}]).`
+        );
+      }
+      if (a.menteeLegacyStaffId === b.menteeLegacyStaffId) {
+        errors.push(
+          `Mentee ${a.menteeDisplayName || `#${a.menteeLegacyStaffId}`} chỉ được gán 1 Mentor trong cùng thời gian (trùng ${a.mentorDisplayName} và ${b.mentorDisplayName}).`
+        );
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Xác định trạng thái vòng đời CVL (Chính thức / Đang Training / Chờ chốt tốt nghiệp / CV thường).
+ */
+export function resolveCvlTrainingLifecycleStatus(params: {
+  legacyStaffId: number;
+  currentRole?: string | null;
+  pairs: CvlTrainingMentorshipPair[];
+  todayYmd: string;
+}): {
+  status: CvlTrainingLifecycleStatus;
+  activePair?: CvlTrainingMentorshipPair;
+  pendingPair?: CvlTrainingMentorshipPair;
+} {
+  const staffId = Math.floor(Number(params.legacyStaffId || 0));
+  const today = String(params.todayYmd || '').slice(0, 10);
+  const roleUpper = String(params.currentRole || '').toUpperCase();
+  const isOfficialRole =
+    roleUpper === 'CV_PLUS' || roleUpper === 'CV_PLUS_PLUS' || roleUpper === 'CVL' || roleUpper === 'CVLL';
+
+  const menteePairs = (params.pairs || [])
+    .filter((p) => p.menteeLegacyStaffId === staffId && p.isActive)
+    .sort((a, b) => b.endDate.localeCompare(a.endDate));
+
+  const activeTrainingPair = menteePairs.find(
+    (p) =>
+      (!p.outcome || p.outcome === 'ACTIVE') && today >= p.startDate.slice(0, 10) && today <= p.endDate.slice(0, 10)
+  );
+  if (activeTrainingPair) {
+    return { status: 'TRAINING', activePair: activeTrainingPair };
+  }
+
+  const pendingPair = menteePairs.find((p) => (!p.outcome || p.outcome === 'ACTIVE') && today > p.endDate.slice(0, 10));
+  if (pendingPair) {
+    return { status: 'PENDING_GRADUATION', pendingPair };
+  }
+
+  if (isOfficialRole) {
+    return { status: 'OFFICIAL' };
+  }
+  return { status: 'CV' };
 }

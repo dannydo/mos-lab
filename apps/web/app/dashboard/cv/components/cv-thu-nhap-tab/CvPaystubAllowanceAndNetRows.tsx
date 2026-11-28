@@ -162,6 +162,32 @@ export function CvPaystubAllowanceAndNetRows({
         </tr>
       ) : null}
 
+      {/* Thưởng Mentor Đào Tạo CVL (1M + 50%) nếu CVL/CVLL là Mentor */}
+      {(record.trainingMentorshipBonus || 0) > 0 || (record.trainingMentorshipDetails?.length || 0) > 0 ? (
+        <tr className="hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 bg-emerald-500/5">
+          <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 font-mono">
+            ★
+          </td>
+          <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 font-bold text-emerald-700 dark:text-emerald-300">
+            Thưởng Mentor Đào Tạo CVL (1M + 50%)
+          </td>
+          <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300">
+            <div className="space-y-0.5">
+              {(record.trainingMentorshipDetails || []).map((d) => (
+                <div key={d.pairId} className="tabular-nums">
+                  <span className="font-semibold">{d.menteeDisplayName}</span> · Combo{' '}
+                  {(d.actualComboRate * 100).toFixed(1)}% ({d.isUnlocked ? 'Đạt KPI ≥20%' : 'Chưa đạt <20%'}) · +
+                  {Math.round(d.mentorTotalBonus).toLocaleString('vi-VN')}đ
+                </div>
+              ))}
+            </div>
+          </td>
+          <td className="py-1.5 px-3 text-right tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
+            +{Math.round(record.trainingMentorshipBonus || 0).toLocaleString('vi-VN')}đ
+          </td>
+        </tr>
+      ) : null}
+
       {/* GROUP 5: TỔNG THU NHẬP & THỰC LÃNH */}
       <tr className="bg-slate-100/90 dark:bg-slate-800/90 border-y border-slate-200 dark:border-slate-700">
         <td

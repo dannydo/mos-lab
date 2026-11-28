@@ -1,5 +1,6 @@
 import {
   CareerProgressionConfig,
+  CcTrainingMentorshipBreakdown,
   CvOtherAllowanceItem,
   CvPaystubResponse,
   CvPaystubSocialSecurityBreakdown,
@@ -77,7 +78,9 @@ export interface CvPaystubRawSources {
   careerConfigRecord: { value: string } | null;
   cvPlusProgressions: SafeAny[];
   activeTrainingPairs: CvlTrainingMentorshipPair[];
+  allTrainingPairs: CvlTrainingMentorshipPair[];
   transferredTrainingTipMap: Map<number, number>;
+  mentorBreakdownsByStaff: Map<number, CcTrainingMentorshipBreakdown[]>;
 }
 
 export interface CvPaystubIndexedData {
@@ -99,6 +102,9 @@ export interface CvPaystubIndexedData {
   holidayWorkedDateMap: Map<number, Set<string>>;
   cvToCvPlusConfig: CareerProgressionConfig['cvToCvPlus'];
   cvPlusRewardMap: Map<number, CvPlusRewardSnapshot>;
+  officialCvlRoleMap: Map<number, string>;
+  mentorBreakdownsByStaff: Map<number, CcTrainingMentorshipBreakdown[]>;
+  allTrainingPairs: CvlTrainingMentorshipPair[];
 }
 
 export function parseDateRange(dateFrom?: string, dateTo?: string): { startPart: string; endPart: string } {

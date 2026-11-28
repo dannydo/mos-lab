@@ -8,6 +8,7 @@ import {
   resolveLockedIosRoleForUser,
   maskPhoneNumber,
   canViewUnmaskedCustomerPhone,
+  type IosBookingListResponse,
 } from '@mos-lab/shared';
 import { BookingItem, INITIAL_BOOKINGS, filterBookingsForCvlScope, resolveCustomerBookingTab } from './mockData';
 import { setActiveServicingBookingId } from './offlineSync';
@@ -85,6 +86,9 @@ export function useIosAppState(
   const [bookingSegment, setBookingSegment] = useState<'INCOMING' | 'SERVICING' | 'DONE' | 'CANCEL'>('INCOMING');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
+  const [trainingMentorshipMeta, setTrainingMentorshipMeta] = useState<
+    IosBookingListResponse['trainingMentorshipMeta'] | null
+  >(null);
 
   // Quản lý ngày xem lịch hẹn (0 = Hôm nay, -1 = Hôm qua, -2 = 2 ngày trước, ...)
   const [selectedDateOffset, setSelectedDateOffset] = useState<number>(0);
@@ -297,7 +301,12 @@ export function useIosAppState(
     const shouldFilterCvl = role === 'CVL' || (role !== 'CC' && role !== 'STORE' && scopeMode === 'MY_CUSTOMERS');
     const effectiveStaffId = isSimulationMode && selectedMenteeStaffId ? selectedMenteeStaffId : actor.staffId;
     const baseScoped = shouldFilterCvl
-      ? filterBookingsForCvlScope(branchScoped, effectiveStaffId, { isToday: selectedDateOffset === 0 })
+      ? filterBookingsForCvlScope(branchScoped, effectiveStaffId, {
+          isToday: selectedDateOffset === 0,
+          menteeStaffIds: trainingMentorshipMeta?.mentoringMenteeStaffId
+            ? [trainingMentorshipMeta.mentoringMenteeStaffId]
+            : undefined,
+        })
       : branchScoped;
     const includedIds = new Set(baseScoped.map((b) => Number(b.id)));
     const list = shouldFilterCvl
@@ -348,6 +357,7 @@ export function useIosAppState(
     selectedDateOffset,
     isSimulationMode,
     selectedMenteeStaffId,
+    trainingMentorshipMeta,
   ]);
 
   const counts: SegmentCounts = useMemo(() => {
@@ -416,6 +426,7 @@ export function useIosAppState(
     isSimulationMode,
     menteeStaffId: selectedMenteeStaffId,
     isReadOnlyMentorView,
+    onTrainingMentorshipMetaLoaded: setTrainingMentorshipMeta,
     onSimulationMetaLoaded,
     isAdmin,
     role,
@@ -630,6 +641,7 @@ export function useIosAppState(
     handleAutoSaveConsultationDraft,
     handleSelectComboWallet,
     simulationActorStaffName,
+    trainingMentorshipMeta,
     loggedInUser,
     pendingReferral,
     setPendingReferral,

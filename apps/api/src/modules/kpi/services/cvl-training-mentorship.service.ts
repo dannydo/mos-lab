@@ -20,9 +20,11 @@ import {
   queryTransferredCcTipsByMenteeImpl,
 } from './cvl-training-mentorship/cvl-training-mentorship.sql.js';
 import {
+  type ResolveMentorshipOutcomeInput,
   getActivePairsFromCrmPoolImpl,
   getConfigWithStaffOptionsImpl,
   getMentorshipConfig,
+  resolveMentorshipOutcomeImpl,
   saveMentorshipConfig,
 } from './cvl-training-mentorship/cvl-training-mentorship.config.js';
 import {
@@ -146,5 +148,13 @@ export class CvlTrainingMentorshipService {
    */
   static getConfigWithStaffOptions(fastify: FastifyInstance): Promise<CvlTrainingMentorshipConfigResponse> {
     return getConfigWithStaffOptionsImpl(fastify, () => this.getConfig(fastify));
+  }
+
+  static resolveOutcome(
+    fastify: FastifyInstance,
+    input: ResolveMentorshipOutcomeInput,
+    actor: { id: number; name: string }
+  ): Promise<CvlTrainingMentorshipConfig> {
+    return resolveMentorshipOutcomeImpl(fastify, () => this.getConfig(fastify), input, actor);
   }
 }

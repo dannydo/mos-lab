@@ -463,8 +463,9 @@ test('A4: Payroll Tip Split & Checkout Attribution prevent 115.7% inflation and 
   assert.equal(calculateDualComboTierBonus(4579200, 4212000).totalBonus, 400000); // Linh: 8.791.200đ -> 400k
   assert.equal(calculateDualComboTierBonus(2304400, 1684800).totalBonus, 150000); // Đoan: 3.989.200đ -> 150k
 
-  // 5) ACTUAL_PAYROLL SQL strictly attributes to check_out_staff_id (excludes CC checkout)
+  // 5) ACTUAL_PAYROLL SQL attributes to check_in_staff_id / check_out_staff_id (50/50 split) with assigned_staff_id fallback
   const actualSql = buildCheckoutAttributionSqlCondition('ACTUAL_PAYROLL');
+  assert.ok(actualSql.includes('os.check_in_staff_id = ?'));
   assert.ok(actualSql.includes('os.check_out_staff_id = ?'));
   assert.ok(actualSql.includes('os.check_out_staff_id IS NULL OR os.check_out_staff_id = 0'));
 });

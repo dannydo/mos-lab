@@ -1,4 +1,11 @@
-import { CvPaystubRecord, CvPaystubResponse, CvPlusPaystubBreakdown, SafeAny } from '@mos-lab/shared';
+import {
+  CvPaystubRecord,
+  CvPaystubResponse,
+  CvPlusPaystubBreakdown,
+  SafeAny,
+  getVietnamDateYmd,
+  resolveCvlTrainingLifecycleStatus,
+} from '@mos-lab/shared';
 import {
   CvPaystubIndexedData,
   buildSocialSecurityBreakdown,
@@ -153,10 +160,33 @@ function buildSingleCvPaystubRecord(staff: SafeAny, endPart: string, indexed: Cv
         bonus: detail.bonus,
         comboCount: detail.comboCount,
         comboItems: detail.comboItems,
+        shareFactor: detail.shareFactor,
+        consultRole: detail.consultRole,
       })),
       debtCollectionDetails: cvPlusSnapshot.debtCollectionDetails ?? [],
     };
   }
+
+  const trainingMentorshipDetails = indexed.mentorBreakdownsByStaff.get(staffId) || [];
+  const trainingMentorshipBonus = trainingMentorshipDetails.reduce((sum, item) => sum + item.mentorTotalBonus, 0);
+
+  const hasMentorshipHistory = (indexed.allTrainingPairs || []).some((p) => p.menteeLegacyStaffId === staffId);
+  const officialRole = indexed.officialCvlRoleMap.get(staffId);
+  const lifecycle =
+    isCvPlus || hasMentorshipHistory
+      ? resolveCvlTrainingLifecycleStatus({
+          legacyStaffId: staffId,
+          currentRole: officialRole,
+          pairs: indexed.allTrainingPairs || [],
+          todayYmd: getVietnamDateYmd(),
+        })
+      : null;
+  const activeOrPendingPair = lifecycle?.activePair || lifecycle?.pendingPair;
+  const cvlTrainingStatus =
+    lifecycle &&
+    (lifecycle.status === 'TRAINING' || lifecycle.status === 'PENDING_GRADUATION' || lifecycle.status === 'OFFICIAL')
+      ? lifecycle.status
+      : null;
 
   const effectiveHourlyRate =
     isCvPlus && cvPlusBreakdown?.isUnlocked ? indexed.cvToCvPlusConfig.hourlyWage || 27500 : hourlyRate;
@@ -173,6 +203,7 @@ function buildSingleCvPaystubRecord(staff: SafeAny, endPart: string, indexed: Cv
       holidayPaystubAdjustment +
       parkingAllowance +
       offMonthWage +
+      trainingMentorshipBonus +
       (cvPlusBreakdown
         ? cvPlusBreakdown.comboBonusTotal +
           (cvPlusBreakdown.debtCollectionBonusTotal || 0) +
@@ -233,6 +264,11 @@ function buildSingleCvPaystubRecord(staff: SafeAny, endPart: string, indexed: Cv
     totalIncome,
     isCvPlus,
     cvPlusBreakdown,
+    trainingMentorshipBonus,
+    trainingMentorshipDetails: trainingMentorshipDetails.length > 0 ? trainingMentorshipDetails : undefined,
+    cvlTrainingStatus,
+    cvlTrainingMentorName: activeOrPendingPair?.mentorDisplayName || null,
+    cvlTrainingPairId: activeOrPendingPair?.id || null,
     serviceCount,
     seniorityMonths,
     seniorityBonus,
@@ -296,6 +332,7 @@ export function buildCvPaystubResponse(
   let grandTotalIncome = 0;
   let grandTotalSocialSecurityAmount = 0;
   let grandTotalNetIncome = 0;
+  let grandTotalTrainingMentorshipBonus = 0;
 
   const records: CvPaystubRecord[] = filteredStaffProfiles.map((staff) => {
     const record = buildSingleCvPaystubRecord(staff, endPart, indexed);
@@ -313,6 +350,7 @@ export function buildCvPaystubResponse(
     grandTotalIncome += record.totalIncome;
     grandTotalSocialSecurityAmount += record.socialSecurityAmount || 0;
     grandTotalNetIncome += record.netIncome || 0;
+    grandTotalTrainingMentorshipBonus += record.trainingMentorshipBonus || 0;
 
     return record;
   });
@@ -337,6 +375,7 @@ export function buildCvPaystubResponse(
       grandTotalIncome,
       totalSocialSecurityAmount: grandTotalSocialSecurityAmount,
       grandTotalNetIncome,
+      totalTrainingMentorshipBonus: grandTotalTrainingMentorshipBonus,
     },
   };
 }

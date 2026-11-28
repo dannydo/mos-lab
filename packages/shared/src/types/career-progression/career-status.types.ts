@@ -257,6 +257,8 @@ export interface CvPlusComboDetail {
   grossPrice?: number;
   unpaidDebtAmount?: number;
   bonus: number;
+  shareFactor?: number;
+  consultRole?: 'BOTH' | 'IN' | 'OUT' | 'TRAINING';
   comboCount?: number;
   comboItems?: Array<{ comboName: string; price: number }>;
 }
@@ -275,6 +277,8 @@ export interface CvPlusDebtCollectionDetail {
   comboName?: string;
   collectedAmount: number;
   bonus: number;
+  shareFactor?: number;
+  consultRole?: 'BOTH' | 'IN' | 'OUT' | 'TRAINING';
 }
 
 /**

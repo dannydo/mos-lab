@@ -46,15 +46,73 @@ export function resolveBranchInfo(storeId?: number | null) {
 }
 
 /**
- * Điều răn CV-002: Trong kỳ lương thực tế (ACTUAL_PAYROLL), ai bấm Checkout (check_out_staff_id)
- * người đó nhận thưởng gói Combo & Dưỡng mi Yeppeum. Nếu CC bấm Checkout (check_out_staff_id = CC),
- * CVL không được cộng trùng thưởng gói của ca đó.
+ * Điều răn CV-002 (v2.12.0): Trong kỳ lương thực tế (ACTUAL_PAYROLL), CVL chính thức
+ * hưởng thưởng Combo / Thu nợ / Dưỡng mi theo tỷ trọng tham gia Check-in & Check-out (50/50):
+ * - Tự bấm cả IN & OUT = 100%, chỉ IN hoặc chỉ OUT = 50%, người khác làm cả 2 = 0%.
  */
 export function buildCheckoutAttributionSqlCondition(mode: CvRewardCalculationMode = 'SIMULATION'): string {
   if (mode === 'ACTUAL_PAYROLL') {
-    return '(os.check_out_staff_id = ? OR ((os.check_out_staff_id IS NULL OR os.check_out_staff_id = 0) AND os.assigned_staff_id = ?))';
+    return '(os.check_in_staff_id = ? OR os.check_out_staff_id = ? OR ((os.check_in_staff_id IS NULL OR os.check_in_staff_id = 0) AND (os.check_out_staff_id IS NULL OR os.check_out_staff_id = 0) AND os.assigned_staff_id = ?))';
   }
-  return '(os.check_out_staff_id = ? OR os.assigned_staff_id = ?)';
+  return '(os.check_in_staff_id = ? OR os.check_out_staff_id = ? OR os.assigned_staff_id = ?)';
+}
+
+export interface CvlConsultShareResult {
+  shareFactor: 0 | 0.5 | 1;
+  consultRole: 'BOTH' | 'IN' | 'OUT' | 'TRAINING';
+}
+
+/**
+ * Tính tỷ trọng thưởng tư vấn & tử số tỷ lệ chốt Combo cho CVL chính thức theo IN/OUT (Điều răn CV-002 v2.12.0).
+ * - Trong kỳ Training CC-006 (isInMenteeTrainingWindow = true) -> luôn trả 1.0 ('TRAINING').
+ * - Chế độ SIMULATION -> 1.0 ('BOTH').
+ * - Chế độ ACTUAL_PAYROLL:
+ *   + Tự bấm cả check_in_staff_id & check_out_staff_id -> 1.0 ('BOTH')
+ *   + Chỉ bấm 1 trong 2 bước (check_in_staff_id != check_out_staff_id) -> 0.5 ('IN' hoặc 'OUT')
+ *   + Cả 2 null/0 và assigned_staff_id = staffId -> 1.0 ('BOTH')
+ *   + Ngược lại -> 0
+ */
+export function computeCvlConsultShareFactor(input: {
+  staffId: number;
+  assignedStaffId?: number | null;
+  checkInStaffId?: number | null;
+  checkOutStaffId?: number | null;
+  isInMenteeTrainingWindow: boolean;
+  mode: CvRewardCalculationMode;
+}): CvlConsultShareResult {
+  if (input.mode === 'SIMULATION') {
+    return { shareFactor: 1, consultRole: 'BOTH' };
+  }
+  if (input.isInMenteeTrainingWindow) {
+    return { shareFactor: 1, consultRole: 'TRAINING' };
+  }
+
+  const staffId = Math.floor(Number(input.staffId || 0));
+  if (staffId <= 0) return { shareFactor: 0, consultRole: 'BOTH' };
+
+  const ci = Math.floor(Number(input.checkInStaffId || 0));
+  const co = Math.floor(Number(input.checkOutStaffId || 0));
+  const assigned = Math.floor(Number(input.assignedStaffId || 0));
+
+  if (ci <= 0 && co <= 0) {
+    return assigned === staffId ? { shareFactor: 1, consultRole: 'BOTH' } : { shareFactor: 0, consultRole: 'BOTH' };
+  }
+  if (ci > 0 && co <= 0) {
+    return ci === staffId ? { shareFactor: 1, consultRole: 'IN' } : { shareFactor: 0, consultRole: 'IN' };
+  }
+  if (ci <= 0 && co > 0) {
+    return co === staffId ? { shareFactor: 1, consultRole: 'OUT' } : { shareFactor: 0, consultRole: 'OUT' };
+  }
+  if (ci === staffId && co === staffId) {
+    return { shareFactor: 1, consultRole: 'BOTH' };
+  }
+  if (ci === staffId) {
+    return { shareFactor: 0.5, consultRole: 'IN' };
+  }
+  if (co === staffId) {
+    return { shareFactor: 0.5, consultRole: 'OUT' };
+  }
+  return { shareFactor: 0, consultRole: 'BOTH' };
 }
 
 /**

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { IosCustomerHistoryTab } from '@mos-lab/shared';
+import type { IosBookingListResponse, IosCustomerHistoryTab } from '@mos-lab/shared';
 import { canDirectlySettleCounterPayment, canSwitchIosBranch } from '@mos-lab/shared';
 import { PendingCounterSettlementBanner } from './incoming/PendingCounterSettlementBanner';
 import { BookingItem, resolveCustomerBookingTab, sortDoneBookingsWithCheckoutFirst } from '../../state/mockData';
@@ -54,6 +54,7 @@ interface Screen01IncomingBookingsProps {
   isSimulationMode?: boolean;
   userRole?: string | null;
   teamCodes?: readonly string[] | null;
+  trainingMentorshipMeta?: IosBookingListResponse['trainingMentorshipMeta'] | null;
 }
 
 export function Screen01IncomingBookings({
@@ -84,6 +85,7 @@ export function Screen01IncomingBookings({
   onOpenProfileMenu,
   userRole,
   teamCodes,
+  trainingMentorshipMeta,
 }: Screen01IncomingBookingsProps) {
   // Modal chọn chi nhánh cho Admin
   const [isBranchSheetOpen, setIsBranchSheetOpen] = useState(false);
@@ -330,6 +332,32 @@ export function Screen01IncomingBookings({
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* 1.5b CVL Training / Official Status Strip */}
+      {(role === 'CVL' || role === 'CVLL') && trainingMentorshipMeta && (
+        <div
+          className="px-3 py-1 border-b flex items-center justify-between gap-2 text-[10.5px] font-bold flex-shrink-0"
+          style={{
+            backgroundColor: isDark ? 'rgba(245, 158, 11, 0.08)' : 'rgba(245, 158, 11, 0.1)',
+            borderColor: 'var(--mos-surface-border)',
+            color: 'var(--mos-accent)',
+          }}
+        >
+          <span className="inline-flex items-center gap-1 min-w-0 truncate">
+            {role === 'CVLL' ? <CvFeather2Badge /> : <CvFeather1Badge />}
+            <span className="truncate">
+              {trainingMentorshipMeta.status === 'TRAINING'
+                ? `CVL Training${trainingMentorshipMeta.mentorName ? ` · Mentor ${trainingMentorshipMeta.mentorName}` : ''}`
+                : 'CVL Chính thức'}
+            </span>
+          </span>
+          {trainingMentorshipMeta.mentoringMenteeName && (
+            <span className="shrink-0 rounded-full px-2 py-0.5 text-[9.5px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">
+              Kèm 1-1: {trainingMentorshipMeta.mentoringMenteeName}
+            </span>
+          )}
         </div>
       )}
 

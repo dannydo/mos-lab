@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Button, Input, Popover, Tooltip } from 'antd';
-import { Clock, DollarSign, Maximize2, Minimize2, RefreshCw, Search, Settings } from 'lucide-react';
+import { Clock, DollarSign, GraduationCap, Maximize2, Minimize2, RefreshCw, Search, Settings } from 'lucide-react';
 import type { CvPaystubRecord } from '@mos-lab/shared';
 import { AppIcon, DataTable, SectionCard } from '~/components/ui';
 import { CvSelfManagedSubRow } from './CvSelfManagedSubRow';
@@ -38,6 +38,7 @@ interface CvPaystubTableCardProps {
   onUpdateSeniorityRule: (idx: number, field: keyof CvSeniorityRule, value: number) => void;
   onRemoveSeniorityRule: (idx: number) => void;
   onSaveSeniorityConfig: () => Promise<void>;
+  onOpenMentorshipConfig?: () => void;
 }
 
 /** Main paystub breakdown table card with toolbar controls, seniority popover, and mobile list fallback. */
@@ -67,6 +68,7 @@ export function CvPaystubTableCard({
   onUpdateSeniorityRule,
   onRemoveSeniorityRule,
   onSaveSeniorityConfig,
+  onOpenMentorshipConfig,
 }: CvPaystubTableCardProps) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const columns = useMemo(
@@ -94,6 +96,18 @@ export function CvPaystubTableCard({
             Phiếu thu nhập · {filteredData.length}
           </span>
           <div className="flex items-center gap-1.5">
+            {canManagePaystub && onOpenMentorshipConfig && (
+              <Tooltip title="Gán Mentor 1-kèm-1 & Đào tạo CVL">
+                <button
+                  type="button"
+                  aria-label="Gán Mentor 1-kèm-1 và Đào tạo CVL"
+                  onClick={onOpenMentorshipConfig}
+                  className="w-7 h-7 rounded-full border border-amber-500/35 bg-amber-500/15 text-amber-600 dark:text-amber-300 flex items-center justify-center transition-all cursor-pointer"
+                >
+                  <AppIcon icon={GraduationCap} size={13} aria-hidden />
+                </button>
+              </Tooltip>
+            )}
             {canManagePaystub && (
               <Popover
                 content={
@@ -212,6 +226,19 @@ export function CvPaystubTableCard({
                 title="Cấu hình tỷ lệ thưởng thâm niên"
               />
             </Popover>
+
+            {canManagePaystub && onOpenMentorshipConfig && (
+              <Tooltip title="Gán Mentor 1-kèm-1 (CC / CVL / CVLL) & Chốt tốt nghiệp Training CVL">
+                <Button
+                  size="small"
+                  onClick={onOpenMentorshipConfig}
+                  icon={<GraduationCap className="w-3.5 h-3.5 text-amber-500" />}
+                  className="text-xs font-medium border-amber-500/35 text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20"
+                >
+                  Gán Mentor CVL
+                </Button>
+              </Tooltip>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 w-full sm:w-auto">

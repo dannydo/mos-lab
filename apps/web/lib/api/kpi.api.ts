@@ -181,6 +181,18 @@ export const kpiApi = {
       const response = await api.put('/kpi/cvl-training-mentorship/config', payload);
       return response.data;
     },
+    resolveCvlTrainingMentorship: async (payload: {
+      pairId: string;
+      action: 'GRADUATE' | 'EXTEND' | 'RETURN_TO_CV';
+      newStartDate?: string;
+      newEndDate?: string;
+      mentorLegacyStaffId?: number;
+      mentorDisplayName?: string;
+      note?: string;
+    }): Promise<CvlTrainingMentorshipConfigResponse> => {
+      const response = await api.post('/kpi/cvl-training-mentorship/resolve', payload);
+      return response.data;
+    },
     getCcWorkLogs: async (params: {
       consultantId?: number;
       userId?: number;

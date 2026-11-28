@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, MutableRefObject, Dispatch, SetStateAction } from 'react';
-import { canSwitchIosBranch } from '@mos-lab/shared';
+import { canSwitchIosBranch, type IosBookingListResponse } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import { BookingItem, INITIAL_BOOKINGS } from './mockData';
 import { mergeServerBookingsWithLocalState } from './iosBookingMerge';
@@ -26,6 +26,7 @@ export interface UseIosBookingsSyncParams {
   isSimulationMode?: boolean;
   menteeStaffId?: number;
   isReadOnlyMentorView?: boolean;
+  onTrainingMentorshipMetaLoaded?: (meta: IosBookingListResponse['trainingMentorshipMeta'] | null) => void;
   onSimulationMetaLoaded?: (meta: {
     isReadOnlyMentorView?: boolean;
     simulationActorStaffName?: string;
@@ -57,6 +58,7 @@ export function useIosBookingsSync({
   isSimulationMode = false,
   menteeStaffId,
   isReadOnlyMentorView = false,
+  onTrainingMentorshipMetaLoaded,
   onSimulationMetaLoaded,
   isAdmin = false,
   role,
@@ -364,6 +366,7 @@ export function useIosBookingsSync({
           if (data.staffStats) {
             setStaffStats(data.staffStats);
           }
+          onTrainingMentorshipMetaLoaded?.(data.trainingMentorshipMeta ?? null);
           setIsLiveDb(true);
           setLastRefreshedAt(
             new Date().toLocaleTimeString('vi-VN', {

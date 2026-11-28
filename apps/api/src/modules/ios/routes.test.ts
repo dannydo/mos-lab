@@ -143,6 +143,24 @@ test('CVL customer privacy invariant (Kinh Thánh mOS Điều răn UI-010)', () 
     false
   );
 
+  // CVL Mentor 1-on-1 scope: sees own + 1 assigned Mentee + head slot, while other CVs remain blocked
+  const mentorFiltered = filterBookingsForCvlScope(
+    [
+      ...mockBookings,
+      { id: 5, isUnassignedQueue: false, status: 'INCOMING', assignedStaffId: 52555 } as unknown as IosBookingItem,
+    ],
+    myStaffId,
+    { menteeStaffIds: [52555] }
+  );
+  assert.equal(
+    mentorFiltered.some((b) => b.id === 5 && b.bookingAccessTag === 'MENTEE_CUSTOMER'),
+    true
+  );
+  assert.equal(
+    mentorFiltered.some((b) => b.id === 4),
+    false
+  );
+
   // UI-010 v1.4.0: When 2+ unassigned customers share the same head slot, ALL of them are shown (next slot stays hidden).
   const now1045 = new Date('2026-11-13T10:45:00+07:00');
   const sameSlotBookings = [

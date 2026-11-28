@@ -6,6 +6,7 @@ import { isAdminOrSuperAdminRole, type CvPaystubRecord } from '@mos-lab/shared';
 import { CcMobileWalletStrip } from '~/app/dashboard/cc/components/CcMobileWalletStrip';
 import { formatCompactVND } from '~/lib/format-utils';
 import { CvAllowanceModal } from './cv-thu-nhap-tab/CvAllowanceModal';
+import CvlTrainingMentorshipConfigModal from '~/components/cc-thu-nhap/modals/CvlTrainingMentorshipConfigModal';
 import { CvIncomeSummaryCards } from './cv-thu-nhap-tab/CvIncomeSummaryCards';
 import { CvPaystubDetailModal } from './cv-thu-nhap-tab/CvPaystubDetailModal';
 import { CvPaystubTableCard } from './cv-thu-nhap-tab/CvPaystubTableCard';
@@ -27,6 +28,7 @@ export type { CvIncomeSummary, CvSeniorityRule, CvThuNhapTabProps };
 export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, comparisonMode }: CvThuNhapTabProps) {
   const router = useRouter();
   const canManagePaystub = isAdminOrSuperAdminRole(currentUser?.role as string);
+  const [mentorshipModalOpen, setMentorshipModalOpen] = useState(false);
 
   const {
     isMobile,
@@ -189,6 +191,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
         onUpdateSeniorityRule={updateSeniorityRule}
         onRemoveSeniorityRule={removeSeniorityRule}
         onSaveSeniorityConfig={handleSaveSeniorityConfig}
+        onOpenMentorshipConfig={canManagePaystub ? () => setMentorshipModalOpen(true) : undefined}
       />
 
       <CvThuNhapMobileDetailSheet
@@ -241,6 +244,14 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
         allowanceNote={allowanceNote}
         setAllowanceNote={setAllowanceNote}
       />
+
+      {canManagePaystub && (
+        <CvlTrainingMentorshipConfigModal
+          open={mentorshipModalOpen}
+          onClose={() => setMentorshipModalOpen(false)}
+          onSaved={() => void fetchData()}
+        />
+      )}
     </div>
   );
 }

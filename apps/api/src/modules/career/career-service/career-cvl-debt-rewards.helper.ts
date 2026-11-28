@@ -10,8 +10,9 @@ import {
 import {
   buildExcludeOtherMenteeTrainingOrderSql,
   buildIsMenteeTrainingWindowSql,
+  CvlTrainingMentorshipService,
 } from '../../kpi/services/cvl-training-mentorship.service.js';
-import type { CvRewardCalculationMode } from './career-helpers.js';
+import { computeCvlConsultShareFactor, type CvRewardCalculationMode } from './career-helpers.js';
 
 export interface ComboDebtConfigSlice {
   comboDebtBonusMode?: ComboDebtBonusMode;
@@ -158,9 +159,9 @@ export async function queryCvlDebtCollectionDetails(
 
   if (mode === 'ACTUAL_PAYROLL') {
     orderAttributionClauses.push(
-      '(os.check_out_staff_id = ? OR ((os.check_out_staff_id IS NULL OR os.check_out_staff_id = 0) AND COALESCE(NULLIF(udp.created_staff_id, 0), os.assigned_staff_id) = ?))'
+      '(os.check_in_staff_id = ? OR os.check_out_staff_id = ? OR ((os.check_in_staff_id IS NULL OR os.check_in_staff_id = 0) AND (os.check_out_staff_id IS NULL OR os.check_out_staff_id = 0) AND COALESCE(NULLIF(udp.created_staff_id, 0), os.assigned_staff_id) = ?))'
     );
-    attributionParams.push(safeStaffId, safeStaffId);
+    attributionParams.push(safeStaffId, safeStaffId, safeStaffId);
     if (menteeTrainingPairs.length > 0) {
       orderAttributionClauses.push(
         `(os.assigned_staff_id = ${safeStaffId} AND ${buildIsMenteeTrainingWindowSql(menteeTrainingPairs, dateAnchorExpr)})`
@@ -168,9 +169,9 @@ export async function queryCvlDebtCollectionDetails(
     }
   } else {
     orderAttributionClauses.push(
-      '(os.check_out_staff_id = ? OR os.assigned_staff_id = ? OR ((os.check_out_staff_id IS NULL OR os.check_out_staff_id = 0) AND udp.created_staff_id = ?))'
+      '(os.check_in_staff_id = ? OR os.check_out_staff_id = ? OR os.assigned_staff_id = ? OR ((os.check_out_staff_id IS NULL OR os.check_out_staff_id = 0) AND udp.created_staff_id = ?))'
     );
-    attributionParams.push(safeStaffId, safeStaffId, safeStaffId);
+    attributionParams.push(safeStaffId, safeStaffId, safeStaffId, safeStaffId);
   }
 
   const excludeOtherMenteeSql =
@@ -192,6 +193,10 @@ export async function queryCvlDebtCollectionDetails(
         MAX(COALESCE(op.discount_amount, 0)) AS max_op_discount_amount,
         ${dateAnchorExpr} AS collected_at,
         o.order_key AS order_code,
+        os.assigned_staff_id,
+        os.check_in_staff_id,
+        os.check_out_staff_id,
+        udp.created_staff_id AS udp_created_staff_id,
         up_cust.full_name AS customer_name,
         (
           SELECT COALESCE(sl.service_name, s.service_key)
@@ -264,9 +269,42 @@ export async function queryCvlDebtCollectionDetails(
     );
     if (collectedAmount <= 0 || collectedAmount < minCollected) continue;
 
-    const bonus = calculateComboDebtBonus(collectedAmount, cvReq);
+    const collectedAtStr = String(first.collected_at || '');
     const payOrderId = Number(first.pay_order_id || 0);
     const origOrderId = Number(first.orig_order_id || 0);
+    const isInMenteeTrainingWindow =
+      mode === 'ACTUAL_PAYROLL' &&
+      Number(first.assigned_staff_id || 0) === safeStaffId &&
+      Boolean(
+        CvlTrainingMentorshipService.findMatchingTrainingPairForOrder(
+          menteeTrainingPairs,
+          first.assigned_staff_id,
+          collectedAtStr
+        )
+      );
+
+    let shareFactor: 0 | 0.5 | 1 = 1;
+    let consultRole: 'BOTH' | 'IN' | 'OUT' | 'TRAINING' = 'BOTH';
+    if (payOrderId > 0) {
+      const effectiveAssigned =
+        Number(first.assigned_staff_id || 0) > 0
+          ? Number(first.assigned_staff_id)
+          : Number(first.udp_created_staff_id || 0);
+      const share = computeCvlConsultShareFactor({
+        staffId: safeStaffId,
+        assignedStaffId: effectiveAssigned,
+        checkInStaffId: first.check_in_staff_id,
+        checkOutStaffId: first.check_out_staff_id,
+        isInMenteeTrainingWindow,
+        mode,
+      });
+      shareFactor = share.shareFactor;
+      consultRole = share.consultRole;
+      if (shareFactor <= 0) continue;
+    }
+
+    const fullBonus = calculateComboDebtBonus(collectedAmount, cvReq);
+    const bonus = Math.round(fullBonus * shareFactor);
 
     debtCollectionDetails.push({
       debtPaymentId: Number(first.udp_id),
@@ -274,11 +312,13 @@ export async function queryCvlDebtCollectionDetails(
       orderId: payOrderId > 0 ? payOrderId : origOrderId,
       origOrderId: origOrderId > 0 ? origOrderId : undefined,
       orderCode: first.order_code ? String(first.order_code) : payOrderId > 0 ? String(payOrderId) : undefined,
-      orderDate: String(first.collected_at),
+      orderDate: collectedAtStr,
       customerName: first.customer_name ? String(first.customer_name) : undefined,
       comboName: first.combo_name ? String(first.combo_name) : 'Thu nợ gói Combo',
       collectedAmount,
       bonus,
+      shareFactor,
+      consultRole,
     });
   }
 

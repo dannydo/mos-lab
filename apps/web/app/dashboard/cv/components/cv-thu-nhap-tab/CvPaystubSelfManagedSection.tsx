@@ -233,6 +233,11 @@ export function CvPaystubSelfManagedSection({ breakdown }: CvPaystubSelfManagedS
                       <td className="py-1 px-3 text-slate-700 dark:text-slate-300 text-[11px]">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span>{item.comboName}</span>
+                          {item.shareFactor === 0.5 && (
+                            <span className="inline-flex items-center justify-center leading-none py-0.5 px-1.5 rounded text-[9px] font-bold bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30">
+                              50% ({item.consultRole === 'IN' ? 'IN' : 'OUT'})
+                            </span>
+                          )}
                           {isMultiComboOrder && (
                             <span className="inline-flex items-center justify-center leading-none py-0.5 px-1.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                               Gộp {item.comboCount} gói cùng lúc
@@ -316,7 +321,14 @@ export function CvPaystubSelfManagedSection({ breakdown }: CvPaystubSelfManagedS
                         {item.customerName || 'Khách vãng lai'}
                       </td>
                       <td className="py-1 px-3 text-slate-700 dark:text-slate-300 text-[11px]">
-                        {item.comboName || 'Thu nợ gói Combo'}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span>{item.comboName || 'Thu nợ gói Combo'}</span>
+                          {item.shareFactor === 0.5 && (
+                            <span className="inline-flex items-center justify-center leading-none py-0.5 px-1.5 rounded text-[9px] font-bold bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30">
+                              50% ({item.consultRole === 'IN' ? 'IN' : 'OUT'})
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-1 px-2 text-right tabular-nums text-slate-700 dark:text-slate-300 text-[11px]">
                         {formatVND(item.collectedAmount)}

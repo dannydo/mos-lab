@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Avatar, Progress } from 'antd';
-import { ChevronDown, Settings } from 'lucide-react';
+import { ChevronDown, GraduationCap, Settings } from 'lucide-react';
 import type { BananaTransactionCategory, StaffCareerStatus } from '@mos-lab/shared';
 import { WingRoleLabel } from '../components/IslandGameIcon';
 import { formatCareerRoleName } from '../career-path.constants';
@@ -18,6 +18,7 @@ interface CareerHudHeaderProps {
   onOpenMapDrawer: () => void;
   onOpenBananaDrawer: (staffId: number | null, category: BananaTransactionCategory) => void;
   onOpenConfigDrawer: () => void;
+  onOpenMentorshipModal?: () => void;
 }
 
 export const CareerHudHeader: React.FC<CareerHudHeaderProps> = ({
@@ -30,6 +31,7 @@ export const CareerHudHeader: React.FC<CareerHudHeaderProps> = ({
   onOpenMapDrawer,
   onOpenBananaDrawer,
   onOpenConfigDrawer,
+  onOpenMentorshipModal,
 }) => {
   const staffRealOrders = selectedStaffStatus?.metrics?.ordersCount || 0;
   const expPercent = computeExpProgressPercent(staffRealOrders, minOrders);
@@ -128,6 +130,21 @@ export const CareerHudHeader: React.FC<CareerHudHeaderProps> = ({
             <span className="text-xs">🍌</span>
             <span className="tabular-nums">{realBalance.toLocaleString('vi-VN')}</span>
           </button>
+
+          {canConfigure && onOpenMentorshipModal && (
+            <button
+              type="button"
+              onClick={() => {
+                onPlayPop();
+                onOpenMentorshipModal();
+              }}
+              className="h-8 px-2.5 rounded-full bg-amber-50 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/35 text-amber-700 dark:text-amber-300 text-xs font-bold shadow-xs active:scale-95 transition hover:border-amber-500 shrink-0 cursor-pointer flex items-center gap-1"
+              title="Gán Mentor 1-kèm-1 & Chốt tốt nghiệp Training CVL"
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[11px]">Mentor CVL</span>
+            </button>
+          )}
 
           {canConfigure && (
             <button

@@ -131,9 +131,10 @@ export function applyIosScopeAndCounts(
     storeId?: number;
     targetDate?: string;
     todayVn?: string;
+    menteeStaffIds?: number[];
   }
 ): { effectiveList: IosBookingItem[]; counts: IosSegmentCounts } {
-  const { effectiveRole, scope, activeStaffId, storeId, targetDate, todayVn } = params;
+  const { effectiveRole, scope, activeStaffId, storeId, targetDate, todayVn, menteeStaffIds } = params;
   const shouldApplyCvlPrivacyScope =
     effectiveRole === 'CVL' || (effectiveRole !== 'CC' && effectiveRole !== 'STORE' && scope === 'MY_CUSTOMERS');
   const branchFiltered =
@@ -141,7 +142,7 @@ export function applyIosScopeAndCounts(
       ? allBookings.filter((b) => !b.storeId || Number(b.storeId) === Number(storeId))
       : allBookings;
   const effectiveList = shouldApplyCvlPrivacyScope
-    ? filterBookingsForCvlScope(branchFiltered, activeStaffId, { targetDate, todayVn })
+    ? filterBookingsForCvlScope(branchFiltered, activeStaffId, { targetDate, todayVn, menteeStaffIds })
     : branchFiltered;
 
   const counts: IosSegmentCounts = {

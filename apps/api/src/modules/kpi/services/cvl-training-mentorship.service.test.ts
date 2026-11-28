@@ -17,6 +17,10 @@ import {
   sanitizeCvlTrainingMentorshipPair,
   type LegacyTipSqlExecutor,
 } from './cvl-training-mentorship.service.js';
+import {
+  resolveMentorshipOutcomeImpl,
+  saveMentorshipConfig,
+} from './cvl-training-mentorship/cvl-training-mentorship.config.js';
 
 test('DEFAULT_CVL_TRAINING_MENTORSHIP_CONFIG contains Nov 2026 DT pairs for Thảo Ly & Khanh Cao', () => {
   const normalized = normalizeCvlTrainingMentorshipConfig(null);
@@ -365,6 +369,162 @@ test('reconcileTrainingCvlStaffTips consolidates 70+20, 80+10, NULL user_id, and
   assert.equal(forcedSecondRun.updatedOrders, 0);
   assert.equal(forcedSecondRun.consolidatedRows, 0);
   assert.equal(tipRows.length, 5);
+
+  CvlTrainingMentorshipService.clearCache();
+});
+
+test('saveMentorshipConfig rejects overlapping strict 1-on-1 mentor or mentee pairs with 400', async () => {
+  CvlTrainingMentorshipService.clearCache();
+  let upsertCalled = false;
+  const fakeFastify = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          async upsert() {
+            upsertCalled = true;
+            return null;
+          },
+        },
+      },
+    },
+  } as unknown as Parameters<typeof saveMentorshipConfig>[0];
+
+  const basePair: CvlTrainingMentorshipPair = {
+    id: 'p1',
+    mentorLegacyStaffId: 37790,
+    mentorDisplayName: 'Diễm Hương',
+    mentorRoleGroup: 'CC',
+    menteeLegacyStaffId: 46272,
+    menteeDisplayName: 'Thảo Ly',
+    storeCode: 'DT',
+    startDate: '2026-12-01',
+    endDate: '2026-12-31',
+    fixedAllowanceVnd: 1_000_000,
+    menteeBonusShareRate: 0.5,
+    minComboRateThreshold: 0.2,
+    isActive: true,
+  };
+
+  await assert.rejects(
+    () =>
+      saveMentorshipConfig(
+        fakeFastify,
+        {
+          pairs: [
+            basePair,
+            {
+              ...basePair,
+              id: 'p2',
+              menteeLegacyStaffId: 13783,
+              menteeDisplayName: 'Khanh Cao',
+              startDate: '2026-12-10',
+              endDate: '2026-12-25',
+            },
+          ],
+        },
+        'Danny'
+      ),
+    (err: Error & { statusCode?: number }) => err.statusCode === 400
+  );
+  assert.equal(upsertCalled, false);
+  CvlTrainingMentorshipService.clearCache();
+});
+
+test('resolveMentorshipOutcomeImpl transitions pair & CRM progression across GRADUATE, EXTEND, RETURN_TO_CV', async () => {
+  CvlTrainingMentorshipService.clearCache();
+  let storedPairs: CvlTrainingMentorshipPair[] = [
+    {
+      id: 'pair-nov',
+      mentorLegacyStaffId: 37790,
+      mentorDisplayName: 'Diễm Hương',
+      mentorRoleGroup: 'CC',
+      menteeLegacyStaffId: 46272,
+      menteeDisplayName: 'Thảo Ly',
+      storeCode: 'DT',
+      startDate: '2026-11-01',
+      endDate: '2026-11-30',
+      fixedAllowanceVnd: 1_000_000,
+      menteeBonusShareRate: 0.5,
+      minComboRateThreshold: 0.2,
+      isActive: true,
+      outcome: 'ACTIVE',
+    },
+  ];
+  const progressionOps: Array<{ currentRole: string; status: string }> = [];
+  const staffRoles: string[] = [];
+
+  const fakeFastify = {
+    prisma: {
+      crm: {
+        crmStaff: {
+          async findFirst() {
+            return { id: 901 };
+          },
+          async update({ data }: { data: { role: string } }) {
+            staffRoles.push(data.role);
+            return null;
+          },
+        },
+        crmCareerProgression: {
+          async upsert({ update }: { update: { currentRole: string; status: string } }) {
+            progressionOps.push({ currentRole: update.currentRole, status: update.status });
+            return null;
+          },
+        },
+        crmConfig: {
+          async upsert({ update }: { update: { value: string } }) {
+            storedPairs = JSON.parse(update.value).pairs;
+            return null;
+          },
+        },
+      },
+    },
+  } as unknown as Parameters<typeof resolveMentorshipOutcomeImpl>[0];
+
+  const loadConfig = async () => ({ pairs: storedPairs });
+
+  // 1. EXTEND closes old pair as EXTENDED & opens new ACTIVE pair (respecting 1-on-1)
+  const afterExtend = await resolveMentorshipOutcomeImpl(
+    fakeFastify,
+    loadConfig,
+    {
+      pairId: 'pair-nov',
+      action: 'EXTEND',
+      newStartDate: '2026-12-01',
+      newEndDate: '2026-12-31',
+      mentorLegacyStaffId: 37790,
+      mentorDisplayName: 'Diễm Hương',
+    },
+    { id: 1, name: 'Danny' }
+  );
+  assert.equal(afterExtend.pairs.length, 2);
+  assert.equal(afterExtend.pairs[0]?.outcome, 'EXTENDED');
+  assert.equal(afterExtend.pairs[1]?.outcome, 'ACTIVE');
+  assert.equal(afterExtend.pairs[1]?.startDate, '2026-12-01');
+
+  const extendedPairId = afterExtend.pairs[1]!.id;
+
+  // 2. GRADUATE marks pair GRADUATED & promotes CRM progression to CV_PLUS
+  const afterGraduate = await resolveMentorshipOutcomeImpl(
+    fakeFastify,
+    loadConfig,
+    { pairId: extendedPairId, action: 'GRADUATE' },
+    { id: 1, name: 'Danny' }
+  );
+  assert.equal(afterGraduate.pairs[1]?.outcome, 'GRADUATED');
+  assert.deepEqual(progressionOps.at(-1), { currentRole: 'CV_PLUS', status: 'PROMOTED' });
+  assert.equal(staffRoles.at(-1), 'cv_plus');
+
+  // 3. RETURN_TO_CV marks RETURNED_TO_CV & resets CRM progression to CV
+  const afterReturn = await resolveMentorshipOutcomeImpl(
+    fakeFastify,
+    loadConfig,
+    { pairId: extendedPairId, action: 'RETURN_TO_CV' },
+    { id: 1, name: 'Danny' }
+  );
+  assert.equal(afterReturn.pairs[1]?.outcome, 'RETURNED_TO_CV');
+  assert.deepEqual(progressionOps.at(-1), { currentRole: 'CV', status: 'IN_PROGRESS' });
+  assert.equal(staffRoles.at(-1), 'cv');
 
   CvlTrainingMentorshipService.clearCache();
 });

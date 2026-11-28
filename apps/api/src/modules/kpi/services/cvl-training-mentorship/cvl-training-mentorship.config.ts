@@ -2,12 +2,16 @@ import { FastifyInstance } from 'fastify';
 import type mysql from 'mysql2/promise';
 import {
   CVL_TRAINING_MENTORSHIP_CONFIG_KEY,
+  CvlMenteeLifecycleSummary,
   CvlTrainingMentorshipConfig,
   CvlTrainingMentorshipConfigResponse,
   CvlTrainingMentorshipPair,
   CvlTrainingMentorshipStaffOption,
   DEFAULT_CVL_TRAINING_MENTORSHIP_CONFIG,
   SafeAny,
+  getVietnamDateYmd,
+  resolveCvlTrainingLifecycleStatus,
+  validateStrictOneToOneMentorshipPairs,
 } from '@mos-lab/shared';
 import { TeamService } from '../../../teams/team.service.js';
 import {
@@ -57,6 +61,17 @@ export async function saveMentorshipConfig(
     const cleaned = sanitizeCvlTrainingMentorshipPair(item, idx);
     if (cleaned) pairs.push(cleaned);
   });
+
+  const validation = validateStrictOneToOneMentorshipPairs(pairs);
+  if (!validation.valid) {
+    const err = new Error(validation.errors[0] || 'Cấu hình Mentor – Mentee 1-kèm-1 bị trùng lịch.') as Error & {
+      statusCode?: number;
+      validationErrors?: string[];
+    };
+    err.statusCode = 400;
+    err.validationErrors = validation.errors;
+    throw err;
+  }
 
   const nextConfig: CvlTrainingMentorshipConfig = {
     pairs,
@@ -125,6 +140,7 @@ export async function getConfigWithStaffOptionsImpl(
           ],
         },
         select: {
+          id: true,
           legacyStaffId: true,
           displayName: true,
           role: true,
@@ -166,14 +182,32 @@ export async function getConfigWithStaffOptionsImpl(
   }
 
   const ccSet = new Set<number>(activeCcIds);
+  const officialCvlRoleMap = new Map<number, 'CVL' | 'CVLL'>();
+  const crmMetaByLegacyId = new Map<number, { crmStaffId: number; currentRole: string }>();
   const cvlSet = new Set<number>();
+
   for (const s of crmCvlRows) {
     if (!s.legacyStaffId) continue;
-    if (s.role === 'cc') ccSet.add(s.legacyStaffId);
-    else cvlSet.add(s.legacyStaffId);
+    const progRole = String(s.careerProgression?.currentRole || '').toUpperCase();
+    const staffRole = String(s.role || '').toUpperCase();
+    const resolvedRole = progRole || staffRole;
+    crmMetaByLegacyId.set(s.legacyStaffId, { crmStaffId: s.id, currentRole: resolvedRole });
+
+    if (s.role === 'cc') {
+      ccSet.add(s.legacyStaffId);
+    } else {
+      cvlSet.add(s.legacyStaffId);
+      if (resolvedRole === 'CV_PLUS_PLUS' || resolvedRole === 'CVLL') {
+        officialCvlRoleMap.set(s.legacyStaffId, 'CVLL');
+      } else if (resolvedRole === 'CV_PLUS' || resolvedRole === 'CVL') {
+        officialCvlRoleMap.set(s.legacyStaffId, 'CVL');
+      }
+    }
   }
   for (const p of config.pairs) {
-    ccSet.add(p.mentorLegacyStaffId);
+    if (!officialCvlRoleMap.has(p.mentorLegacyStaffId) && !ccSet.has(p.mentorLegacyStaffId)) {
+      ccSet.add(p.mentorLegacyStaffId);
+    }
     cvlSet.add(p.menteeLegacyStaffId);
   }
   // Also allow selecting any active CV from Legacy if Admin wants to assign a newly-promoted CVL
@@ -181,30 +215,65 @@ export async function getConfigWithStaffOptionsImpl(
     cvlSet.add(id);
   }
 
-  const ccMentors: CvlTrainingMentorshipStaffOption[] = Array.from(ccSet)
+  const mentorRoleRank = (group: CvlTrainingMentorshipStaffOption['roleGroup']): number => {
+    if (group === 'CC') return 0;
+    if (group === 'CVLL') return 1;
+    return 2;
+  };
+
+  const mentorCandidateIds = new Set<number>([...ccSet, ...officialCvlRoleMap.keys()]);
+  const ccMentors: CvlTrainingMentorshipStaffOption[] = Array.from(mentorCandidateIds)
     .map((id) => {
       const prof = profileMap.get(id);
+      const roleGroup: CvlTrainingMentorshipStaffOption['roleGroup'] = ccSet.has(id)
+        ? 'CC'
+        : officialCvlRoleMap.get(id) || 'CVL';
       return {
         legacyStaffId: id,
-        displayName: prof?.name || `CC #${id}`,
+        displayName: prof?.name || `${roleGroup} #${id}`,
         storeCode: prof?.storeCode || 'DT',
-        roleGroup: 'CC' as const,
+        roleGroup,
       };
     })
-    .sort((a, b) => a.displayName.localeCompare(b.displayName, 'vi'));
+    .sort(
+      (a, b) =>
+        mentorRoleRank(a.roleGroup) - mentorRoleRank(b.roleGroup) || a.displayName.localeCompare(b.displayName, 'vi')
+    );
 
   const cvlMentees: CvlTrainingMentorshipStaffOption[] = Array.from(cvlSet)
     .filter((id) => !ccSet.has(id) || config.pairs.some((p) => p.menteeLegacyStaffId === id))
     .map((id) => {
       const prof = profileMap.get(id);
+      const roleGroup: CvlTrainingMentorshipStaffOption['roleGroup'] = officialCvlRoleMap.get(id) || 'CV';
       return {
         legacyStaffId: id,
         displayName: prof?.name || `CVL #${id}`,
         storeCode: prof?.storeCode || 'DT',
-        roleGroup: 'CVL' as const,
+        roleGroup,
       };
     })
     .sort((a, b) => a.displayName.localeCompare(b.displayName, 'vi'));
+
+  const todayYmd = getVietnamDateYmd();
+  const menteeLifecycleByStaffId: Record<number, CvlMenteeLifecycleSummary> = {};
+  for (const m of cvlMentees) {
+    const crmMeta = crmMetaByLegacyId.get(m.legacyStaffId);
+    const lifecycle = resolveCvlTrainingLifecycleStatus({
+      legacyStaffId: m.legacyStaffId,
+      currentRole: crmMeta?.currentRole,
+      pairs: config.pairs,
+      todayYmd,
+    });
+    const refPair = lifecycle.activePair || lifecycle.pendingPair;
+    menteeLifecycleByStaffId[m.legacyStaffId] = {
+      crmStaffId: crmMeta?.crmStaffId,
+      status: lifecycle.status,
+      currentRole: crmMeta?.currentRole,
+      ...(lifecycle.activePair ? { activePairId: lifecycle.activePair.id } : {}),
+      ...(lifecycle.pendingPair ? { pendingPairId: lifecycle.pendingPair.id } : {}),
+      ...(refPair ? { mentorDisplayName: refPair.mentorDisplayName } : {}),
+    };
+  }
 
   return {
     config,
@@ -212,5 +281,152 @@ export async function getConfigWithStaffOptionsImpl(
       ccMentors,
       cvlMentees,
     },
+    menteeLifecycleByStaffId,
   };
+}
+
+export interface ResolveMentorshipOutcomeInput {
+  pairId: string;
+  action: 'GRADUATE' | 'EXTEND' | 'RETURN_TO_CV';
+  newStartDate?: string;
+  newEndDate?: string;
+  mentorLegacyStaffId?: number;
+  mentorDisplayName?: string;
+  note?: string;
+}
+
+/**
+ * Chốt kết quả kỳ Training của Mentee CVL:
+ * - GRADUATE: duyệt lên CVL Chính thức (CV_PLUS, giữ quyền /ios-app, bảo toàn cặp Training làm lịch sử).
+ * - EXTEND: chốt cặp cũ sang EXTENDED và mở cặp kỳ mới (kiểm tra ràng buộc 1-kèm-1).
+ * - RETURN_TO_CV: trả về CV thường (tự động thu hồi quyền /ios-app).
+ */
+export async function resolveMentorshipOutcomeImpl(
+  fastify: FastifyInstance,
+  loadConfig: () => Promise<CvlTrainingMentorshipConfig>,
+  input: ResolveMentorshipOutcomeInput,
+  actor: { id: number; name: string }
+): Promise<CvlTrainingMentorshipConfig> {
+  const currentConfig = await loadConfig();
+  const idx = currentConfig.pairs.findIndex((p) => p.id === input.pairId);
+  if (idx < 0) {
+    const err = new Error(`Không tìm thấy cặp đào tạo "${input.pairId}".`) as Error & { statusCode?: number };
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const target = currentConfig.pairs[idx];
+  const todayYmd = getVietnamDateYmd();
+  const nowIso = new Date().toISOString();
+  const nextPairs = [...currentConfig.pairs];
+
+  const crmStaff = await fastify.prisma.crm.crmStaff.findFirst({
+    where: { legacyStaffId: target.menteeLegacyStaffId },
+    select: { id: true },
+  });
+
+  if (input.action === 'GRADUATE') {
+    nextPairs[idx] = {
+      ...target,
+      outcome: 'GRADUATED',
+      resolvedAt: nowIso,
+      resolvedBy: actor.name,
+      ...(input.note ? { note: input.note } : {}),
+    };
+    const saved = await saveMentorshipConfig(fastify, { pairs: nextPairs }, actor.name);
+    if (crmStaff) {
+      await fastify.prisma.crm.crmCareerProgression.upsert({
+        where: { staffId: crmStaff.id },
+        create: {
+          staffId: crmStaff.id,
+          currentRole: 'CV_PLUS',
+          targetRole: 'CV_PLUS_PLUS',
+          status: 'PROMOTED',
+          promotedAt: new Date(),
+          promotedBy: actor.id,
+        },
+        update: {
+          currentRole: 'CV_PLUS',
+          targetRole: 'CV_PLUS_PLUS',
+          status: 'PROMOTED',
+          promotedAt: new Date(),
+          promotedBy: actor.id,
+        },
+      });
+      await fastify.prisma.crm.crmStaff.update({
+        where: { id: crmStaff.id },
+        data: { role: 'cv_plus' },
+      });
+    }
+    return saved;
+  }
+
+  if (input.action === 'RETURN_TO_CV') {
+    const cappedEndDate =
+      target.endDate > todayYmd ? (todayYmd >= target.startDate ? todayYmd : target.endDate) : target.endDate;
+    nextPairs[idx] = {
+      ...target,
+      endDate: cappedEndDate,
+      isActive: target.startDate <= todayYmd,
+      outcome: 'RETURNED_TO_CV',
+      resolvedAt: nowIso,
+      resolvedBy: actor.name,
+      ...(input.note ? { note: input.note } : {}),
+    };
+    const saved = await saveMentorshipConfig(fastify, { pairs: nextPairs }, actor.name);
+    if (crmStaff) {
+      await fastify.prisma.crm.crmCareerProgression.upsert({
+        where: { staffId: crmStaff.id },
+        create: {
+          staffId: crmStaff.id,
+          currentRole: 'CV',
+          targetRole: 'CV_PLUS',
+          status: 'IN_PROGRESS',
+          promotedBy: actor.id,
+        },
+        update: {
+          currentRole: 'CV',
+          targetRole: 'CV_PLUS',
+          status: 'IN_PROGRESS',
+          promotedBy: actor.id,
+        },
+      });
+      await fastify.prisma.crm.crmStaff.update({
+        where: { id: crmStaff.id },
+        data: { role: 'cv' },
+      });
+    }
+    return saved;
+  }
+
+  // EXTEND
+  const newStart = String(input.newStartDate || '').slice(0, 10);
+  const newEnd = String(input.newEndDate || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(newStart) || !/^\d{4}-\d{2}-\d{2}$/.test(newEnd) || newStart > newEnd) {
+    const err = new Error('Ngày bắt đầu / kết thúc kỳ gia hạn không hợp lệ.') as Error & { statusCode?: number };
+    err.statusCode = 400;
+    throw err;
+  }
+
+  nextPairs[idx] = {
+    ...target,
+    outcome: 'EXTENDED',
+    resolvedAt: nowIso,
+    resolvedBy: actor.name,
+  };
+  nextPairs.push({
+    ...target,
+    id: `pair-${target.menteeLegacyStaffId}-${newStart}-${Date.now()}`,
+    mentorLegacyStaffId: input.mentorLegacyStaffId || target.mentorLegacyStaffId,
+    mentorDisplayName: input.mentorDisplayName || target.mentorDisplayName,
+    startDate: newStart,
+    endDate: newEnd,
+    isActive: true,
+    outcome: 'ACTIVE',
+    resolvedAt: undefined,
+    resolvedBy: undefined,
+    note: input.note || `Gia hạn Training CVL (${newStart} → ${newEnd})`,
+  });
+
+  return saveMentorshipConfig(fastify, { pairs: nextPairs }, actor.name);
 }
