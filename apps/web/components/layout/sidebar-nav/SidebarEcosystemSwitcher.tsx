@@ -2,6 +2,7 @@
 
 import React from 'react';
 import {
+  isInventoryPathname,
   isLabPathname,
   isMissionPathname,
   isReportPathname,
@@ -51,7 +52,8 @@ export const SidebarEcosystemSwitcher: React.FC<SidebarEcosystemSwitcherProps> =
             !isReportPathname(pathname) &&
             !isMissionPathname(pathname) &&
             !isLabPathname(pathname) &&
-            !isWingsGardenPathname(pathname);
+            !isWingsGardenPathname(pathname) &&
+            !isInventoryPathname(pathname);
           return (
             <button
               key={app.key}
@@ -81,11 +83,49 @@ export const SidebarEcosystemSwitcher: React.FC<SidebarEcosystemSwitcherProps> =
               (suite.key === 'reports' && isReportPathname(pathname)) ||
               (suite.key === 'mission' && isMissionPathname(pathname)) ||
               (suite.key === 'lab' && isLabPathname(pathname)) ||
-              (suite.key === 'wings-garden' && isWingsGardenPathname(pathname));
+              (suite.key === 'wings-garden' && isWingsGardenPathname(pathname)) ||
+              (suite.key === 'inventory' && isInventoryPathname(pathname));
             const spanFull =
               ecosystemModel.suiteApps.length > 1 &&
               ecosystemModel.suiteApps.length % 2 === 1 &&
               index === ecosystemModel.suiteApps.length - 1;
+            if (suite.secondaryAction) {
+              const SecondaryIcon = suite.secondaryAction.icon;
+              return (
+                <div
+                  key={suite.key}
+                  role="group"
+                  className={`rounded-lg flex items-stretch transition-all min-w-0 overflow-hidden ${
+                    spanFull ? 'col-span-2' : ''
+                  } ${isActive ? activeButtonClasses : inactiveButtonClasses}`}
+                >
+                  <button
+                    type="button"
+                    data-sidebar-eco-suite={suite.key}
+                    title={suite.label}
+                    onClick={() => onEcosystemNavigate(suite.key, suite.href, suite.action)}
+                    className="flex-1 min-w-0 px-2 py-1.5 flex items-center gap-1.5 text-left text-[11px] font-semibold cursor-pointer active:scale-[0.99]"
+                  >
+                    <AppIcon icon={Icon} size="sm" />
+                    <span className="flex-1 truncate">{suite.shortLabel || suite.label}</span>
+                  </button>
+                  <button
+                    type="button"
+                    data-sidebar-eco-suite-secondary={suite.key}
+                    title={suite.secondaryAction.label}
+                    aria-label={suite.secondaryAction.label}
+                    onClick={() => onEcosystemNavigate(suite.secondaryAction!.key, suite.secondaryAction!.href)}
+                    className={`px-1.5 flex items-center justify-center border-l shrink-0 cursor-pointer transition-colors ${
+                      isDark
+                        ? 'border-white/[0.08] text-amber-300 hover:bg-amber-500/15'
+                        : 'border-slate-900/[0.08] text-amber-700 hover:bg-amber-500/15'
+                    }`}
+                  >
+                    <AppIcon icon={SecondaryIcon} size="sm" />
+                  </button>
+                </div>
+              );
+            }
             return (
               <button
                 key={suite.key}

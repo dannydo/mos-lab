@@ -61,8 +61,7 @@ export function useIosAddUnderMink({
   const openAddUnderMinkModal = useCallback(
     (options?: { mode?: AddUnderMinkMode; pendingAfterPhotoUrl?: string | null }) => {
       const isSettled =
-        activeBooking?.billing?.settlementStatus === 'SETTLED_COMPLETED' ||
-        activeBooking?.orderState === 'Completed';
+        activeBooking?.billing?.settlementStatus === 'SETTLED_COMPLETED' || activeBooking?.orderState === 'Completed';
       const defaultMode: AddUnderMinkMode =
         isSettled || isPureUnderLashServiceName(activeBooking?.serviceName)
           ? 'CREATE_NEW_BOOKING'

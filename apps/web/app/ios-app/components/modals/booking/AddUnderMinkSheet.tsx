@@ -233,7 +233,9 @@ export function AddUnderMinkSheet({
 
           {/* Service type: Mới 390K vs Dặm 250K */}
           <div className="space-y-1.5">
-            <div className={`text-[11px] font-extrabold uppercase tracking-wider ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+            <div
+              className={`text-[11px] font-extrabold uppercase tracking-wider ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}
+            >
               Chọn dịch vụ Mi Dưới (0.10 mm)
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -376,9 +378,7 @@ export function AddUnderMinkSheet({
               <div className="text-[14px] font-black text-purple-500 tabular-nums">
                 {effectiveAddPrice === 0 ? '0đ' : `+${effectiveAddPrice.toLocaleString('vi-VN')}đ`}
               </div>
-              {hasUnderComboActive && (
-                <div className="text-[9.5px] font-bold text-emerald-500">Trừ gói Mi Dưới</div>
-              )}
+              {hasUnderComboActive && <div className="text-[9.5px] font-bold text-emerald-500">Trừ gói Mi Dưới</div>}
             </div>
           </div>
 

@@ -1,10 +1,6 @@
 import mysql from 'mysql2/promise';
 import { FastifyInstance } from 'fastify';
-import {
-  canAccessIosConsultationApp,
-  IosBookingServiceCatalogItem,
-  IosCustomerLookupCandidate,
-} from '@mos-lab/shared';
+import { canAccessIosConsultationApp, IosBookingServiceCatalogItem, IosCustomerLookupCandidate } from '@mos-lab/shared';
 import { getLegacyPool } from './db-pools.js';
 import { IosAuthContext } from './ios-auth.service.js';
 import { defaultIosOverrideRepo } from './ios-overrides.service.js';

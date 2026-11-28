@@ -22,6 +22,7 @@ import {
   Trophy,
   Wallet,
   WalletCards,
+  Warehouse,
 } from 'lucide-react';
 import type { SafeAny } from '@mos-lab/shared';
 import { AppIcon } from '../../components/ui/AppIcon';
@@ -187,6 +188,21 @@ export function buildAdminAndReportSidebarGroups(params: {
   }
   if (isAdmin) {
     systemGroupItems.push(
+      {
+        key: 'inventory-parent',
+        label: 'Kho & Vật Tư',
+        icon: <AppIcon icon={Warehouse} size="sm" />,
+        children: [
+          { key: 'inventory-items', label: 'Quản Lý Kho (Tồn & Luân Chuyển)', path: '/dashboard/inventory/items' },
+          { key: 'inventory-orders', label: 'Phiếu Xuất / Nhập Kho', path: '/dashboard/inventory/orders' },
+          { key: 'inventory-limits', label: 'Định Mức Tồn Kho', path: '/dashboard/inventory/limits' },
+          { key: 'inventory-assign', label: 'Vật Tư Đang Giao NV', path: '/dashboard/inventory/assign' },
+          { key: 'inventory-assets', label: 'Theo Dõi Tài Sản', path: '/dashboard/inventory/assets' },
+          { key: 'inventory-scan-logs', label: 'Lịch Sử Quét Mã QR', path: '/dashboard/inventory/scan-logs' },
+          { key: 'inventory-catalog', label: 'Danh Mục SKU / Thương Hiệu / Kho', path: '/dashboard/inventory/catalog' },
+          { key: 'inventory-jobs', label: 'Cron Jobs & Tự Động Hóa', path: '/dashboard/inventory/jobs' },
+        ],
+      },
       {
         key: 'catalog',
         label: 'Quản lý Catalog',

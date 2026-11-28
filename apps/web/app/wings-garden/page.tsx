@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../../lib/api-client';
 import { useTheme } from '../../context/ThemeContext';
+import { MosAppLauncher } from '../../components/layout/MosAppLauncher';
 import {
   CvFeather1Badge,
   CvFeather2Badge,
@@ -219,6 +220,7 @@ export default function WingsGardenPage() {
           <div className="rounded-2xl bg-white/92 text-slate-900 border border-amber-200 shadow-sm px-3 py-2.5 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
+                <MosAppLauncher currentApp="general" shape="circle" />
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-300 to-amber-500 text-slate-950 font-black flex items-center justify-center text-xs shrink-0">
                   {previewRole === 'CVL' ? (
                     <CvFeather1Badge textClass="text-slate-950 text-xs" featherClass="w-3 h-3 text-amber-900" />

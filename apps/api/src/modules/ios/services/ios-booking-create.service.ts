@@ -414,8 +414,7 @@ export async function createIosDualModeBooking(
     );
 
     const resolvedServiceType = input.serviceType || (finalServiceId === 128 ? 'Retain' : 'Normal');
-    const resolvedServiceGroup =
-      finalServiceId === 127 || finalServiceId === 128 ? 'LashesUnder' : serviceGroup;
+    const resolvedServiceGroup = finalServiceId === 127 || finalServiceId === 128 ? 'LashesUnder' : serviceGroup;
 
     await fastify.prisma.legacy.$executeRawUnsafe(
       `INSERT INTO order_service (

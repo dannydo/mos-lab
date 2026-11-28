@@ -257,22 +257,20 @@ export function CheckoutReceiptSection({
                 effectiveServiceCharge={effectiveServiceCharge}
                 upgradePrice={upgradePrice}
               />
-              {!booking?.attributes?.hasUnderMink &&
-                !isPureUnderLashServiceName(serviceName) &&
-                onOpenAddUnderMink && (
-                  <button
-                    type="button"
-                    data-testid="add-under-mink-cta-checkout"
-                    onClick={onOpenAddUnderMink}
-                    className={`mt-1 inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-colors cursor-pointer active:scale-95 ${
-                      isDark
-                        ? 'bg-purple-950/50 border-purple-700/70 text-purple-200 hover:bg-purple-900/60'
-                        : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
-                    }`}
-                  >
-                    <span>{isSettled ? '+ Book ca Mi Dưới mới' : '+ Book thêm Mi Dưới (Vòng 2)'}</span>
-                  </button>
-                )}
+              {!booking?.attributes?.hasUnderMink && !isPureUnderLashServiceName(serviceName) && onOpenAddUnderMink && (
+                <button
+                  type="button"
+                  data-testid="add-under-mink-cta-checkout"
+                  onClick={onOpenAddUnderMink}
+                  className={`mt-1 inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-colors cursor-pointer active:scale-95 ${
+                    isDark
+                      ? 'bg-purple-950/50 border-purple-700/70 text-purple-200 hover:bg-purple-900/60'
+                      : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+                  }`}
+                >
+                  <span>{isSettled ? '+ Book ca Mi Dưới mới' : '+ Book thêm Mi Dưới (Vòng 2)'}</span>
+                </button>
+              )}
               <ReceiptItemPromotionBadge
                 isDark={isDark}
                 itemAmount={effectiveServiceCharge}

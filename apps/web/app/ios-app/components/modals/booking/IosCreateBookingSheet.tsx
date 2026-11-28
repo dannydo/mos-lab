@@ -358,7 +358,8 @@ export function IosCreateBookingSheet({
             <div className="max-h-44 overflow-y-auto grid grid-cols-1 gap-1.5 pr-0.5">
               {services.slice(0, 24).map((svc) => {
                 const active = selectedService.serviceId === svc.serviceId;
-                const isUnderOnly = svc.serviceGroup === 'LashesUnder' || /chỉ\s*mi\s*dưới|mi\s*dưới/i.test(svc.serviceName);
+                const isUnderOnly =
+                  svc.serviceGroup === 'LashesUnder' || /chỉ\s*mi\s*dưới|mi\s*dưới/i.test(svc.serviceName);
                 return (
                   <button
                     key={svc.serviceId}

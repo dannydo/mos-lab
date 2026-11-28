@@ -18,10 +18,9 @@ const IosCreateBookingSheet = dynamic(
   () => import('./modals/booking/IosCreateBookingSheet').then((m) => m.IosCreateBookingSheet),
   { ssr: false }
 );
-const AddUnderMinkSheet = dynamic(
-  () => import('./modals/booking/AddUnderMinkSheet').then((m) => m.AddUnderMinkSheet),
-  { ssr: false }
-);
+const AddUnderMinkSheet = dynamic(() => import('./modals/booking/AddUnderMinkSheet').then((m) => m.AddUnderMinkSheet), {
+  ssr: false,
+});
 
 interface IosAppGlobalOverlaysProps {
   state: ReturnType<typeof useIosAppState>;

@@ -72,7 +72,7 @@
 
 1. **Shared Types**: Define cross-package DTOs/constants in `packages/shared/src/` and rebuild `@mos-lab/shared` before consuming in `apps/*`.
 2. **Typed Frontend API Calls**: Always use `apiClient` (`apps/web/lib/api-client.ts`) — never raw Axios or raw `fetch()` calls inside feature/iOS modules.
-3. **Backend `.js` Extensions & Prisma Boundaries**: Relative imports in `apps/api` MUST end in `.js` (`NodeNext`). `fastify.prisma.crm` allows CRUD; `fastify.prisma.legacy` is **READ-ONLY** on transactional tables (`order`, `order_service`, `user`, `user_profile`, `staff_bonus`, `user_service_balance`) — write exception only for `/api/catalog/*` master metadata (`service*`, `product*`) protected by `requireRole(['admin'])` inside `$transaction`.
+3. **Backend `.js` Extensions & Prisma Boundaries**: Relative imports in `apps/api` MUST end in `.js` (`NodeNext`). `fastify.prisma.crm` allows CRUD; `fastify.prisma.legacy` is **READ-ONLY** on transactional tables (`order`, `order_service`, `user`, `user_profile`, `staff_bonus`, `user_service_balance`) — write exceptions ONLY for `/api/catalog/*` (`service*`, `product*`, Admin + `$transaction`) and `/api/inventory/*` (`inventory_*`, `report_inventory_*`, `user_scan_code` via `INVENTORY_DATABASE_URL`, Admin + transaction).
 4. **UI & Theme Parity**: Support `.light-theme` and `.dark-theme` equally, use `tabular-nums` for dynamic numbers/timers, and anchor Drawer `[✕]` close buttons top-right (`closable: { placement: 'end' }` via `AdaptiveDrawer`).
 5. **Code-Health Ratchet (`<= 650 LOC`)**: Keep new TS/TSX source modules `<= 650 LOC` (`pnpm check:code-health`) so AI agents can read & edit modules cleanly in a single pass. Never grow baseline legacy monoliths.
 

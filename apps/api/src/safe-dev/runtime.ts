@@ -32,6 +32,10 @@ export function assertSafeDevConfiguration(environment: SafeDevEnvironment = pro
       throw new Error(`MOS_SAFE_DEV requires ${key} to use a loopback database host`);
     }
   }
+
+  if (environment.INVENTORY_DATABASE_URL && !isLoopbackDatabaseUrl(environment.INVENTORY_DATABASE_URL)) {
+    throw new Error('MOS_SAFE_DEV requires INVENTORY_DATABASE_URL to use a loopback database host');
+  }
 }
 
 export function runtimeListenHost(environment: SafeDevEnvironment = process.env): string {

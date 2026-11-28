@@ -8,7 +8,9 @@ export interface IosServicingRoundSplit {
 
 export function isPureUnderLashServiceName(serviceName?: string | null): boolean {
   const lower = String(serviceName || '').toLowerCase();
-  return (lower.includes('mi dưới') || lower.includes('under mink') || lower.includes('under lash')) && !lower.includes('+');
+  return (
+    (lower.includes('mi dưới') || lower.includes('under mink') || lower.includes('under lash')) && !lower.includes('+')
+  );
 }
 
 export function bookingRequiresUnderLashRound(
@@ -201,7 +203,9 @@ export function buildAddUnderLashRoundFields(input: AddUnderLashRoundInput): Add
 
   const upperTargetDurationMinutes = Math.max(
     25,
-    Math.round(Number(input.upperTargetDurationMinutes || input.totalCommittedMinutes || input.currentServiceDuration || 60))
+    Math.round(
+      Number(input.upperTargetDurationMinutes || input.totalCommittedMinutes || input.currentServiceDuration || 60)
+    )
   );
   const underTargetDurationMinutes = isRetain ? 20 : 25;
   const totalDurationMinutes = upperTargetDurationMinutes + underTargetDurationMinutes;

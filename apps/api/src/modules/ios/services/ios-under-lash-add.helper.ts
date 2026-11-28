@@ -1,8 +1,4 @@
-import {
-  buildAddUnderLashRoundFields,
-  resolveActiveBookingComboWallets,
-  SafeAny,
-} from '@mos-lab/shared';
+import { buildAddUnderLashRoundFields, resolveActiveBookingComboWallets, SafeAny } from '@mos-lab/shared';
 import { INITIAL_BOOKINGS } from '../mock-data.js';
 import { BookingOverrideRecord } from './ios-overrides.service.js';
 import { persistIncomingRoundPhotosToCloud } from './ios-progress-sync.helper.js';
@@ -23,8 +19,7 @@ export function buildAddUnderLashRoundOverride(params: {
     ...(mockBaseline?.attributes || {}),
     ...(current.attributes || {}),
   };
-  const underMinkServiceType: 'Normal' | 'Retain' =
-    body?.underMinkServiceType === 'Retain' ? 'Retain' : 'Normal';
+  const underMinkServiceType: 'Normal' | 'Retain' = body?.underMinkServiceType === 'Retain' ? 'Retain' : 'Normal';
   const underMinkCurl: 'B' | 'C' = body?.underMinkCurl === 'B' ? 'B' : 'C';
   const underMinkLength = String(body?.underMinkLength || currentAttrs.underMinkLength || '7 mm').trim();
   const underMinkCount = String(body?.underMinkCount || currentAttrs.underMinkCount || '30 sợi').trim();
@@ -54,9 +49,7 @@ export function buildAddUnderLashRoundOverride(params: {
   });
 
   const hasUnderMinkCombo =
-    body?.hasUnderMinkCombo !== undefined
-      ? Boolean(body.hasUnderMinkCombo)
-      : resolvedWallets.isRedeemingUnderToday;
+    body?.hasUnderMinkCombo !== undefined ? Boolean(body.hasUnderMinkCombo) : resolvedWallets.isRedeemingUnderToday;
 
   const roundFields = buildAddUnderLashRoundFields({
     currentServiceName: current.serviceName || body?.currentServiceName || mockBaseline?.serviceName,
@@ -67,16 +60,14 @@ export function buildAddUnderLashRoundOverride(params: {
     currentCvRotationPoints:
       current.cvRotationPoints ?? body?.currentCvRotationPoints ?? mockBaseline?.cvRotationPoints,
     alreadyHasUnderMink: Boolean(currentAttrs.hasUnderMink),
-    previousUnderMinkServiceType:
-      currentAttrs.underMinkServiceType === 'Retain' ? 'Retain' : 'Normal',
+    previousUnderMinkServiceType: currentAttrs.underMinkServiceType === 'Retain' ? 'Retain' : 'Normal',
     isComboLive: resolvedWallets.isRedeemingUpperToday,
     hasUnderMinkCombo,
     underMinkServiceType,
     underMinkCurl,
     underMinkLength,
     underMinkCount,
-    upperTargetDurationMinutes:
-      current.progress?.upperTargetDurationMinutes || current.progress?.targetDurationMinutes,
+    upperTargetDurationMinutes: current.progress?.upperTargetDurationMinutes || current.progress?.targetDurationMinutes,
   });
 
   const nextBilling = current.billing
@@ -88,9 +79,7 @@ export function buildAddUnderLashRoundOverride(params: {
     : undefined;
 
   const incomingAfterPhoto =
-    typeof body?.afterPhotoUrl === 'string' && body.afterPhotoUrl.trim()
-      ? body.afterPhotoUrl.trim()
-      : undefined;
+    typeof body?.afterPhotoUrl === 'string' && body.afterPhotoUrl.trim() ? body.afterPhotoUrl.trim() : undefined;
 
   const nextProgress = {
     ...(current.progress || {}),

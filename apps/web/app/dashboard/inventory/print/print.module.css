@@ -1,0 +1,67 @@
+.printContainer {
+  background-color: white;
+  color: black;
+  padding: 20px;
+}
+
+.printTable {
+  width: 100%;
+  border-collapse: collapse;
+  color: black;
+  font-size: 12px;
+}
+
+.printTable th,
+.printTable td {
+  border: 1px solid black;
+  padding: 4px 6px;
+}
+
+.printTable th {
+  background-color: whitesmoke;
+  font-weight: 700;
+}
+
+.thermalPage {
+  break-after: page;
+  page-break-after: always;
+  background-color: white;
+  color: black;
+}
+
+.labelCard102x28 {
+  width: 100px;
+  height: 181px;
+  border: 1px dashed lightgray;
+  padding: 4px;
+  background-color: white;
+  color: black;
+}
+
+.labelCard102x19 {
+  width: 72px;
+  height: 120px;
+  border: 1px dashed lightgray;
+  padding: 3px;
+  background-color: white;
+  color: black;
+}
+
+.labelCard104x12 {
+  width: 44px;
+  height: 76px;
+  border: 1px dashed lightgray;
+  padding: 2px;
+  background-color: white;
+  color: black;
+}
+
+@media print {
+  .noPrint {
+    display: none;
+  }
+
+  .printContainer {
+    padding: 0;
+  }
+}
