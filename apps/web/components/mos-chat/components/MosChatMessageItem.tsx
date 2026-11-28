@@ -126,6 +126,7 @@ export interface MosChatMessageItemProps {
   accessibleConversationIds?: Set<string>;
   onJumpToForwardedSource?: (sourceConversationId: string, sourceMessageId: string) => void;
   handleOpenReactionUsers?: (target: SafeAny, initialEmoji?: string) => void;
+  quickReactionEmojis?: readonly string[];
 }
 
 export const MosChatMessageItem: React.FC<MosChatMessageItemProps> = React.memo(
@@ -228,6 +229,7 @@ export const MosChatMessageItem: React.FC<MosChatMessageItemProps> = React.memo(
     accessibleConversationIds,
     onJumpToForwardedSource,
     handleOpenReactionUsers,
+    quickReactionEmojis,
   }) => {
     const senderNick = getMemberNickname(m.senderId);
     const activeWorkflow =
@@ -582,6 +584,7 @@ export const MosChatMessageItem: React.FC<MosChatMessageItemProps> = React.memo(
               threadOpen={threadOpen}
               activeThreadMessage={activeThreadMessage}
               handleMoveThreadItem={handleMoveThreadItem}
+              quickReactionEmojis={quickReactionEmojis}
             />
           </div>
 

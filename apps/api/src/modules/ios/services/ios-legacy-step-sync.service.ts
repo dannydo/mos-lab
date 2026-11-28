@@ -24,6 +24,7 @@ export const STEP_SYNC_ELIGIBLE_ACTIONS = new Set([
   'UPDATE_PROGRESS',
   'SAVE_PROGRESS',
   'NEXT_SERVICE_ROUND',
+  'ADD_UNDER_LASH_ROUND',
   'COMPLETE_SURVEY',
   'SAVE_SURVEY',
   'SAVE_UPSELL_AND_CHECKOUT',
@@ -375,7 +376,8 @@ export async function syncIosStepWithLegacyPhp(
       action === 'START_SERVICE' ||
       action === 'UPDATE_PROGRESS' ||
       action === 'SAVE_PROGRESS' ||
-      action === 'NEXT_SERVICE_ROUND'
+      action === 'NEXT_SERVICE_ROUND' ||
+      action === 'ADD_UNDER_LASH_ROUND'
     ) {
       return await syncServicingRoundsToLegacyPhp({
         bookingId,

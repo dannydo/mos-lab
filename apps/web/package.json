@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_OPTIONS='--max-old-space-size=4096' next dev --webpack --port 4000 -H 0.0.0.0",
+    "dev": "next dev --turbopack --port 4000 -H 0.0.0.0",
+    "dev:webpack": "NODE_OPTIONS='--max-old-space-size=4096' next dev --webpack --port 4000 -H 0.0.0.0",
     "build": "node scripts/next-build-with-lock.mjs",
     "clean": "rm -rf .next .next-performance .next-qa out",
     "start": "next start",

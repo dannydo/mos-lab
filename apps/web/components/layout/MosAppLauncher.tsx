@@ -126,9 +126,13 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
     getBugReportBadgeServerSnapshot
   );
   const isCv = isCvRole(effectiveRole);
-  const bugAttentionCount = !isCv ? bugBadge.actionRequiredCount || bugBadge.unreadCount : 0;
-  const effectiveMissionBadge = missionBadgeCount ?? bugAttentionCount;
-  const relevantChatCount = currentApp !== 'chat' ? unreadChatCount : 0;
+  const actionRequiredCount = Math.max(0, Number(bugBadge.actionRequiredCount) || 0);
+  const unreadBugCount = Math.max(0, Number(bugBadge.unreadCount) || 0);
+  const bugAttentionCount = !isCv ? (actionRequiredCount > 0 ? actionRequiredCount : unreadBugCount) : 0;
+  // Deduplicate with footer feedback action: when missionBadgeCount is omitted, mOS Mission carries the single badge.
+  const effectiveMissionBadge =
+    missionBadgeCount !== undefined ? Math.max(0, Number(missionBadgeCount) || 0) : bugAttentionCount;
+  const relevantChatCount = currentApp !== 'chat' ? Math.max(0, Number(unreadChatCount) || 0) : 0;
   const totalOutsideBadgeCount = relevantChatCount + bugAttentionCount;
 
   useEffect(() => {

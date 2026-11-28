@@ -25,12 +25,15 @@ import type {
 } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
+import { MaiDebugControlPill } from './MaiDebugControlPill';
 import { syncTextareaHeightSmart } from './MosChatComposer';
 
 export interface MosChatComposerMobileProps {
   token: GlobalToken;
+  isDark?: boolean;
   activeConversation: MosChatConversation | null;
   canUseAiCopilot: boolean;
+  isStrictDannySuperAdmin?: boolean;
   surfaceRaised: string;
   borderStrong: string;
   mobileActionOpen: boolean;
@@ -74,8 +77,10 @@ export interface MosChatComposerMobileProps {
 
 export const MosChatComposerMobile: React.FC<MosChatComposerMobileProps> = ({
   token,
+  isDark = true,
   activeConversation,
   canUseAiCopilot,
+  isStrictDannySuperAdmin = false,
   surfaceRaised,
   borderStrong,
   mobileActionOpen,
@@ -264,6 +269,21 @@ export const MosChatComposerMobile: React.FC<MosChatComposerMobileProps> = ({
 
       {/* Apple Notes Style Format Toolbar for Mobile */}
       {formatBarOpenMain && renderAppleNotesFormatToolbar('main')}
+
+      {isStrictDannySuperAdmin && (
+        <div className="flex items-center gap-1.5 pb-0.5">
+          <MaiDebugControlPill
+            isStrictDannySuperAdmin={isStrictDannySuperAdmin}
+            isDark={isDark}
+            isAiPrivateConv={activeConversation?.id === AI_COPILOT_CONV_ID}
+            compact
+            onEnsureMaiMention={() => {
+              setComposerText((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
+              composerInputRef.current?.focus();
+            }}
+          />
+        </div>
+      )}
 
       {/* Mobile Main Row */}
       <div className="flex items-center gap-1.5">

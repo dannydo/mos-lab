@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { requireAuth } from '../../../middlewares/auth.js';
+import { requireAuth, requireRole } from '../../../middlewares/auth.js';
 import { CvConfigResponse, CvStaffOption, CvXoayRecord, CvXoayReportResponse, SafeAny } from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
 import { FAL_RULE_VALUES_SQL, FAL_TRACKING_KEY_SQL_CASES } from '../services/cc-kpi.service.js';
@@ -361,7 +361,7 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
   });
 
   // POST /api/kpi/cv-config (Save ACTIVE_CV_STAFF_CONFIG)
-  fastify.post('/kpi/cv-config', { preHandler: [requireAuth] }, async (request, reply) => {
+  fastify.post('/kpi/cv-config', { preHandler: [requireAuth, requireRole(['admin'])] }, async (request, reply) => {
     const { activeCvIds } = request.body as { activeCvIds: number[] };
 
     if (!Array.isArray(activeCvIds)) {

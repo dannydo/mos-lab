@@ -384,4 +384,52 @@ describe('useMyBugReports', () => {
 
     expect(apiMocks.markNotificationsRead).toHaveBeenCalledWith({ notificationIds: [901] });
   });
+
+  it('clears stale unread notifications during background badge polling when server returns zero unread', async () => {
+    vi.useFakeTimers();
+    try {
+      apiMocks.badgeSummary
+        .mockResolvedValueOnce({
+          unreadCount: 1,
+          actionRequiredCount: 0,
+          readyForDannyCount: 0,
+          unreadNotifications: [
+            {
+              id: 501,
+              reportId: 257,
+              reportKey: 'MOS-BUG-257',
+              type: 'BUG_CLARIFICATION_NEEDED',
+              title: 'MOS-BUG-257 cần bổ sung',
+              message: 'Chi tiết',
+              actionUrl: '/dashboard?bugReview=MOS-BUG-257',
+              readAt: null,
+              createdAt: '2026-11-23T10:00:00Z',
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          unreadCount: 0,
+          actionRequiredCount: 0,
+          readyForDannyCount: 0,
+          unreadNotifications: [],
+        });
+
+      const { result } = renderHook(() => useMyBugReports(true, false));
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1_500);
+      });
+      expect(result.current.unreadCount).toBe(1);
+      expect(result.current.notifications).toHaveLength(1);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+      expect(result.current.unreadCount).toBe(0);
+      expect(result.current.actionRequiredCount).toBe(0);
+      expect(result.current.notifications).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

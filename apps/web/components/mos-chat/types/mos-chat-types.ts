@@ -217,6 +217,12 @@ export interface MosChatContextValue {
   openAiSessionById?: (sessionId: string) => Promise<boolean>;
   refresh: () => Promise<void>;
 
+  // Smart Emoji Usage
+  frequentEmojis?: string[];
+  quickReactionEmojis?: string[];
+  recordEmojiUsed?: (emoji: string) => void;
+  resetEmojiUsage?: () => void;
+
   // Customer Detail Drawer Integration
   openCustomerDetail?: (customerId: number) => void;
 }

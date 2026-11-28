@@ -293,11 +293,16 @@ export async function syncServicingRoundsToLegacyPhp(
   let activeOsIds = [...params.activeOrderServiceIds];
   const progress = mergedOverride.progress as IosBookingProgress | undefined;
 
-  if (action === 'NEXT_SERVICE_ROUND') {
+  if (action === 'NEXT_SERVICE_ROUND' || action === 'ADD_UNDER_LASH_ROUND') {
     if (assignedStaffId <= 0) {
       return { synced: false, status: 'SKIPPED' };
     }
-    if (preCheckInStates.has(effectiveOrderState) || effectiveOrderState === 'CheckIn') {
+    if (
+      action === 'ADD_UNDER_LASH_ROUND' ||
+      preCheckInStates.has(effectiveOrderState) ||
+      effectiveOrderState === 'CheckIn' ||
+      (mergedOverride.attributes?.hasUnderMink && activeOsIds.length < 2)
+    ) {
       const consultRes = await ensureConsulted();
       if (!consultRes.ok) return { synced: false, status: 'DEFERRED', warning: consultRes.warning };
       activeOsIds = await refreshOrderServiceIds();

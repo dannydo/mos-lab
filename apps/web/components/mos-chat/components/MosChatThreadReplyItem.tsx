@@ -94,6 +94,7 @@ export interface MosChatThreadReplyItemProps {
   handleDeleteMessage: (msgId: string, replyId?: string) => void;
   setHistoryModalMessage: (m: SafeAny) => void;
   setHistoryModalOpen: (open: boolean) => void;
+  quickReactionEmojis?: readonly string[];
 }
 
 export const MosChatThreadReplyItem: React.FC<MosChatThreadReplyItemProps> = React.memo(
@@ -165,6 +166,7 @@ export const MosChatThreadReplyItem: React.FC<MosChatThreadReplyItemProps> = Rea
     handleDeleteMessage,
     setHistoryModalMessage,
     setHistoryModalOpen,
+    quickReactionEmojis,
   }) => {
     const nick = getMemberNickname(r.senderId);
 
@@ -520,6 +522,7 @@ export const MosChatThreadReplyItem: React.FC<MosChatThreadReplyItemProps> = Rea
               setHistoryModalMessage={setHistoryModalMessage}
               setHistoryModalOpen={setHistoryModalOpen}
               antdMessage={antdMessage}
+              quickReactionEmojis={quickReactionEmojis}
             />
           </div>
         </div>

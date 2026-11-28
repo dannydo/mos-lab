@@ -409,7 +409,13 @@ export function buildLegacyOrderPayloads(input: BuildLegacyPaymentPayloadInput):
       ? null
       : effectivePromotionId;
 
-  const upperAttrMap = buildUpperLashAttributeMap({ attributes, serviceName, selectedCombo });
+  const isPureUnderSlotZero =
+    catalog.upperService.serviceGroup === 'LashesUnder' ||
+    catalog.upperService.serviceId === 127 ||
+    catalog.upperService.serviceId === 128;
+  const upperAttrMap = isPureUnderSlotZero
+    ? buildUnderLashAttributeMap(attributes)
+    : buildUpperLashAttributeMap({ attributes, serviceName, selectedCombo });
   const underAttrMap = buildUnderLashAttributeMap(attributes);
   const upperGroupKey = catalog.upperService.serviceGroup || 'LashesTop';
   const underGroupKey = catalog.underService?.serviceGroup || 'LashesUnder';

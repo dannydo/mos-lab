@@ -442,3 +442,112 @@ test('AI Chat rejects non-admin users with 403 Forbidden', async () => {
   assert.equal(data.error, 'Forbidden');
   assert.match(data.message, /Chỉ Admin mới được phép trò chuyện với mOS AI/);
 });
+
+test('GET /ai/ag-models is strictly Super Admin only and returns the Antigravity model catalog', async () => {
+  const buildApp = async (user: { id: number; username: string; displayName: string; role: UserRole }) => {
+    const app = Fastify();
+    app.decorateRequest('jwtVerify', async function () {
+      this.user = user;
+    });
+    await app.register(aiRoutes);
+    return app;
+  };
+
+  // Regular admin (non-Danny) must get 403
+  const adminApp = await buildApp({
+    id: 202,
+    username: 'branch_admin',
+    displayName: 'Branch Admin',
+    role: 'admin',
+  });
+  const adminRes = await adminApp.inject({ method: 'GET', url: '/ai/ag-models' });
+  assert.equal(adminRes.statusCode, 403);
+
+  // Telesales must get 403
+  const salesApp = await buildApp({
+    id: 303,
+    username: 'telesales_1',
+    displayName: 'Telesales',
+    role: 'telesales',
+  });
+  const salesRes = await salesApp.inject({ method: 'GET', url: '/ai/ag-models' });
+  assert.equal(salesRes.statusCode, 403);
+
+  // Super Admin Danny gets 200 with full AG catalog
+  const superApp = await buildApp({
+    id: 1,
+    username: 'danhdo@gmail.com',
+    displayName: 'Danny Do',
+    role: 'super_admin',
+  });
+  const superRes = await superApp.inject({ method: 'GET', url: '/ai/ag-models' });
+  assert.equal(superRes.statusCode, 200);
+  const body = JSON.parse(superRes.body);
+  assert.ok(Array.isArray(body.models));
+  const ids = new Set(body.models.map((m: { id: string }) => m.id));
+  for (const expectedId of [
+    'gemini-4-neon-high',
+    'gemini-4-carbon-medium',
+    'gemini-4-argon-medium',
+    'gemini-4-hydrogen-high',
+    'gemini-pro-orchestrator-neon',
+    'gemini-3.8-flash-high',
+    'claude-opus-5-5-medium',
+    'claude-sonnet-5-5-high',
+    'gpt-oss-120b-medium',
+  ]) {
+    assert.ok(ids.has(expectedId), `expected model ${expectedId} in /ai/ag-models`);
+  }
+});
+
+test('POST /ai/chat/message rejects debugMode, /debug prefix, and custom modelId for regular admin, and rejects invalid modelId for super_admin', async () => {
+  const buildApp = async (user: { id: number; username: string; displayName: string; role: UserRole }) => {
+    const app = Fastify();
+    app.decorateRequest('jwtVerify', async function () {
+      this.user = user;
+    });
+    await app.register(aiRoutes);
+    return app;
+  };
+
+  const adminApp = await buildApp({
+    id: 202,
+    username: 'branch_admin',
+    displayName: 'Branch Admin',
+    role: 'admin',
+  });
+
+  const debugRes = await adminApp.inject({
+    method: 'POST',
+    url: '/ai/chat/message',
+    payload: { message: 'Kiểm tra code giúp tôi', debugMode: true },
+  });
+  assert.equal(debugRes.statusCode, 403);
+
+  const slashDebugRes = await adminApp.inject({
+    method: 'POST',
+    url: '/ai/chat/message',
+    payload: { message: '/debug kiểm tra bug này' },
+  });
+  assert.equal(slashDebugRes.statusCode, 403);
+
+  const modelRes = await adminApp.inject({
+    method: 'POST',
+    url: '/ai/chat/message',
+    payload: { message: 'Chào MAI', modelId: 'claude-opus-5-5-medium' },
+  });
+  assert.equal(modelRes.statusCode, 403);
+
+  const superApp = await buildApp({
+    id: 1,
+    username: 'danhdo@gmail.com',
+    displayName: 'Danny Do',
+    role: 'super_admin',
+  });
+  const invalidModelRes = await superApp.inject({
+    method: 'POST',
+    url: '/ai/chat/message',
+    payload: { message: 'Chào MAI', modelId: 'rm -rf /' },
+  });
+  assert.equal(invalidModelRes.statusCode, 400);
+});

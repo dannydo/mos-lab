@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Award, BookOpen } from 'lucide-react';
+import { Award, BookOpen, Trophy } from 'lucide-react';
 import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { AppleSimulatorShell, type StudioTabItem } from './AppleSimulatorShell';
+import { FmGuideProvider } from './FmInfoGuideModal';
 import { FmCockpitView, type FmPresetKey } from './FmCockpitView';
+import { FmQuestsAndDinnerHub } from './FmQuestsAndDinnerHub';
 import { RulesBlueprintView } from './RulesBlueprintView';
 import {
   BRANCH_SPECS,
@@ -15,7 +17,7 @@ import {
   simulateFm,
 } from './fm-simulator.engine';
 
-type FmTab = 'cockpit' | 'rules';
+type FmTab = 'cockpit' | 'quests' | 'rules';
 
 const FM_TABS: readonly StudioTabItem<FmTab>[] = [
   {
@@ -23,6 +25,12 @@ const FM_TABS: readonly StudioTabItem<FmTab>[] = [
     label: 'Mô Phỏng FM',
     shortLabel: 'Mô phỏng',
     icon: <Award className="h-4 w-4" />,
+  },
+  {
+    id: 'quests',
+    label: 'Quest & Tiệc Tháng',
+    shortLabel: 'Quest',
+    icon: <Trophy className="h-4 w-4" />,
   },
   {
     id: 'rules',
@@ -78,6 +86,10 @@ export function FmSimulatorStudio({
           cvs: 16,
           autonomyPct: 60,
           cvllKeyholders: 2,
+          bondingDinnerOrganized: true,
+          bondingHasSocialCheckin: true,
+          bondingParticipationPct: 90,
+          weeklyQuestsCompletedInMonth: 12,
           stars: createUniformStars(3),
           pillarMetrics: createMetricsForUniformStar(3, 16),
           pillarMaxRewards: prev.pillarMaxRewards,
@@ -91,6 +103,9 @@ export function FmSimulatorStudio({
           cvs: BRANCH_SPECS.ep.presetDefaultCvs,
           autonomyPct: 50,
           cvllKeyholders: 1,
+          bondingDinnerOrganized: true,
+          bondingHasSocialCheckin: true,
+          bondingParticipationPct: 80,
           stars: createUniformStars(2),
           pillarMetrics: createMetricsForUniformStar(2, BRANCH_SPECS.ep.presetDefaultCvs),
           pillarMaxRewards: prev.pillarMaxRewards,
@@ -103,7 +118,11 @@ export function FmSimulatorStudio({
         cvs: 8,
         autonomyPct: 25,
         cvllKeyholders: 0,
-        stars: { ...createUniformStars(1), autonomy: 0 },
+        bondingDinnerOrganized: false,
+        bondingHasSocialCheckin: false,
+        bondingParticipationPct: 0,
+        weeklyQuestsCompletedInMonth: 4,
+        stars: { ...createUniformStars(1), autonomy: 0, bonding: 0 },
         pillarMetrics: createMetricsForUniformStar(1, 8),
         pillarMaxRewards: prev.pillarMaxRewards,
       };
@@ -111,30 +130,34 @@ export function FmSimulatorStudio({
   };
 
   return (
-    <AppleSimulatorShell<FmTab>
-      title="Mô Phỏng Lương FM 7★"
-      subtitle={`${spec.name} · ${input.cvs} CV · ${fmResult.fmCount} FM`}
-      standaloneMobile={standaloneMobile}
-      embedded={embedded}
-      mobileHref="/fm-simulator"
-      peerLink={!embedded && canViewPnl ? { href: '/dashboard/pnl-simulator', label: 'P&L Studio' } : undefined}
-      tabs={FM_TABS}
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      onReset={() => setInput(DEFAULT_SIMULATOR_INPUT)}
-      renderPanel={(compact) =>
-        activeTab === 'cockpit' ? (
-          <FmCockpitView
-            input={input}
-            fm={fmResult}
-            compact={compact}
-            onChange={handleChange}
-            onApplyPreset={handleApplyPreset}
-          />
-        ) : (
-          <RulesBlueprintView compact={compact} mode="fm" />
-        )
-      }
-    />
+    <FmGuideProvider>
+      <AppleSimulatorShell<FmTab>
+        title="Mô Phỏng Lương FM 8★"
+        subtitle={`${spec.name} · ${input.cvs} CV · ${fmResult.fmCount} FM`}
+        standaloneMobile={standaloneMobile}
+        embedded={embedded}
+        mobileHref="/fm-simulator"
+        peerLink={!embedded && canViewPnl ? { href: '/dashboard/pnl-simulator', label: 'P&L Studio' } : undefined}
+        tabs={FM_TABS}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onReset={() => setInput(DEFAULT_SIMULATOR_INPUT)}
+        renderPanel={(compact) =>
+          activeTab === 'cockpit' ? (
+            <FmCockpitView
+              input={input}
+              fm={fmResult}
+              compact={compact}
+              onChange={handleChange}
+              onApplyPreset={handleApplyPreset}
+            />
+          ) : activeTab === 'quests' ? (
+            <FmQuestsAndDinnerHub branch={input.branch} compact={compact} />
+          ) : (
+            <RulesBlueprintView compact={compact} mode="fm" />
+          )
+        }
+      />
+    </FmGuideProvider>
   );
 }

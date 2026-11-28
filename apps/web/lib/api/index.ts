@@ -22,6 +22,7 @@ import { financialGoalsApi } from './financial-goals.api';
 import { iosApi } from './ios.api';
 import { wingsGardenApi } from './wings-garden.api';
 import { inventoryApi } from './inventory.api';
+import { fmQuestsApi } from './fm-quests.api';
 
 export * from './base';
 export * from './ai.api';
@@ -37,6 +38,7 @@ export * from './financial-goals.api';
 export * from './ios.api';
 export * from './wings-garden.api';
 export * from './inventory.api';
+export * from './fm-quests.api';
 
 export const apiClient = {
   ...payrollApi,
@@ -63,6 +65,7 @@ export const apiClient = {
   ...iosApi,
   ...wingsGardenApi,
   ...inventoryApi,
+  ...fmQuestsApi,
   cs: {
     ...telecomApi.cs,
     ...kpiApi.cs,

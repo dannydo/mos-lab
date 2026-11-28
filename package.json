@@ -10,6 +10,7 @@
     "build:all": "turbo build",
     "build:web": "pnpm --filter @mos-lab/shared build && pnpm --filter @mos-lab/web build",
     "dev": "turbo dev",
+    "dev:health": "bash scripts/dev-health.sh",
     "lint": "turbo lint && pnpm check:ui-contract && pnpm check:code-health",
     "typecheck": "turbo typecheck",
     "test:run": "turbo test:run",

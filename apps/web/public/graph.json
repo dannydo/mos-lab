@@ -5690,7 +5690,21 @@
         "path": "/api/ag-task-bridge/chat/next",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 20
+        "line": 21
+      }
+    },
+    {
+      "id": "route:GET:/api/ai/ag-models",
+      "type": "FastifyRoute",
+      "label": "GET /api/ai/ag-models",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/ai/routes/ai-chat-sessions.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/ai/ag-models",
+        "module": "ai",
+        "handler": "inlineHandler",
+        "line": 13
       }
     },
     {
@@ -6558,7 +6572,7 @@
         "path": "/api/bug-reports/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 306
+        "line": 311
       }
     },
     {
@@ -8238,7 +8252,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 81
+        "line": 83
       }
     },
     {
@@ -8252,7 +8266,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 210
+        "line": 224
       }
     },
     {
@@ -8266,7 +8280,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 297
+        "line": 311
       }
     },
     {
@@ -8280,7 +8294,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 380
+        "line": 407
       }
     },
     {
@@ -8294,7 +8308,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 406
+        "line": 433
       }
     },
     {
@@ -11737,7 +11751,7 @@
         "method": "POST",
         "path": "/api/kpi/cv-allowances",
         "module": "kpi",
-        "handler": "inlineHandler",
+        "handler": "preHandler",
         "line": 7
       }
     },
@@ -11751,7 +11765,7 @@
         "method": "DELETE",
         "path": "/api/kpi/cv-allowances/:id",
         "module": "kpi",
-        "handler": "inlineHandler",
+        "handler": "preHandler",
         "line": 54
       }
     },
@@ -11766,7 +11780,7 @@
         "path": "/api/kpi/cv-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 79
+        "line": 83
       }
     },
     {
@@ -11905,7 +11919,7 @@
         "method": "POST",
         "path": "/api/kpi/cv-config",
         "module": "kpi",
-        "handler": "inlineHandler",
+        "handler": "preHandler",
         "line": 364
       }
     },
@@ -22745,6 +22759,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:ComboDebtBonusMode",
+      "type": "SharedType",
+      "label": "ComboDebtBonusMode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ComboDebtBonusMode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:CareerPeriod",
       "type": "SharedType",
       "label": "CareerPeriod",
@@ -23005,6 +23031,18 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CvPlusComboDetail",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvPlusDebtCollectionDetail",
+      "type": "SharedType",
+      "label": "CvPlusDebtCollectionDetail",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression/career-status.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvPlusDebtCollectionDetail",
         "package": "@mos-lab/shared"
       }
     },
@@ -26569,6 +26607,210 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "FinancialGoalsOverview",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmBranchCode",
+      "type": "SharedType",
+      "label": "FmBranchCode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmBranchCode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmWeeklyQuestType",
+      "type": "SharedType",
+      "label": "FmWeeklyQuestType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmWeeklyQuestType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmTeamDinnerStatus",
+      "type": "SharedType",
+      "label": "FmTeamDinnerStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmTeamDinnerStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmQuestTargetConfig",
+      "type": "SharedType",
+      "label": "FmQuestTargetConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmQuestTargetConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmWeeklyQuestDefinition",
+      "type": "SharedType",
+      "label": "FmWeeklyQuestDefinition",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmWeeklyQuestDefinition",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmWeeklyQuestsConfig",
+      "type": "SharedType",
+      "label": "FmWeeklyQuestsConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmWeeklyQuestsConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmWeeklyQuestDetailItem",
+      "type": "SharedType",
+      "label": "FmWeeklyQuestDetailItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmWeeklyQuestDetailItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmWeeklyQuestLiveEval",
+      "type": "SharedType",
+      "label": "FmWeeklyQuestLiveEval",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmWeeklyQuestLiveEval",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmWeeklyQuestLedgerEntry",
+      "type": "SharedType",
+      "label": "FmWeeklyQuestLedgerEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmWeeklyQuestLedgerEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmTeamDinnerRecord",
+      "type": "SharedType",
+      "label": "FmTeamDinnerRecord",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmTeamDinnerRecord",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmBondingSummary",
+      "type": "SharedType",
+      "label": "FmBondingSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmBondingSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FmQuestsOverviewResponse",
+      "type": "SharedType",
+      "label": "FmQuestsOverviewResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FmQuestsOverviewResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SaveFmQuestsConfigRequest",
+      "type": "SharedType",
+      "label": "SaveFmQuestsConfigRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SaveFmQuestsConfigRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SubmitFmQuestProofRequest",
+      "type": "SharedType",
+      "label": "SubmitFmQuestProofRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SubmitFmQuestProofRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SettleFmWeeklyQuestRequest",
+      "type": "SharedType",
+      "label": "SettleFmWeeklyQuestRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SettleFmWeeklyQuestRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SubmitFmTeamDinnerRequest",
+      "type": "SharedType",
+      "label": "SubmitFmTeamDinnerRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SubmitFmTeamDinnerRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ReviewFmTeamDinnerRequest",
+      "type": "SharedType",
+      "label": "ReviewFmTeamDinnerRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ReviewFmTeamDinnerRequest",
         "package": "@mos-lab/shared"
       }
     },
@@ -31129,6 +31371,18 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatChannelNotificationOverride",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatEmojiUsageEntry",
+      "type": "SharedType",
+      "label": "MosChatEmojiUsageEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatEmojiUsageEntry",
         "package": "@mos-lab/shared"
       }
     },
@@ -38561,6 +38815,54 @@
       }
     },
     {
+      "id": "uicomp:FmGrowthControlsSection",
+      "type": "UIComponent",
+      "label": "<FmGrowthControlsSection />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/FmGrowthControlsSection.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FmGrowthControlsSection",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:FmGuideIllustration",
+      "type": "UIComponent",
+      "label": "<FmGuideIllustration />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/FmGuideIllustration.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FmGuideIllustration",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:FmHubModePanel",
+      "type": "UIComponent",
+      "label": "<FmHubModePanel />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/FmHubModePanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FmHubModePanel",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:FmInfoGuideModal",
+      "type": "UIComponent",
+      "label": "<FmInfoGuideModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/FmInfoGuideModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FmInfoGuideModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:FmPillarCard",
       "type": "UIComponent",
       "label": "<FmPillarCard />",
@@ -38569,6 +38871,42 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "FmPillarCard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:FmQuestEditorModal",
+      "type": "UIComponent",
+      "label": "<FmQuestEditorModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/FmQuestEditorModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FmQuestEditorModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:FmQuestsAndDinnerHub",
+      "type": "UIComponent",
+      "label": "<FmQuestsAndDinnerHub />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/FmQuestsAndDinnerHub.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FmQuestsAndDinnerHub",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:FmRevPerCvLockRow",
+      "type": "UIComponent",
+      "label": "<FmRevPerCvLockRow />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/FmRevPerCvLockRow.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FmRevPerCvLockRow",
         "isPrimitive": false
       }
     },
@@ -38593,6 +38931,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "FmSimulatorStudio",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:FmTeamDinnerModal",
+      "type": "UIComponent",
+      "label": "<FmTeamDinnerModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/FmTeamDinnerModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "FmTeamDinnerModal",
         "isPrimitive": false
       }
     },
@@ -38633,6 +38983,42 @@
       }
     },
     {
+      "id": "uicomp:fm-guide-catalog.test",
+      "type": "UIComponent",
+      "label": "<fm-guide-catalog.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/fm-guide-catalog.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "fm-guide-catalog.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:fm-guide-content-controls",
+      "type": "UIComponent",
+      "label": "<fm-guide-content-controls />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/fm-guide-content-controls.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "fm-guide-content-controls",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:fm-guide-content-pillars",
+      "type": "UIComponent",
+      "label": "<fm-guide-content-pillars />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/fm-guide-content-pillars.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "fm-guide-content-pillars",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:fm-simulator.constants",
       "type": "UIComponent",
       "label": "<fm-simulator.constants />",
@@ -38665,6 +39051,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "fm-simulator.engine",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:fm-simulator.helpers",
+      "type": "UIComponent",
+      "label": "<fm-simulator.helpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/fm-simulator/fm-simulator.helpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "fm-simulator.helpers",
         "isPrimitive": false
       }
     },
@@ -38833,6 +39231,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosAppLauncher",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosAppLauncherPanel",
+      "type": "UIComponent",
+      "label": "<MosAppLauncherPanel />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/layout/MosAppLauncherPanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosAppLauncherPanel",
         "isPrimitive": false
       }
     },
@@ -39437,6 +39847,18 @@
       }
     },
     {
+      "id": "uicomp:MaiDebugControlPill.test",
+      "type": "UIComponent",
+      "label": "<MaiDebugControlPill.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MaiDebugControlPill.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MaiDebugControlPill.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MissionGateCard.test",
       "type": "UIComponent",
       "label": "<MissionGateCard.test />",
@@ -39845,6 +40267,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatSmartEmojiPicker.test",
+      "type": "UIComponent",
+      "label": "<MosChatSmartEmojiPicker.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatSmartEmojiPicker.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatSmartEmojiPicker.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatSpaceConfig.test",
       "type": "UIComponent",
       "label": "<MosChatSpaceConfig.test />",
@@ -39997,6 +40431,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useChatRealtimeSync.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MaiDebugControlPill",
+      "type": "UIComponent",
+      "label": "<MaiDebugControlPill />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MaiDebugControlPill.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MaiDebugControlPill",
         "isPrimitive": false
       }
     },
@@ -42917,6 +43363,18 @@
       }
     },
     {
+      "id": "uicomp:useChatEmojiUsage",
+      "type": "UIComponent",
+      "label": "<useChatEmojiUsage />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/shared/hooks/useChatEmojiUsage.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useChatEmojiUsage",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:useChatReadReceipts",
       "type": "UIComponent",
       "label": "<useChatReadReceipts />",
@@ -42961,6 +43419,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useChatUploadQueue",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useMaiDebugSettings",
+      "type": "UIComponent",
+      "label": "<useMaiDebugSettings />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/shared/hooks/useMaiDebugSettings.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useMaiDebugSettings",
         "isPrimitive": false
       }
     },
@@ -46813,8 +47283,8 @@
       "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4241,
-        "lineCount": 107,
+        "sizeBytes": 8511,
+        "lineCount": 204,
         "ext": ".ts"
       }
     },
@@ -46826,8 +47296,21 @@
       "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22273,
-        "lineCount": 625,
+        "sizeBytes": 22570,
+        "lineCount": 639,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/ag-models-registry.ts",
+      "type": "File",
+      "label": "ag-models-registry.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/ag-models-registry.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5662,
+        "lineCount": 196,
         "ext": ".ts"
       }
     },
@@ -46839,8 +47322,8 @@
       "filePath": "apps/api/src/modules/ai/ai-service/ai-chat-context.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6823,
-        "lineCount": 212,
+        "sizeBytes": 7570,
+        "lineCount": 228,
         "ext": ".ts"
       }
     },
@@ -46852,8 +47335,8 @@
       "filePath": "apps/api/src/modules/ai/ai-service/ai-chat-delivery.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5739,
-        "lineCount": 179,
+        "sizeBytes": 6259,
+        "lineCount": 192,
         "ext": ".ts"
       }
     },
@@ -46865,8 +47348,21 @@
       "filePath": "apps/api/src/modules/ai/ai-service/ai-chat-orchestrator.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3763,
-        "lineCount": 117,
+        "sizeBytes": 5465,
+        "lineCount": 161,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ai/ai-service/ai-debug-mode.ts",
+      "type": "File",
+      "label": "ai-debug-mode.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ai/ai-service/ai-debug-mode.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9813,
+        "lineCount": 251,
         "ext": ".ts"
       }
     },
@@ -46878,8 +47374,8 @@
       "filePath": "apps/api/src/modules/ai/ai-service/ai-engine-runner.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7360,
-        "lineCount": 203,
+        "sizeBytes": 9804,
+        "lineCount": 266,
         "ext": ".ts"
       }
     },
@@ -46956,8 +47452,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4526,
-        "lineCount": 131,
+        "sizeBytes": 4577,
+        "lineCount": 133,
         "ext": ".ts"
       }
     },
@@ -46982,8 +47478,8 @@
       "filePath": "apps/api/src/modules/ai/routes/ag-task-bridge.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5506,
-        "lineCount": 130,
+        "sizeBytes": 6193,
+        "lineCount": 143,
         "ext": ".ts"
       }
     },
@@ -46995,8 +47491,8 @@
       "filePath": "apps/api/src/modules/ai/routes/ai-chat-sessions.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5528,
-        "lineCount": 145,
+        "sizeBytes": 6998,
+        "lineCount": 180,
         "ext": ".ts"
       }
     },
@@ -47034,8 +47530,8 @@
       "filePath": "apps/api/src/modules/ai/routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17172,
-        "lineCount": 445,
+        "sizeBytes": 20603,
+        "lineCount": 554,
         "ext": ".ts"
       }
     },
@@ -47372,8 +47868,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 35341,
-        "lineCount": 1114,
+        "sizeBytes": 38935,
+        "lineCount": 1229,
         "ext": ".ts"
       }
     },
@@ -47762,8 +48258,8 @@
       "filePath": "apps/api/src/modules/bug-reports/routes/bug-report-reporter.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13394,
-        "lineCount": 324,
+        "sizeBytes": 13663,
+        "lineCount": 329,
         "ext": ".ts"
       }
     },
@@ -47853,8 +48349,8 @@
       "filePath": "apps/api/src/modules/bug-reports/service/bug-report-crud.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21108,
-        "lineCount": 518,
+        "sizeBytes": 22306,
+        "lineCount": 551,
         "ext": ".ts"
       }
     },
@@ -47892,8 +48388,8 @@
       "filePath": "apps/api/src/modules/bug-reports/service/bug-report-lifecycle.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16152,
-        "lineCount": 390,
+        "sizeBytes": 16571,
+        "lineCount": 399,
         "ext": ".ts"
       }
     },
@@ -48418,6 +48914,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/career/career-service/career-cvl-debt-rewards.helper.ts",
+      "type": "File",
+      "label": "career-cvl-debt-rewards.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/career/career-service/career-cvl-debt-rewards.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11531,
+        "lineCount": 296,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/career/career-service/career-cvl-rewards.service.ts",
       "type": "File",
       "label": "career-cvl-rewards.service.ts",
@@ -48425,8 +48934,8 @@
       "filePath": "apps/api/src/modules/career/career-service/career-cvl-rewards.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18821,
-        "lineCount": 493,
+        "sizeBytes": 19972,
+        "lineCount": 520,
         "ext": ".ts"
       }
     },
@@ -48594,8 +49103,8 @@
       "filePath": "apps/api/src/modules/career/cv-plus-rewards.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3827,
-        "lineCount": 83,
+        "sizeBytes": 10898,
+        "lineCount": 277,
         "ext": ".ts"
       }
     },
@@ -48882,6 +49391,32 @@
       "metadata": {
         "sizeBytes": 8658,
         "lineCount": 264,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-emoji-usage.test.ts",
+      "type": "File",
+      "label": "chat-emoji-usage.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-emoji-usage.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6746,
+        "lineCount": 173,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-emoji-usage.ts",
+      "type": "File",
+      "label": "chat-emoji-usage.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-emoji-usage.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3392,
+        "lineCount": 103,
         "ext": ".ts"
       }
     },
@@ -49179,8 +49714,8 @@
       "filePath": "apps/api/src/modules/chat/chat-state-defaults.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12503,
-        "lineCount": 338,
+        "sizeBytes": 13162,
+        "lineCount": 350,
         "ext": ".ts"
       }
     },
@@ -49595,8 +50130,8 @@
       "filePath": "apps/api/src/modules/chat/routes/bootstrap.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17562,
-        "lineCount": 454,
+        "sizeBytes": 18971,
+        "lineCount": 481,
         "ext": ".ts"
       }
     },
@@ -51434,6 +51969,71 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/fm-quests/fm-quests.evaluator.ts",
+      "type": "File",
+      "label": "fm-quests.evaluator.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/fm-quests/fm-quests.evaluator.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14861,
+        "lineCount": 393,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/fm-quests/fm-quests.routes.ts",
+      "type": "File",
+      "label": "fm-quests.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/fm-quests/fm-quests.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5466,
+        "lineCount": 157,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/fm-quests/fm-quests.service.test.ts",
+      "type": "File",
+      "label": "fm-quests.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/fm-quests/fm-quests.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10027,
+        "lineCount": 278,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/fm-quests/fm-quests.service.ts",
+      "type": "File",
+      "label": "fm-quests.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/fm-quests/fm-quests.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 16279,
+        "lineCount": 481,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/fm-quests/fm-quests.store.ts",
+      "type": "File",
+      "label": "fm-quests.store.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/fm-quests/fm-quests.store.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9052,
+        "lineCount": 255,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/funds/fund.service.test.ts",
       "type": "File",
       "label": "fund.service.test.ts",
@@ -51844,8 +52444,8 @@
       "filePath": "apps/api/src/modules/inventory/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10815,
-        "lineCount": 289,
+        "sizeBytes": 11325,
+        "lineCount": 300,
         "ext": ".ts"
       }
     },
@@ -51935,8 +52535,8 @@
       "filePath": "apps/api/src/modules/inventory/services/inventory-job-automation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22494,
-        "lineCount": 496,
+        "sizeBytes": 23118,
+        "lineCount": 571,
         "ext": ".ts"
       }
     },
@@ -51948,8 +52548,8 @@
       "filePath": "apps/api/src/modules/inventory/services/inventory-job-reports.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19225,
-        "lineCount": 430,
+        "sizeBytes": 20037,
+        "lineCount": 511,
         "ext": ".ts"
       }
     },
@@ -51961,8 +52561,8 @@
       "filePath": "apps/api/src/modules/inventory/services/inventory-job-warehouse-reports.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 24441,
-        "lineCount": 464,
+        "sizeBytes": 25617,
+        "lineCount": 583,
         "ext": ".ts"
       }
     },
@@ -52221,8 +52821,8 @@
       "filePath": "apps/api/src/modules/ios/__tests__/ios-under-lash-rounds.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11463,
-        "lineCount": 350,
+        "sizeBytes": 17184,
+        "lineCount": 521,
         "ext": ".ts"
       }
     },
@@ -52442,8 +53042,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-action-wallet.helper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3061,
-        "lineCount": 70,
+        "sizeBytes": 3087,
+        "lineCount": 71,
         "ext": ".ts"
       }
     },
@@ -52468,8 +53068,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-actions.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21546,
-        "lineCount": 539,
+        "sizeBytes": 22011,
+        "lineCount": 550,
         "ext": ".ts"
       }
     },
@@ -52500,6 +53100,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/ios/services/ios-booking-create-lookup.helper.ts",
+      "type": "File",
+      "label": "ios-booking-create-lookup.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-booking-create-lookup.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6839,
+        "lineCount": 187,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/ios/services/ios-booking-create.service.ts",
       "type": "File",
       "label": "ios-booking-create.service.ts",
@@ -52507,8 +53120,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-booking-create.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 24536,
-        "lineCount": 648,
+        "sizeBytes": 19768,
+        "lineCount": 516,
         "ext": ".ts"
       }
     },
@@ -52715,8 +53328,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-catalog.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20528,
-        "lineCount": 560,
+        "sizeBytes": 21275,
+        "lineCount": 579,
         "ext": ".ts"
       }
     },
@@ -52728,8 +53341,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-payload.mapper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19445,
-        "lineCount": 492,
+        "sizeBytes": 19695,
+        "lineCount": 498,
         "ext": ".ts"
       }
     },
@@ -52754,8 +53367,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-state-reconciler.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10379,
-        "lineCount": 309,
+        "sizeBytes": 10715,
+        "lineCount": 322,
         "ext": ".ts"
       }
     },
@@ -52767,8 +53380,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-legacy-step-sync.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20678,
-        "lineCount": 568,
+        "sizeBytes": 20747,
+        "lineCount": 570,
         "ext": ".ts"
       }
     },
@@ -52910,8 +53523,8 @@
       "filePath": "apps/api/src/modules/ios/services/ios-progress-sync.helper.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18079,
-        "lineCount": 471,
+        "sizeBytes": 18254,
+        "lineCount": 476,
         "ext": ".ts"
       }
     },
@@ -53029,6 +53642,19 @@
       "metadata": {
         "sizeBytes": 18788,
         "lineCount": 478,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/ios/services/ios-under-lash-add.helper.ts",
+      "type": "File",
+      "label": "ios-under-lash-add.helper.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/ios/services/ios-under-lash-add.helper.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6502,
+        "lineCount": 165,
         "ext": ".ts"
       }
     },
@@ -53456,8 +54082,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub-routes/cv-allowances.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3904,
-        "lineCount": 111,
+        "sizeBytes": 4019,
+        "lineCount": 115,
         "ext": ".ts"
       }
     },
@@ -53482,8 +54108,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub-routes/cv-paystub.calculator.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13727,
-        "lineCount": 330,
+        "sizeBytes": 14337,
+        "lineCount": 343,
         "ext": ".ts"
       }
     },
@@ -53612,8 +54238,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-speed/cv-speed-predict-seed.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6291,
-        "lineCount": 187,
+        "sizeBytes": 6545,
+        "lineCount": 194,
         "ext": ".ts"
       }
     },
@@ -53703,7 +54329,7 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18583,
+        "sizeBytes": 18620,
         "lineCount": 393,
         "ext": ".ts"
       }
@@ -54340,8 +54966,8 @@
       "filePath": "apps/api/src/modules/kpi/services/cc-mentor-payout.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6688,
-        "lineCount": 158,
+        "sizeBytes": 6840,
+        "lineCount": 160,
         "ext": ".ts"
       }
     },
@@ -54834,8 +55460,8 @@
       "filePath": "apps/api/src/modules/menu-access/menu-access.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15411,
-        "lineCount": 362,
+        "sizeBytes": 18732,
+        "lineCount": 454,
         "ext": ".ts"
       }
     },
@@ -54899,8 +55525,8 @@
       "filePath": "apps/api/src/modules/menu-access/service/menu-access-guard.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9990,
-        "lineCount": 268,
+        "sizeBytes": 10380,
+        "lineCount": 278,
         "ext": ".ts"
       }
     },
@@ -58253,8 +58879,8 @@
       "filePath": "apps/api/src/scripts/inventory-cron.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2573,
-        "lineCount": 69,
+        "sizeBytes": 2585,
+        "lineCount": 71,
         "ext": ".ts"
       }
     },
@@ -58448,8 +59074,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18150,
-        "lineCount": 448,
+        "sizeBytes": 18285,
+        "lineCount": 450,
         "ext": ".ts"
       }
     },
@@ -62894,8 +63520,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23138,
-        "lineCount": 442,
+        "sizeBytes": 23712,
+        "lineCount": 443,
         "ext": ".ts"
       }
     },
@@ -62920,8 +63546,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerBibleDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18936,
-        "lineCount": 364,
+        "sizeBytes": 20477,
+        "lineCount": 383,
         "ext": ".tsx"
       }
     },
@@ -63011,8 +63637,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/CareerConfigFieldPrimitives.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8269,
-        "lineCount": 249,
+        "sizeBytes": 11816,
+        "lineCount": 339,
         "ext": ".tsx"
       }
     },
@@ -63024,8 +63650,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage1ConfigTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18431,
-        "lineCount": 411,
+        "sizeBytes": 19555,
+        "lineCount": 430,
         "ext": ".tsx"
       }
     },
@@ -63037,8 +63663,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/CareerStage2ConfigTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25227,
-        "lineCount": 556,
+        "sizeBytes": 26286,
+        "lineCount": 574,
         "ext": ".tsx"
       }
     },
@@ -63063,8 +63689,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/career-config-drawer/careerConfigTypesAndHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7707,
-        "lineCount": 238,
+        "sizeBytes": 7909,
+        "lineCount": 244,
         "ext": ".ts"
       }
     },
@@ -63271,8 +63897,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/real-staff-simulation-card/simulationTypesAndHelpers.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19681,
-        "lineCount": 527,
+        "sizeBytes": 19883,
+        "lineCount": 533,
         "ext": ".ts"
       }
     },
@@ -64168,8 +64794,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/__tests__/CcMobileTabsApple.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8596,
-        "lineCount": 253,
+        "sizeBytes": 8644,
+        "lineCount": 252,
         "ext": ".tsx"
       }
     },
@@ -65949,7 +66575,7 @@
       "filePath": "apps/web/app/dashboard/cv/components/__tests__/CvMobileTabsApple.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12927,
+        "sizeBytes": 12929,
         "lineCount": 408,
         "ext": ".tsx"
       }
@@ -66105,8 +66731,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvPaystubSelfManagedSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13648,
-        "lineCount": 247,
+        "sizeBytes": 19401,
+        "lineCount": 343,
         "ext": ".tsx"
       }
     },
@@ -66144,8 +66770,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvSelfManagedSubRow.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7447,
-        "lineCount": 137,
+        "sizeBytes": 8763,
+        "lineCount": 153,
         "ext": ".tsx"
       }
     },
@@ -66170,8 +66796,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-thu-nhap-tab/CvThuNhapMobileDetailSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13311,
-        "lineCount": 302,
+        "sizeBytes": 13627,
+        "lineCount": 307,
         "ext": ".tsx"
       }
     },
@@ -67574,8 +68200,8 @@
       "filePath": "apps/web/app/dashboard/inventory/__tests__/inventory-wave4.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2191,
-        "lineCount": 52,
+        "sizeBytes": 2202,
+        "lineCount": 54,
         "ext": ".tsx"
       }
     },
@@ -67730,8 +68356,8 @@
       "filePath": "apps/web/app/dashboard/inventory/items/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20079,
-        "lineCount": 557,
+        "sizeBytes": 20089,
+        "lineCount": 565,
         "ext": ".tsx"
       }
     },
@@ -67743,8 +68369,8 @@
       "filePath": "apps/web/app/dashboard/inventory/jobs/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18128,
-        "lineCount": 503,
+        "sizeBytes": 18149,
+        "lineCount": 504,
         "ext": ".tsx"
       }
     },
@@ -74139,8 +74765,8 @@
       "filePath": "apps/web/app/ios-app/components/IosAppGlobalOverlays.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6407,
-        "lineCount": 167,
+        "sizeBytes": 7044,
+        "lineCount": 183,
         "ext": ".tsx"
       }
     },
@@ -74197,6 +74823,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/components/modals/booking/AddUnderMinkSheet.tsx",
+      "type": "File",
+      "label": "AddUnderMinkSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/modals/booking/AddUnderMinkSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 18685,
+        "lineCount": 414,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/components/modals/booking/IosCreateBookingSheet.tsx",
       "type": "File",
       "label": "IosCreateBookingSheet.tsx",
@@ -74204,8 +74843,8 @@
       "filePath": "apps/web/app/ios-app/components/modals/booking/IosCreateBookingSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21297,
-        "lineCount": 484,
+        "sizeBytes": 21808,
+        "lineCount": 492,
         "ext": ".tsx"
       }
     },
@@ -74503,8 +75142,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23331,
-        "lineCount": 529,
+        "sizeBytes": 24405,
+        "lineCount": 550,
         "ext": ".tsx"
       }
     },
@@ -74516,8 +75155,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen10CustomerSurvey.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21144,
-        "lineCount": 454,
+        "sizeBytes": 22167,
+        "lineCount": 474,
         "ext": ".tsx"
       }
     },
@@ -74529,8 +75168,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13501,
-        "lineCount": 355,
+        "sizeBytes": 14579,
+        "lineCount": 378,
         "ext": ".tsx"
       }
     },
@@ -74542,8 +75181,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15130,
-        "lineCount": 419,
+        "sizeBytes": 15237,
+        "lineCount": 422,
         "ext": ".tsx"
       }
     },
@@ -74568,8 +75207,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22044,
-        "lineCount": 512,
+        "sizeBytes": 22777,
+        "lineCount": 529,
         "ext": ".tsx"
       }
     },
@@ -74880,8 +75519,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/__tests__/UnderLashTwoRoundServicing.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8184,
-        "lineCount": 199,
+        "sizeBytes": 12260,
+        "lineCount": 315,
         "ext": ".tsx"
       }
     },
@@ -75088,8 +75727,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/checkout/CheckoutReceiptSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21638,
-        "lineCount": 507,
+        "sizeBytes": 22657,
+        "lineCount": 526,
         "ext": ".tsx"
       }
     },
@@ -75387,7 +76026,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/consultation/LashMaterialAndDesignSteps.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12381,
+        "sizeBytes": 12412,
         "lineCount": 272,
         "ext": ".tsx"
       }
@@ -75777,7 +76416,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryAssignStaffModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8210,
+        "sizeBytes": 8223,
         "lineCount": 213,
         "ext": ".tsx"
       }
@@ -75790,8 +76429,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryMobileShell.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9834,
-        "lineCount": 251,
+        "sizeBytes": 10146,
+        "lineCount": 258,
         "ext": ".tsx"
       }
     },
@@ -75816,7 +76455,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseCheckItemScreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5279,
+        "sizeBytes": 5292,
         "lineCount": 137,
         "ext": ".tsx"
       }
@@ -75829,7 +76468,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseCheckScanScreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15834,
+        "sizeBytes": 15847,
         "lineCount": 394,
         "ext": ".tsx"
       }
@@ -75842,7 +76481,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryWarehouseItemHistoryScreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11130,
+        "sizeBytes": 11143,
         "lineCount": 267,
         "ext": ".tsx"
       }
@@ -75855,7 +76494,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/inventory/InventoryWarehousePickerSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3447,
+        "sizeBytes": 3460,
         "lineCount": 90,
         "ext": ".tsx"
       }
@@ -76856,8 +77495,8 @@
       "filePath": "apps/web/app/ios-app/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20934,
-        "lineCount": 538,
+        "sizeBytes": 21584,
+        "lineCount": 549,
         "ext": ".tsx"
       }
     },
@@ -76986,8 +77625,8 @@
       "filePath": "apps/web/app/ios-app/state/iosBookingMerge.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16875,
-        "lineCount": 386,
+        "sizeBytes": 16901,
+        "lineCount": 387,
         "ext": ".ts"
       }
     },
@@ -77109,6 +77748,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/ios-app/state/useIosAddUnderMink.ts",
+      "type": "File",
+      "label": "useIosAddUnderMink.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/state/useIosAddUnderMink.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 13370,
+        "lineCount": 336,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/ios-app/state/useIosAppState.ts",
       "type": "File",
       "label": "useIosAppState.ts",
@@ -77116,8 +77768,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosAppState.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21153,
-        "lineCount": 637,
+        "sizeBytes": 21503,
+        "lineCount": 644,
         "ext": ".ts"
       }
     },
@@ -77155,8 +77807,8 @@
       "filePath": "apps/web/app/ios-app/state/useIosBookingsSync.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21353,
-        "lineCount": 590,
+        "sizeBytes": 22699,
+        "lineCount": 615,
         "ext": ".ts"
       }
     },
@@ -77675,8 +78327,8 @@
       "filePath": "apps/web/app/wings-garden/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26726,
-        "lineCount": 616,
+        "sizeBytes": 26870,
+        "lineCount": 618,
         "ext": ".tsx"
       }
     },
@@ -77896,8 +78548,8 @@
       "filePath": "apps/web/lib/api/ai.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3155,
-        "lineCount": 88,
+        "sizeBytes": 3381,
+        "lineCount": 93,
         "ext": ".ts"
       }
     },
@@ -78032,6 +78684,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/api/fm-quests.api.ts",
+      "type": "File",
+      "label": "fm-quests.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/fm-quests.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2258,
+        "lineCount": 64,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/api/funds.api.ts",
       "type": "File",
       "label": "funds.api.ts",
@@ -78052,8 +78717,8 @@
       "filePath": "apps/web/lib/api/index.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2058,
-        "lineCount": 73,
+        "sizeBytes": 2156,
+        "lineCount": 76,
         "ext": ".ts"
       }
     },
@@ -78637,8 +79302,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/fm-and-management.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6132,
-        "lineCount": 55,
+        "sizeBytes": 6738,
+        "lineCount": 61,
         "ext": ".ts"
       }
     },
@@ -78676,8 +79341,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/hydrate-career-commandments.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 20919,
-        "lineCount": 195,
+        "sizeBytes": 24323,
+        "lineCount": 242,
         "ext": ".ts"
       }
     },
@@ -78702,8 +79367,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible/rewards-and-payroll.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 53867,
-        "lineCount": 596,
+        "sizeBytes": 55207,
+        "lineCount": 599,
         "ext": ".ts"
       }
     },
@@ -79072,6 +79737,19 @@
       }
     },
     {
+      "id": "file:packages/shared/src/constants/ag-models.ts",
+      "type": "File",
+      "label": "ag-models.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/constants/ag-models.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 9738,
+        "lineCount": 332,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/constants/index.ts",
       "type": "File",
       "label": "index.ts",
@@ -79118,8 +79796,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3830,
-        "lineCount": 101,
+        "sizeBytes": 4028,
+        "lineCount": 109,
         "ext": ".ts"
       }
     },
@@ -79417,8 +80095,8 @@
       "filePath": "packages/shared/src/types/ai-assistant.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3173,
-        "lineCount": 125,
+        "sizeBytes": 3348,
+        "lineCount": 133,
         "ext": ".ts"
       }
     },
@@ -79625,8 +80303,8 @@
       "filePath": "packages/shared/src/types/career-progression/career-defaults.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12859,
-        "lineCount": 294,
+        "sizeBytes": 16101,
+        "lineCount": 353,
         "ext": ".ts"
       }
     },
@@ -79638,8 +80316,8 @@
       "filePath": "packages/shared/src/types/career-progression/career-requirements.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 17756,
-        "lineCount": 374,
+        "sizeBytes": 18784,
+        "lineCount": 388,
         "ext": ".ts"
       }
     },
@@ -79651,8 +80329,8 @@
       "filePath": "packages/shared/src/types/career-progression/career-status.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9118,
-        "lineCount": 305,
+        "sizeBytes": 9746,
+        "lineCount": 328,
         "ext": ".ts"
       }
     },
@@ -79885,8 +80563,8 @@
       "filePath": "packages/shared/src/types/cv.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10255,
-        "lineCount": 423,
+        "sizeBytes": 10543,
+        "lineCount": 430,
         "ext": ".ts"
       }
     },
@@ -79911,8 +80589,8 @@
       "filePath": "packages/shared/src/types/cvl-training-mentorship.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7393,
-        "lineCount": 219,
+        "sizeBytes": 7685,
+        "lineCount": 224,
         "ext": ".ts"
       }
     },
@@ -79991,6 +80669,19 @@
       "metadata": {
         "sizeBytes": 1592,
         "lineCount": 63,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/fm-quests.ts",
+      "type": "File",
+      "label": "fm-quests.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/fm-quests.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 8164,
+        "lineCount": 288,
         "ext": ".ts"
       }
     },
@@ -80132,8 +80823,8 @@
       "filePath": "packages/shared/src/types/ios-app/booking-contracts.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 13291,
-        "lineCount": 482,
+        "sizeBytes": 13401,
+        "lineCount": 485,
         "ext": ".ts"
       }
     },
@@ -80171,8 +80862,8 @@
       "filePath": "packages/shared/src/types/ios-app/pricing-and-tips.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 14579,
-        "lineCount": 381,
+        "sizeBytes": 14728,
+        "lineCount": 382,
         "ext": ".ts"
       }
     },
@@ -80249,7 +80940,7 @@
       "filePath": "packages/shared/src/types/menu-access/menu-access-definitions.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 13456,
+        "sizeBytes": 13462,
         "lineCount": 457,
         "ext": ".ts"
       }
@@ -80262,8 +80953,8 @@
       "filePath": "packages/shared/src/types/menu-access/menu-access-guards.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 14386,
-        "lineCount": 410,
+        "sizeBytes": 14466,
+        "lineCount": 413,
         "ext": ".ts"
       }
     },
@@ -80327,8 +81018,8 @@
       "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12761,
-        "lineCount": 447,
+        "sizeBytes": 13219,
+        "lineCount": 460,
         "ext": ".ts"
       }
     },
@@ -80827,6 +81518,19 @@
       }
     },
     {
+      "id": "file:packages/shared/src/utils/chat-emoji-frecency.ts",
+      "type": "File",
+      "label": "chat-emoji-frecency.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/utils/chat-emoji-frecency.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 8772,
+        "lineCount": 262,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/utils/cv-role-aliases.ts",
       "type": "File",
       "label": "cv-role-aliases.ts",
@@ -80925,8 +81629,8 @@
       "filePath": "packages/shared/src/utils/ios-servicing-rounds.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3561,
-        "lineCount": 118,
+        "sizeBytes": 8320,
+        "lineCount": 239,
         "ext": ".ts"
       }
     },
@@ -83457,6 +84161,13 @@
     {
       "id": "edge:route:GET:/api/ag-task-bridge/chat/next:ws:apps/api",
       "source": "route:GET:/api/ag-task-bridge/chat/next",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/ai/ag-models:ws:apps/api",
+      "source": "route:GET:/api/ai/ag-models",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -92632,6 +93343,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:ComboDebtBonusMode:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ComboDebtBonusMode",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:CareerPeriod:ws:packages/shared",
       "source": "type:@mos-lab/shared:CareerPeriod",
       "target": "ws:packages/shared",
@@ -92781,6 +93499,13 @@
     {
       "id": "edge:type:@mos-lab/shared:CvPlusComboDetail:ws:packages/shared",
       "source": "type:@mos-lab/shared:CvPlusComboDetail",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvPlusDebtCollectionDetail:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvPlusDebtCollectionDetail",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -94860,6 +95585,125 @@
     {
       "id": "edge:type:@mos-lab/shared:FinancialGoalsOverview:ws:packages/shared",
       "source": "type:@mos-lab/shared:FinancialGoalsOverview",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmBranchCode:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmBranchCode",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmWeeklyQuestType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmWeeklyQuestType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmTeamDinnerStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmTeamDinnerStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmQuestTargetConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmQuestTargetConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmWeeklyQuestDefinition:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmWeeklyQuestDefinition",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmWeeklyQuestsConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmWeeklyQuestsConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmWeeklyQuestDetailItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmWeeklyQuestDetailItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmWeeklyQuestLiveEval:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmWeeklyQuestLiveEval",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmWeeklyQuestLedgerEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmWeeklyQuestLedgerEntry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmTeamDinnerRecord:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmTeamDinnerRecord",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmBondingSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmBondingSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FmQuestsOverviewResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FmQuestsOverviewResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SaveFmQuestsConfigRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SaveFmQuestsConfigRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SubmitFmQuestProofRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SubmitFmQuestProofRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SettleFmWeeklyQuestRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SettleFmWeeklyQuestRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SubmitFmTeamDinnerRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SubmitFmTeamDinnerRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ReviewFmTeamDinnerRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ReviewFmTeamDinnerRequest",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -97520,6 +98364,13 @@
     {
       "id": "edge:type:@mos-lab/shared:MosChatChannelNotificationOverride:ws:packages/shared",
       "source": "type:@mos-lab/shared:MosChatChannelNotificationOverride",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatEmojiUsageEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatEmojiUsageEntry",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -103412,6 +104263,62 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:FmGrowthControlsSection:ws:apps/web",
+      "source": "uicomp:FmGrowthControlsSection",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FmGrowthControlsSection:token:color:primary",
+      "source": "uicomp:FmGrowthControlsSection",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:FmGuideIllustration:ws:apps/web",
+      "source": "uicomp:FmGuideIllustration",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FmGuideIllustration:token:color:primary",
+      "source": "uicomp:FmGuideIllustration",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:FmHubModePanel:ws:apps/web",
+      "source": "uicomp:FmHubModePanel",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FmHubModePanel:token:color:primary",
+      "source": "uicomp:FmHubModePanel",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:FmInfoGuideModal:ws:apps/web",
+      "source": "uicomp:FmInfoGuideModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FmInfoGuideModal:token:color:primary",
+      "source": "uicomp:FmInfoGuideModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:FmPillarCard:ws:apps/web",
       "source": "uicomp:FmPillarCard",
       "target": "ws:apps/web",
@@ -103421,6 +104328,48 @@
     {
       "id": "edge:uicomp:FmPillarCard:token:color:primary",
       "source": "uicomp:FmPillarCard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:FmQuestEditorModal:ws:apps/web",
+      "source": "uicomp:FmQuestEditorModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FmQuestEditorModal:token:color:primary",
+      "source": "uicomp:FmQuestEditorModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:FmQuestsAndDinnerHub:ws:apps/web",
+      "source": "uicomp:FmQuestsAndDinnerHub",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FmQuestsAndDinnerHub:token:color:primary",
+      "source": "uicomp:FmQuestsAndDinnerHub",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:FmRevPerCvLockRow:ws:apps/web",
+      "source": "uicomp:FmRevPerCvLockRow",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FmRevPerCvLockRow:token:color:primary",
+      "source": "uicomp:FmRevPerCvLockRow",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -103449,6 +104398,20 @@
     {
       "id": "edge:uicomp:FmSimulatorStudio:token:color:primary",
       "source": "uicomp:FmSimulatorStudio",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:FmTeamDinnerModal:ws:apps/web",
+      "source": "uicomp:FmTeamDinnerModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:FmTeamDinnerModal:token:color:primary",
+      "source": "uicomp:FmTeamDinnerModal",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -103496,6 +104459,48 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:fm-guide-catalog.test:ws:apps/web",
+      "source": "uicomp:fm-guide-catalog.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:fm-guide-catalog.test:token:color:primary",
+      "source": "uicomp:fm-guide-catalog.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:fm-guide-content-controls:ws:apps/web",
+      "source": "uicomp:fm-guide-content-controls",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:fm-guide-content-controls:token:color:primary",
+      "source": "uicomp:fm-guide-content-controls",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:fm-guide-content-pillars:ws:apps/web",
+      "source": "uicomp:fm-guide-content-pillars",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:fm-guide-content-pillars:token:color:primary",
+      "source": "uicomp:fm-guide-content-pillars",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:fm-simulator.constants:ws:apps/web",
       "source": "uicomp:fm-simulator.constants",
       "target": "ws:apps/web",
@@ -103533,6 +104538,20 @@
     {
       "id": "edge:uicomp:fm-simulator.engine:token:color:primary",
       "source": "uicomp:fm-simulator.engine",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:fm-simulator.helpers:ws:apps/web",
+      "source": "uicomp:fm-simulator.helpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:fm-simulator.helpers:token:color:primary",
+      "source": "uicomp:fm-simulator.helpers",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -103729,6 +104748,20 @@
     {
       "id": "edge:uicomp:MosAppLauncher:token:color:primary",
       "source": "uicomp:MosAppLauncher",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosAppLauncherPanel:ws:apps/web",
+      "source": "uicomp:MosAppLauncherPanel",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosAppLauncherPanel:token:color:primary",
+      "source": "uicomp:MosAppLauncherPanel",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -104434,6 +105467,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MaiDebugControlPill.test:ws:apps/web",
+      "source": "uicomp:MaiDebugControlPill.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MaiDebugControlPill.test:token:color:primary",
+      "source": "uicomp:MaiDebugControlPill.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MissionGateCard.test:ws:apps/web",
       "source": "uicomp:MissionGateCard.test",
       "target": "ws:apps/web",
@@ -104910,6 +105957,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatSmartEmojiPicker.test:ws:apps/web",
+      "source": "uicomp:MosChatSmartEmojiPicker.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatSmartEmojiPicker.test:token:color:primary",
+      "source": "uicomp:MosChatSmartEmojiPicker.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatSpaceConfig.test:ws:apps/web",
       "source": "uicomp:MosChatSpaceConfig.test",
       "target": "ws:apps/web",
@@ -105087,6 +106148,20 @@
     {
       "id": "edge:uicomp:useChatRealtimeSync.test:token:color:primary",
       "source": "uicomp:useChatRealtimeSync.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MaiDebugControlPill:ws:apps/web",
+      "source": "uicomp:MaiDebugControlPill",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MaiDebugControlPill:token:color:primary",
+      "source": "uicomp:MaiDebugControlPill",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -108494,6 +109569,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:useChatEmojiUsage:ws:apps/web",
+      "source": "uicomp:useChatEmojiUsage",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useChatEmojiUsage:token:color:primary",
+      "source": "uicomp:useChatEmojiUsage",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:useChatReadReceipts:ws:apps/web",
       "source": "uicomp:useChatReadReceipts",
       "target": "ws:apps/web",
@@ -108545,6 +109634,20 @@
     {
       "id": "edge:uicomp:useChatUploadQueue:token:color:primary",
       "source": "uicomp:useChatUploadQueue",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useMaiDebugSettings:ws:apps/web",
+      "source": "uicomp:useMaiDebugSettings",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useMaiDebugSettings:token:color:primary",
+      "source": "uicomp:useMaiDebugSettings",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -112134,6 +113237,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ai/ag-models-registry.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/ag-models-registry.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ai/ai-service/ai-chat-context.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ai/ai-service/ai-chat-context.ts",
       "target": "ws:packages/shared",
@@ -112150,6 +113260,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ai/ai-service/ai-chat-orchestrator.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ai/ai-service/ai-chat-orchestrator.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ai/ai-service/ai-debug-mode.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ai/ai-service/ai-debug-mode.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -112750,6 +113867,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/career/career-service/career-cvl-debt-rewards.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/career/career-service/career-cvl-debt-rewards.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/career/career-service/career-cvl-rewards.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/career/career-service/career-cvl-rewards.service.ts",
       "target": "ws:packages/shared",
@@ -112941,6 +114065,20 @@
     {
       "id": "edge:file:apps/api/src/modules/chat/chat-delete-restore.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-delete-restore.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-emoji-usage.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-emoji-usage.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-emoji-usage.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-emoji-usage.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -114017,6 +115155,41 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/fm-quests/fm-quests.evaluator.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/fm-quests/fm-quests.evaluator.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/fm-quests/fm-quests.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/fm-quests/fm-quests.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/fm-quests/fm-quests.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/fm-quests/fm-quests.service.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/fm-quests/fm-quests.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/fm-quests/fm-quests.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/fm-quests/fm-quests.store.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/fm-quests/fm-quests.store.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/funds/fund.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/funds/fund.service.ts",
       "target": "ws:packages/shared",
@@ -114486,6 +115659,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-booking-create-lookup.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-booking-create-lookup.helper.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-booking-create.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-booking-create.service.ts",
       "target": "ws:packages/shared",
@@ -114740,6 +115920,13 @@
     {
       "id": "edge:file:apps/api/src/modules/ios/services/ios-staff-stats.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/ios/services/ios-staff-stats.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/ios/services/ios-under-lash-add.helper.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/ios/services/ios-under-lash-add.helper.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -118254,6 +119441,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerConfigFieldPrimitives.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/career-config-drawer/CareerConfigFieldPrimitives.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -122116,6 +123310,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/components/modals/booking/AddUnderMinkSheet.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/modals/booking/AddUnderMinkSheet.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/components/modals/booking/IosCreateBookingSheet.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/modals/booking/IosCreateBookingSheet.tsx",
       "target": "ws:packages/shared",
@@ -122174,6 +123375,20 @@
     {
       "id": "edge:file:apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen10CustomerSurvey.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen10CustomerSurvey.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -122949,6 +124164,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/ios-app/state/useIosAddUnderMink.ts:ws:packages/shared",
+      "source": "file:apps/web/app/ios-app/state/useIosAddUnderMink.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/ios-app/state/useIosAppState.ts:ws:packages/shared",
       "source": "file:apps/web/app/ios-app/state/useIosAppState.ts",
       "target": "ws:packages/shared",
@@ -123245,6 +124467,13 @@
     {
       "id": "edge:file:apps/web/lib/api/financial-goals.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/financial-goals.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/fm-quests.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/fm-quests.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -124209,6 +125438,13 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/bug-reports/routes/bug-report-reporter.routes.ts:prisma:crm:CrmBugReportNotification",
+      "source": "file:apps/api/src/modules/bug-reports/routes/bug-report-reporter.routes.ts",
+      "target": "prisma:crm:CrmBugReportNotification",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/bug-reports/service/bug-report-agent.ts:prisma:crm:CrmBugReport",
       "source": "file:apps/api/src/modules/bug-reports/service/bug-report-agent.ts",
       "target": "prisma:crm:CrmBugReport",
@@ -124772,6 +126008,13 @@
       "id": "edge:file:apps/api/src/modules/career/career-service/career-cvl-rewards.service.ts:prisma:crm:CrmStaff",
       "source": "file:apps/api/src/modules/career/career-service/career-cvl-rewards.service.ts",
       "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/career/career-service/career-cvl-rewards.service.ts:prisma:crm:CrmCareerProgression",
+      "source": "file:apps/api/src/modules/career/career-service/career-cvl-rewards.service.ts",
+      "target": "prisma:crm:CrmCareerProgression",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -138315,31 +139558,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 6294,
-    "totalEdges": 8188,
+    "totalNodes": 6351,
+    "totalEdges": 8265,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
-      "FastifyRoute": 804,
+      "FastifyRoute": 805,
       "Component": 86,
-      "SharedType": 1675,
+      "SharedType": 1695,
       "DesignToken": 12,
-      "UIComponent": 816,
-      "File": 2715
+      "UIComponent": 834,
+      "File": 2733
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1870,
-      "HANDLES_ROUTE": 804,
-      "RENDERS": 902,
-      "USES_TOKEN": 818,
-      "IMPORTS": 1664,
-      "QUERIES_MODEL": 613,
+      "EXPORTS": 1890,
+      "HANDLES_ROUTE": 805,
+      "RENDERS": 920,
+      "USES_TOKEN": 836,
+      "IMPORTS": 1682,
+      "QUERIES_MODEL": 615,
       "API_CALL": 1517
     },
-    "fastifyRouteCount": 804,
+    "fastifyRouteCount": 805,
     "prismaModelCount": 183,
     "nextPageCount": 86,
-    "sharedTypeCount": 1675
+    "sharedTypeCount": 1695
   },
   "routes": [
     {
@@ -139522,6 +140765,13 @@
       "method": "GET",
       "path": "/api/ag-task-bridge/chat/next",
       "filePath": "apps/api/src/modules/ai/routes/ag-task-bridge.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "ai"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai/ag-models",
+      "filePath": "apps/api/src/modules/ai/routes/ai-chat-sessions.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "ai"
     },
@@ -142546,14 +143796,14 @@
       "method": "POST",
       "path": "/api/kpi/cv-allowances",
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub-routes/cv-allowances.routes.ts",
-      "handler": "inlineHandler",
+      "handler": "preHandler",
       "moduleName": "kpi"
     },
     {
       "method": "DELETE",
       "path": "/api/kpi/cv-allowances/:id",
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub-routes/cv-allowances.routes.ts",
-      "handler": "inlineHandler",
+      "handler": "preHandler",
       "moduleName": "kpi"
     },
     {
@@ -142630,7 +143880,7 @@
       "method": "POST",
       "path": "/api/kpi/cv-config",
       "filePath": "apps/api/src/modules/kpi/routes/cv.routes.ts",
-      "handler": "inlineHandler",
+      "handler": "preHandler",
       "moduleName": "kpi"
     },
     {

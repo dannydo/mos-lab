@@ -7,7 +7,7 @@ import withBundleAnalyzer from '@next/bundle-analyzer';
 
 const __configDir = path.dirname(fileURLToPath(import.meta.url));
 
-if (process.env.NODE_ENV !== 'production' && !process.env.WATCHPACK_POLLING) {
+if (process.env.NODE_ENV !== 'production' && process.platform !== 'darwin' && !process.env.WATCHPACK_POLLING) {
   process.env.WATCHPACK_POLLING = 'true';
 }
 
@@ -56,6 +56,9 @@ const nextConfig: NextConfig = {
   ],
   turbopack: {
     root: process.cwd().endsWith('apps/web') ? path.resolve(process.cwd(), '../..') : process.cwd(),
+    resolveAlias: {
+      '@mos-lab/shared': '../../packages/shared/dist/index.js',
+    },
   },
   experimental: {
     optimizePackageImports: ['lucide-react', 'antd', '@ant-design/icons', 'dayjs'],

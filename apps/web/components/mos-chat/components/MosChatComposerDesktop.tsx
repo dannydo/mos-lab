@@ -27,6 +27,7 @@ import type {
   SafeAny,
 } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
+import { MaiDebugControlPill } from './MaiDebugControlPill';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
 import { syncTextareaHeightSmart } from './MosChatComposer';
 
@@ -536,6 +537,16 @@ export const MosChatComposerDesktop: React.FC<MosChatComposerDesktopProps> = ({
                 </button>
               </Tooltip>
             )}
+
+            <MaiDebugControlPill
+              isStrictDannySuperAdmin={isStrictDannySuperAdmin}
+              isDark={isDark}
+              isAiPrivateConv={activeConversation?.id === AI_COPILOT_CONV_ID}
+              onEnsureMaiMention={() => {
+                setComposerText((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
+                composerInputRef.current?.focus();
+              }}
+            />
           </div>
 
           {/* Send button with hint */}

@@ -169,7 +169,9 @@ export function usePortalBootstrapAndRealtime({
               (res.userPrefs?.mutedIds?.length || 0) > 0 ||
               (res.userPrefs?.hiddenIds?.length || 0) > 0 ||
               (res.userPrefs?.customSections?.length || 0) > 0 ||
-              Object.keys(res.userPrefs?.conversationOrder || {}).length > 0;
+              Object.keys(res.userPrefs?.conversationOrder || {}).length > 0 ||
+              Object.keys(res.userPrefs?.emojiUsage || {}).length > 0 ||
+              Boolean(res.userPrefs?.emojiUsageBootstrappedAt);
             const isFirstHydration = !hasHydratedPrefsFromServerRef.current;
             hasHydratedPrefsFromServerRef.current = true;
             const serverPinned = res.userPrefs?.pinnedIds || [];

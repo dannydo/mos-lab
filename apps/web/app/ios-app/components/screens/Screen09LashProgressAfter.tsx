@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   bookingRequiresUnderLashRound,
+  isPureUnderLashServiceName,
   resolveActiveServicingRound,
   splitUpperAndUnderTargetDuration,
 } from '@mos-lab/shared';
@@ -23,13 +24,14 @@ import {
 import { resolveDisplayServiceName } from './LashMaterialConstraintMatrix';
 import { compressLashImage } from '../../utils/imageCompressor';
 import { getClientTrainingSamplePhoto } from '../simulation/IosSimulationWorkspaceBar';
-import { Camera, CheckCircle2, Maximize2 } from 'lucide-react';
+import { Camera, CheckCircle2, Maximize2, Sparkles } from 'lucide-react';
 
 interface Screen09LashProgressAfterProps {
   booking: BookingItem;
   onBack: () => void;
   onSavePhoto: (photoUrl: string) => void;
   onAutoSavePhoto?: (photoUrl: string) => Promise<any> | void;
+  onOpenAddUnderMink?: (afterPhotoUrl?: string) => void;
   isSimulationMode?: boolean;
 }
 
@@ -38,6 +40,7 @@ export function Screen09LashProgressAfter({
   onBack,
   onSavePhoto,
   onAutoSavePhoto,
+  onOpenAddUnderMink,
   isSimulationMode = false,
 }: Screen09LashProgressAfterProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -521,6 +524,24 @@ export function Screen09LashProgressAfter({
               </>
             )}
           </button>
+
+          {!hasUnderMink && !isPureUnderLashServiceName(booking?.serviceName) && onOpenAddUnderMink && (
+            <button
+              type="button"
+              data-testid="add-under-mink-cta-after"
+              onClick={() =>
+                onOpenAddUnderMink(afterPhotoPreview || (isPhotoDeclined ? `DECLINED:${declineReason}` : undefined))
+              }
+              className={`mt-2 w-full py-3 px-4 rounded-2xl border font-bold text-[13px] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 ${
+                isDark
+                  ? 'bg-purple-950/35 border-purple-700/70 text-purple-200 hover:bg-purple-950/55'
+                  : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span>+ Khách muốn làm thêm Mi Dưới (Vòng 2)</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

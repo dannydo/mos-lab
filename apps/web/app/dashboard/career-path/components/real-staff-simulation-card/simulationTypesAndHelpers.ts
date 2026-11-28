@@ -59,6 +59,9 @@ const DEFAULT_CVL_REQUIREMENTS: CvToCvPlusRequirements = {
   serumDiscountedPriceBonus: 50000,
   comboUnder2mBonus: 50000,
   comboStepPerMillionBonus: 50000,
+  comboMinCollectedAmount: 500000,
+  comboDebtBonusMode: 'TIER_LADDER',
+  comboDebtBonusRate: 0.015,
 };
 
 const DEFAULT_CVLL_REQUIREMENTS: CvPlusToCvPlusPlusRequirements = {
@@ -82,6 +85,9 @@ const DEFAULT_CVLL_REQUIREMENTS: CvPlusToCvPlusPlusRequirements = {
   serumDiscountedPriceBonus: 50000,
   comboUnder2mBonus: 50000,
   comboStepPerMillionBonus: 50000,
+  comboMinCollectedAmount: 500000,
+  comboDebtBonusMode: 'TIER_LADDER',
+  comboDebtBonusRate: 0.015,
   crossConsultCvShareRate: 0.2,
 };
 

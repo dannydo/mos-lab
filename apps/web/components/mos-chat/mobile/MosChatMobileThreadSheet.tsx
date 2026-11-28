@@ -5,6 +5,7 @@ import { Loader2, MessageSquareReply } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import { useMosChat } from '../context/MosChatContext';
 import { useTheme } from '../../../context/ThemeContext';
+import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 import { formatStickerToken, type MosChatStickerItem } from '../mos-chat-stickers';
 import { type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
@@ -75,6 +76,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
     stoppedReadersByMsgId,
     openSeenUsersSheetForReply,
     openSeenUsersSheetForMessage,
+    frequentEmojis,
+    quickReactionEmojis,
+    recordEmojiUsed,
+    resetEmojiUsage,
   } = useMosChat();
 
   const [text, setText] = useState<string>('');
@@ -551,6 +556,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         setReplyingToReply={setReplyingToReply}
         hasAnyPendingAction={missionState.hasAnyPendingAction}
         mission={missionState.mission}
+        currentUser={currentUser}
+        isAiPrivateConv={activeConversation?.id === AI_COPILOT_CONV_ID}
         isStrictDannySuperAdmin={missionState.isStrictDannySuperAdmin}
         canApproveImplementation={missionState.canApproveImplementation}
         canSuperAdminApproveCommit={missionState.canSuperAdminApproveCommit}
@@ -615,6 +622,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         sendThreadReply={sendThreadReply}
         handleSelectSticker={handleSelectSticker}
         handleSend={handleSend}
+        frequentEmojis={frequentEmojis}
+        quickReactionEmojis={quickReactionEmojis}
+        onRecordEmojiUsed={recordEmojiUsed}
+        onResetFrequentEmojis={resetEmojiUsage}
       />
     </div>
   );

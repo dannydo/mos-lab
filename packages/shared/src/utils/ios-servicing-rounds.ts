@@ -6,10 +6,18 @@ export interface IosServicingRoundSplit {
   underMinutes: number;
 }
 
+export function isPureUnderLashServiceName(serviceName?: string | null): boolean {
+  const lower = String(serviceName || '').toLowerCase();
+  return (
+    (lower.includes('mi dưới') || lower.includes('under mink') || lower.includes('under lash')) && !lower.includes('+')
+  );
+}
+
 export function bookingRequiresUnderLashRound(
-  booking?: { attributes?: { hasUnderMink?: boolean } | null } | null
+  booking?: { serviceName?: string | null; attributes?: { hasUnderMink?: boolean } | null } | null
 ): boolean {
-  return Boolean(booking?.attributes?.hasUnderMink);
+  if (!booking?.attributes?.hasUnderMink) return false;
+  return !isPureUnderLashServiceName(booking.serviceName);
 }
 
 export function isServicingCompletedOrBeyond(
@@ -37,6 +45,7 @@ export function resolveActiveServicingRound(
   booking?: {
     status?: string;
     orderState?: string;
+    serviceName?: string | null;
     billing?: { completedAt?: string } | null;
     attributes?: { hasUnderMink?: boolean } | null;
     progress?: {
@@ -114,4 +123,120 @@ export function buildLegacyServiceProgressImageUrl(
       .toLowerCase() || 'jpg';
   const normalizedBase = String(cdnBase || 'https://cdn.wingslashes.com').replace(/\/+$/, '');
   return `${normalizedBase}/uploads/order/service-progress/${folder}/${version}/${cleanFilename}.${cleanExt}`;
+}
+
+export interface AddUnderLashRoundInput {
+  currentServiceName?: string | null;
+  currentServicePrice?: number | null;
+  currentUpgradePrice?: number | null;
+  currentServiceDuration?: number | null;
+  currentCvRotationPoints?: number | null;
+  alreadyHasUnderMink?: boolean;
+  previousUnderMinkServiceType?: 'Normal' | 'Retain';
+  isComboLive?: boolean;
+  hasUnderMinkCombo?: boolean;
+  underMinkServiceType: 'Normal' | 'Retain';
+  underMinkCurl: 'B' | 'C';
+  underMinkLength: string;
+  underMinkCount: string;
+  upperTargetDurationMinutes?: number | null;
+  totalCommittedMinutes?: number | null;
+}
+
+export interface AddUnderLashRoundResult {
+  serviceName: string;
+  servicePrice: number;
+  upgradePrice: number;
+  underServiceCharge: number;
+  underListPrice: number;
+  upperTargetDurationMinutes: number;
+  underTargetDurationMinutes: number;
+  totalDurationMinutes: number;
+  underCvPoints: number;
+  cvRotationPoints?: number;
+  underAttributes: {
+    hasUnderMink: true;
+    underMinkServiceType: 'Normal' | 'Retain';
+    underMinkCurl: 'B' | 'C';
+    underMinkThickness: string;
+    underMinkLength: string;
+    underMinkCount: string;
+  };
+}
+
+export function stripUnderMinkServiceSuffix(serviceName?: string | null): string {
+  return String(serviceName || '')
+    .replace(/\s*\+\s*(?:mi\s*dưới(?:\s*\([^)]*\))?|(?:new\s+|retain\s+|dặm\s+)?(?:flawless\s+)?under\b[^+]*)/gi, '')
+    .trim();
+}
+
+export function buildAddUnderLashRoundFields(input: AddUnderLashRoundInput): AddUnderLashRoundResult {
+  const isRetain = input.underMinkServiceType === 'Retain';
+  const underListPrice = isRetain ? 250_000 : 390_000;
+  const underServiceCharge = input.hasUnderMinkCombo ? 0 : underListPrice;
+  const baseUpperName = stripUnderMinkServiceSuffix(input.currentServiceName) || 'Dịch vụ Mi Trên';
+  const underSuffix = input.hasUnderMinkCombo
+    ? `Trừ Gói Mi Dưới (${isRetain ? 'Dặm' : 'Mới'} · 0đ)`
+    : isRetain
+      ? 'Dặm 250K'
+      : 'Mới 390K';
+  const serviceName = `${baseUpperName} + Mi Dưới (${underSuffix})`;
+
+  const rawServicePrice = Math.max(0, Math.round(Number(input.currentServicePrice || 0)));
+  const rawNameLower = String(input.currentServiceName || '').toLowerCase();
+  const prevPaidUnder =
+    input.alreadyHasUnderMink && !rawNameLower.includes('trừ gói mi dưới')
+      ? input.previousUnderMinkServiceType === 'Retain' || rawNameLower.includes('dặm 250k')
+        ? 250_000
+        : 390_000
+      : 0;
+  const upperBasePrice =
+    prevPaidUnder > 0 && rawServicePrice > prevPaidUnder ? rawServicePrice - prevPaidUnder : rawServicePrice;
+  const servicePrice = upperBasePrice + underServiceCharge;
+
+  const rawUpgradePrice = Math.max(0, Math.round(Number(input.currentUpgradePrice || 0)));
+  const baseUpperUpgrade =
+    input.isComboLive && prevPaidUnder > 0 && rawUpgradePrice >= prevPaidUnder
+      ? rawUpgradePrice - prevPaidUnder
+      : rawUpgradePrice;
+  const upgradePrice = input.isComboLive ? baseUpperUpgrade + underServiceCharge : rawUpgradePrice;
+
+  const upperTargetDurationMinutes = Math.max(
+    25,
+    Math.round(
+      Number(input.upperTargetDurationMinutes || input.totalCommittedMinutes || input.currentServiceDuration || 60)
+    )
+  );
+  const underTargetDurationMinutes = isRetain ? 20 : 25;
+  const totalDurationMinutes = upperTargetDurationMinutes + underTargetDurationMinutes;
+
+  const underCvPoints = 5 + (isRetain ? 0 : 7) + 17;
+  const prevUnderCvPoints = input.alreadyHasUnderMink
+    ? 5 + (input.previousUnderMinkServiceType === 'Retain' ? 0 : 7) + 17
+    : 0;
+  const cvRotationPoints =
+    typeof input.currentCvRotationPoints === 'number' && input.currentCvRotationPoints > 0
+      ? Math.max(0, Math.round(input.currentCvRotationPoints - prevUnderCvPoints + underCvPoints))
+      : undefined;
+
+  return {
+    serviceName,
+    servicePrice,
+    upgradePrice,
+    underServiceCharge,
+    underListPrice,
+    upperTargetDurationMinutes,
+    underTargetDurationMinutes,
+    totalDurationMinutes,
+    underCvPoints,
+    ...(cvRotationPoints !== undefined ? { cvRotationPoints } : {}),
+    underAttributes: {
+      hasUnderMink: true,
+      underMinkServiceType: input.underMinkServiceType,
+      underMinkCurl: input.underMinkCurl,
+      underMinkThickness: '0.10 mm',
+      underMinkLength: input.underMinkLength,
+      underMinkCount: input.underMinkCount,
+    },
+  };
 }

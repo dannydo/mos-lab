@@ -1,7 +1,10 @@
 'use client';
 
 import React from 'react';
+import { FmInfoTrigger } from './FmInfoGuideModal';
+import type { FmGuideId } from './fm-guide-content-pillars';
 import {
+  Camera,
   Check,
   Crown,
   MapPin,
@@ -14,6 +17,7 @@ import {
   Star,
   Store,
   Users,
+  UtensilsCrossed,
   Wrench,
 } from 'lucide-react';
 import { AppleSurface } from './ApplePrimitives';
@@ -36,6 +40,7 @@ const PILLAR_ICONS: Record<PillarKey, React.ReactNode> = {
   room: <Store className="h-4 w-4 text-violet-500" />,
   grooming: <Sparkles className="h-4 w-4 text-pink-500" />,
   turn: <RefreshCw className="h-4 w-4 text-cyan-500" />,
+  bonding: <UtensilsCrossed className="h-4 w-4 text-amber-500" />,
 };
 
 export interface MetricSliderSpec {
@@ -161,8 +166,16 @@ interface FmPillarCardProps {
   readonly cvllKeyholders: number;
   readonly ceoHrMeetingsPerWeek: number;
   readonly ceoHrGatePassed: boolean;
+  readonly bondingDinnerOrganized: boolean;
+  readonly bondingHasSocialCheckin: boolean;
+  readonly bondingParticipationPct: number;
   readonly onAutonomyChange: (nextPct: number, nextCvll: number) => void;
   readonly onCeoHrChange: (nextMeetings: number) => void;
+  readonly onBondingChange: (patch: {
+    bondingDinnerOrganized?: boolean;
+    bondingHasSocialCheckin?: boolean;
+    bondingParticipationPct?: number;
+  }) => void;
   readonly onMetricChange: (key: MetricPillarKey, rawVal: number) => void;
   readonly onSelectStar: (key: PillarKey, star: 0 | 1 | 2 | 3) => void;
 }
@@ -176,8 +189,12 @@ export function FmPillarCard({
   cvllKeyholders,
   ceoHrMeetingsPerWeek,
   ceoHrGatePassed,
+  bondingDinnerOrganized,
+  bondingHasSocialCheckin,
+  bondingParticipationPct,
   onAutonomyChange,
   onCeoHrChange,
+  onBondingChange,
   onMetricChange,
   onSelectStar,
 }: FmPillarCardProps) {
@@ -185,12 +202,15 @@ export function FmPillarCard({
   const gross = breakdown?.grossVnd ?? 0;
   const isAutonomy = pillar.key === 'autonomy';
   const isGrooming = pillar.key === 'grooming';
-  const metricSpec = !isAutonomy && !isGrooming ? METRIC_SLIDER_SPECS[pillar.key] : null;
+  const isBonding = pillar.key === 'bonding';
+  const metricSpec = !isAutonomy && !isGrooming && !isBonding ? METRIC_SLIDER_SPECS[pillar.key] : null;
   const metricValue = isAutonomy
     ? Math.min(AUTONOMY_HARD_MAX_PCT, Math.round(autonomyPct))
-    : metricSpec
-      ? metrics[metricSpec.metricField]
-      : null;
+    : isBonding
+      ? Math.max(0, Math.min(100, Math.round(bondingParticipationPct)))
+      : metricSpec
+        ? metrics[metricSpec.metricField]
+        : null;
 
   return (
     <AppleSurface className="flex h-full flex-col justify-between gap-3 p-4">
@@ -201,7 +221,10 @@ export function FmPillarCard({
               {PILLAR_ICONS[pillar.key]}
             </span>
             <div className="min-w-0">
-              <div className="text-xs font-semibold text-neutral-900 dark:text-white">{pillar.label}</div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-neutral-900 dark:text-white">{pillar.label}</span>
+                <FmInfoTrigger guideId={`pillar-${pillar.key}` as FmGuideId} label={pillar.label} />
+              </div>
               <div className="text-[11px] font-normal text-neutral-400 dark:text-neutral-500">
                 {breakdown?.note ?? pillar.targets[Math.max(0, effective - 1)]}
               </div>
@@ -216,10 +239,10 @@ export function FmPillarCard({
           <div className="space-y-0.5 pt-0.5">
             <div className="flex items-center justify-between gap-2 text-[11px]">
               <span className="text-neutral-400 dark:text-neutral-500">
-                {isAutonomy ? 'Tỷ lệ Tự lái' : metricSpec?.label}
+                {isAutonomy ? 'Tỷ lệ Tự lái' : isBonding ? 'Tỷ lệ tham gia tiệc' : metricSpec?.label}
               </span>
               <span className="font-medium tabular-nums text-neutral-700 dark:text-neutral-200">
-                {isAutonomy
+                {isAutonomy || isBonding
                   ? `${metricValue}%`
                   : pillar.key === 'maps'
                     ? `${Math.round(metricValue)} rv (${(metricValue / Math.max(1, cvs)).toFixed(1)}%)`
@@ -228,21 +251,60 @@ export function FmPillarCard({
             </div>
             <input
               type="range"
-              min={isAutonomy ? 0 : metricSpec?.min}
-              max={isAutonomy ? AUTONOMY_HARD_MAX_PCT : pillar.key === 'maps' ? Math.max(40, cvs * 5) : metricSpec?.max}
-              step={isAutonomy ? 5 : metricSpec?.step}
+              min={isAutonomy || isBonding ? 0 : metricSpec?.min}
+              max={
+                isAutonomy
+                  ? AUTONOMY_HARD_MAX_PCT
+                  : isBonding
+                    ? 100
+                    : pillar.key === 'maps'
+                      ? Math.max(40, cvs * 5)
+                      : metricSpec?.max
+              }
+              step={isAutonomy || isBonding ? 5 : metricSpec?.step}
               value={metricValue}
               aria-label={`Chỉ số ${pillar.label}`}
               onChange={(e) => {
                 const nextVal = Number(e.target.value);
                 if (isAutonomy) {
                   onAutonomyChange(nextVal, cvllKeyholders);
+                } else if (isBonding) {
+                  onBondingChange({ bondingParticipationPct: nextVal });
                 } else if (!isGrooming) {
-                  onMetricChange(pillar.key, nextVal);
+                  onMetricChange(pillar.key as MetricPillarKey, nextVal);
                 }
               }}
               className="fm-apple-range"
             />
+          </div>
+        ) : null}
+
+        {isBonding ? (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <button
+              type="button"
+              onClick={() => onBondingChange({ bondingDinnerOrganized: !bondingDinnerOrganized })}
+              className={`inline-flex min-h-8 items-center gap-1 rounded-lg px-2.5 text-[11px] font-medium transition ${
+                bondingDinnerOrganized
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                  : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+              }`}
+            >
+              <UtensilsCrossed className="h-3 w-3" />
+              <span>{bondingDinnerOrganized ? 'Đã đi ăn tháng' : 'Chưa tổ chức'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onBondingChange({ bondingHasSocialCheckin: !bondingHasSocialCheckin })}
+              className={`inline-flex min-h-8 items-center gap-1 rounded-lg px-2.5 text-[11px] font-medium transition ${
+                bondingHasSocialCheckin
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+                  : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+              }`}
+            >
+              <Camera className="h-3 w-3" />
+              <span>{bondingHasSocialCheckin ? 'Có ảnh MXH' : 'Thiếu ảnh MXH'}</span>
+            </button>
           </div>
         ) : null}
 

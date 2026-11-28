@@ -17,6 +17,7 @@ import type {
 import { apiClient } from '../../../lib/api-client';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 import { formatBackendAiMessage } from '../utils/chat-helpers';
+import { getActiveMaiDebugPayload, isStrictSuperAdminClientUser } from '../shared/hooks/useMaiDebugSettings';
 import { convertAttachmentToDataUrl } from '../shared/utils/convertAttachmentToDataUrl';
 
 export interface UseMosChatMessageSendAndMediaParams {
@@ -36,6 +37,7 @@ export interface UseMosChatMessageSendAndMediaParams {
   setActiveThreadMsg: React.Dispatch<React.SetStateAction<MosChatMessage | null>>;
   setReplyingToMessage: React.Dispatch<React.SetStateAction<MosChatMessage | null>>;
   fetchBootstrap: () => Promise<void>;
+  onRecordEmojisFromText?: (text?: string | null) => void;
 }
 
 /**
@@ -58,6 +60,7 @@ export function useMosChatMessageSendAndMedia({
   setActiveThreadMsg,
   setReplyingToMessage,
   fetchBootstrap,
+  onRecordEmojisFromText,
 }: UseMosChatMessageSendAndMediaParams) {
   const sendMessage = useCallback(
     async (
@@ -74,6 +77,7 @@ export function useMosChatMessageSendAndMedia({
       const trimmed = text.trim();
       if (!trimmed && (!options?.attachments || options.attachments.length === 0) && !options?.customerCard)
         return false;
+      onRecordEmojisFromText?.(trimmed);
 
       if (targetId === AI_COPILOT_CONV_ID) {
         const userMsg: MosChatMessage = {
@@ -105,6 +109,7 @@ export function useMosChatMessageSendAndMedia({
               userName: senderName,
               myRole: currentUser?.role || 'super_admin',
             },
+            ...getActiveMaiDebugPayload(isStrictSuperAdminClientUser(currentUser)),
           });
 
           if (aiRes?.session?.id) {
@@ -224,6 +229,7 @@ export function useMosChatMessageSendAndMedia({
                   userName: currentUser?.fullName || currentUser?.name || 'Tôi',
                   myRole: currentUser?.role || 'super_admin',
                 },
+                ...getActiveMaiDebugPayload(isStrictSuperAdminClientUser(currentUser)),
               });
               await fetchBootstrap();
             } catch {
@@ -246,6 +252,7 @@ export function useMosChatMessageSendAndMedia({
       currentUser,
       effectiveUser,
       fetchBootstrap,
+      onRecordEmojisFromText,
       setAiMessages,
       setAiSessionId,
       setAllMessagesByConv,
@@ -264,6 +271,7 @@ export function useMosChatMessageSendAndMedia({
       const customerCard = options?.customerCard || undefined;
       const sendText = trimmed || (customerCard?.name ? `Đính kèm thẻ khách hàng ${customerCard.name}` : '');
       if (!sendText && (!options?.attachments || options.attachments.length === 0) && !customerCard) return false;
+      onRecordEmojisFromText?.(trimmed);
 
       const currentThreadMsg = activeThreadMsg;
       const targetConv = activeConversation;
@@ -338,6 +346,7 @@ export function useMosChatMessageSendAndMedia({
                   userName: currentUser?.fullName || currentUser?.name || 'Tôi',
                   myRole: currentUser?.role || 'super_admin',
                 },
+                ...getActiveMaiDebugPayload(isStrictSuperAdminClientUser(currentUser)),
               });
               await fetchBootstrap();
             } catch {
@@ -359,6 +368,7 @@ export function useMosChatMessageSendAndMedia({
       activeThreadMsg,
       currentUser,
       fetchBootstrap,
+      onRecordEmojisFromText,
       setActiveThreadMsg,
       setIsAiThinking,
     ]

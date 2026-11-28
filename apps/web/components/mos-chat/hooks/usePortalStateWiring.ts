@@ -318,6 +318,7 @@ export function usePortalStateWiring({
     setThreadOpen: composerRefs.setThreadOpen,
     isMessageFromCurrentUser: avatarPresence.isMessageFromCurrentUser,
     handleOpenThread: navActions.handleOpenThread,
+    onRecordEmojiUsed: sidebarPrefs.recordEmojiUsed,
     notifyLivePeers,
     antdMessage,
   });
@@ -416,6 +417,7 @@ export function usePortalStateWiring({
     notifyLivePeers,
     scrollToChatBottom: composerRefs.scrollToChatBottom,
     cleanQuotedText,
+    onRecordEmojisFromText: sidebarPrefs.recordEmojisFromText,
     antdMessage,
   });
 
@@ -527,6 +529,9 @@ export function usePortalStateWiring({
     missionActions,
     selectConversation: readSync.selectConversation,
     handleOpenThread: navActions.handleOpenThread,
+    frequentEmojis: sidebarPrefs.frequentEmojis,
+    onResetFrequentEmojis: sidebarPrefs.resetEmojiUsage,
+    onRecordEmojiUsed: sidebarPrefs.recordEmojiUsed,
     antdMessage,
   });
 

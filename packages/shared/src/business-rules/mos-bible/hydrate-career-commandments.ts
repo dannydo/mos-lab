@@ -1,4 +1,9 @@
-import { calculateComboBonus, DEFAULT_FM_FLOOR_FARM_CONFIG } from '../../types/career-progression/career-defaults.js';
+import {
+  DEFAULT_COMBO_MIN_COLLECTED_AMOUNT,
+  calculateComboBonus,
+  calculateComboDebtBonus,
+  DEFAULT_FM_FLOOR_FARM_CONFIG,
+} from '../../types/career-progression/career-defaults.js';
 import type { CareerProgressionConfig } from '../../types/career-progression/career-requirements.types.js';
 import type { MosBibleCommandment } from '../../types/mos-bible.js';
 
@@ -6,6 +11,12 @@ export const LIVE_CAREER_BIBLE_IDS = new Set<string>(['CV-002', 'CV-004', 'CAREE
 
 function fmtVnd(value: number): string {
   return `${Math.round(value).toLocaleString('vi-VN')}đ`;
+}
+
+function fmtCompactThreshold(value: number): string {
+  if (value < 1_000_000) return `${Math.round(value / 1000)}K`;
+  const m = value / 1_000_000;
+  return `${Number.isInteger(m) ? m.toFixed(0) : Number(m.toFixed(1))}M`;
 }
 
 function fmtPct(ratio: number): string {
@@ -28,22 +39,34 @@ function buildLiveCv002(base: MosBibleCommandment, config: CareerProgressionConf
   const tipSharePct = fmtPct(cvl.tipShareRatio ?? 0.9);
   const under2m = cvl.comboUnder2mBonus ?? 50000;
   const step1m = cvl.comboStepPerMillionBonus ?? 50000;
+  const minCollected = cvl.comboMinCollectedAmount ?? DEFAULT_COMBO_MIN_COLLECTED_AMOUNT;
+  const minLabel = fmtCompactThreshold(minCollected);
   const sample45m = calculateComboBonus(4500000, cvl);
   const serumOrig = cvl.serumOriginalPriceBonus ?? 100000;
   const serumDisc = cvl.serumDiscountedPriceBonus ?? 50000;
   const serumDeep = cvl.serumDeepDiscountPriceBonus ?? 10000;
   const serumFree = cvl.serumFreePriceBonus ?? 1000;
   const demoteMonths = config.maintenanceRules?.cvPlus?.consecutiveFailedMonthsToDemote ?? 2;
+  const debtMode = cvl.comboDebtBonusMode === 'PERCENTAGE' ? 'PERCENTAGE' : 'TIER_LADDER';
+  const debtRatePct = fmtPct(cvl.comboDebtBonusRate ?? 0.015);
+  const debtSample416m = calculateComboDebtBonus(4_158_000, cvl);
+  const debtRuleDesc =
+    debtMode === 'PERCENTAGE'
+      ? `tỷ lệ ${debtRatePct} trên số tiền thực thu từ ${fmtVnd(minCollected)} trở lên (VD thu 4.158.000đ nhận ${fmtVnd(debtSample416m)})`
+      : `bậc thang CVL trên số tiền thực thu tối thiểu ${fmtVnd(minCollected)} (${minLabel}–<2M = ${fmtVnd(under2m)}, mỗi 1M kế tiếp = +${fmtVnd(step1m)}; VD thu 4.158.000đ nhận ${fmtVnd(debtSample416m)})`;
 
   const updatedCommandments = [...base.commandments];
   updatedCommandments[3] = `Chuẩn 6 Ải Cốt Lõi xét thăng cấp (CV ➔ CVL): (1) Sản lượng tối thiểu ${minOrders} bộ mi trong 3 tháng liền; (2) Tỷ lệ bảo hành Fix ≤ ${maxFixPct}; (3) Tỷ lệ Tip cao hơn tối thiểu ${tipAbovePct} trung bình shop; (4) Kiểm định QA/QC tối thiểu ${qaAudits} lần/tháng và bắt buộc không có bài FAILED (0 vi phạm); (5) Chỉ số gắn kết đồng đội HI ≥ ${minHiPct}; (6) Tích lũy tối thiểu ${minBananas} Chuối Yêu Thương check-in trong tháng.`;
   updatedCommandments[4] = `Ải Trùm Cuối (Thử thách tự tư vấn): ${cvl.trialDurationDays ?? 30} ngày trực tiếp tư vấn tại giường với tỷ lệ chốt combo đạt tối thiểu ${minComboPct} theo cấu hình sống trên tập khách tiềm năng.`;
-  updatedCommandments[5] = `Đãi ngộ vượt trội khi đạt chuẩn: Lương giờ tăng +${fmtVnd(deltaWage)}/h (đạt ${fmtVnd(cvlWage)}/h), nhận trọn ${tipSharePct} Tip khách cho (70% làm mi + 20% tư vấn), Thưởng tiền tươi Dưỡng mi Yeppeum 6ml (Giá gốc 1.1M nhận ${fmtVnd(serumOrig)}; Giảm giá < 50% nhận ${fmtVnd(serumDisc)}; Giảm sâu ≥ 50% nhận ${fmtVnd(serumDeep)}; Tặng kèm Free 0đ nhận ${fmtVnd(serumFree)}), và Thưởng hoa hồng Combo theo công thức tối giản (< 2M = ${fmtVnd(under2m)}; mỗi 1M kế tiếp từ mốc 2M = +${fmtVnd(step1m)}; gói 4.5M nhận ${fmtVnd(sample45m)}). Khi khách mua nhiều gói Combo cùng 1 đơn (order_id), hệ thống cộng gộp tổng tiền rồi tính thưởng 1 lần.`;
+  updatedCommandments[5] = `Đãi ngộ vượt trội khi đạt chuẩn: Lương giờ tăng +${fmtVnd(deltaWage)}/h (đạt ${fmtVnd(cvlWage)}/h), nhận trọn ${tipSharePct} Tip khách cho (70% làm mi + 20% tư vấn), Thưởng tiền tươi Dưỡng mi Yeppeum 6ml (Giá gốc 1.1M nhận ${fmtVnd(serumOrig)}; Giảm giá < 50% nhận ${fmtVnd(serumDisc)}; Giảm sâu ≥ 50% nhận ${fmtVnd(serumDeep)}; Tặng kèm Free 0đ nhận ${fmtVnd(serumFree)}), và Thưởng hoa hồng Combo theo công thức tối giản (tối thiểu thực thu ${fmtVnd(minCollected)}; ${minLabel}–<2M = ${fmtVnd(under2m)}; mỗi 1M kế tiếp từ mốc 2M = +${fmtVnd(step1m)}; gói 4.5M nhận ${fmtVnd(sample45m)}). Khi khách mua nhiều gói Combo cùng 1 đơn (order_id), hệ thống cộng gộp tổng tiền rồi tính thưởng 1 lần.`;
   updatedCommandments[7] = `Quy tắc Giáng cấp ${demoteMonths} Tháng Liền: Nếu trong ${demoteMonths} tháng liên tiếp tỷ lệ tự chốt combo vẫn dưới ngưỡng ${minComboPct}, Chuyên Viên bị giáng cấp quay lại CV, tỷ lệ Tip tụt về 70%, mất quyền tự tư vấn tại giường.`;
+  if (updatedCommandments[14]) {
+    updatedCommandments[14] = `Doanh số Combo Thực Thu & Thưởng Thu Nợ Combo (CVL / CVLL): Khi bán gói Combo mới có phát sinh nợ (user_debt chưa hủy với debt_amount > 0), thưởng Combo chỉ tính trên số tiền thực thu trong ca (total_price - unpaid_debt_amount), vẫn tính 1 gói chốt vào tỷ lệ Combo. Cả đơn Combo mới lẫn ca trực tiếp thu tiền nợ cũ của gói Combo (user_debt_payment trên đơn Completed chưa hủy) đều cần thực thu tối thiểu ${fmtVnd(minCollected)} để hưởng thưởng thu nợ theo ${debtRuleDesc}; ca thu nợ KHÔNG cộng vào tử số tỷ lệ chốt Combo ${minComboPct} và mở khóa chi trả cùng ngưỡng duy trì Combo hàng tháng.`;
+  }
 
   return {
     ...base,
-    summary: `CVL (Chuyên Viên Tự Chủ) nhận trọn bộ đãi ngộ (lương ${fmtVnd(cvlWage)}/h, ${tipSharePct} Tip, thưởng Combo <2M = ${fmtVnd(under2m)} & +${fmtVnd(step1m)}/1M) khi đạt tỷ lệ tự chốt Combo tối thiểu ${minComboPct} trên khách Not Combo Live. Không đạt vẫn bảo lưu ${tipSharePct} Tip; trượt ${demoteMonths} tháng liền quay lại CV.`,
+    summary: `CVL (Chuyên Viên Tự Chủ) nhận trọn bộ đãi ngộ (lương ${fmtVnd(cvlWage)}/h, ${tipSharePct} Tip, thưởng Combo tối thiểu thu ${minLabel}: ${minLabel}–<2M = ${fmtVnd(under2m)} & +${fmtVnd(step1m)}/1M) khi đạt tỷ lệ tự chốt Combo tối thiểu ${minComboPct} trên khách Not Combo Live. Không đạt vẫn bảo lưu ${tipSharePct} Tip; trượt ${demoteMonths} tháng liền quay lại CV.`,
     commandments: updatedCommandments,
     effectiveFrom: config.updatedAt ? config.updatedAt.slice(0, 10) : base.effectiveFrom,
   };
@@ -78,15 +101,30 @@ function buildLiveCv004(base: MosBibleCommandment, config: CareerProgressionConf
 
   const under2m = cvll.comboUnder2mBonus ?? cvl.comboUnder2mBonus ?? 50000;
   const step1m = cvll.comboStepPerMillionBonus ?? cvl.comboStepPerMillionBonus ?? 50000;
+  const cvllMinCollected =
+    cvll.comboMinCollectedAmount ?? cvl.comboMinCollectedAmount ?? DEFAULT_COMBO_MIN_COLLECTED_AMOUNT;
+  const cvllMinLabel = fmtCompactThreshold(cvllMinCollected);
   const sample45m = calculateComboBonus(4500000, cvll);
   const serumOrig = cvll.serumOriginalPriceBonus ?? 100000;
+  const cvllDebtMode =
+    (cvll.comboDebtBonusMode ?? cvl.comboDebtBonusMode) === 'PERCENTAGE' ? 'PERCENTAGE' : 'TIER_LADDER';
+  const cvllDebtRatePct = fmtPct(cvll.comboDebtBonusRate ?? cvl.comboDebtBonusRate ?? 0.015);
+  const cvllDebtSample = calculateComboDebtBonus(4_158_000, {
+    ...cvl,
+    ...cvll,
+    comboDebtBonusMode: cvllDebtMode,
+  });
+  const cvllDebtDesc =
+    cvllDebtMode === 'PERCENTAGE'
+      ? `thu nợ Combo tính ${cvllDebtRatePct} thực thu từ ${fmtVnd(cvllMinCollected)} trở lên (VD thu 4.158.000đ = ${fmtVnd(cvllDebtSample)})`
+      : `thu nợ Combo tính theo bậc thang thực thu tối thiểu ${fmtVnd(cvllMinCollected)} (VD thu 4.158.000đ = ${fmtVnd(cvllDebtSample)})`;
 
   return {
     ...base,
     summary: `CVLL hưởng lương giờ ${fmtVnd(cvllWage)}/h (${deltaLabel} so với CVL), tư vấn hộ CV/CVL nhận ${cvllSharePct} Combo & Sản phẩm (đồng đội nhận ${partnerSharePct}), Tip 70+20 như CVL, ${mandatoryQueue ? 'bắt buộc đi tua khách mình' : 'hỗ trợ linh hoạt theo phân công'} và phải đạt 6 ải + ≥ ${promoComboPct} Combo trong ${promoMonths} tháng liên tiếp để lên hạng.`,
     commandments: [
       `Điều kiện Thăng Cấp lên CVLL (6 Ải + ${promoComboPct} × ${promoMonths} Tháng Liền): Phải đạt đầy đủ 6 ải cốt lõi (≥ ${minOrders} bộ mi/3 tháng, Fix ≤ ${maxFixPct}, Tip cao hơn TB shop ≥ +${tipAbovePct}, QA/QC ≥ ${qaAudits} lần/tháng và 0 lỗi FAILED, HI ≥ ${minHiPct}, ≥ ${minBananas} Chuối Yêu Thương) VÀ đạt tối thiểu ${promoComboPct} tỷ lệ tự chốt Combo trên khách Not Combo Live trong ${promoMonths} tháng liên tiếp.`,
-      `Lương Giờ & Quyền Lợi Cơ Bản Như CVL: Lương giờ đạt ${fmtVnd(cvllWage)}/h (${deltaLabel} so với CVL ${fmtVnd(cvlWage)}/h). Công thức Combo bậc thang (<2M = ${fmtVnd(under2m)}, mỗi 1M kế tiếp = +${fmtVnd(step1m)}; gói 4.5M = ${fmtVnd(sample45m)}), thưởng Dưỡng mi (tối đa ${fmtVnd(serumOrig)}/cây) và các quyền lợi cá nhân giữ nguyên như Điều răn CV-002.`,
+      `Lương Giờ & Quyền Lợi Cơ Bản Như CVL: Lương giờ đạt ${fmtVnd(cvllWage)}/h (${deltaLabel} so với CVL ${fmtVnd(cvlWage)}/h). Công thức Combo bậc thang (tối thiểu thu ${fmtVnd(cvllMinCollected)}; ${cvllMinLabel}–<2M = ${fmtVnd(under2m)}, mỗi 1M kế tiếp = +${fmtVnd(step1m)}; gói 4.5M = ${fmtVnd(sample45m)}), ${cvllDebtDesc}, thưởng Dưỡng mi (tối đa ${fmtVnd(serumOrig)}/cây) và các quyền lợi cá nhân giữ nguyên như Điều răn CV-002.`,
       `Cơ Chế Tư Vấn Chéo (${cvllSharePct}/${partnerSharePct}) Cho CV và CVL Khác: Khi CVLL tư vấn hỗ trợ chốt đơn cho khách của CV hoặc CVL khác, CVLL nhận ${cvllSharePct} tiền thưởng Combo & Sản phẩm; CV hoặc CVL thực hiện ca đó nhận ${partnerSharePct} (${cvShareRate === 0 ? '0đ thưởng bán hàng' : 'chia theo cấu hình'}).`,
       `Quy Tắc Chia Tip 70+20 Giữ Nguyên Như CVL: Toàn bộ ca của bản thân hoặc ca hỗ trợ chéo đều áp dụng quy tắc Tip 70% làm mi + 10% Check-in + 10% Check-out (+ 10% Quỹ tiệm).`,
       exemptDenom
@@ -111,11 +149,13 @@ function buildLiveCareerCvl001(base: MosBibleCommandment, config: CareerProgress
   const minComboPct = fmtPct(cvl.minSelfComboRate ?? 0.21);
   const under2m = cvl.comboUnder2mBonus ?? 50000;
   const step1m = cvl.comboStepPerMillionBonus ?? 50000;
+  const minCollected = cvl.comboMinCollectedAmount ?? DEFAULT_COMBO_MIN_COLLECTED_AMOUNT;
+  const minLabel = fmtCompactThreshold(minCollected);
   const sample45m = calculateComboBonus(4500000, cvl);
   const demoteMonths = config.maintenanceRules?.cvPlus?.consecutiveFailedMonthsToDemote ?? 2;
 
   const updatedCommandments = [...base.commandments];
-  updatedCommandments[0] = `Phiên bản 1 · 30 Giây Tóm Tắt Siêu Ngắn: CVL là Chuyên Viên Tự Chủ — vừa làm mi đẹp, vừa tự tư vấn và tự bấm thanh toán. Để lên cấp: vượt 6 ải (${minOrders} bộ mi/3 tháng, fix ≤ ${maxFixPct}, khách tip đều, QA 0 lỗi, ${minBananas} chuối) và hoàn thành ${cvl.trialDurationDays ?? 30} ngày thử thách (tỷ lệ Combo ≥ ${minComboPct}). Khi lên cấp: lương giờ ${fmtVnd(cvlWage)}/h, trọn 90% Tip, thưởng combo (<2M = ${fmtVnd(under2m)}, mỗi +1M = +${fmtVnd(step1m)}, gói 4.5M = ${fmtVnd(sample45m)}) và dưỡng mi.`;
+  updatedCommandments[0] = `Phiên bản 1 · 30 Giây Tóm Tắt Siêu Ngắn: CVL là Chuyên Viên Tự Chủ — vừa làm mi đẹp, vừa tự tư vấn và tự bấm thanh toán. Để lên cấp: vượt 6 ải (${minOrders} bộ mi/3 tháng, fix ≤ ${maxFixPct}, khách tip đều, QA 0 lỗi, ${minBananas} chuối) và hoàn thành ${cvl.trialDurationDays ?? 30} ngày thử thách (tỷ lệ Combo ≥ ${minComboPct}). Khi lên cấp: lương giờ ${fmtVnd(cvlWage)}/h, trọn 90% Tip, thưởng combo (tối thiểu thu ${minLabel}; ${minLabel}–<2M = ${fmtVnd(under2m)}, mỗi +1M = +${fmtVnd(step1m)}, gói 4.5M = ${fmtVnd(sample45m)}) và dưỡng mi.`;
   updatedCommandments[2] = `Phiên bản 3 · Chi Tiết 6 Ải Cốt Lõi & Quy Tắc Giữ Lông: (1) ${minOrders} bộ mi / 3 tháng liền; (2) Fix ≤ ${maxFixPct}; (3) Tip cao hơn TB shop ≥ ${fmtPct(cvl.minTipRatioAboveShop ?? 0.05)}; (4) QA/QC ≥ ${cvl.minQaAudits ?? 4} lần/tháng và 0 bài FAILED; (5) HI ≥ ${minHiPct}; (6) ≥ ${minBananas} Chuối Yêu Thương. Vượt 6 ải mở khóa ${cvl.trialDurationDays ?? 30} ngày tự tư vấn đạt ≥ ${minComboPct}. Trượt ${demoteMonths} tháng liền quay về CV.`;
 
   return {
@@ -187,7 +227,14 @@ export function hydrateMosBibleCommandmentsWithCareerConfig(
       return buildLiveCareerCvl001(commandment, config);
     }
     if (commandment.id === 'FM-001') {
-      return buildLiveFm001(commandment, config);
+      return {
+        ...buildLiveFm001(commandment, config),
+        version: commandment.version,
+        title: commandment.title,
+        summary: commandment.summary,
+        commandments: commandment.commandments,
+        effectiveFrom: commandment.effectiveFrom,
+      };
     }
     return commandment;
   });

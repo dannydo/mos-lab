@@ -1,10 +1,11 @@
-import type {
-  MosChatAccessConfig,
-  MosChatConversation,
-  MosChatCustomSection,
-  MosChatTaskItem,
-  MosChatUserSidebarPrefs,
-  SafeAny,
+import {
+  normalizeEmojiUsageMap,
+  type MosChatAccessConfig,
+  type MosChatConversation,
+  type MosChatCustomSection,
+  type MosChatTaskItem,
+  type MosChatUserSidebarPrefs,
+  type SafeAny,
 } from '@mos-lab/shared';
 import { deduplicateMovedMessagesInConversation } from './chat-repository.service.js';
 
@@ -303,6 +304,15 @@ export function normalizeUserSidebarPrefs(raw: SafeAny): MosChatUserSidebarPrefs
     }
   }
 
+  const hasEmojiUsageObj = Boolean(
+    raw.emojiUsage && typeof raw.emojiUsage === 'object' && !Array.isArray(raw.emojiUsage)
+  );
+  const emojiUsage = hasEmojiUsageObj ? normalizeEmojiUsageMap(raw.emojiUsage) : undefined;
+  const emojiUsageBootstrappedAt =
+    typeof raw.emojiUsageBootstrappedAt === 'string' && raw.emojiUsageBootstrappedAt.trim().length > 0
+      ? raw.emojiUsageBootstrappedAt.trim()
+      : undefined;
+
   return {
     pinnedIds: cleanStrList(raw.pinnedIds),
     mutedIds: cleanStrList(raw.mutedIds),
@@ -322,6 +332,8 @@ export function normalizeUserSidebarPrefs(raw: SafeAny): MosChatUserSidebarPrefs
     updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : def.updatedAt,
     ...(notificationMode ? { notificationMode } : {}),
     ...(Object.keys(channelNotificationOverrides).length > 0 ? { channelNotificationOverrides } : {}),
+    ...(emojiUsage && (Object.keys(emojiUsage).length > 0 || emojiUsageBootstrappedAt) ? { emojiUsage } : {}),
+    ...(emojiUsageBootstrappedAt ? { emojiUsageBootstrappedAt } : {}),
   };
 }
 

@@ -67,12 +67,14 @@ export function AppleKpiHero({
   value,
   hint,
   tone = 'neutral',
+  infoSlot,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   hint?: string;
   tone?: 'neutral' | 'emerald' | 'blue' | 'amber' | 'rose';
+  infoSlot?: React.ReactNode;
 }) {
   const toneClass =
     tone === 'emerald'
@@ -87,9 +89,12 @@ export function AppleKpiHero({
 
   return (
     <AppleSurface className="p-4">
-      <div className="flex items-center gap-2 text-xs text-neutral-400 dark:text-neutral-500">
-        {icon}
-        <span className="truncate font-normal">{label}</span>
+      <div className="flex items-center justify-between gap-2 text-xs text-neutral-400 dark:text-neutral-500">
+        <div className="flex min-w-0 items-center gap-2">
+          {icon}
+          <span className="truncate font-normal">{label}</span>
+        </div>
+        {infoSlot ? <div className="shrink-0">{infoSlot}</div> : null}
       </div>
       <div className={`mt-1.5 text-2xl font-semibold tracking-tight tabular-nums ${toneClass}`}>{value}</div>
       {hint ? (
@@ -110,6 +115,7 @@ export function AppleSliderRow({
   step = 1,
   hint,
   onChange,
+  infoSlot,
 }: {
   id: string;
   icon: React.ReactNode;
@@ -121,17 +127,21 @@ export function AppleSliderRow({
   step?: number;
   hint?: string;
   onChange: (next: number) => void;
+  infoSlot?: React.ReactNode;
 }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2">
-        <label
-          htmlFor={id}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300"
-        >
-          {icon}
-          <span>{label}</span>
-        </label>
+        <div className="inline-flex min-w-0 items-center gap-1.5">
+          <label
+            htmlFor={id}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300"
+          >
+            {icon}
+            <span>{label}</span>
+          </label>
+          {infoSlot}
+        </div>
         <span className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-white">{valueText}</span>
       </div>
       <input
@@ -158,6 +168,7 @@ export function AppleStepperRow({
   max,
   suffix = '',
   onChange,
+  infoSlot,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -167,29 +178,31 @@ export function AppleStepperRow({
   max: number;
   suffix?: string;
   onChange: (next: number) => void;
+  infoSlot?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-11 items-center justify-between gap-3 py-1">
+    <div className="flex min-h-11 items-center justify-between gap-3 py-1.5">
       <div className="min-w-0 flex-1">
         <div className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-700 dark:text-neutral-200">
           {icon}
-          <span className="truncate">{label}</span>
+          <span>{label}</span>
+          {infoSlot}
         </div>
         {hint ? (
-          <p className="truncate text-[11px] font-normal text-neutral-400 dark:text-neutral-500">{hint}</p>
+          <p className="mt-0.5 text-[11px] leading-snug font-normal text-neutral-400 dark:text-neutral-500">{hint}</p>
         ) : null}
       </div>
-      <div className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-100 p-1 dark:bg-neutral-800">
+      <div className="inline-flex min-w-[128px] shrink-0 items-center justify-between rounded-xl bg-neutral-100 p-1 dark:bg-neutral-800">
         <button
           type="button"
           aria-label={`Giảm ${label}`}
           disabled={value <= min}
           onClick={() => onChange(Math.max(min, value - 1))}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-white disabled:opacity-30 dark:text-neutral-300 dark:hover:bg-neutral-700"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-white disabled:opacity-30 dark:text-neutral-300 dark:hover:bg-neutral-700"
         >
           <Minus className="h-3.5 w-3.5" />
         </button>
-        <span className="min-w-10 text-center text-sm font-semibold tabular-nums text-neutral-900 dark:text-white">
+        <span className="min-w-11 text-center text-xs font-semibold tabular-nums text-neutral-900 dark:text-white">
           {value}
           {suffix}
         </span>
@@ -198,7 +211,7 @@ export function AppleStepperRow({
           aria-label={`Tăng ${label}`}
           disabled={value >= max}
           onClick={() => onChange(Math.min(max, value + 1))}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-white disabled:opacity-30 dark:text-neutral-300 dark:hover:bg-neutral-700"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-600 transition hover:bg-white disabled:opacity-30 dark:text-neutral-300 dark:hover:bg-neutral-700"
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
@@ -213,32 +226,39 @@ export function AppleToggleRow({
   hint,
   checked,
   onChange,
+  infoSlot,
 }: {
   icon: React.ReactNode;
   label: string;
   hint?: string;
   checked: boolean;
   onChange: (next: boolean) => void;
+  infoSlot?: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl px-1 py-1.5 text-left transition hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60"
-    >
+    <div className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl px-1 py-1.5 transition hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60">
       <div className="min-w-0 flex-1">
-        <div className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-700 dark:text-neutral-200">
-          {icon}
-          <span className="truncate">{label}</span>
+        <div className="inline-flex max-w-full items-center gap-1.5 text-xs font-medium text-neutral-700 dark:text-neutral-200">
+          <button
+            type="button"
+            onClick={() => onChange(!checked)}
+            className="inline-flex min-w-0 items-center gap-1.5 text-left"
+          >
+            {icon}
+            <span className="truncate">{label}</span>
+          </button>
+          {infoSlot}
         </div>
         {hint ? (
           <p className="truncate text-[11px] font-normal text-neutral-400 dark:text-neutral-500">{hint}</p>
         ) : null}
       </div>
-      <span
-        aria-hidden="true"
+      <button
+        type="button"
+        role="switch"
+        aria-label={label}
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
         className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors ${
           checked ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-700'
         }`}
@@ -248,8 +268,8 @@ export function AppleToggleRow({
             checked ? 'translate-x-6' : 'translate-x-1'
           }`}
         />
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
 

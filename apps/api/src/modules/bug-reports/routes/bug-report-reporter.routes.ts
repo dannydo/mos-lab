@@ -290,6 +290,11 @@ export function registerBugReportReporterRoutes(fastify: FastifyInstance) {
       const id = numericParam((request.params as { id: string }).id, 'Ticket ID');
       const body = request.body as ReviewBugReportImplementationAcceptanceRequest;
       await InboxImplementationService.reviewReporterAcceptance(fastify, id, request.user.id, body);
+      await fastify.prisma.crm.crmBugReportNotification.updateMany({
+        where: { reportId: id, recipientStaffId: request.user.id, readAt: null },
+        data: { readAt: new Date() },
+      });
+      fastify.cache?.invalidatePattern('^bug-reports:(mine|badge):');
       return reply.send({
         success: true,
         data: await BugReportService.detail(fastify, id),

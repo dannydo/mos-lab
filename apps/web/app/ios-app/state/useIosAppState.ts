@@ -33,6 +33,7 @@ import {
 import type { ActorTipBreakdown } from './useIosBillingCheckout';
 import type { PendingReferral } from '../components/screens/checkin/NewCustomerReferralModal';
 import { useIosSimulationMode, IOS_SIM_MODE_SESSION_KEY } from './useIosSimulationMode';
+import { useIosAddUnderMink } from './useIosAddUnderMink';
 
 export {
   IOS_AVAILABLE_BRANCHES,
@@ -559,6 +560,22 @@ export function useIosAppState(
     onReferralGranted: () => setPendingReferral(null),
   });
 
+  const addUnderMink = useIosAddUnderMink({
+    activeBooking,
+    activeBookingId,
+    actor: effectiveActor,
+    effectiveStoreId,
+    targetDateStr,
+    isSimulationMode,
+    setBookings,
+    setActiveBookingId,
+    setCurrentStep,
+    setActiveTab,
+    setBookingSegment,
+    postAction,
+    refreshDb,
+  });
+
   return {
     bookings: visibleBookings,
     totalStoreBookingsCount: totalStoreCount ?? bookings.length,
@@ -631,6 +648,7 @@ export function useIosAppState(
     loggedInUser,
     pendingReferral,
     setPendingReferral,
+    ...addUnderMink,
     ...simulation,
   };
 }

@@ -23,7 +23,9 @@ export function CvSelfManagedSubRow({ record, onOpenPaystubModal }: CvSelfManage
     Math.ceil(breakdown.notComboLiveOrders * breakdown.targetComboRate) - breakdown.combosSoldCount
   );
 
-  const hasSerum = (breakdown.serumBonusTotal || 0) > 0;
+  const hasSerum = (breakdown.serumsSoldCount || 0) > 0 || (breakdown.serumBonusTotal || 0) > 0;
+  const hasDebt = (breakdown.debtCollectionCount || 0) > 0 || (breakdown.debtCollectionBonusTotal || 0) > 0;
+  const chipColsClass = hasSerum && hasDebt ? 'grid-cols-5' : hasSerum || hasDebt ? 'grid-cols-4' : 'grid-cols-3';
 
   return (
     <div
@@ -80,7 +82,7 @@ export function CvSelfManagedSubRow({ record, onOpenPaystubModal }: CvSelfManage
       </div>
 
       {/* TẦNG 2: Lưới chip mini đều tăm tắp, không tràn viền */}
-      <div className={`grid ${hasSerum ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 w-full`}>
+      <div className={`grid ${chipColsClass} gap-1.5 w-full`}>
         {/* 1. Lương giờ tăng +2k/h */}
         <Tooltip
           title={`Lương giờ (+2k/h): ${breakdown.isUnlocked ? `${record.regularHours || 0}h × 2.000đ = +${formatVND(breakdown.deltaHourlyWage)}` : 'Tạm khóa (chưa đạt chuẩn combo)'}`}
@@ -120,12 +122,26 @@ export function CvSelfManagedSubRow({ record, onOpenPaystubModal }: CvSelfManage
         {/* 4. Thưởng Serum Yeppeum (nếu có) */}
         {hasSerum && (
           <Tooltip
-            title={`Thưởng Dưỡng Mi Yeppeum (${breakdown.serumsSoldCount || 0} chai): +${formatVND(breakdown.serumBonusTotal)}`}
+            title={`Thưởng Dưỡng Mi Yeppeum (${breakdown.serumsSoldCount || 0} cây): ${breakdown.isUnlocked ? `+${formatVND(breakdown.serumBonusTotal)}` : 'Tạm khóa (chưa đạt chuẩn combo)'}`}
           >
             <div className="py-1 px-1 rounded-lg text-center bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/25">
               <span className="text-[9px] text-teal-600 dark:text-teal-300 block leading-tight">🧴 Serum</span>
               <span className="font-bold text-teal-600 dark:text-teal-400 tabular-nums text-[10px] sm:text-[11px] block leading-tight">
-                {formatChipAmount(breakdown.serumBonusTotal)}
+                {breakdown.isUnlocked ? formatChipAmount(breakdown.serumBonusTotal) : '0đ'}
+              </span>
+            </div>
+          </Tooltip>
+        )}
+
+        {/* 5. Thưởng Thu nợ Combo (nếu có) */}
+        {hasDebt && (
+          <Tooltip
+            title={`Thưởng Thu Nợ Combo (${breakdown.debtCollectionCount || 0} ca · ${formatVND(breakdown.debtCollectedAmount || 0)}): ${breakdown.isUnlocked ? `+${formatVND(breakdown.debtCollectionBonusTotal || 0)}` : 'Tạm khóa (chưa đạt chuẩn combo)'}`}
+          >
+            <div className="py-1 px-1 rounded-lg text-center bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+              <span className="text-[9px] text-emerald-600 dark:text-emerald-300 block leading-tight">💳 Thu nợ</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums text-[10px] sm:text-[11px] block leading-tight">
+                {breakdown.isUnlocked ? formatChipAmount(breakdown.debtCollectionBonusTotal || 0) : '0đ'}
               </span>
             </div>
           </Tooltip>

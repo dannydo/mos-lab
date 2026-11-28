@@ -176,6 +176,7 @@ export const MosChatDesktopThreadAndWorkspace: React.FC<MosChatDesktopThreadAndW
       openStickerPopoverKey={msgSending.openStickerPopoverKey}
       setOpenStickerPopoverKey={msgSending.setOpenStickerPopoverKey}
       renderReactionPickerContent={uiAdapters.renderReactionPickerContent}
+      quickReactionEmojis={sidebarPrefs.desktopQuickReactionEmojis}
       handleBuzzMessage={msgMutations.handleBuzzMessage}
       handleStartEdit={msgMutations.handleStartEdit}
       handleDeleteMessage={msgMutations.handleDeleteMessage}

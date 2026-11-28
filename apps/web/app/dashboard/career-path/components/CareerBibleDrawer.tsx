@@ -17,7 +17,13 @@ import {
   Heart,
 } from 'lucide-react';
 import Link from 'next/link';
-import { calculateComboBonus, DEFAULT_CAREER_PROGRESSION_CONFIG, type CareerProgressionConfig } from '@mos-lab/shared';
+import {
+  DEFAULT_COMBO_MIN_COLLECTED_AMOUNT,
+  calculateComboBonus,
+  calculateComboDebtBonus,
+  DEFAULT_CAREER_PROGRESSION_CONFIG,
+  type CareerProgressionConfig,
+} from '@mos-lab/shared';
 
 export type CareerBibleTopic =
   | 'COMBO'
@@ -75,6 +81,11 @@ function buildCareerBibleTopics(
   const cvllPromoMonths = cvll.promotionConsecutiveMonths ?? 2;
   const under2m = cvl.comboUnder2mBonus ?? 50000;
   const step1m = cvl.comboStepPerMillionBonus ?? 50000;
+  const minCollected = cvl.comboMinCollectedAmount ?? DEFAULT_COMBO_MIN_COLLECTED_AMOUNT;
+  const minLabel =
+    minCollected < 1_000_000
+      ? `${Math.round(minCollected / 1000)}K`
+      : `${Number((minCollected / 1_000_000).toFixed(1))}M`;
   const sample45m = calculateComboBonus(4500000, cvl);
   const serumOrig = cvl.serumOriginalPriceBonus ?? 100000;
   const serumDisc = cvl.serumDiscountedPriceBonus ?? 50000;
@@ -89,21 +100,29 @@ function buildCareerBibleTopics(
   const minHiPct = fmtPct(cvl.minHappinessIndex ?? 0.7);
   const trialDays = cvl.trialDurationDays ?? 30;
   const demoteMonths = cfg.maintenanceRules?.cvPlus?.consecutiveFailedMonthsToDemote ?? 2;
+  const debtMode = cvl.comboDebtBonusMode === 'PERCENTAGE' ? 'PERCENTAGE' : 'TIER_LADDER';
+  const debtRatePct = fmtPct(cvl.comboDebtBonusRate ?? 0.015);
+  const debtSample416m = calculateComboDebtBonus(4_158_000, cvl);
+  const debtDesc =
+    debtMode === 'PERCENTAGE'
+      ? `tính theo tỷ lệ ${debtRatePct} trên số tiền thực thu từ ${fmtVnd(minCollected)} trở lên (VD thu 4.158.000đ nhận ${fmtVnd(debtSample416m)})`
+      : `tính theo bậc thang thực thu tối thiểu ${fmtVnd(minCollected)} (${minLabel}–<2M = ${fmtVnd(under2m)}, mỗi +1M = +${fmtVnd(step1m)}; VD thu 4.158.000đ nhận ${fmtVnd(debtSample416m)})`;
 
   return {
     COMBO: {
       ruleId: 'CV-002',
       ruleTitle: `Quy chế Thưởng Combo Nối Mi Tối Giản & Ngưỡng ${minComboPct}`,
-      version: '2.9.0',
+      version: '2.11.0',
       icon: <Sparkles className="w-5 h-5 text-pink-400" />,
-      subtitle: 'Thưởng hoa hồng tiền tươi tối giản hóa và cộng gộp các gói mua cùng 1 lúc',
+      subtitle: 'Thưởng hoa hồng tiền tươi tối giản hóa, tính theo thực thu tối thiểu 500K và cộng thưởng thu nợ Combo',
       commandments: [
         'Áp dụng trên tập khách hàng Not Combo Live (chưa có gói combo đang hoạt động; khách có combo bán gia hạn vẫn cộng dồn).',
-        `Công thức thưởng tối giản: Tổng đơn Combo < 2 Triệu = ${fmtVnd(under2m)}; mỗi 1 Triệu kế tiếp (từ 2M trở lên) = +${fmtVnd(step1m)} (gói 4.5M nhận ${fmtVnd(sample45m)}).`,
+        `Công thức thưởng tối giản: Tối thiểu thực thu ${fmtVnd(minCollected)} (dưới ${fmtVnd(minCollected)} = 0đ); ${minLabel}–<2M = ${fmtVnd(under2m)}; mỗi 1 Triệu kế tiếp (từ 2M trở lên) = +${fmtVnd(step1m)} (gói 4.5M nhận ${fmtVnd(sample45m)}).`,
         'Quy tắc 2 Combo Mua Cùng 1 Lúc: Nếu khách mua nhiều gói Combo cùng 1 lúc trong cùng 1 đơn (order_id), bắt buộc cộng gộp tổng tiền các gói lại trước rồi mới áp công thức tính thưởng 1 lần duy nhất.',
+        `Thực Thu & Thu Nợ Combo: Đơn bán gói mới có nợ chỉ tính thưởng trên thực thu (trừ phần nợ chưa thu) để tránh trả trùng. Cả đơn Combo mới lẫn ca trực tiếp thu nợ gói Combo cũ đều cần thực thu tối thiểu ${fmtVnd(minCollected)} mới tính thưởng (${debtDesc}) — ca thu nợ không cộng vào tử số tỷ lệ chốt Combo ${minComboPct}.`,
         `Tỷ lệ tự chốt tối thiểu bắt buộc: Phải đạt từ ${minComboPct} trở lên trên tệp khách Not Combo Live (lên CVLL: đạt ${cvllPromoPct} × ${cvllPromoMonths} tháng liền; tư vấn hộ 100/0 nhận 100% Combo).`,
       ],
-      rewardFormula: `< 2M = ${fmtVnd(under2m)} • Mỗi 1M kế tiếp = +${fmtVnd(step1m)} (Gói 4.5M: ${fmtVnd(sample45m)})`,
+      rewardFormula: `Tối thiểu thu ${minLabel} · ${minLabel}–<2M = ${fmtVnd(under2m)} • Mỗi 1M kế tiếp = +${fmtVnd(step1m)} (Gói 4.5M: ${fmtVnd(sample45m)})`,
       penalty: `Nếu tỷ lệ chốt < ${minComboPct}: Khóa 100% tiền thưởng combo (0đ) và lương tăng thêm; chỉ bảo lưu 90% tip tư vấn.`,
       routeScope: '/dashboard/career-path',
     },

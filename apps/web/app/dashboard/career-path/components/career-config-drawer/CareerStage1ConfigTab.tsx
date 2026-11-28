@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Target, Sparkles, ShieldCheck, Flame, DollarSign, HandCoins } from 'lucide-react';
-import type { CareerProgressionConfig } from '@mos-lab/shared';
+import { DEFAULT_COMBO_MIN_COLLECTED_AMOUNT, type CareerProgressionConfig } from '@mos-lab/shared';
 import { calculateComboBonus } from '../../career-path.constants';
 import {
   type CvToCcConfig,
@@ -12,6 +12,7 @@ import {
 } from './careerConfigTypesAndHelpers';
 import {
   CareerConfigComboPenaltyBox,
+  CareerConfigDebtBonusBox,
   CareerConfigSectionCard,
   CareerConfigSliderField,
   CareerConfigSwitchCard,
@@ -165,9 +166,16 @@ export function CareerStage1ConfigTab({ config, cvToCc, summary, onConfigChange 
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
             <CareerConfigVndInputField
-              label="Tổng đơn < 2 Triệu:"
+              label="Thực thu tối thiểu:"
+              value={cvToCc.comboMinCollectedAmount ?? DEFAULT_COMBO_MIN_COLLECTED_AMOUNT}
+              step={50000}
+              min={0}
+              onChange={(val) => updateStage1({ comboMinCollectedAmount: val })}
+            />
+            <CareerConfigVndInputField
+              label="Từ ngưỡng – < 2 Triệu:"
               value={cvToCc.comboUnder2mBonus ?? 50000}
               step={5000}
               min={0}
@@ -183,12 +191,23 @@ export function CareerStage1ConfigTab({ config, cvToCc, summary, onConfigChange 
           </div>
 
           <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 leading-relaxed tabular-nums">
-            * Công thức: &lt; 2M = +{formatVnd(cvToCc.comboUnder2mBonus ?? 50000)} • 2M–&lt;3M = +
+            * Công thức: Tối thiểu thu {formatVnd(cvToCc.comboMinCollectedAmount ?? DEFAULT_COMBO_MIN_COLLECTED_AMOUNT)}{' '}
+            • Từ ngưỡng–&lt;2M = +{formatVnd(cvToCc.comboUnder2mBonus ?? 50000)} • 2M–&lt;3M = +
             {formatVnd(calculateComboBonus(2000000, cvToCc))} • 3M–&lt;4M = +
             {formatVnd(calculateComboBonus(3000000, cvToCc))} • 4M–&lt;5M = +
             {formatVnd(calculateComboBonus(4000000, cvToCc))}. Nếu khách mua 2 gói Combo cùng 1 lúc trong 1 đơn, cộng
             gộp tổng tiền lại rồi tính thưởng.
           </p>
+
+          <CareerConfigDebtBonusBox
+            mode={cvToCc.comboDebtBonusMode ?? 'TIER_LADDER'}
+            rate={cvToCc.comboDebtBonusRate ?? 0.015}
+            comboUnder2mBonus={cvToCc.comboUnder2mBonus ?? 50000}
+            comboStepPerMillionBonus={cvToCc.comboStepPerMillionBonus ?? 50000}
+            comboMinCollectedAmount={cvToCc.comboMinCollectedAmount ?? DEFAULT_COMBO_MIN_COLLECTED_AMOUNT}
+            onChangeMode={(mode) => updateStage1({ comboDebtBonusMode: mode })}
+            onChangeRate={(rate) => updateStage1({ comboDebtBonusRate: rate })}
+          />
 
           <CareerConfigSliderField
             label="Số gói combo cá nhân dự kiến / tháng:"

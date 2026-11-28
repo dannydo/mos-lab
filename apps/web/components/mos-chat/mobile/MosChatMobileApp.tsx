@@ -67,6 +67,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
     togglePinConversation,
     pinnedConvIds,
     openAiSessionById,
+    frequentEmojis,
+    recordEmojiUsed,
+    resetEmojiUsage,
   } = useMosChat();
 
   const resolvedFontStaffId =
@@ -364,6 +367,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({
         setStickerPickerOpen={setStickerPickerOpen}
         stickerPickerInitialPack={stickerPickerInitialPack}
         setStickerPickerInitialPack={setStickerPickerInitialPack}
+        frequentEmojis={frequentEmojis}
+        onRecordEmojiUsed={recordEmojiUsed}
+        onResetFrequentEmojis={resetEmojiUsage}
         editingMessage={editingMessage}
         setEditingMessage={setEditingMessage}
         movingMsgForThread={movingMsgForThread}

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -15,17 +15,24 @@ import {
   Sparkles,
   Star,
   TrendingUp,
+  Trophy,
   UserCheck,
   Users,
+  UtensilsCrossed,
   Wallet,
 } from 'lucide-react';
 import { AppleKpiHero, AppleSegmented, AppleSliderRow, AppleStepperRow, AppleSurface } from './ApplePrimitives';
+import { FmGrowthControlsSection } from './FmGrowthControlsSection';
+import { FmHubModePanel } from './FmHubModePanel';
+import { FmInfoTrigger } from './FmInfoGuideModal';
 import { FmPillarCard, METRIC_SLIDER_SPECS } from './FmPillarCard';
+import { FmRevPerCvLockRow } from './FmRevPerCvLockRow';
 import {
   AUTONOMY_HARD_MAX_PCT,
   BRANCH_SPECS,
   BranchKey,
   DEFAULT_PILLAR_METRICS,
+  FM_BONDING_STAR_THRESHOLDS,
   FM_MIN_CEO_HR_MEETINGS_PER_WEEK,
   FmLevel,
   FmSimulationResult,
@@ -33,6 +40,7 @@ import {
   PILLAR_SPECS,
   PillarKey,
   SimulatorInput,
+  computeLockedRevVnd,
   formatK,
   formatM,
   resolveAutonomyBoundsForStar,
@@ -43,7 +51,16 @@ import {
 
 export type FmPresetKey = 'dt-2star' | 'dt-3star' | 'ep-1fm' | 'below-gate';
 
-const PILLAR_DISPLAY_ORDER: readonly PillarKey[] = ['maps', 'fal', 'inventory', 'room', 'turn', 'grooming', 'autonomy'];
+const PILLAR_DISPLAY_ORDER: readonly PillarKey[] = [
+  'maps',
+  'fal',
+  'inventory',
+  'room',
+  'turn',
+  'grooming',
+  'autonomy',
+  'bonding',
+];
 
 interface FmCockpitViewProps {
   readonly input: SimulatorInput;
@@ -56,7 +73,31 @@ interface FmCockpitViewProps {
 export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: FmCockpitViewProps) {
   const spec = BRANCH_SPECS[input.branch];
   const revM = Math.round(input.revVnd / 1_000_000);
+  const currentRevPerCvM = Math.max(20, Math.min(80, Math.round(fm.revPerMatureCvVnd / 1_000_000)));
+  const [revPerCvLocked, setRevPerCvLocked] = useState(false);
+  const [lockedRevPerCvM, setLockedRevPerCvM] = useState(currentRevPerCvM);
+  const displayedRevPerCvM = revPerCvLocked ? lockedRevPerCvM : currentRevPerCvM;
   const metrics = input.pillarMetrics ?? DEFAULT_PILLAR_METRICS;
+
+  const handleToggleRevLock = () => {
+    if (revPerCvLocked) {
+      setRevPerCvLocked(false);
+      return;
+    }
+    setLockedRevPerCvM(currentRevPerCvM);
+    setRevPerCvLocked(true);
+    onChange({
+      revVnd: computeLockedRevVnd(input.cvs, input.rookieCvs, currentRevPerCvM),
+    });
+  };
+
+  const handleRevPerCvChange = (nextM: number) => {
+    setLockedRevPerCvM(nextM);
+    setRevPerCvLocked(true);
+    onChange({
+      revVnd: computeLockedRevVnd(input.cvs, input.rookieCvs, nextM),
+    });
+  };
 
   const handleAutonomyChange = (nextPct: number, nextKeyholders = input.cvllKeyholders) => {
     const capped = Math.min(AUTONOMY_HARD_MAX_PCT, Math.max(0, nextPct));
@@ -70,7 +111,7 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
 
   const handleMetricChange = (key: MetricPillarKey, rawVal: number) => {
     const cleaned = METRIC_SLIDER_SPECS[key].step < 1 ? Math.round(rawVal * 10) / 10 : Math.round(rawVal);
-    const nextStar = resolveStarFromPillarMetric(key, cleaned, input.cvs);
+    const nextStar = resolveStarFromPillarMetric(key, cleaned, fm.matureCvs);
     onChange({
       pillarMetrics: {
         ...metrics,
@@ -81,11 +122,26 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
   };
 
   const handleCvsChange = (nextCvs: number) => {
-    const nextMapsStar = resolveStarFromPillarMetric('maps', metrics.mapsReviews5Star, nextCvs);
+    const nextRookies = Math.min(input.rookieCvs, Math.max(0, nextCvs - 1));
+    const nextMatureCvs = Math.max(1, nextCvs - nextRookies);
+    const nextMapsStar = resolveStarFromPillarMetric('maps', metrics.mapsReviews5Star, nextMatureCvs);
     onChange({
       cvs: nextCvs,
+      rookieCvs: nextRookies,
+      ...(revPerCvLocked ? { revVnd: computeLockedRevVnd(nextCvs, nextRookies, lockedRevPerCvM) } : {}),
       stars: { ...input.stars, maps: nextMapsStar },
     });
+  };
+
+  const handleGrowthChange = (patch: Partial<SimulatorInput>) => {
+    if (revPerCvLocked && patch.rookieCvs !== undefined) {
+      onChange({
+        ...patch,
+        revVnd: computeLockedRevVnd(input.cvs, patch.rookieCvs, lockedRevPerCvM),
+      });
+      return;
+    }
+    onChange(patch);
   };
 
   const handleSelectStar = (key: PillarKey, star: 0 | 1 | 2 | 3) => {
@@ -103,6 +159,16 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
     if (key === 'grooming') {
       onChange({
         stars: { ...input.stars, grooming: star },
+      });
+      return;
+    }
+    if (key === 'bonding') {
+      const snappedPct = star === 0 ? 60 : FM_BONDING_STAR_THRESHOLDS[star - 1];
+      onChange({
+        bondingDinnerOrganized: true,
+        bondingHasSocialCheckin: true,
+        bondingParticipationPct: snappedPct,
+        stars: { ...input.stars, bonding: star },
       });
       return;
     }
@@ -151,6 +217,7 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
         <AppleKpiHero
           icon={<Award className="h-3.5 w-3.5 text-blue-500" />}
           label="Thu nhập 1 FM"
+          infoSlot={<FmInfoTrigger guideId="kpi-income" label="Thu nhập 1 FM" />}
           value={formatM(fm.fmIncomeOneVnd, 2)}
           hint={`Cứng ${formatM(fm.fmBaseOneVnd, 1)} · ${input.workDays}/26 công`}
           tone="blue"
@@ -158,27 +225,30 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
         <AppleKpiHero
           icon={<Users className="h-3.5 w-3.5 text-emerald-500" />}
           label="Thưởng % DT"
-          value={formatM(fm.revShareOneFmVnd + fm.coverBonusOneFmVnd, 2)}
-          hint={`${(fm.revPoolRate * 100).toFixed(1)}% · ${fm.fmCount === 2 ? '50% × 2 FM' : '100% × 1 FM'}`}
+          infoSlot={<FmInfoTrigger guideId="kpi-revshare" label="Thưởng % DT" />}
+          value={formatM(fm.revShareOneFmVnd + fm.coverBonusOneFmVnd + fm.graduationBountyOneFmVnd, 2)}
+          hint={`${(fm.revPoolRate * 100).toFixed(2)}% / FM · ${fm.fmCount} FM${fm.graduationBountyOneFmVnd > 0 ? ` · +${formatK(fm.graduationBountyOneFmVnd)} đẻ quân` : ''}`}
           tone="emerald"
         />
         <AppleKpiHero
           icon={<Star className="h-3.5 w-3.5 text-amber-500" />}
-          label="Quỹ 7 Sao (Net)"
+          label="Quỹ 8 Sao (Net)"
+          infoSlot={<FmInfoTrigger guideId="kpi-starpool" label="Quỹ 8 Sao (Net)" />}
           value={formatM(fm.netStarPoolOneFmVnd, 2)}
-          hint={`${fm.totalEffectiveStars}/21★ · Trừ phạt ${formatK(fm.latePenaltyVnd + fm.shieldLossVnd)}`}
+          hint={`${fm.totalEffectiveStars}/24★ · Trừ phạt ${formatK(fm.latePenaltyVnd + fm.shieldLossVnd)}`}
           tone="amber"
         />
         <AppleKpiHero
           icon={<Wallet className="h-3.5 w-3.5 text-violet-500" />}
-          label="Ví Game · Fun Fund"
-          value={formatM(fm.claimedWalletVnd, 2)}
-          hint={`Quỹ chơi ${formatK(fm.funFundVnd)} (${input.consultShifts} ca TV)`}
+          label="Quỹ Shop · Quest"
+          infoSlot={<FmInfoTrigger guideId="kpi-shopfund" label="Quỹ Shop · Quest" />}
+          value={formatM(fm.shopFundMonthlyVnd, 2)}
+          hint={`Fun ${formatK(fm.funFundVnd * fm.fmCount)} + Quest ${formatM(fm.weeklyQuestFundVnd, 2)}`}
           tone="neutral"
         />
       </div>
 
-      {/* 3 Gates Status Row */}
+      {/* 3 Gates + Team Dinner Status Row */}
       <div className="flex flex-wrap items-center gap-2">
         <span
           className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium ${
@@ -195,7 +265,10 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
 
         <span className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-neutral-100 px-3 text-xs font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
           <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-          <span>REV/CV: {formatM(fm.revPerCvVnd, 1)}</span>
+          <span>
+            REV/CV chuẩn: {formatM(fm.revPerMatureCvVnd, 1)}
+            {fm.rookieCvs > 0 ? ` (miễn ${fm.rookieCvs} mới)` : ''}
+          </span>
         </span>
 
         <span
@@ -208,6 +281,25 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
           {fm.ceoHrGatePassed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
           <span>
             CEO &amp; HR: {input.ceoHrMeetingsPerWeek}/{FM_MIN_CEO_HR_MEETINGS_PER_WEEK} buổi/tuần
+          </span>
+        </span>
+
+        <span
+          className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium ${
+            fm.bondingShieldPenaltyCount === 0
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+              : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+          }`}
+        >
+          {fm.bondingShieldPenaltyCount === 0 ? (
+            <UtensilsCrossed className="h-3.5 w-3.5" />
+          ) : (
+            <AlertTriangle className="h-3.5 w-3.5" />
+          )}
+          <span>
+            {fm.bondingShieldPenaltyCount === 0
+              ? `Tiệc Tháng: ${input.bondingParticipationPct}% · Check-in MXH`
+              : 'Thiếu Tiệc Tháng / MXH (-1 Khiên)'}
           </span>
         </span>
 
@@ -238,8 +330,11 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
               );
               onChange({
                 branch,
-                revVnd: target.presetDefaultRev,
+                revVnd: revPerCvLocked
+                  ? computeLockedRevVnd(target.presetDefaultCvs, 0, lockedRevPerCvM)
+                  : target.presetDefaultRev,
                 cvs: target.presetDefaultCvs,
+                rookieCvs: 0,
                 stars: { ...input.stars, maps: nextMapsStar },
               });
             }}
@@ -254,19 +349,34 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
             id="fm-rev-slider"
             icon={<TrendingUp className="h-3.5 w-3.5 text-blue-500" />}
             label="Doanh thu sàn"
+            infoSlot={<FmInfoTrigger guideId="ctrl-revenue" label="Doanh thu sàn" />}
             valueText={`${revM}M`}
             value={revM}
-            min={300}
-            max={950}
+            min={250}
+            max={1100}
             step={10}
             hint={`Min cổng giường: ${spec.minCvsGate} CV · REV/CV quyết định % DT`}
-            onChange={(nextM) => onChange({ revVnd: nextM * 1_000_000 })}
+            onChange={(nextM) => {
+              if (revPerCvLocked) setRevPerCvLocked(false);
+              onChange({ revVnd: nextM * 1_000_000 });
+            }}
+          />
+
+          <FmRevPerCvLockRow
+            revPerCvM={displayedRevPerCvM}
+            locked={revPerCvLocked}
+            matureCvs={fm.matureCvs}
+            rookieCvs={input.rookieCvs}
+            revVnd={input.revVnd}
+            onToggleLock={handleToggleRevLock}
+            onChangeRevPerCvM={handleRevPerCvChange}
           />
 
           <AppleStepperRow
             icon={<Users className="h-3.5 w-3.5 text-neutral-500" />}
             label="Quân số sàn"
-            hint="≤12 CV = 1 FM · ≥13 CV = 2 FM"
+            infoSlot={<FmInfoTrigger guideId="ctrl-cvs" label="Quân số sàn" />}
+            hint="Tách 2 FM khi ≥13 CV chính thức & ≥650M"
             value={input.cvs}
             min={6}
             max={18}
@@ -274,7 +384,15 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
             onChange={handleCvsChange}
           />
 
-          <div className="border-t border-black/5 pt-2 dark:border-white/10">
+          <FmGrowthControlsSection input={input} fm={fm} onChange={handleGrowthChange} />
+
+          <FmHubModePanel input={input} fm={fm} onChange={onChange} />
+
+          <div className="space-y-1.5 border-t border-black/5 pt-2 dark:border-white/10">
+            <div className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+              <span>Cấp bậc FM &amp; Lương cứng nền</span>
+              <FmInfoTrigger guideId="ctrl-fm-level" label="Cấp bậc FM" />
+            </div>
             <AppleSegmented<string>
               ariaLabel="Chọn bậc FM"
               value={String(input.fmLevel)}
@@ -292,6 +410,7 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
             id="fm-work-days"
             icon={<CalendarCheck className="h-3.5 w-3.5 text-blue-500" />}
             label="Ngày công thực tế"
+            infoSlot={<FmInfoTrigger guideId="ctrl-workdays" label="Ngày công thực tế" />}
             valueText={`${input.workDays}/26`}
             value={input.workDays}
             min={16}
@@ -304,6 +423,7 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
             <AppleStepperRow
               icon={<UserCheck className="h-3.5 w-3.5 text-emerald-500" />}
               label="Cover ca đồng đội"
+              infoSlot={<FmInfoTrigger guideId="ctrl-cover" label="Cover ca đồng đội" />}
               hint="+400K / ca khi sàn có 2 FM"
               value={input.coverShifts}
               min={0}
@@ -315,6 +435,7 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
           <AppleStepperRow
             icon={<Bug className="h-3.5 w-3.5 text-rose-500" />}
             label="Sâu Google Maps"
+            infoSlot={<FmInfoTrigger guideId="ctrl-worms" label="Sâu Google Maps" />}
             hint={`Bướm chuộc: ${input.butterflies} · Net sâu: ${fm.netWorms}`}
             value={input.worms}
             min={0}
@@ -325,6 +446,7 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
           <AppleStepperRow
             icon={<Sparkles className="h-3.5 w-3.5 text-amber-500" />}
             label="Bướm chuộc sao"
+            infoSlot={<FmInfoTrigger guideId="ctrl-butterflies" label="Bướm chuộc sao" />}
             hint="Gỡ 1 sâu hoặc cộng 1★ Maps"
             value={input.butterflies}
             min={0}
@@ -335,6 +457,7 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
           <AppleStepperRow
             icon={<Clock className="h-3.5 w-3.5 text-amber-500" />}
             label="Trễ xử lý 24–48h"
+            infoSlot={<FmInfoTrigger guideId="ctrl-late" label="Trễ xử lý 24–48h" />}
             hint="-200K vào Quỹ Sao"
             value={input.late24To48Count}
             min={0}
@@ -345,7 +468,8 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
           <AppleStepperRow
             icon={<ShieldAlert className="h-3.5 w-3.5 text-rose-500" />}
             label="Mất Khiên Tuần"
-            hint="4 khiên/tháng · Mất 1 = -25% Quỹ Sao"
+            infoSlot={<FmInfoTrigger guideId="ctrl-shields" label="Mất Khiên Tuần" />}
+            hint={`Hiệu lực: ${fm.effectiveShieldsLost}/4 khiên (-25%/khiên)${fm.bondingShieldPenaltyCount > 0 ? ' · +1 thiếu Tiệc MXH' : ''}`}
             value={input.shieldsLost}
             min={0}
             max={4}
@@ -355,15 +479,27 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
           <AppleStepperRow
             icon={<Wallet className="h-3.5 w-3.5 text-violet-500" />}
             label="Ca tư vấn (Fun Fund)"
-            hint="80K / ca · Riêng ngoài lương"
+            infoSlot={<FmInfoTrigger guideId="ctrl-funfund" label="Ca tư vấn (Fun Fund)" />}
+            hint="80K / ca · Nạp Quỹ Shop (Rollover)"
             value={input.consultShifts}
             min={0}
             max={12}
             onChange={(consultShifts) => onChange({ consultShifts })}
           />
+
+          <AppleStepperRow
+            icon={<Trophy className="h-3.5 w-3.5 text-amber-500" />}
+            label="Weekly Quest đạt (tháng)"
+            infoSlot={<FmInfoTrigger guideId="ctrl-weekly-quest" label="Weekly Quest đạt" />}
+            hint={`${formatK(input.weeklyQuestRewardVnd)} / quest → +${formatM(fm.weeklyQuestFundVnd, 1)} vào Quỹ Shop`}
+            value={input.weeklyQuestsCompletedInMonth}
+            min={0}
+            max={16}
+            onChange={(weeklyQuestsCompletedInMonth) => onChange({ weeklyQuestsCompletedInMonth })}
+          />
         </AppleSurface>
 
-        {/* 7 Star Pillars */}
+        {/* 8 Star Pillars */}
         <div className={compact ? 'space-y-2.5' : 'col-span-7 grid grid-cols-2 content-start gap-3'}>
           {PILLAR_DISPLAY_ORDER.map((pillarKey) => {
             const pillar = PILLAR_SPECS.find((p) => p.key === pillarKey);
@@ -373,67 +509,55 @@ export function FmCockpitView({ input, fm, compact, onChange, onApplyPreset }: F
                 key={pillar.key}
                 pillar={pillar}
                 breakdown={fm.pillarBreakdowns.find((b) => b.key === pillar.key)}
-                cvs={input.cvs}
+                cvs={fm.matureCvs}
                 metrics={metrics}
                 autonomyPct={input.autonomyPct}
                 cvllKeyholders={input.cvllKeyholders}
                 ceoHrMeetingsPerWeek={input.ceoHrMeetingsPerWeek}
                 ceoHrGatePassed={fm.ceoHrGatePassed}
+                bondingDinnerOrganized={input.bondingDinnerOrganized}
+                bondingHasSocialCheckin={input.bondingHasSocialCheckin}
+                bondingParticipationPct={input.bondingParticipationPct}
                 onAutonomyChange={handleAutonomyChange}
                 onCeoHrChange={(ceoHrMeetingsPerWeek) => onChange({ ceoHrMeetingsPerWeek })}
+                onBondingChange={(patch) => onChange(patch)}
                 onMetricChange={handleMetricChange}
                 onSelectStar={handleSelectStar}
               />
             );
           })}
-          {!compact ? (
-            <AppleSurface className="flex h-full flex-col justify-between gap-3 p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/40">
-                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  </span>
-                  <div>
-                    <div className="text-xs font-semibold text-neutral-900 dark:text-white">Tổng Quỹ Sao</div>
-                    <div className="text-[11px] font-normal text-neutral-400 dark:text-neutral-500">
-                      7 trụ cột chuẩn KPI
-                    </div>
-                  </div>
+          <AppleSurface
+            className={compact ? 'space-y-2 p-4' : 'col-span-2 flex flex-wrap items-center justify-between gap-3 p-4'}
+          >
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/40">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              </span>
+              <div>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-900 dark:text-white">
+                  <span>Tổng Quỹ 8 Trụ Sao ({fm.totalEffectiveStars}/24★)</span>
+                  <FmInfoTrigger guideId="summary-total-stars" label="Tổng Quỹ 8 Trụ Sao" />
                 </div>
-                <span className="text-xs font-semibold tabular-nums text-neutral-900 dark:text-white">
-                  {fm.totalEffectiveStars}/21★
-                </span>
+                <div className="text-[11px] font-normal text-neutral-400 dark:text-neutral-500 tabular-nums">
+                  1★ {formatM(fm.sum1StarBudgetVnd, 2)} · 2★ {formatM(fm.sum2StarBudgetVnd, 2)} · 3★{' '}
+                  {formatM(fm.sum3StarBudgetVnd, 2)}
+                </div>
               </div>
+            </div>
 
-              <div className="divide-y divide-black/5 rounded-xl bg-neutral-100/75 px-3 text-xs dark:divide-white/10 dark:bg-neutral-800/65">
-                {[
-                  { label: 'Mức 1★', value: formatM(fm.sum1StarBudgetVnd, 2) },
-                  { label: 'Mức 2★', value: formatM(fm.sum2StarBudgetVnd, 2) },
-                  { label: 'Mức 3★', value: formatM(fm.sum3StarBudgetVnd, 2) },
-                ].map((row) => (
-                  <div key={row.label} className="flex items-center justify-between py-2">
-                    <span className="text-neutral-400 dark:text-neutral-500">{row.label}</span>
-                    <span className="font-semibold tabular-nums text-neutral-800 dark:text-neutral-100">
-                      {row.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex min-h-11 items-center justify-between rounded-xl bg-neutral-100/90 px-3 text-xs dark:bg-neutral-800/80">
-                <span className="text-neutral-500 dark:text-neutral-400">Tự lái Lễ Tết</span>
-                <span
-                  className={`font-semibold ${
-                    fm.holidayAutopilotUnlocked
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-neutral-400 dark:text-neutral-500'
-                  }`}
-                >
-                  {fm.holidayAutopilotUnlocked ? 'Đã mở khóa' : 'Cần ≥2★ Tự lái'}
-                </span>
-              </div>
-            </AppleSurface>
-          ) : null}
+            <div className="inline-flex min-h-9 items-center gap-2 rounded-xl bg-neutral-100/90 px-3 text-xs dark:bg-neutral-800/80">
+              <span className="text-neutral-500 dark:text-neutral-400">Tự lái Lễ Tết:</span>
+              <span
+                className={`font-semibold ${
+                  fm.holidayAutopilotUnlocked
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-neutral-400 dark:text-neutral-500'
+                }`}
+              >
+                {fm.holidayAutopilotUnlocked ? 'Đã mở khóa' : 'Cần ≥2★ Tự lái'}
+              </span>
+            </div>
+          </AppleSurface>
         </div>
       </div>
     </div>

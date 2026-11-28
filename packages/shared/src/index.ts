@@ -31,6 +31,7 @@ export * from './types/fal-adjustment.js';
 export * from './types/payroll-adjustment.js';
 export * from './types/payroll-adjustment-lab.js';
 export * from './constants/index.js';
+export * from './constants/ag-models.js';
 export * from './types/table-config.js';
 export * from './types/cc-xoay.js';
 export * from './types/cc-thuong.js';
@@ -73,10 +74,16 @@ export * from './types/bk-game.js';
 export * from './types/ai-assistant.js';
 export * from './types/pilot.js';
 export * from './types/career-progression.js';
-export { calculateComboBonus, formatComboTierBracketLabel } from './types/career-progression.js';
+export {
+  DEFAULT_COMBO_MIN_COLLECTED_AMOUNT,
+  calculateComboBonus,
+  calculateComboDebtBonus,
+  formatComboTierBracketLabel,
+} from './types/career-progression.js';
 export * from './types/pinned-links.js';
 export * from './types/telesale-target.js';
 export * from './types/mos-chat.js';
+export * from './utils/chat-emoji-frecency.js';
 export * from './utils/chat-checklist-summarizer.js';
 export * from './utils/google-workspace-link.js';
 export * from './utils/phone.js';
@@ -98,3 +105,4 @@ export * from './types/ios-promotions.js';
 export * from './types/ios-app.js';
 export * from './types/wings-garden.js';
 export * from './types/inventory.js';
+export * from './types/fm-quests.js';

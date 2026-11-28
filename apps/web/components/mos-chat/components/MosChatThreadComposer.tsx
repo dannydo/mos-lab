@@ -270,6 +270,10 @@ export const MosChatThreadComposer: React.FC<MosChatThreadComposerProps> = (prop
         {isMobile ? (
           <MosChatThreadComposerMobile
             activeThreadMessage={activeThreadMessage}
+            activeConversation={activeConversation}
+            AI_COPILOT_CONV_ID={AI_COPILOT_CONV_ID}
+            isDark={isDark}
+            isStrictDannySuperAdmin={isStrictDannySuperAdmin}
             token={token}
             surfaceRaised={surfaceRaised}
             borderStrong={borderStrong}

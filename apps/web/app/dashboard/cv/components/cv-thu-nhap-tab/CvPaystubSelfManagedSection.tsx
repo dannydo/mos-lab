@@ -17,6 +17,10 @@ export function CvPaystubSelfManagedSection({ breakdown }: CvPaystubSelfManagedS
   const { token } = theme.useToken();
   const targetRate = breakdown.targetComboRate || 0.2;
   const progressPercent = Math.min(100, Math.round(((breakdown.actualComboRate || 0) / targetRate) * 100));
+  const hasDebtCollection =
+    (breakdown.debtCollectionCount || 0) > 0 ||
+    (breakdown.debtCollectionBonusTotal || 0) > 0 ||
+    (breakdown.debtCollectionDetails?.length || 0) > 0;
 
   return (
     <div className="p-4 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-950/30 dark:via-amber-950/15 dark:to-transparent space-y-4">
@@ -103,8 +107,8 @@ export function CvPaystubSelfManagedSection({ breakdown }: CvPaystubSelfManagedS
         />
       </div>
 
-      {/* 4 Summary Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {/* Summary Stat Cards */}
+      <div className={`grid grid-cols-2 ${hasDebtCollection ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-2`}>
         {/* 1. Lương giờ tăng +2k */}
         <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
@@ -158,8 +162,27 @@ export function CvPaystubSelfManagedSection({ breakdown }: CvPaystubSelfManagedS
           <div className="text-sm font-bold text-purple-600 dark:text-purple-400 tabular-nums mt-1">
             +{formatVND(breakdown.serumBonusTotal || 0)}
           </div>
-          <div className="text-[10px] text-slate-400">{breakdown.serumsSoldCount || 0} chai (50k KM / 100k Gốc)</div>
+          <div className="text-[10px] text-slate-400 tabular-nums">
+            {breakdown.serumsSoldCount || 0} cây (100k gốc · 50k KM · 10k ≥50%)
+          </div>
         </div>
+
+        {/* 5. Thưởng Thu Nợ Combo (nếu phát sinh) */}
+        {hasDebtCollection && (
+          <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-lg border border-teal-200/80 dark:border-teal-800/60 col-span-2 sm:col-span-1">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+              <span>Thưởng Thu Nợ</span>
+              <span className="text-teal-500 font-bold">💳</span>
+            </div>
+            <div className="text-sm font-bold text-teal-600 dark:text-teal-400 tabular-nums mt-1">
+              +{formatVND(breakdown.debtCollectionBonusTotal || 0)}
+            </div>
+            <div className="text-[10px] text-slate-400 tabular-nums">
+              {breakdown.debtCollectionCount || breakdown.debtCollectionDetails?.length || 0} ca ·{' '}
+              {formatVND(breakdown.debtCollectedAmount || 0)}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Total Extra Received Banner */}
@@ -221,16 +244,89 @@ export function CvPaystubSelfManagedSection({ breakdown }: CvPaystubSelfManagedS
                             {item.comboItems!.map((sub) => `${sub.comboName} (${formatVND(sub.price)})`).join(' + ')}
                           </div>
                         )}
+                        {(item.unpaidDebtAmount || 0) > 0 && (
+                          <div className="text-[10px] text-amber-600 dark:text-amber-400 tabular-nums mt-0.5">
+                            Tổng gói {formatVND(item.grossPrice || item.price + (item.unpaidDebtAmount || 0))} · Nợ{' '}
+                            {formatVND(item.unpaidDebtAmount || 0)} ➔ Thực thu {formatVND(item.price)}
+                          </div>
+                        )}
                       </td>
                       <td className="py-1 px-2 text-right tabular-nums text-slate-600 dark:text-slate-400 text-[11px]">
                         {formatVND(item.price)}
                       </td>
                       <td className="py-1 px-2 text-center">
-                        <span className="inline-flex items-center justify-center leading-none py-1 px-2 rounded text-[10px] font-bold tabular-nums bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                        <span
+                          className={`inline-flex items-center justify-center leading-none py-1 px-2 rounded text-[10px] font-bold tabular-nums border ${
+                            item.bonus > 0
+                              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                              : 'bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-400/30'
+                          }`}
+                        >
                           {ladderTier}
                         </span>
                       </td>
-                      <td className="py-1 px-3 text-right tabular-nums font-bold text-amber-600 dark:text-amber-400 text-[11px]">
+                      <td
+                        className={`py-1 px-3 text-right tabular-nums font-bold text-[11px] ${
+                          item.bonus > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'
+                        }`}
+                      >
+                        {item.bonus > 0 ? `+${formatVND(item.bonus)}` : '0đ'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Debt Collection Details Table if available */}
+      {breakdown.debtCollectionDetails && breakdown.debtCollectionDetails.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between gap-2">
+            <span>💳 Chi tiết các ca Thu Nợ Combo đã chốt:</span>
+            <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">
+              Tối thiểu 500K/ca · Không cộng vào tử số % chốt Combo
+            </span>
+          </div>
+          <div className="overflow-x-auto border border-teal-200/70 dark:border-teal-900/40 rounded-lg">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-teal-50/80 dark:bg-teal-950/40 border-b border-teal-200 dark:border-teal-800/60 text-slate-600 dark:text-slate-300 font-semibold">
+                  <th className="py-1.5 px-2 text-center w-10">#</th>
+                  <th className="py-1.5 px-2 text-left">Ngày</th>
+                  <th className="py-1.5 px-2 text-left">Khách hàng</th>
+                  <th className="py-1.5 px-3 text-left">Gói nợ gốc</th>
+                  <th className="py-1.5 px-2 text-right">Thực thu</th>
+                  <th className="py-1.5 px-2 text-center">Bậc thang</th>
+                  <th className="py-1.5 px-3 text-right">Tiền thưởng</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-teal-100/60 dark:divide-teal-900/30">
+                {breakdown.debtCollectionDetails.map((item, idx) => {
+                  const ladderTier = formatComboTierBracketLabel(item.collectedAmount);
+                  return (
+                    <tr key={item.debtPaymentId || idx} className="hover:bg-teal-50/50 dark:hover:bg-teal-950/20">
+                      <td className="py-1 px-2 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
+                      <td className="py-1 px-2 text-slate-600 dark:text-slate-400 whitespace-nowrap text-[11px]">
+                        {item.orderDate ? dayjs(item.orderDate).format('DD/MM/YYYY') : '—'}
+                      </td>
+                      <td className="py-1 px-2 font-medium text-slate-800 dark:text-slate-200 text-[11px] whitespace-nowrap">
+                        {item.customerName || 'Khách vãng lai'}
+                      </td>
+                      <td className="py-1 px-3 text-slate-700 dark:text-slate-300 text-[11px]">
+                        {item.comboName || 'Thu nợ gói Combo'}
+                      </td>
+                      <td className="py-1 px-2 text-right tabular-nums text-slate-700 dark:text-slate-300 text-[11px]">
+                        {formatVND(item.collectedAmount)}
+                      </td>
+                      <td className="py-1 px-2 text-center">
+                        <span className="inline-flex items-center justify-center leading-none py-1 px-2 rounded text-[10px] font-bold tabular-nums bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/30">
+                          {ladderTier}
+                        </span>
+                      </td>
+                      <td className="py-1 px-3 text-right tabular-nums font-bold text-teal-600 dark:text-teal-400 text-[11px]">
                         +{formatVND(item.bonus)}
                       </td>
                     </tr>

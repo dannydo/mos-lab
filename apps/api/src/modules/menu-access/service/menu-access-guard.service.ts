@@ -117,14 +117,24 @@ export async function checkMenuApiAccess(
         };
       }
     }
-    // Block CV from mutating CV KPI configurations (only GET is allowed on /kpi/cv* for CV)
-    if (cleanPath.startsWith('/kpi/cv') && method.toUpperCase() !== 'GET') {
-      return {
-        allowed: false,
-        moduleKey: 'cv',
-        message: 'Tài khoản Chuyên Viên chỉ có quyền xem Báo Cáo CV, không có quyền thay đổi cấu hình.',
-      };
-    }
+    // Preserve CV block handled below uniformly with other non-admin accounts
+  }
+
+  // Only Admin / Super Admin may mutate CV KPI configuration, allowances, or seed jobs;
+  // read-only GET endpoints and POST /kpi/cv-speed/predict remain accessible to all permitted staff.
+  if (
+    (cleanPath.startsWith('/kpi/cv') || cleanPath.startsWith('/cv')) &&
+    method.toUpperCase() !== 'GET' &&
+    cleanPath !== '/kpi/cv-speed/predict' &&
+    cleanPath !== '/cv-speed/predict'
+  ) {
+    return {
+      allowed: false,
+      moduleKey: 'cv',
+      message: isCv
+        ? 'Tài khoản Chuyên Viên chỉ có quyền xem Báo Cáo CV, không có quyền thay đổi cấu hình.'
+        : 'Chỉ Admin mới có quyền thay đổi cấu hình Báo Cáo CV.',
+    };
   }
 
   // Shared read-only directory/catalog lookup endpoints used across non-CV workspaces

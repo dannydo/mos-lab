@@ -1,5 +1,7 @@
 export type CareerRole = 'KTV' | 'CV' | 'CV_PLUS' | 'CV_PLUS_PLUS' | 'FM' | 'CHO' | 'BOSS' | 'MASTER_TECH' | 'CC';
 
+export type ComboDebtBonusMode = 'TIER_LADDER' | 'PERCENTAGE';
+
 export type CareerPeriod = 'last_30_days' | 'this_month' | 'last_month' | 'last_3_months';
 
 export type CareerBranchFilter = 'ALL' | 'DE_THAM' | 'ESTELLA';
@@ -53,6 +55,12 @@ export interface CvToCvPlusRequirements {
   comboUnder4mBonus?: number;
   /** Thưởng cộng thêm cho mỗi 1 triệu kế tiếp từ mốc 2 triệu trở lên (mặc định: 50.000đ/1M) */
   comboStepPerMillionBonus?: number;
+  /** Mức thực thu tối thiểu để tính thưởng Combo & Thu nợ Combo (mặc định: 500.000đ) */
+  comboMinCollectedAmount?: number;
+  /** Chế độ tính thưởng thu nợ Combo cho CVL/CVLL (mặc định TIER_LADDER = bậc thang theo số tiền thực thu) */
+  comboDebtBonusMode?: ComboDebtBonusMode;
+  /** Tỷ lệ % thưởng trên số tiền thu nợ khi comboDebtBonusMode === 'PERCENTAGE' (mặc định 0.015 = 1.5%) */
+  comboDebtBonusRate?: number;
   /** Lương theo giờ áp dụng khi lên CV+ (mặc định: 27.500đ/h, tăng +2.000đ/h) */
   hourlyWage?: number;
   /** Tỷ lệ hưởng tip khi tự tư vấn và làm mi (mặc định: 0.90 = 90%) */
@@ -118,6 +126,12 @@ export interface CvPlusToCvPlusPlusRequirements {
   comboUnder4mBonus?: number;
   /** Thưởng cộng thêm cho mỗi 1 triệu kế tiếp từ mốc 2 triệu trở lên (mặc định: 50.000đ/1M) */
   comboStepPerMillionBonus?: number;
+  /** Mức thực thu tối thiểu để tính thưởng Combo & Thu nợ Combo (mặc định: 500.000đ) */
+  comboMinCollectedAmount?: number;
+  /** Chế độ tính thưởng thu nợ Combo cho CVLL (mặc định TIER_LADDER = bậc thang theo số tiền thực thu) */
+  comboDebtBonusMode?: ComboDebtBonusMode;
+  /** Tỷ lệ % thưởng trên số tiền thu nợ khi comboDebtBonusMode === 'PERCENTAGE' (mặc định 0.015 = 1.5%) */
+  comboDebtBonusRate?: number;
   /** Tỷ lệ chia hoa hồng cho CV làm mi khi CVLL chốt hộ (0 = mô hình 100/0: CVLL nhận 100%, CV/CVL nhận 0đ) */
   crossConsultCvShareRate?: number;
   /** Ngưỡng % tự chốt Combo tối thiểu để thăng cấp từ CVL lên CVLL (mặc định: 0.30 = 30%) */

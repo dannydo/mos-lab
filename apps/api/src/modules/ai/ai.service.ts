@@ -121,6 +121,8 @@ export class AiAssistantService {
       message: string;
       scope?: string;
       context?: AiChatContext;
+      debugMode?: boolean;
+      modelId?: string;
     },
     legacyPrisma?: LegacyPrismaClient,
     fastify?: FastifyInstance

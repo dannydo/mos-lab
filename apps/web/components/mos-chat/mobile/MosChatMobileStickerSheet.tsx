@@ -10,6 +10,8 @@ export interface MosChatMobileStickerSheetProps {
   open: boolean;
   onClose: () => void;
   initialPack?: MosChatStickerPackId;
+  frequentEmojis?: readonly string[];
+  onResetFrequentEmojis?: () => void;
   onSelectSticker: (sticker: MosChatStickerItem) => void;
   onSelectEmoji: (emoji: string) => void;
   currentText?: string;
@@ -20,6 +22,8 @@ export const MosChatMobileStickerSheet: React.FC<MosChatMobileStickerSheetProps>
   open,
   onClose,
   initialPack = 'emoji',
+  frequentEmojis,
+  onResetFrequentEmojis,
   onSelectSticker,
   onSelectEmoji,
   currentText,
@@ -81,6 +85,8 @@ export const MosChatMobileStickerSheet: React.FC<MosChatMobileStickerSheetProps>
             surfaceRaised="var(--mos-surface)"
             wingsSignatureEmojis={WINGS_SIGNATURE_EMOJIS}
             popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
+            frequentEmojis={frequentEmojis}
+            onResetFrequentEmojis={onResetFrequentEmojis}
             defaultPack={initialPack}
             width="100%"
             onSelectSticker={(sticker) => {

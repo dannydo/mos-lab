@@ -63,6 +63,9 @@ export interface UsePortalUiAdaptersParams {
   missionActions: ReturnType<typeof usePortalMissionActions>;
   selectConversation: (convId: string) => void;
   handleOpenThread: (msgId: string, convIdOverride?: string, options?: { autoFocus?: boolean }) => void;
+  frequentEmojis?: readonly string[];
+  onResetFrequentEmojis?: () => void;
+  onRecordEmojiUsed?: (emoji: string) => void;
   antdMessage: MessageInstance;
 }
 
@@ -93,6 +96,9 @@ export function usePortalUiAdapters({
   missionActions,
   selectConversation,
   handleOpenThread,
+  frequentEmojis,
+  onResetFrequentEmojis,
+  onRecordEmojiUsed,
 }: UsePortalUiAdaptersParams) {
   const {
     getMessageReadBreakdown,
@@ -251,6 +257,8 @@ export function usePortalUiAdapters({
       isDark={isDark}
       borderColor={borderColor}
       surfaceRaised={surfaceRaised}
+      frequentEmojis={frequentEmojis}
+      onResetFrequentEmojis={onResetFrequentEmojis}
       hasUserReacted={msgMutations.hasUserReacted}
       setOpenStickerPopoverKey={msgSending.setOpenStickerPopoverKey}
       handleToggleReaction={msgMutations.handleToggleReaction}
@@ -267,6 +275,9 @@ export function usePortalUiAdapters({
       isDark={isDark}
       borderColor={borderColor}
       surfaceRaised={surfaceRaised}
+      frequentEmojis={frequentEmojis}
+      onResetFrequentEmojis={onResetFrequentEmojis}
+      onRecordEmojiUsed={onRecordEmojiUsed}
       composerInputRef={composerRefs.composerInputRef}
       composerTextRef={composerRefs.composerTextRef}
       updateComposerText={composerRefs.updateComposerText}

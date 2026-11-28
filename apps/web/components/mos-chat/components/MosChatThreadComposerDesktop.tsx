@@ -20,6 +20,7 @@ import {
   Zap,
 } from 'lucide-react';
 import type { MosChatConversation, MosChatCustomerCard, MosChatMessage, SafeAny } from '@mos-lab/shared';
+import { MaiDebugControlPill } from './MaiDebugControlPill';
 import { syncTextareaHeightSmart } from './MosChatComposer';
 
 export interface MosChatThreadComposerDesktopProps {
@@ -529,6 +530,19 @@ export const MosChatThreadComposerDesktop: React.FC<MosChatThreadComposerDesktop
               </button>
             </Tooltip>
           )}
+
+          <MaiDebugControlPill
+            isStrictDannySuperAdmin={isStrictDannySuperAdmin}
+            isDark={isDark}
+            isAiPrivateConv={activeConversation?.id === AI_COPILOT_CONV_ID}
+            compact
+            onEnsureMaiMention={() => {
+              applyThreadTextUpdate((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
+              setTimeout(() => {
+                threadInputRef.current?.focus();
+              }, 20);
+            }}
+          />
 
           <Tooltip title="Xuống dòng (Shift+Enter)">
             <button

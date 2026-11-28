@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { SafeAny, classifyAgNodeFromProvisionerId } from '@mos-lab/shared';
 import { AgChatBridgeService } from '../ag-chat-bridge.service.js';
+import { updateRemoteAgModels, type LiveCascadeModelInput } from '../ag-models-registry.js';
 import { InboxWorkerStatusService } from '../../bug-reports/inbox-worker-status.service.js';
 import {
   appendBotMessageToChatConversation,
@@ -125,5 +126,17 @@ export function registerAgTaskBridgeRoutes(fastify: FastifyInstance) {
     }
     const ok = AgChatBridgeService.failRemoteChatJob(request.params.jobId, request.body?.reason);
     return reply.send({ success: ok });
+  });
+
+  // AG Task Bridge: sync live cascade model catalog from Danny's Antigravity daemon
+  fastify.post<{
+    Body: { models?: LiveCascadeModelInput[] };
+  }>('/ag-task-bridge/models', async (request, reply) => {
+    if (!isValidBridgeAuth(request.headers.authorization)) {
+      return reply.status(401).send({ error: 'Unauthorized', message: 'Bridge token không hợp lệ' });
+    }
+    const models = Array.isArray(request.body?.models) ? request.body.models : [];
+    const normalized = updateRemoteAgModels(models);
+    return reply.send({ success: true, count: normalized.length });
   });
 }

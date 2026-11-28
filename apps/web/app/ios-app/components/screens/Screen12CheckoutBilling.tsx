@@ -62,6 +62,7 @@ interface Screen12CheckoutBillingProps {
     comboRedemption?: BookingItem['comboRedemption'];
   }) => void;
   onEditService?: () => void;
+  onOpenAddUnderMink?: () => void;
 }
 
 export function Screen12CheckoutBilling({
@@ -75,6 +76,7 @@ export function Screen12CheckoutBilling({
   onSelectComboWallet,
   onUpdateCombos,
   onEditService,
+  onOpenAddUnderMink,
 }: Screen12CheckoutBillingProps) {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
@@ -293,6 +295,7 @@ export function Screen12CheckoutBilling({
           showStaffRewards={showStaffRewards}
           onToggleShowStaffRewards={() => setShowStaffRewards((prev) => !prev)}
           onEditService={isSettled ? undefined : onEditService}
+          onOpenAddUnderMink={onOpenAddUnderMink}
           comboSelection={comboSelection}
           rememberedServicePromo={rememberedServicePromo}
         />

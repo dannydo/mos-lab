@@ -1,6 +1,6 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import HeaderRoleQuickSwitch from '../HeaderRoleQuickSwitch';
 import MosAppLauncher from '../MosAppLauncher';
 import { setBugReportBadgeSummary } from '../../../lib/bug-diagnostics';
@@ -24,6 +24,10 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
   beforeEach(() => {
     mockPush.mockReset();
     window.localStorage.clear();
+    setBugReportBadgeSummary({ actionRequiredCount: 0, unreadCount: 0 });
+  });
+
+  afterEach(() => {
     setBugReportBadgeSummary({ actionRequiredCount: 0, unreadCount: 0 });
   });
 
@@ -394,5 +398,51 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     const cvPanel = screen.getByTestId('mos-app-launcher-panel');
     expect(cvPanel.querySelector('[data-launcher-suite="wings-garden"]')).toBeNull();
     expect(cvPanel.querySelector('[data-launcher-footer="feedback"]')).toBeNull();
+  });
+
+  it('clears all launcher and suite badges when bug actionRequiredCount and unreadCount are zero', () => {
+    act(() => {
+      setBugReportBadgeSummary({ actionRequiredCount: 1, unreadCount: 0 });
+    });
+
+    const { rerender } = render(
+      <MosAppLauncher
+        currentApp="general"
+        userRole="manager"
+        displayName="Nguyễn Quang Khải"
+        menuVisibility={{ 'bug-reports': true }}
+      />
+    );
+
+    const trigger = screen.getByTestId('mos-app-launcher-btn');
+    expect(trigger.textContent).toBe('1');
+    fireEvent.click(trigger);
+
+    const panel = screen.getByTestId('mos-app-launcher-panel');
+    const missionBtn = panel.querySelector('[data-launcher-suite="mission"]')!;
+    const feedbackBtn = panel.querySelector('[data-launcher-footer="feedback"]')!;
+    expect(missionBtn.textContent).toContain('1');
+    expect(feedbackBtn.textContent).not.toContain('1');
+
+    // Clearing bug attention removes all phantom badges from launcher, Mission, and Feedback
+    act(() => {
+      setBugReportBadgeSummary({ actionRequiredCount: 0, unreadCount: 0 });
+    });
+    expect(trigger.textContent).toBe('');
+    expect(missionBtn.textContent).not.toContain('1');
+    expect(feedbackBtn.textContent).not.toContain('1');
+
+    // Explicitly passing missionBadgeCount keeps mOS Mission badge independent when bug attention is 0
+    rerender(
+      <MosAppLauncher
+        currentApp="general"
+        userRole="super_admin"
+        displayName="Danny Do"
+        missionBadgeCount={4}
+        menuVisibility={{ 'bug-reports': true }}
+      />
+    );
+    expect(missionBtn.textContent).toContain('4');
+    expect(feedbackBtn.textContent).not.toContain('4');
   });
 });

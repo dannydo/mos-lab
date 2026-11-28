@@ -216,6 +216,11 @@ export const CvThuNhapMobileDetailSheet: React.FC<CvThuNhapMobileDetailSheetProp
                   <div className="text-[10px] text-sky-600 dark:text-sky-400 tabular-nums truncate">
                     Giờ: {breakdown.isUnlocked ? formatChipAmount(breakdown.deltaHourlyWage) : '0đ'}
                   </div>
+                  {(breakdown.debtCollectionBonusTotal || 0) > 0 && (
+                    <div className="text-[10px] text-teal-600 dark:text-teal-400 tabular-nums truncate">
+                      Thu nợ: +{formatChipAmount(breakdown.debtCollectionBonusTotal || 0)}
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -15,8 +15,10 @@ export async function persistAssistantReplyAndMetadata(params: {
   parsedResponse: ParsedAiResponse;
   source: 'ag' | 'gemini' | 'fallback';
   agConversationId?: string;
+  agModelId?: string;
+  agDebugMode?: boolean;
 }) {
-  const { crm, sessionId, sessionMetadata, parsedResponse, source, agConversationId } = params;
+  const { crm, sessionId, sessionMetadata, parsedResponse, source, agConversationId, agModelId, agDebugMode } = params;
 
   const assistantMessageRecord = await crm.crmAiChatMessage.create({
     data: {
@@ -28,9 +30,11 @@ export async function persistAssistantReplyAndMetadata(params: {
     },
   });
 
-  const updatedMetadata = {
+  const updatedMetadata: Record<string, unknown> = {
     ...sessionMetadata,
     ...(agConversationId ? { agConversationId } : {}),
+    ...(agModelId ? { agModelId } : {}),
+    ...(typeof agDebugMode === 'boolean' ? { agDebugMode } : {}),
     lastEngine: source,
   };
 
@@ -141,14 +145,23 @@ export async function deliverBotReplyToChatScope(params: {
   targetChatThreadId?: string;
   parsedResponse: ParsedAiResponse;
   userName?: string;
+  debugMode?: boolean;
+  modelLabel?: string;
 }): Promise<void> {
-  const { crm, fastify, targetChatConvId, targetChatThreadId, parsedResponse, userName } = params;
+  const { crm, fastify, targetChatConvId, targetChatThreadId, parsedResponse, userName, debugMode, modelLabel } =
+    params;
   if (!targetChatConvId || !parsedResponse.content) return;
+
+  const trimmedContent = parsedResponse.content.trim();
+  const formattedText =
+    debugMode && !trimmedContent.startsWith('🛠️ **AG Debug**')
+      ? `🛠️ **AG Debug** · \`${modelLabel || 'Antigravity'}\`\n\n${trimmedContent}`
+      : parsedResponse.content;
 
   if (targetChatThreadId) {
     if (fastify) {
       await appendBotThreadReplyToChatConversation(fastify, targetChatConvId, targetChatThreadId, {
-        text: parsedResponse.content,
+        text: formattedText,
         thinking: parsedResponse.thinking,
         suggestedAction: parsedResponse.suggestedAction,
         suggestedActions: parsedResponse.suggestedActions,
@@ -160,7 +173,7 @@ export async function deliverBotReplyToChatScope(params: {
 
   if (fastify) {
     await appendBotMessageToChatConversation(fastify, targetChatConvId, {
-      text: parsedResponse.content,
+      text: formattedText,
       thinking: parsedResponse.thinking,
       suggestedAction: parsedResponse.suggestedAction,
       suggestedActions: parsedResponse.suggestedActions,
@@ -168,7 +181,7 @@ export async function deliverBotReplyToChatScope(params: {
     });
   } else {
     await appendBotMessageFallbackToCrmConfig(crm, targetChatConvId, {
-      text: parsedResponse.content,
+      text: formattedText,
       thinking: parsedResponse.thinking,
       suggestedAction: parsedResponse.suggestedAction,
       suggestedActions: parsedResponse.suggestedActions,

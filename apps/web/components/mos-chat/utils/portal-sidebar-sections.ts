@@ -1,4 +1,10 @@
-import type { MosChatConversation, MosChatCustomSection, MosChatUserSidebarPrefs, SafeAny } from '@mos-lab/shared';
+import {
+  normalizeEmojiUsageMap,
+  type MosChatConversation,
+  type MosChatCustomSection,
+  type MosChatUserSidebarPrefs,
+  type SafeAny,
+} from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 
 export interface PortalSidebarSectionItem {
@@ -92,6 +98,14 @@ export function readStoredUserSidebarPrefs(storageKey: string): MosChatUserSideb
       channelNotificationOverrides:
         parsed.channelNotificationOverrides && typeof parsed.channelNotificationOverrides === 'object'
           ? parsed.channelNotificationOverrides
+          : undefined,
+      emojiUsage:
+        parsed.emojiUsage && typeof parsed.emojiUsage === 'object'
+          ? normalizeEmojiUsageMap(parsed.emojiUsage)
+          : undefined,
+      emojiUsageBootstrappedAt:
+        typeof parsed.emojiUsageBootstrappedAt === 'string' && parsed.emojiUsageBootstrappedAt.trim().length > 0
+          ? parsed.emojiUsageBootstrappedAt.trim()
           : undefined,
     };
   } catch {

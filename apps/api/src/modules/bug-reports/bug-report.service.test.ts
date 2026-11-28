@@ -1111,3 +1111,118 @@ test('triage reopen after temporary defer restores prior triageNote instead of o
     BugReportService.detail = originalDetail;
   }
 });
+
+test('badgeSummary and mine scope actionRequiredCount and unreadCount to active reporter-actionable tickets', async () => {
+  const reportCountCalls: Array<Record<string, unknown>> = [];
+  const notifCountCalls: Array<Record<string, unknown>> = [];
+  const notifFindCalls: Array<Record<string, unknown>> = [];
+  const reportFindCalls: Array<Record<string, unknown>> = [];
+
+  const now = new Date('2026-11-23T10:00:00Z');
+  const makeRow = (id: number, status: string, clarificationStatus: string) => ({
+    id,
+    reporterStaffId: 55,
+    requestType: 'BUG',
+    requestMetadataJson: null,
+    title: `Ticket ${id}`,
+    description: `Description ${id}`,
+    searchNormalized: `ticket ${id}`,
+    sourcePath: '/dashboard/today',
+    contextJson: '{}',
+    status,
+    statusSort: 0,
+    priority: null,
+    prioritySort: 4,
+    businessContext: null,
+    triageNote: null,
+    clarificationStatus,
+    clarificationSummary: null,
+    clarifiedAt: null,
+    duplicateOfId: null,
+    approvedByStaffId: null,
+    approvedAt: null,
+    implementationApprovedByStaffId: null,
+    implementationApprovedAt: null,
+    implementationApprovalSourceVersion: null,
+    implementationActiveJobId: null,
+    startedAt: null,
+    resolvedAt: null,
+    closedAt: null,
+    createdAt: now,
+    updatedAt: now,
+    inboxPlanJobs: [],
+    reporter: { id: 55, displayName: 'Khải', role: 'manager', avatarUrl: null },
+    resolution: null,
+    attachments: [],
+    comments: [],
+    audits: [],
+    inboxImplementationJobs: [],
+  });
+
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: {
+          count: async (args: { where: Record<string, unknown> }) => {
+            reportCountCalls.push(args.where);
+            return 0;
+          },
+          findMany: async (args: Record<string, unknown>) => {
+            reportFindCalls.push(args);
+            // First findMany is actionRequiredRows (old ticket #12), second is recentRows (includes #200 and #12 duplicate)
+            if (reportFindCalls.length === 1) {
+              return [makeRow(12, 'FIXED', 'READY')];
+            }
+            return [makeRow(200, 'IN_PROGRESS', 'READY'), makeRow(12, 'FIXED', 'READY')];
+          },
+        },
+        crmBugReportNotification: {
+          findMany: async (args: { where: Record<string, unknown> }) => {
+            notifFindCalls.push(args.where);
+            return [];
+          },
+          count: async (args: { where: Record<string, unknown> }) => {
+            notifCountCalls.push(args.where);
+            return 0;
+          },
+        },
+      },
+    },
+  };
+
+  const badge = await BugReportService.badgeSummary(fastify as never, 55, false);
+  assert.deepEqual(badge, {
+    unreadCount: 0,
+    actionRequiredCount: 0,
+    readyForDannyCount: 0,
+    unreadNotifications: [],
+  });
+
+  assert.deepEqual(reportCountCalls[0], {
+    reporterStaffId: 55,
+    ...bugReportNextActorWhere('REPORTER'),
+  });
+  assert.deepEqual(notifCountCalls[0], {
+    recipientStaffId: 55,
+    readAt: null,
+    report: bugReportNextActorWhere('REPORTER'),
+  });
+  assert.deepEqual(notifFindCalls[0], {
+    recipientStaffId: 55,
+    readAt: null,
+    report: bugReportNextActorWhere('REPORTER'),
+  });
+
+  const mine = await BugReportService.mine(fastify as never, 55);
+  assert.equal(mine.unreadCount, 0);
+  assert.equal(mine.actionRequiredCount, 0);
+  assert.deepEqual(
+    mine.data.map((item) => item.id),
+    [12, 200]
+  );
+  assert.deepEqual(reportFindCalls[0]?.where, {
+    reporterStaffId: 55,
+    ...bugReportNextActorWhere('REPORTER'),
+  });
+  assert.equal(reportFindCalls[1]?.take, 40);
+});

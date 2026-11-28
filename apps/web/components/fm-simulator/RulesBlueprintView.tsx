@@ -77,6 +77,12 @@ export function RulesBlueprintView({ compact, mode }: { readonly compact: boolea
                 {formatM(EMPLOYER_SS_FLOOR_VND, 2)}/Sàn · {formatM(EMPLOYER_SS_MGMT_VND, 2)}/QL
               </span>
             </div>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-neutral-500 dark:text-neutral-400">Hub &amp; Spoke 100 Shop</span>
+              <span className="font-medium tabular-nums text-neutral-800 dark:text-neutral-200">
+                Vệ tinh 1 FM (+CVLL) · Lò Đúc 2 FM
+              </span>
+            </div>
           </div>
         </AppleSurface>
       </div>
@@ -108,9 +114,21 @@ export function RulesBlueprintView({ compact, mode }: { readonly compact: boolea
             </span>
           </div>
           <div className="flex items-center justify-between py-2.5">
-            <span className="text-neutral-500 dark:text-neutral-400">Tách 2 FM (1 FM / 8 CV)</span>
+            <span className="text-neutral-500 dark:text-neutral-400">Tách 2 FM · Chuỗi 100 Shop</span>
             <span className="font-medium tabular-nums text-neutral-800 dark:text-neutral-200">
-              ≥ 13 CV · Chia 60% cứng + 40% chung
+              Vệ tinh 1 FM (+2 CVLL) · Lò Đúc 2 FM (Pha 2)
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-2.5">
+            <span className="text-neutral-500 dark:text-neutral-400">% DT Mượt Theo Lấp Giường</span>
+            <span className="font-medium tabular-nums text-neutral-800 dark:text-neutral-200">
+              1.00% → 1.40% / FM × (REV/CV ÷ 48M · 0.70×–1.15×)
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-2.5">
+            <span className="text-neutral-500 dark:text-neutral-400">CV Mới ≤ 45N &amp; Đẻ Quân</span>
+            <span className="font-medium tabular-nums text-neutral-800 dark:text-neutral-200">
+              Miễn mẫu số 45N · Qua 60N +500K / +1M / +2M / +3M
             </span>
           </div>
         </div>
@@ -137,13 +155,19 @@ export function RulesBlueprintView({ compact, mode }: { readonly compact: boolea
           <div className="flex items-center justify-between py-2.5">
             <span className="text-neutral-500 dark:text-neutral-400">4 Khiên Tuần (Quỹ Sao)</span>
             <span className="font-medium tabular-nums text-neutral-800 dark:text-neutral-200">
-              25% Quỹ Sao / tuần · Không trừ cứng
+              25% Quỹ Sao / tuần · 0 Tiệc MXH = -1 Khiên
             </span>
           </div>
           <div className="flex items-center justify-between py-2.5">
             <span className="text-neutral-500 dark:text-neutral-400">Trễ SOP &amp; Sâu Maps</span>
             <span className="font-medium tabular-nums text-neutral-800 dark:text-neutral-200">
               -200K / ca trễ · 3+ Sâu = 0★ Maps
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-2.5">
+            <span className="text-neutral-500 dark:text-neutral-400">Quỹ Shop &amp; Weekly Quest</span>
+            <span className="font-medium tabular-nums text-neutral-800 dark:text-neutral-200">
+              Fun Fund + Quest (Rollover /dashboard/funds)
             </span>
           </div>
         </div>
@@ -153,11 +177,11 @@ export function RulesBlueprintView({ compact, mode }: { readonly compact: boolea
         <div className="mb-3 flex items-center justify-between">
           <span className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-800 dark:text-neutral-100">
             <Star className="h-4 w-4 text-amber-500" />
-            <span>Bảng Thưởng 7 Trụ Cột Sao FM (Tối Đa 4.60M)</span>
+            <span>Bảng Thưởng 8 Trụ Cột Sao FM (Tối Đa 5.05M)</span>
           </span>
           <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400 dark:text-neutral-500">
             <Layers className="h-3 w-3" />
-            <span>Không Lucky Wheel</span>
+            <span>Không Lucky Wheel · HR &amp; CEO chỉnh Weekly Quest</span>
           </span>
         </div>
 

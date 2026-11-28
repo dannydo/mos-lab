@@ -74,7 +74,7 @@ export function getRoleGroupForRole(role?: string | null): MenuAccessRoleGroupOp
 export const CV_DEFAULT_ALLOWED_MENU_KEYS = ['cv', 'career-path'] as const;
 
 /** Menu keys open by default to all authenticated staff unless explicitly restricted by Super Admin. */
-export const DEFAULT_OPEN_MENU_KEYS = ['mos-bible'] as const;
+export const DEFAULT_OPEN_MENU_KEYS = ['mos-bible', 'cv'] as const;
 
 export const MENU_ACCESS_CATEGORY_PREFIX = 'category:';
 

@@ -100,6 +100,10 @@ export interface MosChatMobileThreadOverlaysProps {
   ) => Promise<boolean>;
   handleSelectSticker: (sticker: MosChatStickerItem) => Promise<void>;
   handleSend: () => Promise<void>;
+  frequentEmojis?: readonly string[];
+  quickReactionEmojis?: readonly string[];
+  onRecordEmojiUsed?: (emoji: string) => void;
+  onResetFrequentEmojis?: () => void;
 }
 
 export const MosChatMobileThreadOverlays: React.FC<MosChatMobileThreadOverlaysProps> = ({
@@ -151,6 +155,10 @@ export const MosChatMobileThreadOverlays: React.FC<MosChatMobileThreadOverlaysPr
   sendThreadReply,
   handleSelectSticker,
   handleSend,
+  frequentEmojis,
+  quickReactionEmojis,
+  onRecordEmojiUsed,
+  onResetFrequentEmojis,
 }) => {
   return (
     <>
@@ -165,7 +173,10 @@ export const MosChatMobileThreadOverlays: React.FC<MosChatMobileThreadOverlaysPr
             <div className="w-10 h-1 bg-[var(--mos-surface-border-strong)] rounded-full mx-auto mb-3" />
 
             <div className="flex items-center justify-around bg-[var(--mos-surface-muted)] border border-[var(--mos-surface-border)] rounded-2xl py-2 px-3 mb-4 shadow-sm">
-              {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {
+              {(quickReactionEmojis && quickReactionEmojis.length > 0
+                ? quickReactionEmojis
+                : GOOGLE_CHAT_QUICK_EMOJIS
+              ).map((emoji) => {
                 const isReacted = hasUserReacted(actionSheetReply, emoji);
                 return (
                   <button
@@ -472,8 +483,11 @@ export const MosChatMobileThreadOverlays: React.FC<MosChatMobileThreadOverlaysPr
         open={stickerPickerOpen}
         onClose={() => setStickerPickerOpen(false)}
         initialPack="emoji"
+        frequentEmojis={frequentEmojis}
+        onResetFrequentEmojis={onResetFrequentEmojis}
         onSelectSticker={handleSelectSticker}
         onSelectEmoji={(emoji) => {
+          onRecordEmojiUsed?.(emoji);
           setText((prev) => `${prev}${emoji}`);
         }}
         currentText={text}

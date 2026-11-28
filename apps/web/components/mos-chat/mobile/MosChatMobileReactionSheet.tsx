@@ -63,6 +63,9 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
     openSeenUsersSheetForMessage,
     getMessageReadBreakdown,
     activeConversation,
+    frequentEmojis,
+    quickReactionEmojis,
+    resetEmojiUsage,
   } = useMosChat();
   const [showFullPicker, setShowFullPicker] = useState<boolean>(false);
 
@@ -166,6 +169,8 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
                 surfaceRaised="var(--mos-surface)"
                 wingsSignatureEmojis={WINGS_SIGNATURE_EMOJIS}
                 popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
+                frequentEmojis={frequentEmojis}
+                onResetFrequentEmojis={resetEmojiUsage}
                 defaultPack="wings"
                 width="100%"
                 mode="reaction"
@@ -184,7 +189,10 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
             {/* Quick Reaction Pills + Full Library Trigger */}
             <div className="flex items-center justify-between gap-1 bg-[var(--mos-surface)] border border-[var(--mos-surface-border)] rounded-2xl py-2 px-3 mb-4 shadow-sm">
               <div className="flex items-center justify-around flex-1">
-                {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {
+                {(quickReactionEmojis && quickReactionEmojis.length > 0
+                  ? quickReactionEmojis
+                  : GOOGLE_CHAT_QUICK_EMOJIS
+                ).map((emoji) => {
                   const isReacted = hasUserReacted(message, emoji);
                   return (
                     <button

@@ -242,6 +242,13 @@ export type MosChatNotificationMode = 'ALL' | 'MENTIONS_ONLY' | 'NOTHING';
  */
 export type MosChatChannelNotificationOverride = 'INHERIT' | 'ALL' | 'MENTIONS_ONLY' | 'MUTED';
 
+export interface MosChatEmojiUsageEntry {
+  /** Exponentially decayed frecency score (> 0) */
+  score: number;
+  /** ISO timestamp of the latest usage */
+  lastUsedAt: string;
+}
+
 export interface MosChatUserSidebarPrefs {
   pinnedIds: string[];
   mutedIds: string[];
@@ -265,6 +272,12 @@ export interface MosChatUserSidebarPrefs {
 
   /** Per-conversation notification overrides. Key = conversationId, Value = override mode. */
   channelNotificationOverrides?: Record<string, MosChatChannelNotificationOverride>;
+
+  /** Per-user smart emoji frecency map (Unicode emoji -> { score, lastUsedAt }, capped at 50) */
+  emojiUsage?: Record<string, MosChatEmojiUsageEntry>;
+
+  /** ISO timestamp marking that historical auto-seed or manual reset has completed */
+  emojiUsageBootstrappedAt?: string;
 }
 
 // ================= DYNAMIC WORKFLOW ENGINE & CONTEXTUAL ENTITY TYPES =================

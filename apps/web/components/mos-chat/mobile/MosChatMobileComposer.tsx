@@ -38,6 +38,8 @@ import { MosChatAvatar } from '../MosChatAvatar';
 import { cleanQuotedText } from '../utils/quoteUtils';
 import type { PendingChatUploadItem } from '../shared/hooks/useChatUploadQueue';
 import { MosChatMobileUploadStrip } from './MosChatMobileUploadStrip';
+import { MaiDebugControlPill } from '../components/MaiDebugControlPill';
+import { isStrictSuperAdminClientUser } from '../shared/hooks/useMaiDebugSettings';
 
 export interface MosChatMobileComposerProps {
   onOpenActionSheet: () => void;
@@ -77,6 +79,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   const { themeMode = 'dark' } = useTheme();
   const isDark = themeMode === 'dark';
   const {
+    currentUser,
     sendMessage,
     replyingToMessage,
     setReplyingToMessage,
@@ -84,6 +87,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
     staffDirectory,
     openCustomerDetail,
   } = useMosChat();
+  const isStrictSuperAdmin = isStrictSuperAdminClientUser(currentUser);
 
   const [internalText, setInternalText] = useState<string>('');
   const text = controlledText !== undefined ? controlledText : internalText;
@@ -252,6 +256,21 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
         onSelectMention={(nextText) => setText(nextText)}
         textareaRef={textareaRef}
       />
+
+      {isStrictSuperAdmin && (
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <MaiDebugControlPill
+            isStrictDannySuperAdmin={isStrictSuperAdmin}
+            isDark={isDark}
+            isAiPrivateConv={isAiChat}
+            compact
+            onEnsureMaiMention={() => {
+              setText((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
+              textareaRef.current?.focus();
+            }}
+          />
+        </div>
+      )}
 
       {/* Quoted Message Preview Banner */}
       {replyingToMessage && (

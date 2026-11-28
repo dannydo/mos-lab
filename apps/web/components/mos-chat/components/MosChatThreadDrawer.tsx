@@ -438,7 +438,8 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
       prev.uniqueTasks === next.uniqueTasks &&
       prev.stoppedReadersByReplyId === next.stoppedReadersByReplyId &&
       prev.mentionRenderKey === next.mentionRenderKey &&
-      prev.getMemberNickname === next.getMemberNickname
+      prev.getMemberNickname === next.getMemberNickname &&
+      prev.quickReactionEmojis === next.quickReactionEmojis
     );
   }
 );

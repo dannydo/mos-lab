@@ -27,6 +27,7 @@ import {
 import { formatBackendAiMessage } from '../utils/chat-helpers';
 import { useChatAiCopilotState } from '../shared/hooks/useChatAiCopilotState';
 import { useChatReadReceipts } from '../shared/hooks/useChatReadReceipts';
+import { useStandaloneChatEmojiPrefs } from '../shared/hooks/useChatEmojiUsage';
 import { useMosChatBootstrapAndSync } from './useMosChatBootstrapAndSync';
 import { useMosChatSpaceActions } from './useMosChatSpaceActions';
 import { useMosChatMessageSendAndMedia } from './useMosChatMessageSendAndMedia';
@@ -263,6 +264,15 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
 
   const lastVersionRef = useRef<number | undefined>(undefined);
 
+  const {
+    frequentEmojis,
+    mobileQuickReactionEmojis,
+    recordEmojiUsed,
+    recordEmojisFromText,
+    resetEmojiUsage,
+    syncServerEmojiPrefs,
+  } = useStandaloneChatEmojiPrefs(effectiveUser);
+
   const { fetchBootstrap, markConversationAsRead, markThreadAsRead, isPinnedConversation, togglePinConversation } =
     useMosChatBootstrapAndSync({
       activeConvId,
@@ -280,6 +290,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       setMobileView,
       setActiveSubtab,
       syncAiChatSession,
+      syncServerEmojiPrefs,
     });
 
   const { startDirectMessage, addMemberToSpace, removeMemberFromSpace, updateMemberNickname, updateSpaceConfig } =
@@ -311,6 +322,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     setActiveThreadMsg,
     setReplyingToMessage,
     fetchBootstrap,
+    onRecordEmojisFromText: recordEmojisFromText,
   });
 
   const { hasUserReactedMsg, reactToMessage, togglePinMessage, deleteMessage, deleteThreadReply, moveThreadItem } =
@@ -327,6 +339,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       setReactionUsersTarget,
       setTasks,
       setMobileView,
+      onRecordEmojiUsed: recordEmojiUsed,
     });
 
   const {
@@ -475,6 +488,10 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       resetAiChat,
       openAiSessionById,
       refresh: fetchBootstrap,
+      frequentEmojis,
+      quickReactionEmojis: mobileQuickReactionEmojis,
+      recordEmojiUsed,
+      resetEmojiUsage,
       openCustomerDetail,
     }),
     [
@@ -547,6 +564,10 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       resetAiChat,
       openAiSessionById,
       fetchBootstrap,
+      frequentEmojis,
+      mobileQuickReactionEmojis,
+      recordEmojiUsed,
+      resetEmojiUsage,
       openCustomerDetail,
     ]
   );

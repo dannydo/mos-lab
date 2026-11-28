@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { isPureUnderLashServiceName } from '@mos-lab/shared';
 import { useTheme } from '../../../../context/ThemeContext';
 import { IosNavigationBar } from '../ui-kit/IosNavigationBar';
 import { BookingItem } from '../../state/mockData';
@@ -18,6 +19,7 @@ interface Screen10CustomerSurveyProps {
     emotion: 'happy' | 'satisfied' | 'neutral' | 'unhappy';
     feedbackNote?: string;
   }) => void;
+  onOpenAddUnderMink?: () => void;
 }
 
 export function Screen10CustomerSurvey({
@@ -26,6 +28,7 @@ export function Screen10CustomerSurvey({
   staffName = 'Thảo Ly',
   onBack,
   onComplete,
+  onOpenAddUnderMink,
 }: Screen10CustomerSurveyProps) {
   const [selectedEmotion, setSelectedEmotion] = useState<'happy' | 'normal' | 'dislike' | 'disappointed'>('happy');
   const [rating, setRating] = useState<number>(5);
@@ -439,6 +442,23 @@ export function Screen10CustomerSurvey({
           >
             <span>GỬI ĐÁNH GIÁ & HOÀN TẤT</span>
           </button>
+          {onOpenAddUnderMink &&
+            !booking?.attributes?.hasUnderMink &&
+            !isPureUnderLashServiceName(booking?.serviceName) && (
+              <button
+                type="button"
+                data-testid="add-under-mink-cta-survey"
+                onClick={onOpenAddUnderMink}
+                className={`w-full py-3 px-4 rounded-2xl border font-bold text-[13px] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 ${
+                  isDark
+                    ? 'bg-purple-950/35 border-purple-700/70 text-purple-200 hover:bg-purple-950/55'
+                    : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 shrink-0" />
+                <span>+ Khách muốn làm thêm Mi Dưới (Vòng 2)</span>
+              </button>
+            )}
           <button
             type="button"
             onClick={onBack}

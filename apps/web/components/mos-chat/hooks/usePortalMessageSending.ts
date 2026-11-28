@@ -9,20 +9,20 @@ import type {
   MosChatImageAttachment,
   MosChatMessage,
   MosChatQuotedMessage,
-  MosChatThreadReply,
   SafeAny,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 import { formatStickerToken, type MosChatStickerItem } from '../mos-chat-stickers';
-import { convertAttachmentToDataUrl } from '../shared/utils/convertAttachmentToDataUrl';
 import {
   buildOptimisticChatMessage,
   buildOptimisticThreadReply,
   buildThreadAiContextPayload,
   dispatchPrivateAiMessage,
+  dispatchPrivateThreadAiReply,
   dispatchRoomOrThreadAiMention,
 } from '../utils/portal-ai-message-helpers';
+import { isStrictSuperAdminClientUser } from '../shared/hooks/useMaiDebugSettings';
 
 export interface UsePortalMessageSendingParams {
   currentUser?: SafeAny;
@@ -65,6 +65,7 @@ export interface UsePortalMessageSendingParams {
   notifyLivePeers: () => void;
   scrollToChatBottom: (target?: 'main' | 'thread' | { dockConvId: string }, behavior?: ScrollBehavior) => void;
   cleanQuotedText: (txt?: string | null) => string;
+  onRecordEmojisFromText?: (text?: string | null) => void;
   antdMessage: MessageInstance;
 }
 
@@ -109,6 +110,7 @@ export function usePortalMessageSending({
   notifyLivePeers,
   scrollToChatBottom,
   cleanQuotedText,
+  onRecordEmojisFromText,
   antdMessage,
 }: UsePortalMessageSendingParams) {
   const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
@@ -147,6 +149,7 @@ export function usePortalMessageSending({
       return;
     }
     lastSentRef.current = { text, time: now };
+    onRecordEmojisFromText?.(text);
 
     const senderName = currentUser?.displayName || currentUser?.username || 'Danny Do';
     const optimisticMsg = buildOptimisticChatMessage({
@@ -179,6 +182,7 @@ export function usePortalMessageSending({
           senderName,
           myRole: currentUser?.role || 'super_admin',
           aiSessionId,
+          isStrictDannySuperAdmin: isStrictDannySuperAdmin || isStrictSuperAdminClientUser(currentUser),
         });
         if (result.sessionId) {
           setAiSessionId(result.sessionId);
@@ -235,6 +239,7 @@ export function usePortalMessageSending({
           aiSessionId,
           isReadOnly: aiSessionReadOnlyRef.current,
           setAiSessionId,
+          isStrictDannySuperAdmin: isStrictDannySuperAdmin || isStrictSuperAdminClientUser(currentUser),
         });
         await fetchBootstrap(true);
         notifyLivePeers();
@@ -325,6 +330,7 @@ export function usePortalMessageSending({
     if ((!text && attachmentsToSend.length === 0 && !cardToSend) || !activeConversation || !targetMsgId) return;
     if (hasActiveUploadsForScope?.('thread'))
       return void antdMessage.warning('Video đang được tải lên, vui lòng đợi hoàn tất.');
+    onRecordEmojisFromText?.(text);
 
     if (activeThreadMsgId !== targetMsgId) {
       setActiveThreadMsgId(targetMsgId);
@@ -370,42 +376,17 @@ export function usePortalMessageSending({
       if (canUseAiCopilot) {
         setAiThinkingActive(true);
         try {
-          const contextPayload = buildThreadAiContextPayload({
-            headerLabel: '[Bối cảnh Luồng thảo luận (Thread) với mOS AI]:',
+          const botReply = await dispatchPrivateThreadAiReply({
+            aiSessionId,
+            setAiSessionId,
             rootMsg: aiMessages.find((m) => m.id === targetMsgId),
+            targetMsgId,
             senderName,
+            myRole: currentUser?.role || 'super_admin',
             queryText: text,
+            firstAttachment: attachmentsToSend?.[0],
+            isStrictDannySuperAdmin: isStrictDannySuperAdmin || isStrictSuperAdminClientUser(currentUser),
           });
-          const imageDataUrl = await convertAttachmentToDataUrl(attachmentsToSend?.[0]);
-          const aiRes = await apiClient.ai.sendMessage({
-            sessionId: aiSessionId || undefined,
-            message: contextPayload,
-            scope: `mos-chat-private-thread:${targetMsgId}`,
-            imageDataUrl,
-            context: {
-              page: `mos-chat-private-thread:${targetMsgId}`,
-              userName: senderName,
-              myRole: currentUser?.role || 'super_admin',
-            },
-          });
-          if (aiRes?.session?.id) {
-            setAiSessionId(aiRes.session.id);
-          }
-          const botReply: MosChatThreadReply = {
-            id: aiRes?.message?.id || `th-ai-${Date.now()}`,
-            senderId: 'wings-ai-copilot',
-            senderName: '🤖 MAI',
-            senderRole: 'mOS AI',
-            senderAvatar: 'MAI',
-            roleColor: '#8b5cf6',
-            text: (aiRes?.message?.content || 'MAI đã ghi nhận phản hồi trong luồng của bạn.')
-              .replace(/<action[\s\S]*?<\/action>/gi, '')
-              .replace(/<\/?action[^>]*>/gi, '')
-              .trim(),
-            isAiBot: true,
-            timeLabel: dayjs().format('HH:mm'),
-            createdAt: new Date().toISOString(),
-          };
           setAiMessages((prev) =>
             prev.map((m) => (m.id === targetMsgId ? { ...m, thread: [...(m.thread || []), botReply] } : m))
           );
@@ -511,6 +492,7 @@ export function usePortalMessageSending({
           aiSessionId,
           isReadOnly: aiSessionReadOnlyRef.current,
           setAiSessionId,
+          isStrictDannySuperAdmin: isStrictDannySuperAdmin || isStrictSuperAdminClientUser(currentUser),
         });
         await fetchBootstrap(true);
         notifyLivePeers();
