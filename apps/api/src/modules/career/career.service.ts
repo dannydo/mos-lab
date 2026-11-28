@@ -27,6 +27,7 @@ import { calculateCvPlusRewardsForStaff } from './career-service/career-cvl-rewa
 import { getAllCvPlusSimulations } from './career-service/career-cvl-simulation.service.js';
 import {
   buildCheckoutAttributionSqlCondition,
+  computeCvlConsultShareFactor,
   computeHourlyProductivity,
   type CvRewardCalculationMode,
   resolveBranchInfo,
@@ -38,6 +39,7 @@ import { listCareerStaff } from './career-service/career-staff-list.service.js';
 
 export {
   buildCheckoutAttributionSqlCondition,
+  computeCvlConsultShareFactor,
   computeHourlyProductivity,
   type CvRewardCalculationMode,
   resolveBranchInfo,

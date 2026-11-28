@@ -4,9 +4,11 @@ import { TeamService } from '../../../teams/team.service.js';
 import { StaffOffDayService } from '../../../staff/services/staff-off-day.service.js';
 import { HolidayWorkService } from '../../../holiday-work/holiday-work.service.js';
 import {
+  buildExcludeOtherMenteeTrainingOrderSql,
   createFastifyLegacyTipExecutor,
   CvlTrainingMentorshipService,
 } from '../../services/cvl-training-mentorship.service.js';
+import { CcMentorPayoutService } from '../../services/cc-mentor-payout.service.js';
 import { CvPaystubRawSources, getExtendedWeekBounds } from './cv-paystub.helpers.js';
 
 export async function fetchActiveCvStaffProfiles(
@@ -133,6 +135,22 @@ export async function fetchCvPaystubSources(
     GROUP BY os.assigned_staff_id
   `;
 
+  const mentorshipConfig = await CvlTrainingMentorshipService.getConfig(fastify);
+  const allTrainingPairs = mentorshipConfig.pairs || [];
+  const activeTrainingPairs = await CvlTrainingMentorshipService.getActivePairsForRange(fastify, startPart, endPart);
+
+  // Bảo vệ 2 lớp cho Mentor CVL/CVLL: loại trừ dòng tip <= 20% phát sinh trên đơn của Mentee đang trong kỳ Training
+  const trainingPairOrderClauses = activeTrainingPairs
+    .filter((p) => p.isActive)
+    .map(
+      (p) =>
+        `(os_tr.assigned_staff_id = ${p.menteeLegacyStaffId} AND COALESCE(ro.date, DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start))) BETWEEN '${p.startDate}' AND '${p.endDate}')`
+    );
+  const excludeOtherMenteeTrainingTipSql =
+    trainingPairOrderClauses.length > 0
+      ? `AND NOT (COALESCE(st.tip_percentage, 0) > 0 AND COALESCE(st.tip_percentage, 0) <= 20 AND EXISTS (SELECT 1 FROM \`order_service\` os_tr WHERE os_tr.order_id = st.order_id AND os_tr.assigned_staff_id <> st.user_id AND (${trainingPairOrderClauses.join(' OR ')})))`
+      : '';
+
   // 5. Query CV Tip (StaffTipRunner đã ghi thẳng 90%/80%/70%/20%/10% vào st.tip_amount & st.tip_percentage)
   const cvTipBonusQuery = `
     SELECT 
@@ -151,6 +169,7 @@ export async function fetchCvPaystubSources(
     WHERE st.user_id IN (${validStaffListStr})
       AND COALESCE(ro.date, DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start))) BETWEEN '${startPart}' AND '${endPart}'
       AND o.order_state = 'Completed'
+      ${excludeOtherMenteeTrainingTipSql}
     GROUP BY st.user_id
   `;
 
@@ -217,7 +236,6 @@ export async function fetchCvPaystubSources(
     mosAllowances,
     careerConfigRecord,
     cvPlusProgressions,
-    activeTrainingPairs,
   ] = await Promise.all([
     fastify.prisma.crm.crmStaff.findMany({
       where: { legacyStaffId: { in: validStaffIds } },
@@ -258,7 +276,6 @@ export async function fetchCvPaystubSources(
       },
       include: { staff: true },
     }),
-    CvlTrainingMentorshipService.getActivePairsForRange(fastify, startPart, endPart),
   ]);
 
   await CvlTrainingMentorshipService.reconcileTrainingCvlStaffTips(
@@ -266,12 +283,13 @@ export async function fetchCvPaystubSources(
     activeTrainingPairs
   );
 
-  const transferredTrainingTipMap = await CvlTrainingMentorshipService.queryTransferredCcTipsByMentee(
-    fastify,
-    activeTrainingPairs,
-    startPart,
-    endPart
-  );
+  const [transferredTrainingTipMap, mentorBreakdownsByStaff] = await Promise.all([
+    CvlTrainingMentorshipService.queryTransferredCcTipsByMentee(fastify, activeTrainingPairs, startPart, endPart),
+    CcMentorPayoutService.calculateMentorBreakdownsByCc(fastify, activeTrainingPairs, startPart, endPart),
+  ]);
+
+  // Ensure unused import guard doesn't fire if buildExcludeOtherMenteeTrainingOrderSql isn't needed directly here
+  void buildExcludeOtherMenteeTrainingOrderSql;
 
   return {
     crmStaffs,
@@ -291,6 +309,8 @@ export async function fetchCvPaystubSources(
     careerConfigRecord,
     cvPlusProgressions,
     activeTrainingPairs,
+    allTrainingPairs,
     transferredTrainingTipMap,
+    mentorBreakdownsByStaff,
   };
 }

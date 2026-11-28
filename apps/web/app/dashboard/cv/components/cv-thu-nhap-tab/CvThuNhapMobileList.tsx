@@ -81,16 +81,28 @@ export function CvThuNhapMobileList({
                 </span>
                 <CcAvatar name={record.staffName} src={record.avatar} size={36} />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                     <span className="truncate text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-50">
                       {record.staffName}
                     </span>
                     {record.isCvPlus ? (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 inline-flex items-center shrink-0">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 inline-flex items-center gap-1 shrink-0">
                         <CvFeather1Badge featherClass="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
+                        {record.cvlTrainingStatus === 'TRAINING' ? (
+                          <span>Training</span>
+                        ) : record.cvlTrainingStatus === 'PENDING_GRADUATION' ? (
+                          <span>Chờ chốt</span>
+                        ) : record.cvlTrainingStatus === 'OFFICIAL' ? (
+                          <span className="text-emerald-600 dark:text-emerald-400">Chính thức</span>
+                        ) : null}
                       </span>
                     ) : (
                       <span className="text-[10px] font-mono text-slate-400 shrink-0">L{record.techLevel || 1}</span>
+                    )}
+                    {(record.trainingMentorshipBonus || 0) > 0 && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tabular-nums bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
+                        Mentor +{formatCompactVND(record.trainingMentorshipBonus || 0)}
+                      </span>
                     )}
                   </div>
                   <div className="text-[11.5px] font-medium text-slate-500 dark:text-slate-400 truncate tabular-nums">

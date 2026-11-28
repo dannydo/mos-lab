@@ -193,9 +193,11 @@ export async function indexPaystubSources(
   const cvToCvPlusConfig = careerRules.cvToCvPlus || DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCvPlus;
 
   const cvPlusStaffMap = new Map<number, SafeAny>();
+  const officialCvlRoleMap = new Map<number, string>();
   (sources.cvPlusProgressions || []).forEach((p: SafeAny) => {
     if (p.staff?.legacyStaffId) {
       cvPlusStaffMap.set(p.staff.legacyStaffId, p);
+      officialCvlRoleMap.set(p.staff.legacyStaffId, p.currentRole || 'CV_PLUS');
     }
   });
   const validStaffSet = new Set(validStaffIds);
@@ -246,5 +248,8 @@ export async function indexPaystubSources(
     holidayWorkedDateMap: sources.holidayWorkedDateMap,
     cvToCvPlusConfig,
     cvPlusRewardMap,
+    officialCvlRoleMap,
+    mentorBreakdownsByStaff: sources.mentorBreakdownsByStaff,
+    allTrainingPairs: sources.allTrainingPairs,
   };
 }

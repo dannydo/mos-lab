@@ -12,6 +12,8 @@ export interface FilterBookingsForCvlScopeOptions {
   targetDate?: string;
   todayVn?: string;
   now?: Date;
+  /** Legacy staff IDs of active 1-on-1 training mentees whose bookings this CVL mentor may view. */
+  menteeStaffIds?: number[];
 }
 
 export function parseBookingStartMinutes(b: Pick<IosBookingItem, 'time12h' | 'timeSlot'>): number | null {
@@ -94,12 +96,25 @@ export function filterBookingsForCvlScope<T extends IosBookingItem>(
         : true;
   const nowMinutes = getVietnamNowMinutes(options?.now);
 
+  const menteeSet = new Set(
+    (options?.menteeStaffIds || []).map((id) => Math.floor(Number(id))).filter((id) => id > 0 && id !== activeStaffId)
+  );
+  const isMenteeBooking = (b: IosBookingItem): boolean =>
+    menteeSet.size > 0 &&
+    Boolean(
+      (b.assignedStaffId && menteeSet.has(Number(b.assignedStaffId))) ||
+      (b.checkInStaffId && menteeSet.has(Number(b.checkInStaffId))) ||
+      (b.checkOutStaffId && menteeSet.has(Number(b.checkOutStaffId)))
+    );
+
   const unassignedCandidates = bookings
     .map((b, index) => {
       const isServicing = isBookingServicing(b);
       const isStaffAssigned = isBookingAssignedToStaff(b, activeStaffId);
+      const isMenteeAssigned = isMenteeBooking(b);
       const isUnassignedIncoming =
         !isStaffAssigned &&
+        !isMenteeAssigned &&
         !isServicing &&
         (b.status === 'INCOMING' || b.status === 'CHECKED_IN') &&
         (b.isUnassignedQueue === true || !b.assignedStaffId || b.assignedStaffId === 0);
@@ -141,6 +156,16 @@ export function filterBookingsForCvlScope<T extends IosBookingItem>(
         status: isBookingServicing(b) ? 'SERVICING' : b.status,
         isNextQueueCustomer: false,
         bookingAccessTag: 'MY_BOOKED_CUSTOMER',
+      });
+      continue;
+    }
+
+    if (isMenteeBooking(b)) {
+      result.push({
+        ...b,
+        status: isBookingServicing(b) ? 'SERVICING' : b.status,
+        isNextQueueCustomer: false,
+        bookingAccessTag: 'MENTEE_CUSTOMER',
       });
       continue;
     }

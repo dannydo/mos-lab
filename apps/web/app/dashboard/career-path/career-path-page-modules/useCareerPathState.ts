@@ -422,6 +422,10 @@ export function useCareerPathState() {
     [isDanny, selectedStaffId, fetchStaffProgression, simulationTarget]
   );
 
+  const refreshData = useCallback(() => {
+    void loadData(selectedPeriod);
+  }, [loadData, selectedPeriod]);
+
   const islands = useMemo(() => getCareerIslands(safeConfig), [safeConfig]);
   const currentIslandData = useMemo(
     () => islands.find((i) => i.id === activeIsland) || islands[0],
@@ -486,5 +490,6 @@ export function useCareerPathState() {
     handleSetRole,
     handleDemote,
     handleSaveConfig,
+    refreshData,
   };
 }

@@ -1,6 +1,13 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
-import { hasCcTeamMembership, isAdminOrSuperAdminRole, normalizeCvFeatherRole, SafeAny } from '@mos-lab/shared';
+import {
+  getVietnamDateYmd,
+  hasCcTeamMembership,
+  isAdminOrSuperAdminRole,
+  normalizeCvFeatherRole,
+  SafeAny,
+} from '@mos-lab/shared';
 import { TeamService } from '../../teams/team.service.js';
+import { CvlTrainingMentorshipService } from '../../kpi/services/cvl-training-mentorship.service.js';
 
 export interface IosAuthContext {
   id?: number;
@@ -11,6 +18,10 @@ export interface IosAuthContext {
   role?: string;
   teamCodes?: string[];
   careerTier?: 'CVL' | 'CVLL' | 'CC' | 'ADMIN';
+  isTrainingMentee?: boolean;
+  trainingMentorName?: string;
+  mentoringMenteeStaffIds?: number[];
+  mentoringMenteeName?: string;
 }
 
 export async function resolveIosAuth(
@@ -52,9 +63,33 @@ export async function resolveIosAuth(
       Number(staff?.id || payload.id || 0),
       legacyStaffId
     );
+    const todayVn = getVietnamDateYmd();
+    const todayTrainingPairs = legacyStaffId
+      ? await CvlTrainingMentorshipService.getActivePairsForRange(fastify, todayVn, todayVn).catch(() => [])
+      : [];
+    const numericLegacyId = Number(legacyStaffId || 0);
+    const activeMenteePair =
+      numericLegacyId > 0
+        ? todayTrainingPairs.find(
+            (p) => p.isActive && p.outcome !== 'RETURNED_TO_CV' && p.menteeLegacyStaffId === numericLegacyId
+          )
+        : undefined;
+    const activeMentorPairs =
+      numericLegacyId > 0
+        ? todayTrainingPairs.filter(
+            (p) => p.isActive && p.outcome !== 'RETURNED_TO_CV' && p.mentorLegacyStaffId === numericLegacyId
+          )
+        : [];
+
     const careerTier: IosAuthContext['careerTier'] =
       normalizeCvFeatherRole(rawRole) ||
-      (isAdminOrSuperAdminRole(rawRole) ? 'ADMIN' : rawRole === 'cc' || hasCcTeamMembership(teamCodes) ? 'CC' : 'CVL');
+      (isAdminOrSuperAdminRole(rawRole)
+        ? 'ADMIN'
+        : rawRole === 'cc' || hasCcTeamMembership(teamCodes)
+          ? 'CC'
+          : activeMenteePair
+            ? 'CVL'
+            : undefined);
 
     let clientStoreId: number | undefined;
     if (legacyStaffId) {
@@ -80,6 +115,18 @@ export async function resolveIosAuth(
       role: rawRole,
       teamCodes,
       careerTier,
+      ...(activeMenteePair
+        ? {
+            isTrainingMentee: true,
+            trainingMentorName: activeMenteePair.mentorDisplayName,
+          }
+        : {}),
+      ...(activeMentorPairs.length > 0
+        ? {
+            mentoringMenteeStaffIds: activeMentorPairs.map((p) => p.menteeLegacyStaffId),
+            mentoringMenteeName: activeMentorPairs[0]?.menteeDisplayName,
+          }
+        : {}),
     };
   } catch {
     return null;

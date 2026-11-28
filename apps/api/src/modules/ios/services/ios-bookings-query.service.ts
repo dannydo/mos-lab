@@ -122,6 +122,36 @@ export async function queryIosBookingsList(
     monthFirstDay,
     monthLastDay
   );
+  const activeMenteePair = activeTrainingPairs.find(
+    (p) =>
+      p.isActive &&
+      p.outcome !== 'RETURNED_TO_CV' &&
+      p.menteeLegacyStaffId === simActiveStaffId &&
+      targetDate >= p.startDate.slice(0, 10) &&
+      targetDate <= p.endDate.slice(0, 10)
+  );
+  const activeMentorPairs = activeTrainingPairs.filter(
+    (p) =>
+      p.isActive &&
+      p.outcome !== 'RETURNED_TO_CV' &&
+      p.mentorLegacyStaffId === simActiveStaffId &&
+      targetDate >= p.startDate.slice(0, 10) &&
+      targetDate <= p.endDate.slice(0, 10)
+  );
+  const menteeStaffIds = simEffectiveRole === 'CVL' ? activeMentorPairs.map((p) => p.menteeLegacyStaffId) : undefined;
+  const trainingMentorshipMeta =
+    simEffectiveRole === 'CVL' || simEffectiveRole === 'CVLL'
+      ? {
+          status: (activeMenteePair ? 'TRAINING' : 'OFFICIAL') as 'TRAINING' | 'OFFICIAL',
+          ...(activeMenteePair ? { mentorName: activeMenteePair.mentorDisplayName } : {}),
+          ...(activeMentorPairs[0]
+            ? {
+                mentoringMenteeStaffId: activeMentorPairs[0].menteeLegacyStaffId,
+                mentoringMenteeName: activeMentorPairs[0].menteeDisplayName,
+              }
+            : {}),
+        }
+      : undefined;
 
   if (isDemoMode) {
     const demoBookingIds = INITIAL_BOOKINGS.map((b) => b.id);
@@ -153,6 +183,7 @@ export async function queryIosBookingsList(
       storeId,
       targetDate,
       todayVn,
+      menteeStaffIds,
     });
 
     const demoSpeedByStaff = new Map<number, ReturnType<typeof buildDemoCvSelfSpeedProfile>>();
@@ -190,6 +221,7 @@ export async function queryIosBookingsList(
       ...(effectiveRole !== 'CVL' ? { totalStoreCount: allDemoBookings.length } : {}),
       bookings: enrichedDemoList,
       staffStats,
+      ...(trainingMentorshipMeta ? { trainingMentorshipMeta } : {}),
       timestamp: new Date().toISOString(),
     };
   }
@@ -357,6 +389,7 @@ export async function queryIosBookingsList(
     storeId,
     targetDate,
     todayVn,
+    menteeStaffIds,
   });
 
   const speedStaffIds = Array.from(
@@ -397,6 +430,7 @@ export async function queryIosBookingsList(
     ...(simEffectiveRole !== 'CVL' ? { totalStoreCount: allMappedBookings.length } : {}),
     bookings: enrichedLiveList,
     staffStats: staffStatsWithSpeed,
+    ...(trainingMentorshipMeta ? { trainingMentorshipMeta } : {}),
     timestamp: new Date().toISOString(),
   };
 }

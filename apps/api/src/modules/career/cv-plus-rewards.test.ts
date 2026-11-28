@@ -13,6 +13,7 @@ import {
   computeCashCollectedComboAmount,
   isLegacyPhantomDebtPayment,
 } from './career-service/career-cvl-debt-rewards.helper.js';
+import { computeCvlConsultShareFactor } from './career-service/career-helpers.js';
 
 test('CVL calculateComboBonus simplified formula (min 500K, 500K-<2M = 50K, +50K per next 1M) & multi-combo aggregation', () => {
   // 0. Below 500K minimum collected limit -> 0đ
@@ -273,4 +274,84 @@ test('calculateCvlSerumLineBonus rounds legacy floats (550000.0000016 -> 10K) an
   const multiFree = calculateCvlSerumLineBonus(0, 2);
   assert.equal(multiFree.qty, 2);
   assert.equal(multiFree.lineBonus, 2_000);
+});
+
+test('computeCvlConsultShareFactor applies 50/50 IN/OUT split for Official CVL and 100% during Training', () => {
+  // 1. Official CVL (not in training): self IN & OUT -> 100%
+  assert.deepEqual(
+    computeCvlConsultShareFactor({
+      staffId: 13783,
+      assignedStaffId: 13783,
+      checkInStaffId: 13783,
+      checkOutStaffId: 13783,
+      isInMenteeTrainingWindow: false,
+      mode: 'ACTUAL_PAYROLL',
+    }),
+    { shareFactor: 1, consultRole: 'BOTH' }
+  );
+
+  // 2. Official CVL: CC IN, CVL OUT -> 50% (OUT) -> 200K * 0.5 = 100K, numerator 0.5
+  assert.deepEqual(
+    computeCvlConsultShareFactor({
+      staffId: 13783,
+      assignedStaffId: 13783,
+      checkInStaffId: 37790,
+      checkOutStaffId: 13783,
+      isInMenteeTrainingWindow: false,
+      mode: 'ACTUAL_PAYROLL',
+    }),
+    { shareFactor: 0.5, consultRole: 'OUT' }
+  );
+
+  // 3. Official CVL: CVL IN, CC OUT -> 50% (IN)
+  assert.deepEqual(
+    computeCvlConsultShareFactor({
+      staffId: 13783,
+      assignedStaffId: 13783,
+      checkInStaffId: 13783,
+      checkOutStaffId: 34295,
+      isInMenteeTrainingWindow: false,
+      mode: 'ACTUAL_PAYROLL',
+    }),
+    { shareFactor: 0.5, consultRole: 'IN' }
+  );
+
+  // 4. Official CVL: CC IN & CC OUT on CVL's lash order -> 0%
+  assert.deepEqual(
+    computeCvlConsultShareFactor({
+      staffId: 13783,
+      assignedStaffId: 13783,
+      checkInStaffId: 34295,
+      checkOutStaffId: 34295,
+      isInMenteeTrainingWindow: false,
+      mode: 'ACTUAL_PAYROLL',
+    }),
+    { shareFactor: 0, consultRole: 'BOTH' }
+  );
+
+  // 5. Official CVL cross-supporting another CV's order (IN only) -> 50%
+  assert.deepEqual(
+    computeCvlConsultShareFactor({
+      staffId: 13783,
+      assignedStaffId: 47510,
+      checkInStaffId: 13783,
+      checkOutStaffId: 34295,
+      isInMenteeTrainingWindow: false,
+      mode: 'ACTUAL_PAYROLL',
+    }),
+    { shareFactor: 0.5, consultRole: 'IN' }
+  );
+
+  // 6. Mentee CVL inside Training CC-006 window: always 100% even if CC did IN & OUT
+  assert.deepEqual(
+    computeCvlConsultShareFactor({
+      staffId: 13783,
+      assignedStaffId: 13783,
+      checkInStaffId: 34295,
+      checkOutStaffId: 34295,
+      isInMenteeTrainingWindow: true,
+      mode: 'ACTUAL_PAYROLL',
+    }),
+    { shareFactor: 1, consultRole: 'TRAINING' }
+  );
 });

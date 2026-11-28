@@ -143,6 +143,7 @@ function IosAppInner() {
       isSimulationMode={state.isSimulationMode}
       userRole={state.loggedInUser?.role}
       teamCodes={state.loggedInUser?.teamCodes}
+      trainingMentorshipMeta={state.trainingMentorshipMeta}
       onOpenCreateBooking={!state.isReadOnlyMentorView ? () => state.setIsCreateBookingOpen(true) : undefined}
     />
   );

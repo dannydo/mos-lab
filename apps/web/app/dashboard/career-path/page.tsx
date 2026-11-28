@@ -11,12 +11,14 @@ import { CareerPathDrawers } from './career-path-page-modules/CareerPathDrawers'
 import { FmSimulatorStudio } from '../../../components/fm-simulator/FmSimulatorStudio';
 import { PnlSimulatorStudio } from '../../../components/fm-simulator/PnlSimulatorStudio';
 import { AdminOnlyPnlGuard } from '../../../components/fm-simulator/AdminOnlyPnlGuard';
+import CvlTrainingMentorshipConfigModal from '../../../components/cc-thu-nhap/modals/CvlTrainingMentorshipConfigModal';
 
 type CareerWorkspaceTab = 'cv' | 'fm' | 'pnl';
 
 export default function CareerPathPage() {
   const state = useCareerPathState();
   const [activeTab, setActiveTab] = useState<CareerWorkspaceTab>(() => (state.initialTab === 'fm' ? 'fm' : 'cv'));
+  const [isMentorshipModalOpen, setIsMentorshipModalOpen] = useState(false);
 
   useEffect(() => {
     if (state.initialTab === 'pnl' && state.isAdmin) {
@@ -46,6 +48,7 @@ export default function CareerPathPage() {
         onOpenMapDrawer={() => state.setIsMapDrawerOpen(true)}
         onOpenBananaDrawer={state.openBananaDrawer}
         onOpenConfigDrawer={() => state.setIsConfigDrawerOpen(true)}
+        onOpenMentorshipModal={state.canConfigure ? () => setIsMentorshipModalOpen(true) : undefined}
       />
 
       {/* MAIN CONTAINER */}
@@ -253,6 +256,14 @@ export default function CareerPathPage() {
         bananaDrawerCategory={state.bananaDrawerCategory}
         selectedPeriod={state.selectedPeriod}
       />
+
+      {state.canConfigure && (
+        <CvlTrainingMentorshipConfigModal
+          open={isMentorshipModalOpen}
+          onClose={() => setIsMentorshipModalOpen(false)}
+          onSaved={state.refreshData}
+        />
+      )}
     </div>
   );
 }

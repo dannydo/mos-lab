@@ -58,11 +58,22 @@ export function buildCvThuNhapColumns({
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             {rankBadge}
             <CcAvatar name={text} src={record.avatar} size={26} />
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-semibold text-xs text-slate-700 dark:text-slate-200 whitespace-nowrap">{text}</span>
               {isSelfManaged ? (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30">
                   <CvFeather1Badge featherClass="w-2.5 h-2.5 text-amber-500" />
+                  {record.cvlTrainingStatus === 'TRAINING' ? (
+                    <span className="text-[9.5px] font-semibold">
+                      Training{record.cvlTrainingMentorName ? ` · Mentor ${record.cvlTrainingMentorName}` : ''}
+                    </span>
+                  ) : record.cvlTrainingStatus === 'PENDING_GRADUATION' ? (
+                    <span className="text-[9.5px] font-semibold text-orange-600 dark:text-orange-300">Chờ chốt</span>
+                  ) : record.cvlTrainingStatus === 'OFFICIAL' ? (
+                    <span className="text-[9.5px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      Chính thức
+                    </span>
+                  ) : null}
                 </span>
               ) : (
                 <Tooltip title={`🌱 Lộ trình thăng tiến: Xem Career Path của ${text}`}>
@@ -78,6 +89,16 @@ export function buildCvThuNhapColumns({
                     🌱
                   </button>
                 </Tooltip>
+              )}
+              {!isSelfManaged && record.cvlTrainingStatus === 'PENDING_GRADUATION' && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-semibold bg-orange-500/15 text-orange-600 dark:text-orange-300 border border-orange-500/30">
+                  Chờ chốt tốt nghiệp
+                </span>
+              )}
+              {(record.trainingMentorshipBonus || 0) > 0 && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-bold tabular-nums bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">
+                  Mentor +{Math.round(record.trainingMentorshipBonus || 0).toLocaleString('vi-VN')}đ
+                </span>
               )}
               <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">L{record.techLevel || 1}</span>
             </div>

@@ -68,7 +68,8 @@ export interface IosBookingItem {
   isNextQueueCustomer?: boolean;
   isBookedInAdvance?: boolean;
   isTuaAssigned?: boolean;
-  bookingAccessTag?: 'NEXT_CUSTOMER' | 'NEXT_QUEUE_CUSTOMER' | 'MY_BOOKED_CUSTOMER' | 'STORE_CUSTOMER';
+  bookingAccessTag?:
+    'NEXT_CUSTOMER' | 'NEXT_QUEUE_CUSTOMER' | 'MY_BOOKED_CUSTOMER' | 'MENTEE_CUSTOMER' | 'STORE_CUSTOMER';
   status: IosBookingStatus;
   orderState?: string;
   comboLiveStatus?: {
@@ -247,6 +248,12 @@ export interface IosBookingListResponse {
   totalStoreCount?: number;
   bookings: IosBookingItem[];
   staffStats?: IosStaffMonthlyStats;
+  trainingMentorshipMeta?: {
+    status: 'OFFICIAL' | 'TRAINING' | null;
+    mentorName?: string;
+    mentoringMenteeStaffId?: number;
+    mentoringMenteeName?: string;
+  };
   timestamp?: string;
   error?: string;
 }

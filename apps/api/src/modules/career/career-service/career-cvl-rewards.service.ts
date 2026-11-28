@@ -9,6 +9,7 @@ import {
 import { getCareerConfig } from './career-config.service.js';
 import {
   buildCheckoutAttributionSqlCondition,
+  computeCvlConsultShareFactor,
   CvRewardCalculationMode,
   resolveBranchInfo,
   resolveCvTipSplitFromRows,
@@ -288,12 +289,14 @@ export async function calculateCvPlusRewardsForStaff(
       `,
     targetLegacyStaffId,
     targetLegacyStaffId,
+    targetLegacyStaffId,
     startStr,
     endStr
   );
 
-  // Kinh Thánh mOS Điều răn CV-002 (v2.8.0): Nếu khách mua 2 (hoặc nhiều) gói Combo cùng 1 lúc trong cùng 1 đơn (order_id),
-  // cộng gộp tổng tiền các gói trong đơn đó lại trước rồi mới áp công thức thưởng 1 lần duy nhất (<2M = 50K, mỗi 1M kế tiếp = +50K).
+  // Kinh Thánh mOS Điều răn CV-002 (v2.12.0): Nếu khách mua nhiều gói Combo cùng 1 đơn (order_id),
+  // cộng gộp tổng tiền thực thu lại rồi tính thưởng 1 lần (<2M = 50K, mỗi 1M kế tiếp = +50K),
+  // sau đó nhân theo tỷ trọng tham gia IN/OUT của CVL chính thức (100% tự IN&OUT, 50% IN hoặc OUT, 100% trong Training).
   const combosByOrderId = new Map<number, SafeAny[]>();
   for (const c of combos) {
     const orderId = Number(c.order_id);
@@ -304,34 +307,58 @@ export async function calculateCvPlusRewardsForStaff(
 
   const comboDetails: CvPlusComboDetail[] = [];
   for (const [orderId, group] of combosByOrderId.entries()) {
+    const first = group[0];
+    const orderDateStr = String(first.booking_date_start || '');
+    const isInMenteeTrainingWindow =
+      mode === 'ACTUAL_PAYROLL' &&
+      Number(first.assigned_staff_id || 0) === safeLegacyStaffId &&
+      Boolean(
+        CvlTrainingMentorshipService.findMatchingTrainingPairForOrder(
+          menteeTrainingPairs,
+          first.assigned_staff_id,
+          orderDateStr
+        )
+      );
+    const { shareFactor, consultRole } = computeCvlConsultShareFactor({
+      staffId: safeLegacyStaffId,
+      assignedStaffId: first.assigned_staff_id,
+      checkInStaffId: first.check_in_staff_id,
+      checkOutStaffId: first.check_out_staff_id,
+      isInMenteeTrainingWindow,
+      mode,
+    });
+    if (shareFactor <= 0) continue;
+
     const sortedItems = [...group].sort((a, b) => Number(b.total_price || 0) - Number(a.total_price || 0));
     const comboItems = sortedItems.map((item: SafeAny) => ({
       comboName: String(item.combo_name),
       price: Number(item.total_price || 0),
     }));
     const grossPrice = comboItems.reduce((sum, item) => sum + item.price, 0);
-    const first = group[0];
     const { actualCollected, deductedDebt } = computeCashCollectedComboAmount(
       grossPrice,
       Number(first.unpaid_debt_amount || 0)
     );
-    const bonus = calculateComboBonus(actualCollected, activeCvReq);
+    const fullBonus = calculateComboBonus(actualCollected, activeCvReq);
+    const bonus = Math.round(fullBonus * shareFactor);
     comboDetails.push({
       orderId,
       orderCode: String(first.order_code),
-      orderDate: String(first.booking_date_start),
+      orderDate: orderDateStr,
       customerName: first.client_name ? String(first.client_name) : undefined,
       comboName: comboItems.map((item) => item.comboName).join(' + '),
       price: actualCollected,
       ...(deductedDebt > 0 ? { grossPrice, unpaidDebtAmount: deductedDebt } : {}),
       bonus,
+      shareFactor,
+      consultRole,
       comboCount: comboItems.length,
       comboItems,
     });
   }
 
   const rawComboBonusTotal = comboDetails.reduce((sum, c) => sum + c.bonus, 0);
-  const comboSoldCount = comboDetails.length;
+  const comboSoldCount = Math.round(comboDetails.reduce((sum, c) => sum + (c.shareFactor ?? 1), 0) * 100) / 100;
 
   // 4.5. Query Combo Debt Collections (user_debt_payment) — không cộng vào tử số comboSoldCount
   const debtSummary = await queryCvlDebtCollectionDetails({
@@ -435,7 +462,9 @@ export async function calculateCvPlusRewardsForStaff(
           op.order_id,
           op.total_price,
           op.quantity,
+          o.booking_date_start,
           os.assigned_staff_id,
+          os.check_in_staff_id,
           os.check_out_staff_id,
           COALESCE(pl.product_name, p.product_sku, 'Sản phẩm') as product_name
         FROM order_product op
@@ -451,14 +480,35 @@ export async function calculateCvPlusRewardsForStaff(
         `,
       targetLegacyStaffId,
       targetLegacyStaffId,
+      targetLegacyStaffId,
       startStr,
       endStr
     );
 
     for (const pr of productRows) {
+      const isInMenteeTrainingWindow =
+        mode === 'ACTUAL_PAYROLL' &&
+        Number(pr.assigned_staff_id || 0) === safeLegacyStaffId &&
+        Boolean(
+          CvlTrainingMentorshipService.findMatchingTrainingPairForOrder(
+            menteeTrainingPairs,
+            pr.assigned_staff_id,
+            String(pr.booking_date_start || '')
+          )
+        );
+      const { shareFactor } = computeCvlConsultShareFactor({
+        staffId: safeLegacyStaffId,
+        assignedStaffId: pr.assigned_staff_id,
+        checkInStaffId: pr.check_in_staff_id,
+        checkOutStaffId: pr.check_out_staff_id,
+        isInMenteeTrainingWindow,
+        mode,
+      });
+      if (shareFactor <= 0) continue;
+
       const { qty, lineBonus } = calculateCvlSerumLineBonus(pr.total_price, pr.quantity, cvReq);
-      serumsSoldCount += qty;
-      rawProductBonusTotal += lineBonus;
+      serumsSoldCount += Math.round(qty * shareFactor * 100) / 100;
+      rawProductBonusTotal += Math.round(lineBonus * shareFactor);
     }
   } catch (prodErr) {
     fastify.log.warn({ prodErr, targetLegacyStaffId }, 'Could not calculate product bonuses for CVL');

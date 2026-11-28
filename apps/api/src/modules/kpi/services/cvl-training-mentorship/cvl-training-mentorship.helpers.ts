@@ -1,8 +1,14 @@
 import {
   CvlTrainingMentorshipConfig,
+  CvlTrainingMentorshipOutcome,
   CvlTrainingMentorshipPair,
   DEFAULT_CVL_TRAINING_MENTORSHIP_CONFIG,
+  validateStrictOneToOneMentorshipPairs,
 } from '@mos-lab/shared';
+
+export { validateStrictOneToOneMentorshipPairs };
+
+const VALID_OUTCOMES = new Set<CvlTrainingMentorshipOutcome>(['ACTIVE', 'GRADUATED', 'EXTENDED', 'RETURNED_TO_CV']);
 
 export const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export const CACHE_TTL_MS = 30_000;
@@ -77,12 +83,19 @@ export function sanitizeCvlTrainingMentorshipPair(
       .trim()
       .replace(/[^a-zA-Z0-9_-]/g, '-') || `pair-${menteeId}-${mentorId}-${startDate}-${index}`;
 
+  const rawMentorRole = String(raw.mentorRoleGroup || '').toUpperCase();
+  const mentorRoleGroup: CvlTrainingMentorshipPair['mentorRoleGroup'] =
+    rawMentorRole === 'CVLL' ? 'CVLL' : rawMentorRole === 'CVL' ? 'CVL' : rawMentorRole === 'CC' ? 'CC' : undefined;
+  const rawOutcome = String(raw.outcome || '').toUpperCase() as CvlTrainingMentorshipOutcome;
+  const outcome: CvlTrainingMentorshipPair['outcome'] = VALID_OUTCOMES.has(rawOutcome) ? rawOutcome : undefined;
+
   return {
     id,
     menteeLegacyStaffId: menteeId,
     menteeDisplayName: String(raw.menteeDisplayName || `CVL #${menteeId}`).trim(),
     mentorLegacyStaffId: mentorId,
-    mentorDisplayName: String(raw.mentorDisplayName || `CC #${mentorId}`).trim(),
+    mentorDisplayName: String(raw.mentorDisplayName || `Mentor #${mentorId}`).trim(),
+    ...(mentorRoleGroup ? { mentorRoleGroup } : {}),
     storeCode: sanitizeStoreCode(raw.storeCode),
     startDate,
     endDate,
@@ -90,6 +103,9 @@ export function sanitizeCvlTrainingMentorshipPair(
     menteeBonusShareRate,
     minComboRateThreshold,
     isActive: raw.isActive !== false,
+    ...(outcome ? { outcome } : {}),
+    ...(raw.resolvedAt ? { resolvedAt: String(raw.resolvedAt) } : {}),
+    ...(raw.resolvedBy ? { resolvedBy: String(raw.resolvedBy) } : {}),
     note: raw.note ? String(raw.note).trim() : undefined,
   };
 }

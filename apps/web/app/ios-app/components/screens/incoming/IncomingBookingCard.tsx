@@ -322,6 +322,15 @@ export function IncomingBookingCard({
             </span>
           )}
 
+          {b.bookingAccessTag === 'MENTEE_CUSTOMER' && (
+            <span
+              data-testid={`card-mentee-pill-${b.id}`}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-extrabold leading-none bg-violet-500/15 text-violet-600 dark:text-violet-300 border-violet-500/35"
+            >
+              <span>Mentee · {b.assignedStaffName || 'CVL'}</span>
+            </span>
+          )}
+
           {isOtherCustomerLocked && (
             <span
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold leading-none"
