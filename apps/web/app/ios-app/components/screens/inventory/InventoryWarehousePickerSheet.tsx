@@ -54,7 +54,7 @@ export function InventoryWarehousePickerSheet({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto divide-y divide-neutral-200">
+        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-neutral-200">
           {filtered.map((w) => {
             const isSelected = w.inventory_warehouse_id === selectedWarehouseId;
             return (

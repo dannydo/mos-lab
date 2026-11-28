@@ -119,7 +119,7 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(screen.queryByTestId('mos-app-launcher-panel')).toBeNull();
   });
 
-  it('shows all 3 Core Apps + 5 Suites + Footer Feedback (no duplicate badge) for Super Admin', () => {
+  it('shows all 3 Core Apps + 6 Suites + Footer Feedback (no duplicate badge) for Super Admin', () => {
     const bibleSpy = vi.fn();
     window.addEventListener('open-mos-bible', bibleSpy);
     setBugReportBadgeSummary({ actionRequiredCount: 3, unreadCount: 3 });
@@ -142,7 +142,12 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(panel.querySelector('[data-launcher-suite="lab"]')).not.toBeNull();
     const gardenBtn = panel.querySelector('[data-launcher-suite="wings-garden"]');
     expect(gardenBtn).not.toBeNull();
-    expect(gardenBtn?.className).toContain('col-span-2');
+    expect(gardenBtn?.className).not.toContain('col-span-2');
+    const inventoryBtn = panel.querySelector('[data-launcher-suite="inventory"]');
+    const inventoryQrBtn = panel.querySelector('[data-launcher-suite-secondary="inventory"]');
+    expect(inventoryBtn).not.toBeNull();
+    expect(inventoryBtn?.textContent).toContain('mOS Kho');
+    expect(inventoryQrBtn).not.toBeNull();
 
     // Footer feedback must NOT repeat bug badge when mOS Mission is already shown
     const feedbackFooter = panel.querySelector('[data-launcher-footer="feedback"]');
@@ -166,10 +171,20 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     );
     expect(mockPush).toHaveBeenCalledWith('/wings-garden');
 
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    fireEvent.click(screen.getByTestId('mos-app-launcher-panel').querySelector('[data-launcher-suite="inventory"]')!);
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/inventory/items');
+
+    fireEvent.click(screen.getByTestId('mos-app-launcher-btn'));
+    fireEvent.click(
+      screen.getByTestId('mos-app-launcher-panel').querySelector('[data-launcher-suite-secondary="inventory"]')!
+    );
+    expect(mockPush).toHaveBeenCalledWith('/ios-app?role=INVENTORY');
+
     window.removeEventListener('open-mos-bible', bibleSpy);
   });
 
-  it('hides mOS General, Mission, Lab, Wings Garden, and Feedback for CVL while showing Báo cáo CV (/dashboard/cv)', () => {
+  it('hides mOS General, Mission, Lab, Wings Garden, mOS Kho, and Feedback for CVL while showing Báo cáo CV (/dashboard/cv)', () => {
     render(
       <MosAppLauncher
         currentApp="ios"
@@ -193,6 +208,8 @@ describe('HeaderRoleQuickSwitch & MosAppLauncher', () => {
     expect(panel.querySelector('[data-launcher-suite="mission"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="lab"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="wings-garden"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite="inventory"]')).toBeNull();
+    expect(panel.querySelector('[data-launcher-suite-secondary="inventory"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-suite="feedback"]')).toBeNull();
     expect(panel.querySelector('[data-launcher-footer="feedback"]')).toBeNull();
 

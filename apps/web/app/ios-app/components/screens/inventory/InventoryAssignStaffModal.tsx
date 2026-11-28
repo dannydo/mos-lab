@@ -118,7 +118,7 @@ export function InventoryAssignStaffModal({
               />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-neutral-200">
+          <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-neutral-200">
             <button
               type="button"
               onClick={() => {

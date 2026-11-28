@@ -8,6 +8,7 @@ import {
   type InventoryWarehouseDto,
 } from '@mos-lab/shared';
 import { ClipboardCheck, QrCode, Settings, Shield } from 'lucide-react';
+import { MosAppLauncher } from '../../../../../components/layout/MosAppLauncher';
 import { apiClient } from '../../../../../lib/api-client';
 import { InventoryScannerScreen } from './InventoryScannerScreen';
 import { InventoryWarehouseCheckItemScreen } from './InventoryWarehouseCheckItemScreen';
@@ -97,10 +98,12 @@ export function InventoryMobileShell({
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-black text-white">
-      {/* Compact Admin-Only Role Preview Bar (UI-010 test harness) */}
-      {isAdmin && (
-        <div className="bg-neutral-950 border-b border-neutral-800 px-2 py-1.5 flex items-center justify-between gap-1.5 shrink-0">
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+      {/* Compact Top Ecosystem & Role Preview Bar */}
+      <div className="bg-neutral-950 border-b border-neutral-800 px-2 py-1.5 flex items-center justify-between gap-2 shrink-0">
+        <MosAppLauncher currentApp="ios" shape="circle" onOpenProfile={onOpenSettings} />
+
+        {isAdmin ? (
+          <div className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto no-scrollbar">
             <Shield className="w-3.5 h-3.5 text-[#FFB400] shrink-0" />
             {PREVIEW_ROLE_OPTIONS.map((key) => {
               const active = previewRole === key;
@@ -128,19 +131,23 @@ export function InventoryMobileShell({
               </select>
             )}
           </div>
+        ) : (
+          <div className="flex-1 min-w-0 text-[11px] font-bold text-[#FFB400] tracking-wide uppercase truncate">
+            mOS Kho
+          </div>
+        )}
 
-          {onOpenSettings && (
-            <button
-              type="button"
-              onClick={onOpenSettings}
-              className="p-1 text-neutral-400 hover:text-[#FFB400] shrink-0 cursor-pointer"
-              aria-label="Cài đặt / Đổi vai trò"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-      )}
+        {onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="p-1 text-neutral-400 hover:text-[#FFB400] shrink-0 cursor-pointer"
+            aria-label="Cài đặt / Đổi vai trò"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+        )}
+      </div>
 
       {errorMsg && <div className="px-3 py-2 bg-red-950 text-red-200 text-xs text-center shrink-0">{errorMsg}</div>}
 

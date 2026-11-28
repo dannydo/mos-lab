@@ -8,10 +8,12 @@ import {
   LayoutDashboard,
   MessageSquare,
   MessageSquareWarning,
+  QrCode,
   Rocket,
   Smartphone,
   Trophy,
   Wallet,
+  Warehouse,
 } from 'lucide-react';
 import {
   canAccessIosConsultationApp,
@@ -26,7 +28,7 @@ import {
 import { buildRoleQuickLinks } from './ecosystem-quick-links';
 
 export type EcosystemAppKey = 'general' | 'chat' | 'ios';
-export type EcosystemSuiteKey = 'reports' | 'mission' | 'bible' | 'lab' | 'wings-garden' | 'feedback';
+export type EcosystemSuiteKey = 'reports' | 'mission' | 'bible' | 'lab' | 'wings-garden' | 'inventory' | 'feedback';
 export type EcosystemTone = 'sky' | 'emerald' | 'amber' | 'violet' | 'rose' | 'cyan';
 
 export type QuickSwitchRoleGroup = 'CV_FEATHER' | 'CC' | 'CV_STANDARD' | 'ADMIN_MANAGER' | 'OTHER';
@@ -52,6 +54,12 @@ export interface EcosystemSuiteItem {
   tone: EcosystemTone;
   badgeCount?: number;
   comingSoon?: boolean;
+  secondaryAction?: {
+    key: string;
+    label: string;
+    href: string;
+    icon: LucideIcon;
+  };
 }
 
 export interface EcosystemQuickLink {
@@ -106,6 +114,19 @@ export function isLabPathname(pathname: string): boolean {
 export function isWingsGardenPathname(pathname: string): boolean {
   const clean = pathname.split('?')[0];
   return clean === '/wings-garden' || clean.startsWith('/wings-garden/');
+}
+
+export function isInventoryPathname(pathname: string, search?: string): boolean {
+  const clean = pathname.split('?')[0];
+  if (clean === '/dashboard/inventory' || clean.startsWith('/dashboard/inventory/')) {
+    return true;
+  }
+  if (clean === '/ios-app' || clean.startsWith('/ios-app/')) {
+    const queryStr = (search ?? pathname.split('?')[1] ?? '').replace(/^\?/, '');
+    if (!queryStr) return false;
+    return new URLSearchParams(queryStr).get('role')?.toUpperCase() === 'INVENTORY';
+  }
+  return false;
 }
 
 /**
@@ -174,6 +195,8 @@ export const ECOSYSTEM_ICONS = {
   bible: BookOpenCheck,
   lab: FlaskConical,
   wingsGarden: Feather,
+  inventory: Warehouse,
+  qrCode: QrCode,
   feedback: MessageSquareWarning,
   today: CalendarCheck,
   ccKpi: BarChart3,
@@ -431,6 +454,23 @@ export function buildEcosystemNavModel(params: {
       href: '/wings-garden',
       icon: ECOSYSTEM_ICONS.wingsGarden,
       tone: 'emerald',
+    });
+
+    // Zero-Trust: mOS Kho is visible & navigable only for Admin / Super Admin
+    suiteApps.push({
+      key: 'inventory',
+      label: 'mOS Kho',
+      shortLabel: 'mOS Kho',
+      subtitle: 'Quản trị · Quét QR',
+      href: '/dashboard/inventory/items',
+      icon: ECOSYSTEM_ICONS.inventory,
+      tone: 'amber',
+      secondaryAction: {
+        key: 'inventory-qr',
+        label: 'Mở Quét Kho Mobile (QR)',
+        href: '/ios-app?role=INVENTORY',
+        icon: ECOSYSTEM_ICONS.qrCode,
+      },
     });
   }
 

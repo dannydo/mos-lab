@@ -5,6 +5,7 @@ import { Menu, Popover, Tooltip } from 'antd';
 import { ChevronRight } from 'lucide-react';
 import type { PinnedLinkItem } from '@mos-lab/shared';
 import {
+  isInventoryPathname,
   isLabPathname,
   isMissionPathname,
   isReportPathname,
@@ -67,7 +68,8 @@ export const SidebarCollapsedRail: React.FC<SidebarCollapsedRailProps> = ({
             !isReportPathname(pathname) &&
             !isMissionPathname(pathname) &&
             !isLabPathname(pathname) &&
-            !isWingsGardenPathname(pathname);
+            !isWingsGardenPathname(pathname) &&
+            !isInventoryPathname(pathname);
           return (
             <li className="sidebar-compact-item" key={`eco-rail-${app.key}`}>
               <Tooltip placement="right" title={app.label} mouseEnterDelay={0.2}>
@@ -101,7 +103,8 @@ export const SidebarCollapsedRail: React.FC<SidebarCollapsedRailProps> = ({
             ((suite.key === 'reports' && isReportPathname(pathname)) ||
               (suite.key === 'mission' && isMissionPathname(pathname)) ||
               (suite.key === 'lab' && isLabPathname(pathname)) ||
-              (suite.key === 'wings-garden' && isWingsGardenPathname(pathname)));
+              (suite.key === 'wings-garden' && isWingsGardenPathname(pathname)) ||
+              (suite.key === 'inventory' && isInventoryPathname(pathname)));
           return (
             <li className="sidebar-compact-item" key={`eco-rail-suite-${suite.key}`}>
               <Tooltip

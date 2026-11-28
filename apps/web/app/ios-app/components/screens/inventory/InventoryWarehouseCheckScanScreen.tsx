@@ -276,7 +276,7 @@ export function InventoryWarehouseCheckScanScreen({
       </div>
 
       {/* Scrollable SKU Table matching InventoryWarehouseCheckScanCell */}
-      <div className="flex-1 overflow-y-auto divide-y divide-neutral-200">
+      <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-neutral-200">
         {isLoading ? (
           <div className="py-12 text-center text-xs text-neutral-500">Đang tải dữ liệu kiểm kho...</div>
         ) : !checkData || checkData.inventory_item.length === 0 ? (
