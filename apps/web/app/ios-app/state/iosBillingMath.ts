@@ -358,14 +358,25 @@ export function buildCustomVietQrUrl(amount: number, transferContent: string): s
   )}&accountName=${encodeURIComponent("CONG TY TNHH WINGS' LIFE")}`;
 }
 
+export function resolveVietQrCustomerCode(booking?: BookingItem | null): string {
+  const rawPhone = String(booking?.customerPhone || '').trim();
+  const isPlaceholderPhone = !rawPhone || /x{3,}/i.test(rawPhone);
+  const phoneDigits = isPlaceholderPhone ? '' : rawPhone.replace(/\D/g, '');
+  if (phoneDigits.length >= 6) {
+    return phoneDigits.slice(-6);
+  }
+  return booking?.orderNumber?.replace(/\D/g, '') || String(booking?.id || '609609');
+}
+
 export function buildCheckoutVietQrInfo(params: {
   booking?: BookingItem | null;
   tipAmount: number;
   vietQrTransferAmount: number;
   tipTransferAmount?: number;
 }) {
-  const branchCode = params.booking?.branchCode || 'DT';
+  const branchCode = params.booking?.branchCode || (params.booking?.storeId === 16 ? 'EP' : 'DT');
   const orderNumericCode = params.booking?.orderNumber?.replace(/\D/g, '') || String(params.booking?.id || '609609');
+  const customerPhoneCode = resolveVietQrCustomerCode(params.booking);
   const safeTransfer = Math.max(0, Math.round(Number(params.vietQrTransferAmount || 0)));
   const rawTip = Math.max(
     0,
@@ -376,14 +387,15 @@ export function buildCheckoutVietQrInfo(params: {
   const tipCode =
     tipQrAmount > 0 ? (tipQrAmount >= 1000 ? `${Math.round(tipQrAmount / 1000)}K` : String(tipQrAmount)) : '0';
   const isTipOnlyQr = serviceQrAmount === 0 && tipQrAmount > 0;
-  const serviceQrContent = `${branchCode} ${orderNumericCode} DV`;
-  const tipQrContent = `${branchCode} ${orderNumericCode} TIP ${tipCode}`;
-  const qrTransferContent = isTipOnlyQr ? tipQrContent : `${branchCode} ${orderNumericCode} DV TIP ${tipCode}`;
+  const serviceQrContent = `${branchCode} ${customerPhoneCode} DV`;
+  const tipQrContent = `${branchCode} ${customerPhoneCode} TIP ${tipCode}`;
+  const qrTransferContent = isTipOnlyQr ? tipQrContent : `${branchCode} ${customerPhoneCode} DV TIP ${tipCode}`;
   const vietQrUrl = buildCustomVietQrUrl(safeTransfer, qrTransferContent);
   const serviceQrUrl = buildCustomVietQrUrl(serviceQrAmount, serviceQrContent);
   const tipQrUrl = buildCustomVietQrUrl(tipQrAmount, tipQrContent);
   return {
     branchCode,
+    customerPhoneCode,
     orderNumericCode,
     tipCode,
     qrTransferContent,

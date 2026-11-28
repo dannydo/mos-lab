@@ -95,8 +95,8 @@ describe('MOS-BUG-255: Separate Service/Tip VietQR, Pre-Checkout Payment & Post-
     expect(screen.getByTestId('vietqr-split-cards')).toBeInTheDocument();
     expect(screen.getByText('950.400 VNĐ')).toBeInTheDocument();
     expect(screen.getByText('100.000 VNĐ')).toBeInTheDocument();
-    expect(screen.getByText('DT 341255 DV')).toBeInTheDocument();
-    expect(screen.getByText('DT 341255 TIP 100K')).toBeInTheDocument();
+    expect(screen.getByText('DT 555666 DV')).toBeInTheDocument();
+    expect(screen.getByText('DT 555666 TIP 100K')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /✓ ĐÃ NHẬN TIỀN THÀNH CÔNG/i }));
     fireEvent.click(screen.getByRole('button', { name: /Khách không dùng Zalo \/ Bỏ qua/i }));
@@ -126,8 +126,8 @@ describe('MOS-BUG-255: Separate Service/Tip VietQR, Pre-Checkout Payment & Post-
     fireEvent.click(screen.getByTestId('precheckout-qr-separate-btn'));
 
     expect(screen.getByTestId('precheckout-split-qr-grid')).toBeInTheDocument();
-    expect(screen.getByText('DT 341255 DV')).toBeInTheDocument();
-    expect(screen.getByText('DT 341255 TIP 100K')).toBeInTheDocument();
+    expect(screen.getByText('DT 555666 DV')).toBeInTheDocument();
+    expect(screen.getByText('DT 555666 TIP 100K')).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('save-pre-checkout-payment-btn'));
     await waitFor(() => expect(onSavePreCheckout).toHaveBeenCalledTimes(1));
@@ -213,7 +213,7 @@ describe('MOS-BUG-255: Separate Service/Tip VietQR, Pre-Checkout Payment & Post-
 
     fireEvent.click(screen.getByRole('button', { name: /Mở Mã QR Thanh Toán/i }));
     expect(screen.getByText('♥ QR TIỀN TIP CHUYÊN VIÊN')).toBeInTheDocument();
-    expect(screen.getByText('DT 341255 TIP 100K')).toBeInTheDocument();
+    expect(screen.getByText('DT 555666 TIP 100K')).toBeInTheDocument();
     expect(screen.getByText('100.000 VNĐ')).toBeInTheDocument();
   });
 
@@ -256,7 +256,7 @@ describe('MOS-BUG-255: Separate Service/Tip VietQR, Pre-Checkout Payment & Post-
     fireEvent.click(qrBtn);
 
     expect(screen.getByText('♥ QR TIỀN TIP CHUYÊN VIÊN')).toBeInTheDocument();
-    expect(screen.getByText('DT 341255 TIP 300K')).toBeInTheDocument();
+    expect(screen.getByText('DT 555666 TIP 300K')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /‹ Đóng \/ Đổi hình thức thanh toán khác/i }));
     fireEvent.click(screen.getByTestId('post-checkout-submit-btn'));

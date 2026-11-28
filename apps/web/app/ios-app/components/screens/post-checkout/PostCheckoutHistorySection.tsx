@@ -4,6 +4,7 @@ import React from 'react';
 import { formatIosPaymentMethodLabel } from '@mos-lab/shared';
 import { ArrowRightLeft, CheckCircle2, Clock, History, XCircle } from 'lucide-react';
 import type { BookingItem } from '../../../state/mockData';
+import { resolveVietQrCustomerCode } from '../../../state/iosBillingMath';
 
 export interface PostCheckoutReceiptReconciliationBoxProps {
   booking: BookingItem;
@@ -262,7 +263,7 @@ export function PostCheckoutTransferProofBox({ booking, isDark, branchCode }: Po
           </span>
         </div>
         <div className={`text-[10px] ${isDark ? 'text-sky-400' : 'text-sky-800'} font-medium truncate`}>
-          Mã GD: {branchCode} {booking?.orderNumber?.replace(/\D/g, '') || booking?.id}{' '}
+          Nội dung CK: {branchCode} {resolveVietQrCustomerCode(booking)}{' '}
           {booking?.billing?.qrSplitTipSeparate ? 'DV + TIP (Tách 2 QR)' : 'DV TIP...'}
         </div>
       </div>

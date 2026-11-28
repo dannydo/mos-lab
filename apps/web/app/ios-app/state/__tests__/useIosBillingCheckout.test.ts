@@ -7,7 +7,11 @@ import {
   resolveServicePriceSplit,
   calculateActorTipBreakdown,
 } from '../useIosBillingCheckout';
-import { buildRecordedTipBillingSnapshot } from '../iosBillingMath';
+import {
+  buildCheckoutVietQrInfo,
+  buildRecordedTipBillingSnapshot,
+  resolveVietQrCustomerCode,
+} from '../iosBillingMath';
 import { mergeServerBookingsWithLocalState } from '../iosBookingMerge';
 
 describe('useIosBillingCheckout & Tier Bonus Calculations', () => {
@@ -544,5 +548,57 @@ describe('useIosBillingCheckout & Tier Bonus Calculations', () => {
       tipCheckOutShare: 10000,
       tipCcShare: 20000,
     });
+  });
+
+  it('MOS-BUG-269: buildCheckoutVietQrInfo dùng 6 số đuôi SĐT khách hàng thay vì ID giao dịch', () => {
+    const baseBooking = {
+      id: 340038,
+      orderNumber: 'BK-340038',
+      branchCode: 'DT',
+      storeId: 6,
+      customerPhone: '0978.665.606',
+    } as any;
+
+    // 1. SĐT đầy đủ (Admin/BK) -> lấy 6 số đuôi khách hàng
+    const fullPhoneQr = buildCheckoutVietQrInfo({
+      booking: baseBooking,
+      tipAmount: 0,
+      vietQrTransferAmount: 1252800,
+    });
+    expect(fullPhoneQr.customerPhoneCode).toBe('665606');
+    expect(fullPhoneQr.qrTransferContent).toBe('DT 665606 DV TIP 0');
+    expect(fullPhoneQr.serviceQrContent).toBe('DT 665606 DV');
+    expect(fullPhoneQr.tipQrContent).toBe('DT 665606 TIP 0');
+    expect(decodeURIComponent(fullPhoneQr.vietQrUrl)).toContain('addInfo=DT 665606 DV TIP 0');
+
+    // 2. SĐT đã mask cho CVL ('**** 665606' hoặc '665606') + chi nhánh EP
+    const maskedPhoneQr = buildCheckoutVietQrInfo({
+      booking: { ...baseBooking, branchCode: undefined, storeId: 16, customerPhone: '**** 665606' },
+      tipAmount: 100000,
+      vietQrTransferAmount: 950400,
+      tipTransferAmount: 100000,
+    });
+    expect(maskedPhoneQr.branchCode).toBe('EP');
+    expect(maskedPhoneQr.qrTransferContent).toBe('EP 665606 DV TIP 100K');
+    expect(maskedPhoneQr.serviceQrContent).toBe('EP 665606 DV');
+    expect(maskedPhoneQr.tipQrContent).toBe('EP 665606 TIP 100K');
+
+    const strippedMaskedQr = buildCheckoutVietQrInfo({
+      booking: { ...baseBooking, customerPhone: '665606' },
+      tipAmount: 50000,
+      vietQrTransferAmount: 50000,
+      tipTransferAmount: 50000,
+    });
+    expect(strippedMaskedQr.isTipOnlyQr).toBe(true);
+    expect(strippedMaskedQr.qrTransferContent).toBe('DT 665606 TIP 50K');
+
+    // 3. Fallback an toàn về mã giao dịch khi thiếu SĐT hoặc gặp placeholder '0901.xxx.xxx' / '**** ******'
+    expect(resolveVietQrCustomerCode({ id: 340038, orderNumber: 'BK-340038', customerPhone: '' } as any)).toBe('340038');
+    expect(resolveVietQrCustomerCode({ id: 340038, orderNumber: 'BK-340038', customerPhone: '**** ******' } as any)).toBe(
+      '340038'
+    );
+    expect(
+      resolveVietQrCustomerCode({ id: 340038, orderNumber: 'BK-340038', customerPhone: '0901.xxx.xxx' } as any)
+    ).toBe('340038');
   });
 });
