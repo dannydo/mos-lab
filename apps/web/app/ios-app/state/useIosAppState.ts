@@ -15,44 +15,29 @@ import { IOS_AVAILABLE_BRANCHES, EMPTY_LIVE_BOOKING_PLACEHOLDER, resolveActorPro
 import type {
   IosUserRole,
   BookingScopeMode,
-  IosBranchConfig,
   SegmentCounts,
   StaffMonthlyStats,
   ActiveActorProfile,
 } from './iosActorProfile';
+export type { IosBranchConfig } from './iosActorProfile';
 import { useIosBookingsSync } from './useIosBookingsSync';
 import { useIosConsultationAndCheckIn } from './useIosConsultationAndCheckIn';
 import { useIosServicingProgress } from './useIosServicingProgress';
-import {
-  useIosBillingCheckout,
+import { useIosBillingCheckout } from './useIosBillingCheckout';
+export {
   calculateCvComboTierBonus,
   calculateCvSerumTierBonus,
   resolveEffectiveServiceTotal,
   calculateActorTipBreakdown,
 } from './useIosBillingCheckout';
-import type { ActorTipBreakdown } from './useIosBillingCheckout';
+export type { ActorTipBreakdown } from './useIosBillingCheckout';
 import type { PendingReferral } from '../components/screens/checkin/NewCustomerReferralModal';
 import { useIosSimulationMode, IOS_SIM_MODE_SESSION_KEY } from './useIosSimulationMode';
 import { useIosAddUnderMink } from './useIosAddUnderMink';
 
-export {
-  IOS_AVAILABLE_BRANCHES,
-  resolveActorProfile,
-  calculateCvComboTierBonus,
-  calculateCvSerumTierBonus,
-  resolveEffectiveServiceTotal,
-  calculateActorTipBreakdown,
-};
+export { IOS_AVAILABLE_BRANCHES, resolveActorProfile };
 
-export type {
-  IosUserRole,
-  BookingScopeMode,
-  IosBranchConfig,
-  SegmentCounts,
-  StaffMonthlyStats,
-  ActiveActorProfile,
-  ActorTipBreakdown,
-};
+export type { IosUserRole, BookingScopeMode, SegmentCounts, StaffMonthlyStats, ActiveActorProfile };
 
 export function useIosAppState(
   initialStep: number = 1,
