@@ -331,6 +331,15 @@ export async function triageBugReport(
         afterJson: serialize(stateSnapshot(row)),
       },
     });
+    if (['CLOSED', 'REJECTED', 'DUPLICATE', 'CANCELLED'].includes(status)) {
+      const notifDelegate = (tx as { crmBugReportNotification?: { updateMany?: unknown } }).crmBugReportNotification;
+      if (typeof notifDelegate?.updateMany === 'function') {
+        await tx.crmBugReportNotification.updateMany({
+          where: { reportId: id, readAt: null },
+          data: { readAt: now },
+        });
+      }
+    }
     return row;
   });
   fastify.cache?.invalidatePattern('^bug-reports:(mine|badge):');

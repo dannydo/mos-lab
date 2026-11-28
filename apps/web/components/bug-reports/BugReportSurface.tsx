@@ -148,12 +148,15 @@ export function BugReportSurface() {
           if (!item.readAt) notificationApi.destroy(`bug-report-${item.id}`);
         }
       }
-      void myBugs.refresh({ force: true });
-      if (notificationId !== undefined) {
-        void myBugs.markNotificationsRead([notificationId]).catch(() => {});
-      } else if (myBugs.unreadCount) {
-        void myBugs.markNotificationsRead().catch(() => {});
-      }
+      const markReadPromise =
+        notificationId !== undefined
+          ? myBugs.markNotificationsRead([notificationId]).catch(() => {})
+          : myBugs.unreadCount > 0
+            ? myBugs.markNotificationsRead().catch(() => {})
+            : Promise.resolve();
+      void markReadPromise.finally(() => {
+        void myBugs.refresh({ force: true });
+      });
     },
     [
       myBugs.data,

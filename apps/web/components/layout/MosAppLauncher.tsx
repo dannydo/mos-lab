@@ -123,9 +123,13 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
     getBugReportBadgeServerSnapshot
   );
   const isCv = isCvRole(effectiveRole);
-  const bugAttentionCount = !isCv ? bugBadge.actionRequiredCount || bugBadge.unreadCount : 0;
-  const effectiveMissionBadge = missionBadgeCount ?? bugAttentionCount;
-  const relevantChatCount = currentApp !== 'chat' ? unreadChatCount : 0;
+  const actionRequiredCount = Math.max(0, Number(bugBadge.actionRequiredCount) || 0);
+  const unreadBugCount = Math.max(0, Number(bugBadge.unreadCount) || 0);
+  const bugAttentionCount = !isCv ? (actionRequiredCount > 0 ? actionRequiredCount : unreadBugCount) : 0;
+  // Deduplicate with footer feedback action: when missionBadgeCount is omitted, mOS Mission carries the single badge.
+  const effectiveMissionBadge =
+    missionBadgeCount !== undefined ? Math.max(0, Number(missionBadgeCount) || 0) : bugAttentionCount;
+  const relevantChatCount = currentApp !== 'chat' ? Math.max(0, Number(unreadChatCount) || 0) : 0;
   const totalOutsideBadgeCount = relevantChatCount + bugAttentionCount;
 
   useEffect(() => {
@@ -435,9 +439,9 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                         }}
                         className="relative flex flex-col items-center justify-center gap-1.5 px-2 py-2.5 rounded-2xl border transition-all active:scale-95 cursor-pointer text-center hover:border-amber-400/60"
                       >
-                        {app.badgeCount && app.badgeCount > 0 ? (
+                        {(app.badgeCount ?? 0) > 0 ? (
                           <span className="absolute top-1.5 right-1.5 min-w-[17px] h-[17px] px-1 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold leading-none flex items-center justify-center tabular-nums">
-                            {app.badgeCount > 99 ? '99+' : app.badgeCount}
+                            {(app.badgeCount ?? 0) > 99 ? '99+' : app.badgeCount}
                           </span>
                         ) : null}
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${toneClass(app.tone)}`}>
@@ -577,9 +581,9 @@ export const MosAppLauncher: React.FC<MosAppLauncherProps> = ({
                               {item.subtitle}
                             </span>
                           </div>
-                          {item.badgeCount && item.badgeCount > 0 ? (
+                          {(item.badgeCount ?? 0) > 0 ? (
                             <span className="min-w-[17px] h-[17px] px-1.5 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold leading-none inline-flex items-center justify-center tabular-nums shrink-0">
-                              {item.badgeCount > 99 ? '99+' : item.badgeCount}
+                              {(item.badgeCount ?? 0) > 99 ? '99+' : item.badgeCount}
                             </span>
                           ) : null}
                           <ChevronRight className="w-3.5 h-3.5 opacity-45 shrink-0" />

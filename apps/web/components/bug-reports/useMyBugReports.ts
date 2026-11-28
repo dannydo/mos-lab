@@ -38,10 +38,10 @@ export function useMyBugReports(enabled: boolean, isSurfaceOpen = true) {
       const badge = await apiClient.bugReports.badgeSummary({ isPolling: true });
       setNotifications((current) => {
         if (badge.unreadNotifications.length > 0) return badge.unreadNotifications;
-        return current.filter((item) => !item.readAt);
+        return current.filter((item) => Boolean(item.readAt));
       });
-      setUnreadCount(badge.unreadCount ?? 0);
-      setActionRequiredCount(badge.actionRequiredCount ?? 0);
+      setUnreadCount(Math.max(0, Number(badge.unreadCount) || 0));
+      setActionRequiredCount(Math.max(0, Number(badge.actionRequiredCount) || 0));
     } catch {
       // Keep existing badge state on transient background poll error
     }

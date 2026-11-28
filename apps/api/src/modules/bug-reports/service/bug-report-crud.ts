@@ -297,7 +297,22 @@ export async function listMyBugReports(
   fastify: FastifyInstance,
   reporterStaffId: number
 ): Promise<MyBugReportsResponse> {
-  const [rows, notifications, unreadCount, actionRequiredCount] = await Promise.all([
+  const actionRequiredWhere: Prisma.CrmBugReportWhereInput = {
+    reporterStaffId,
+    ...bugReportNextActorWhere('REPORTER'),
+  };
+  const unreadWhere: Prisma.CrmBugReportNotificationWhereInput = {
+    recipientStaffId: reporterStaffId,
+    readAt: null,
+    report: bugReportNextActorWhere('REPORTER'),
+  };
+
+  const [actionRequiredRows, recentRows, notifications, rawUnreadCount, rawActionRequiredCount] = await Promise.all([
+    fastify.prisma.crm.crmBugReport.findMany({
+      where: actionRequiredWhere,
+      include: mineReportInclude,
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+    }),
     fastify.prisma.crm.crmBugReport.findMany({
       where: { reporterStaffId },
       include: mineReportInclude,
@@ -310,20 +325,25 @@ export async function listMyBugReports(
       take: 40,
     }),
     fastify.prisma.crm.crmBugReportNotification.count({
-      where: { recipientStaffId: reporterStaffId, readAt: null },
+      where: unreadWhere,
     }),
     fastify.prisma.crm.crmBugReport.count({
-      where: {
-        reporterStaffId,
-        OR: [{ clarificationStatus: 'WAITING_REPORTER' }, { status: 'FIXED' }],
-      },
+      where: actionRequiredWhere,
     }),
   ]);
+
+  const seenIds = new Set<number>();
+  const rows = [...actionRequiredRows, ...recentRows].filter((row) => {
+    if (seenIds.has(row.id)) return false;
+    seenIds.add(row.id);
+    return true;
+  });
+
   return {
     data: rows.map(myReportDto),
     notifications: notifications.map(notificationDto),
-    unreadCount,
-    actionRequiredCount,
+    unreadCount: Math.max(0, Number(rawUnreadCount) || 0),
+    actionRequiredCount: Math.max(0, Number(rawActionRequiredCount) || 0),
   };
 }
 
@@ -332,20 +352,27 @@ export async function getBugReportBadgeSummary(
   reporterStaffId: number,
   includeInboxSummary: boolean
 ): Promise<BugReportBadgeSummaryResponse> {
-  const [unreadRows, unreadCount, actionRequiredCount, readyForDannyCount] = await Promise.all([
+  const actionRequiredWhere: Prisma.CrmBugReportWhereInput = {
+    reporterStaffId,
+    ...bugReportNextActorWhere('REPORTER'),
+  };
+  const unreadWhere: Prisma.CrmBugReportNotificationWhereInput = {
+    recipientStaffId: reporterStaffId,
+    readAt: null,
+    report: bugReportNextActorWhere('REPORTER'),
+  };
+
+  const [unreadRows, rawUnreadCount, rawActionRequiredCount, rawReadyForDannyCount] = await Promise.all([
     fastify.prisma.crm.crmBugReportNotification.findMany({
-      where: { recipientStaffId: reporterStaffId, readAt: null },
+      where: unreadWhere,
       orderBy: { createdAt: 'desc' },
       take: 20,
     }),
     fastify.prisma.crm.crmBugReportNotification.count({
-      where: { recipientStaffId: reporterStaffId, readAt: null },
+      where: unreadWhere,
     }),
     fastify.prisma.crm.crmBugReport.count({
-      where: {
-        reporterStaffId,
-        OR: [{ clarificationStatus: 'WAITING_REPORTER' }, { status: 'FIXED' }],
-      },
+      where: actionRequiredWhere,
     }),
     includeInboxSummary
       ? fastify.prisma.crm.crmBugReport.count({
@@ -355,9 +382,9 @@ export async function getBugReportBadgeSummary(
   ]);
 
   return {
-    unreadCount,
-    actionRequiredCount,
-    readyForDannyCount,
+    unreadCount: Math.max(0, Number(rawUnreadCount) || 0),
+    actionRequiredCount: Math.max(0, Number(rawActionRequiredCount) || 0),
+    readyForDannyCount: Math.max(0, Number(rawReadyForDannyCount) || 0),
     unreadNotifications: unreadRows.map(notificationDto),
   };
 }
@@ -430,6 +457,12 @@ export async function addBugReportComment(
         afterJson: serialize(stateSnapshot(updated)),
       },
     });
+    if (shouldReturnToAgent) {
+      await tx.crmBugReportNotification.updateMany({
+        where: { reportId: id, recipientStaffId: existing.reporterStaffId, readAt: null },
+        data: { readAt: now },
+      });
+    }
     return created;
   });
 
