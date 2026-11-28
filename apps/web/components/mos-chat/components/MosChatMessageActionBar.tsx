@@ -68,6 +68,7 @@ export interface MosChatMessageActionBarProps {
   threadOpen: boolean;
   activeThreadMessage: MosChatMessage | null;
   handleMoveThreadItem: (args: SafeAny) => Promise<void> | void;
+  quickReactionEmojis?: readonly string[];
 }
 
 export const MosChatMessageActionBar: React.FC<MosChatMessageActionBarProps> = ({
@@ -113,6 +114,7 @@ export const MosChatMessageActionBar: React.FC<MosChatMessageActionBarProps> = (
   threadOpen,
   activeThreadMessage,
   handleMoveThreadItem,
+  quickReactionEmojis,
 }) => {
   const [moreMenuView, setMoreMenuView] = useState<'menu' | 'move' | 'confirm-buzz' | 'confirm-delete'>('menu');
   const [moveThreadSearchQuery, setMoveThreadSearchQuery] = useState<string>('');
@@ -436,25 +438,27 @@ export const MosChatMessageActionBar: React.FC<MosChatMessageActionBarProps> = (
         border: `1px solid ${isHighlightedBar ? 'rgba(212, 168, 75, 0.6)' : borderStrong}`,
       }}
     >
-      {GOOGLE_CHAT_QUICK_EMOJIS.slice(0, 3).map((emoji) => {
-        const reactedByMe = hasUserReacted(m, emoji);
-        return (
-          <Tooltip key={emoji} title={reactedByMe ? `Đã thả ${emoji} · Nhấn để gỡ (Undo)` : `Thả nhanh ${emoji}`}>
-            <button
-              type="button"
-              aria-label={reactedByMe ? `Gỡ cảm xúc ${emoji}` : `Thả nhanh ${emoji}`}
-              onClick={() => handleToggleReaction(m.id, emoji)}
-              className="w-6 h-6 rounded-full inline-flex items-center justify-center text-[13px] hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-transform hover:scale-110"
-              style={{
-                background: reactedByMe ? 'rgba(212, 168, 75, 0.22)' : 'transparent',
-                boxShadow: reactedByMe ? 'inset 0 0 0 1px rgba(212, 168, 75, 0.55)' : 'none',
-              }}
-            >
-              {emoji}
-            </button>
-          </Tooltip>
-        );
-      })}
+      {(quickReactionEmojis && quickReactionEmojis.length > 0 ? quickReactionEmojis : GOOGLE_CHAT_QUICK_EMOJIS)
+        .slice(0, 3)
+        .map((emoji) => {
+          const reactedByMe = hasUserReacted(m, emoji);
+          return (
+            <Tooltip key={emoji} title={reactedByMe ? `Đã thả ${emoji} · Nhấn để gỡ (Undo)` : `Thả nhanh ${emoji}`}>
+              <button
+                type="button"
+                aria-label={reactedByMe ? `Gỡ cảm xúc ${emoji}` : `Thả nhanh ${emoji}`}
+                onClick={() => handleToggleReaction(m.id, emoji)}
+                className="w-6 h-6 rounded-full inline-flex items-center justify-center text-[13px] hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-transform hover:scale-110"
+                style={{
+                  background: reactedByMe ? 'rgba(212, 168, 75, 0.22)' : 'transparent',
+                  boxShadow: reactedByMe ? 'inset 0 0 0 1px rgba(212, 168, 75, 0.55)' : 'none',
+                }}
+              >
+                {emoji}
+              </button>
+            </Tooltip>
+          );
+        })}
 
       <Tooltip
         title={

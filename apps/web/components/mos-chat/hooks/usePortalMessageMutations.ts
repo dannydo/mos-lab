@@ -2,13 +2,14 @@
 
 import React, { useCallback, useRef, useState } from 'react';
 import type { MessageInstance } from 'antd/es/message/interface';
-import type {
-  MosChatConversation,
-  MosChatMessage,
-  MosChatTaskItem,
-  MosChatThreadMoveMode,
-  MosChatThreadReply,
-  SafeAny,
+import {
+  isTrackableChatEmoji,
+  type MosChatConversation,
+  type MosChatMessage,
+  type MosChatTaskItem,
+  type MosChatThreadMoveMode,
+  type MosChatThreadReply,
+  type SafeAny,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
@@ -51,6 +52,7 @@ export interface UsePortalMessageMutationsParams {
     isSystemReminder?: boolean;
   }) => boolean;
   handleOpenThread: (msgId: string, convIdOverride?: string, options?: { autoFocus?: boolean }) => void;
+  onRecordEmojiUsed?: (emoji: string) => void;
   notifyLivePeers: () => void;
   antdMessage: MessageInstance;
 }
@@ -74,6 +76,7 @@ export function usePortalMessageMutations({
   setThreadOpen,
   isMessageFromCurrentUser,
   handleOpenThread,
+  onRecordEmojiUsed,
   notifyLivePeers,
   antdMessage,
 }: UsePortalMessageMutationsParams) {
@@ -138,6 +141,15 @@ export function usePortalMessageMutations({
 
   const handleToggleReaction = async (msgId: string, emoji: string, replyId?: string) => {
     if (!activeConversation) return;
+    if (onRecordEmojiUsed && isTrackableChatEmoji(emoji)) {
+      const rootTarget = activeConversation.messages?.find((m) => m.id === msgId);
+      const targetItem = replyId ? rootTarget?.thread?.find((r) => r.id === replyId) : rootTarget;
+      const alreadyReacted = hasUserReacted(targetItem, emoji);
+      const legacyClear = !targetItem?.reactionUsers?.[emoji] && (targetItem?.reactions?.[emoji] || 0) > 0;
+      if (!alreadyReacted && !legacyClear) {
+        onRecordEmojiUsed(emoji);
+      }
+    }
     if (activeConversation.id === AI_COPILOT_CONV_ID) {
       setAiMessages((prev) =>
         prev.map((m) => (m.id === msgId ? applyReactionToggleToMessage(m, emoji, currentUserReactionKey) : m))

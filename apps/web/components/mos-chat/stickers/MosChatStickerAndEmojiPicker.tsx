@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Sparkles } from 'lucide-react';
-import { removeVietnameseTones } from '@mos-lab/shared';
+import { RotateCcw, Search, Sparkles } from 'lucide-react';
+import { MOS_CHAT_MAX_FREQUENT_EMOJIS, removeVietnameseTones } from '@mos-lab/shared';
 import { EMOJI_SEARCH_KEYWORD_MAP, MOS_CHAT_EXPANDED_EMOJI_GROUPS } from './emoji-catalog-and-keywords';
 import { MOS_CHAT_STICKER_PACK_TABS, type MosChatStickerItem, type MosChatStickerPackId } from './sticker-packs-core';
 import { MOS_CHAT_STICKERS, formatStickerToken } from './sticker-registry';
@@ -14,6 +14,8 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
   surfaceRaised: string;
   wingsSignatureEmojis: readonly string[];
   popularEmojis: readonly string[];
+  frequentEmojis?: readonly string[];
+  onResetFrequentEmojis?: () => void;
   onSelectEmoji: (emoji: string) => void;
   onSelectSticker: (sticker: MosChatStickerItem) => void;
   mode?: 'composer' | 'reaction';
@@ -24,6 +26,8 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
   isDark,
   borderColor,
   surfaceRaised,
+  frequentEmojis,
+  onResetFrequentEmojis,
   onSelectEmoji,
   onSelectSticker,
   mode = 'composer',
@@ -33,7 +37,16 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
 }) => {
   const [activePack, setActivePack] = useState<MosChatStickerPackId>(defaultPack);
   const [searchQuery, setSearchQuery] = useState('');
+  // Freeze frequent emoji order while popup stays mounted so consecutive clicks never shift items under cursor
+  const [frozenFrequentEmojis, setFrozenFrequentEmojis] = useState<string[]>(() =>
+    frequentEmojis ? [...frequentEmojis].slice(0, MOS_CHAT_MAX_FREQUENT_EMOJIS) : []
+  );
   const gridScrollRef = useRef<HTMLDivElement | null>(null);
+
+  const handleResetFrequent = () => {
+    setFrozenFrequentEmojis([]);
+    onResetFrequentEmojis?.();
+  };
 
   useEffect(() => {
     if (defaultPack) {
@@ -210,6 +223,20 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
           <div className="space-y-2.5 max-h-[270px] overflow-y-auto pr-0.5">
             {/* Quick Category Jump Bar */}
             <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar">
+              {frozenFrequentEmojis.length > 0 && (
+                <button
+                  key="frequent"
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('emoji-group-frequent');
+                    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                  }}
+                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 cursor-pointer transition-colors hover:bg-amber-500/15 text-slate-400 hover:text-amber-400 border border-slate-700/50"
+                >
+                  <span className="mr-1">🕒</span>
+                  <span>Hay dùng</span>
+                </button>
+              )}
               {MOS_CHAT_EXPANDED_EMOJI_GROUPS.map((grp) => (
                 <button
                   key={grp.id}
@@ -225,6 +252,54 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
                 </button>
               ))}
             </div>
+
+            {/* Frequently Used Emojis Group (Top 18 in 1-2 rows) */}
+            {frozenFrequentEmojis.length > 0 && (
+              <div id="emoji-group-frequent" className="space-y-1">
+                <div className="px-1 flex items-center justify-between gap-2">
+                  <div
+                    className="text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1"
+                    style={{ color: 'var(--mos-accent, #f59e0b)' }}
+                  >
+                    <span>🕒</span>
+                    <span>Hay dùng</span>
+                  </div>
+                  {onResetFrequentEmojis && (
+                    <button
+                      type="button"
+                      onClick={handleResetFrequent}
+                      aria-label="Làm mới emoji hay dùng"
+                      title="Xoá lịch sử emoji hay dùng"
+                      className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400 hover:text-amber-400 cursor-pointer transition-colors"
+                    >
+                      <RotateCcw size={10} />
+                      <span>Làm mới</span>
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-9 gap-1">
+                  {frozenFrequentEmojis.map((emoji) => {
+                    const reacted = hasUserReacted?.(emoji);
+                    return (
+                      <button
+                        key={`frequent-${emoji}`}
+                        type="button"
+                        data-emoji={emoji}
+                        data-testid="frequent-emoji-item"
+                        onClick={() => onSelectEmoji(emoji)}
+                        className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
+                        style={{
+                          background: reacted ? 'var(--mos-focus-ring, rgba(212, 168, 75, 0.22))' : 'transparent',
+                          boxShadow: reacted ? 'inset 0 0 0 1px var(--mos-accent, #d4a84b)' : 'none',
+                        }}
+                      >
+                        {emoji}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Categorized Emoji Groups */}
             {MOS_CHAT_EXPANDED_EMOJI_GROUPS.map((grp) => (

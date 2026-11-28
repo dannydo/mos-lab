@@ -37,6 +37,7 @@ export interface UseMosChatMessageSendAndMediaParams {
   setActiveThreadMsg: React.Dispatch<React.SetStateAction<MosChatMessage | null>>;
   setReplyingToMessage: React.Dispatch<React.SetStateAction<MosChatMessage | null>>;
   fetchBootstrap: () => Promise<void>;
+  onRecordEmojisFromText?: (text?: string | null) => void;
 }
 
 /**
@@ -59,6 +60,7 @@ export function useMosChatMessageSendAndMedia({
   setActiveThreadMsg,
   setReplyingToMessage,
   fetchBootstrap,
+  onRecordEmojisFromText,
 }: UseMosChatMessageSendAndMediaParams) {
   const sendMessage = useCallback(
     async (
@@ -75,6 +77,7 @@ export function useMosChatMessageSendAndMedia({
       const trimmed = text.trim();
       if (!trimmed && (!options?.attachments || options.attachments.length === 0) && !options?.customerCard)
         return false;
+      onRecordEmojisFromText?.(trimmed);
 
       if (targetId === AI_COPILOT_CONV_ID) {
         const userMsg: MosChatMessage = {
@@ -249,6 +252,7 @@ export function useMosChatMessageSendAndMedia({
       currentUser,
       effectiveUser,
       fetchBootstrap,
+      onRecordEmojisFromText,
       setAiMessages,
       setAiSessionId,
       setAllMessagesByConv,
@@ -267,6 +271,7 @@ export function useMosChatMessageSendAndMedia({
       const customerCard = options?.customerCard || undefined;
       const sendText = trimmed || (customerCard?.name ? `Đính kèm thẻ khách hàng ${customerCard.name}` : '');
       if (!sendText && (!options?.attachments || options.attachments.length === 0) && !customerCard) return false;
+      onRecordEmojisFromText?.(trimmed);
 
       const currentThreadMsg = activeThreadMsg;
       const targetConv = activeConversation;
@@ -363,6 +368,7 @@ export function useMosChatMessageSendAndMedia({
       activeThreadMsg,
       currentUser,
       fetchBootstrap,
+      onRecordEmojisFromText,
       setActiveThreadMsg,
       setIsAiThinking,
     ]

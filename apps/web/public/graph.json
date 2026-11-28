@@ -6572,7 +6572,7 @@
         "path": "/api/bug-reports/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 306
+        "line": 311
       }
     },
     {
@@ -8252,7 +8252,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 81
+        "line": 83
       }
     },
     {
@@ -8266,7 +8266,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 210
+        "line": 224
       }
     },
     {
@@ -8280,7 +8280,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 297
+        "line": 311
       }
     },
     {
@@ -8294,7 +8294,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 380
+        "line": 407
       }
     },
     {
@@ -8308,7 +8308,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 406
+        "line": 433
       }
     },
     {
@@ -29996,6 +29996,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:MosChatEmojiUsageEntry",
+      "type": "SharedType",
+      "label": "MosChatEmojiUsageEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatEmojiUsageEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:MosChatUserSidebarPrefs",
       "type": "SharedType",
       "label": "MosChatUserSidebarPrefs",
@@ -38864,6 +38876,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatSmartEmojiPicker.test",
+      "type": "UIComponent",
+      "label": "<MosChatSmartEmojiPicker.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatSmartEmojiPicker.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatSmartEmojiPicker.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatSpaceConfig.test",
       "type": "UIComponent",
       "label": "<MosChatSpaceConfig.test />",
@@ -41944,6 +41968,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "useChatAiCopilotState",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useChatEmojiUsage",
+      "type": "UIComponent",
+      "label": "<useChatEmojiUsage />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/shared/hooks/useChatEmojiUsage.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useChatEmojiUsage",
         "isPrimitive": false
       }
     },
@@ -45882,8 +45918,8 @@
       "filePath": "apps/api/src/modules/ai/ag-models-registry.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5664,
-        "lineCount": 195,
+        "sizeBytes": 5662,
+        "lineCount": 196,
         "ext": ".ts"
       }
     },
@@ -45895,8 +45931,8 @@
       "filePath": "apps/api/src/modules/ai/ai-service/ai-chat-context.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7578,
-        "lineCount": 230,
+        "sizeBytes": 7570,
+        "lineCount": 228,
         "ext": ".ts"
       }
     },
@@ -45908,8 +45944,8 @@
       "filePath": "apps/api/src/modules/ai/ai-service/ai-chat-delivery.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6255,
-        "lineCount": 191,
+        "sizeBytes": 6259,
+        "lineCount": 192,
         "ext": ".ts"
       }
     },
@@ -45921,8 +45957,8 @@
       "filePath": "apps/api/src/modules/ai/ai-service/ai-chat-orchestrator.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5461,
-        "lineCount": 160,
+        "sizeBytes": 5465,
+        "lineCount": 161,
         "ext": ".ts"
       }
     },
@@ -45934,8 +45970,8 @@
       "filePath": "apps/api/src/modules/ai/ai-service/ai-debug-mode.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9844,
-        "lineCount": 257,
+        "sizeBytes": 9813,
+        "lineCount": 251,
         "ext": ".ts"
       }
     },
@@ -46441,8 +46477,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 35341,
-        "lineCount": 1114,
+        "sizeBytes": 38935,
+        "lineCount": 1229,
         "ext": ".ts"
       }
     },
@@ -46831,8 +46867,8 @@
       "filePath": "apps/api/src/modules/bug-reports/routes/bug-report-reporter.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13394,
-        "lineCount": 324,
+        "sizeBytes": 13663,
+        "lineCount": 329,
         "ext": ".ts"
       }
     },
@@ -46922,8 +46958,8 @@
       "filePath": "apps/api/src/modules/bug-reports/service/bug-report-crud.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21108,
-        "lineCount": 518,
+        "sizeBytes": 22306,
+        "lineCount": 551,
         "ext": ".ts"
       }
     },
@@ -46961,8 +46997,8 @@
       "filePath": "apps/api/src/modules/bug-reports/service/bug-report-lifecycle.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16152,
-        "lineCount": 390,
+        "sizeBytes": 16571,
+        "lineCount": 399,
         "ext": ".ts"
       }
     },
@@ -47968,6 +48004,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/chat/chat-emoji-usage.test.ts",
+      "type": "File",
+      "label": "chat-emoji-usage.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-emoji-usage.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6740,
+        "lineCount": 172,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-emoji-usage.ts",
+      "type": "File",
+      "label": "chat-emoji-usage.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-emoji-usage.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3392,
+        "lineCount": 103,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/chat/chat-enterprise-sync.test.ts",
       "type": "File",
       "label": "chat-enterprise-sync.test.ts",
@@ -48261,8 +48323,8 @@
       "filePath": "apps/api/src/modules/chat/chat-state-defaults.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12503,
-        "lineCount": 338,
+        "sizeBytes": 13154,
+        "lineCount": 348,
         "ext": ".ts"
       }
     },
@@ -48677,8 +48739,8 @@
       "filePath": "apps/api/src/modules/chat/routes/bootstrap.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17562,
-        "lineCount": 454,
+        "sizeBytes": 18971,
+        "lineCount": 481,
         "ext": ".ts"
       }
     },
@@ -77407,8 +77469,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3942,
-        "lineCount": 107,
+        "sizeBytes": 3990,
+        "lineCount": 108,
         "ext": ".ts"
       }
     },
@@ -78538,8 +78600,8 @@
       "filePath": "packages/shared/src/types/mos-chat/core-entities.types.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12761,
-        "lineCount": 447,
+        "sizeBytes": 13219,
+        "lineCount": 460,
         "ext": ".ts"
       }
     },
@@ -79034,6 +79096,19 @@
       "metadata": {
         "sizeBytes": 425,
         "lineCount": 14,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/utils/chat-emoji-frecency.ts",
+      "type": "File",
+      "label": "chat-emoji-frecency.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/utils/chat-emoji-frecency.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 8772,
+        "lineCount": 262,
         "ext": ".ts"
       }
     },
@@ -95099,6 +95174,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:MosChatEmojiUsageEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatEmojiUsageEntry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:MosChatUserSidebarPrefs:ws:packages/shared",
       "source": "type:@mos-lab/shared:MosChatUserSidebarPrefs",
       "target": "ws:packages/shared",
@@ -102666,6 +102748,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatSmartEmojiPicker.test:ws:apps/web",
+      "source": "uicomp:MosChatSmartEmojiPicker.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatSmartEmojiPicker.test:token:color:primary",
+      "source": "uicomp:MosChatSmartEmojiPicker.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatSpaceConfig.test:ws:apps/web",
       "source": "uicomp:MosChatSpaceConfig.test",
       "target": "ws:apps/web",
@@ -106259,6 +106355,20 @@
     {
       "id": "edge:uicomp:useChatAiCopilotState:token:color:primary",
       "source": "uicomp:useChatAiCopilotState",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useChatEmojiUsage:ws:apps/web",
+      "source": "uicomp:useChatEmojiUsage",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useChatEmojiUsage:token:color:primary",
+      "source": "uicomp:useChatEmojiUsage",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -110746,6 +110856,20 @@
     {
       "id": "edge:file:apps/api/src/modules/chat/chat-delete-restore.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-delete-restore.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-emoji-usage.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-emoji-usage.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-emoji-usage.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-emoji-usage.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -121639,6 +121763,13 @@
       "id": "edge:file:apps/api/src/modules/bug-reports/routes/bug-report-ide-bridge.routes.ts:prisma:crm:CrmInboxImplementationJob",
       "source": "file:apps/api/src/modules/bug-reports/routes/bug-report-ide-bridge.routes.ts",
       "target": "prisma:crm:CrmInboxImplementationJob",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/bug-reports/routes/bug-report-reporter.routes.ts:prisma:crm:CrmBugReportNotification",
+      "source": "file:apps/api/src/modules/bug-reports/routes/bug-report-reporter.routes.ts",
+      "target": "prisma:crm:CrmBugReportNotification",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -134314,31 +134445,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 6154,
-    "totalEdges": 7872,
+    "totalNodes": 6160,
+    "totalEdges": 7880,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 183,
       "FastifyRoute": 793,
       "Component": 70,
-      "SharedType": 1611,
+      "SharedType": 1612,
       "DesignToken": 12,
-      "UIComponent": 831,
-      "File": 2651
+      "UIComponent": 833,
+      "File": 2654
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1806,
+      "EXPORTS": 1807,
       "HANDLES_ROUTE": 793,
-      "RENDERS": 901,
-      "USES_TOKEN": 833,
-      "IMPORTS": 1614,
-      "QUERIES_MODEL": 614,
+      "RENDERS": 903,
+      "USES_TOKEN": 835,
+      "IMPORTS": 1616,
+      "QUERIES_MODEL": 615,
       "API_CALL": 1311
     },
     "fastifyRouteCount": 793,
     "prismaModelCount": 183,
     "nextPageCount": 70,
-    "sharedTypeCount": 1611
+    "sharedTypeCount": 1612
   },
   "routes": [
     {

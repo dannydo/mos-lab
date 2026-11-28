@@ -1,14 +1,16 @@
 import type { FastifyInstance } from 'fastify';
-import type {
-  MosChatAccessConfig,
-  MosChatBootstrapResponse,
-  MosChatUnreadSummaryResponse,
-  MosChatUserSidebarPrefs,
-  MosChatWorkflowInstance,
-  SafeAny,
-  UpdateMosChatAccessConfigRequest,
+import {
+  normalizeEmojiUsageMap,
+  type MosChatAccessConfig,
+  type MosChatBootstrapResponse,
+  type MosChatUnreadSummaryResponse,
+  type MosChatUserSidebarPrefs,
+  type MosChatWorkflowInstance,
+  type SafeAny,
+  type UpdateMosChatAccessConfigRequest,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../../middlewares/auth.js';
+import { bootstrapEmojiUsageFromConversations } from '../chat-emoji-usage.js';
 import { ChatMissionBridgeService } from '../chat-mission-bridge.service.js';
 import { loadWorkflowState } from '../chat-workflow.service.js';
 import {
@@ -114,7 +116,19 @@ export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
 
         const canAccessChat = evaluateCanUserAccessMosChat(user, staffDirectory, accessConfig);
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
-        const userPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+        let userPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+
+        // One-time historical emoji frecency bootstrap for users who haven't been seeded yet
+        if (user && userPrefKey && !userPrefs.emojiUsageBootstrappedAt) {
+          const seededUsage = bootstrapEmojiUsageFromConversations(conversations, user, staffDirectory);
+          const nowIso = new Date().toISOString();
+          userPrefs = await saveUserSidebarPrefs(fastify, userPrefKey, {
+            ...userPrefs,
+            emojiUsage: seededUsage,
+            emojiUsageBootstrappedAt: nowIso,
+            updatedAt: nowIso,
+          });
+        }
 
         // Pinned Trumps Hidden Invariant (MOS-BUG-216): Cuộc hội thoại đã ghim thì tuyệt đối không bị ẩn
         if (userPrefs && Array.isArray(userPrefs.pinnedIds) && userPrefs.pinnedIds.length > 0) {
@@ -338,11 +352,24 @@ export async function registerChatBootstrapRoutes(fastify: FastifyInstance) {
         const rawHidden = Array.isArray(body.hiddenIds) ? body.hiddenIds : current.hiddenIds || [];
         const nextHidden = rawHidden.filter((id) => !nextPinned.includes(id));
 
+        const nextEmojiUsage =
+          body.emojiUsage !== undefined && body.emojiUsage !== null && typeof body.emojiUsage === 'object'
+            ? normalizeEmojiUsageMap(body.emojiUsage)
+            : current.emojiUsage;
+        const nextEmojiUsageBootstrappedAt =
+          typeof body.emojiUsageBootstrappedAt === 'string' && body.emojiUsageBootstrappedAt.trim().length > 0
+            ? body.emojiUsageBootstrappedAt.trim()
+            : current.emojiUsageBootstrappedAt;
+
         const saved = await saveUserSidebarPrefs(fastify, userPrefKey, {
           ...current,
           ...body,
           pinnedIds: nextPinned,
           hiddenIds: nextHidden,
+          ...(nextEmojiUsage !== undefined ? { emojiUsage: nextEmojiUsage } : {}),
+          ...(nextEmojiUsageBootstrappedAt !== undefined
+            ? { emojiUsageBootstrappedAt: nextEmojiUsageBootstrappedAt }
+            : {}),
           readMessageCountByConv: mergedReadMessageCountByConv,
           readAtByConv: {
             ...(current.readAtByConv || {}),

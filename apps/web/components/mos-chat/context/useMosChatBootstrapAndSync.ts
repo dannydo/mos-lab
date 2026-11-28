@@ -6,6 +6,7 @@ import type {
   MosChatMessage,
   MosChatStaffMember,
   MosChatTaskItem,
+  MosChatUserSidebarPrefs,
   MosChatWorkflowInstance,
   MosChatWorkflowTemplate,
 } from '@mos-lab/shared';
@@ -36,6 +37,7 @@ export interface UseMosChatBootstrapAndSyncParams {
   setMobileView: React.Dispatch<React.SetStateAction<MosChatMobileView>>;
   setActiveSubtab: React.Dispatch<React.SetStateAction<MosChatActiveSubtab>>;
   syncAiChatSession: (targetSessionId?: string | null) => Promise<void>;
+  syncServerEmojiPrefs?: (prefs?: MosChatUserSidebarPrefs) => void;
 }
 
 /**
@@ -58,6 +60,7 @@ export function useMosChatBootstrapAndSync({
   setMobileView,
   setActiveSubtab,
   syncAiChatSession,
+  syncServerEmojiPrefs,
 }: UseMosChatBootstrapAndSyncParams) {
   const staffDirectoryHashRef = useRef<string>('');
 
@@ -100,6 +103,9 @@ export function useMosChatBootstrapAndSync({
       }
       if (res?.userPrefs?.pinnedIds) {
         syncServerPinnedPrefs(res.userPrefs.pinnedIds);
+      }
+      if (res?.userPrefs) {
+        syncServerEmojiPrefs?.(res.userPrefs);
       }
       if (res?.unchanged) {
         return;
@@ -147,6 +153,7 @@ export function useMosChatBootstrapAndSync({
     setTasks,
     setWorkflowInstances,
     setWorkflowTemplates,
+    syncServerEmojiPrefs,
     syncServerPinnedPrefs,
   ]);
 

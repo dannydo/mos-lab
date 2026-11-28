@@ -2,12 +2,13 @@
 
 import { useCallback } from 'react';
 import { message as antdMessage } from 'antd';
-import type {
-  MosChatConversation,
-  MosChatMessage,
-  MosChatTaskItem,
-  MosChatThreadMoveMode,
-  SafeAny,
+import {
+  isTrackableChatEmoji,
+  type MosChatConversation,
+  type MosChatMessage,
+  type MosChatTaskItem,
+  type MosChatThreadMoveMode,
+  type SafeAny,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { toggleReactionState, hasUserReacted as hasUserReactedHelper } from '../utils/chat-helpers';
@@ -26,6 +27,7 @@ export interface UseMosChatMessageMutationsParams {
   setReactionUsersTarget: React.Dispatch<React.SetStateAction<MosChatReactionUsersTarget | null>>;
   setTasks: React.Dispatch<React.SetStateAction<MosChatTaskItem[]>>;
   setMobileView: React.Dispatch<React.SetStateAction<MosChatMobileView>>;
+  onRecordEmojiUsed?: (emoji: string) => void;
 }
 
 function mapTargetMessageList(
@@ -52,6 +54,7 @@ export function useMosChatMessageMutations({
   setReactionUsersTarget,
   setTasks,
   setMobileView,
+  onRecordEmojiUsed,
 }: UseMosChatMessageMutationsParams) {
   const currentUserReactionKey = String(currentUser?.id || 'me');
 
@@ -113,6 +116,17 @@ export function useMosChatMessageMutations({
         navigator.vibrate?.(10);
       }
 
+      if (onRecordEmojiUsed && isTrackableChatEmoji(emoji)) {
+        const rootTarget =
+          messages.find((m) => m.id === msgId) || activeConversation?.messages?.find((m) => m.id === msgId);
+        const targetItem = replyId ? rootTarget?.thread?.find((r) => r.id === replyId) : rootTarget;
+        const alreadyReacted = hasUserReactedMsg(targetItem, emoji);
+        const legacyClear = !targetItem?.reactionUsers?.[emoji] && (targetItem?.reactions?.[emoji] || 0) > 0;
+        if (!alreadyReacted && !legacyClear) {
+          onRecordEmojiUsed(emoji);
+        }
+      }
+
       applyReactionToStore(msgId, replyId, (target) => toggleReactionState(target, emoji, currentUserReactionKey));
 
       try {
@@ -129,7 +143,15 @@ export function useMosChatMessageMutations({
         // ignore
       }
     },
-    [activeConvId, applyReactionToStore, currentUserReactionKey]
+    [
+      activeConvId,
+      activeConversation,
+      applyReactionToStore,
+      currentUserReactionKey,
+      hasUserReactedMsg,
+      messages,
+      onRecordEmojiUsed,
+    ]
   );
 
   const togglePinMessage = useCallback(

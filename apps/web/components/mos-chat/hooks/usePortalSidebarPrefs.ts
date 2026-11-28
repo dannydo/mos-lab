@@ -5,6 +5,7 @@ import type { MessageInstance } from 'antd/es/message/interface';
 import type {
   MosChatAccessConfig,
   MosChatConversation,
+  MosChatEmojiUsageEntry,
   MosChatStaffMember,
   MosChatUserSidebarPrefs,
   SafeAny,
@@ -12,6 +13,7 @@ import type {
 import { apiClient } from '../../../lib/api-client';
 import { countConversationSharedWorkspaceItems } from '../components/MosChatFilesPane';
 import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
+import { useChatEmojiUsage } from '../shared/hooks/useChatEmojiUsage';
 import type { MosChatActiveSubtab } from '../types/mos-chat-types';
 import {
   computeSidebarSections,
@@ -120,8 +122,8 @@ export function usePortalSidebarPrefs({
           }
         }
         apiClient.chat
-          .updateUserPrefs(next)
-          .then((res) => {
+          ?.updateUserPrefs?.(next)
+          ?.then((res) => {
             if (res?.userPrefs && typeof window !== 'undefined') {
               try {
                 window.localStorage.setItem(userSidebarPrefsStorageKey, JSON.stringify(res.userPrefs));
@@ -130,12 +132,30 @@ export function usePortalSidebarPrefs({
               }
             }
           })
-          .catch(() => {});
+          ?.catch(() => {});
         return next;
       });
     },
     [userSidebarPrefsStorageKey]
   );
+
+  const handleUpdateEmojiUsage = useCallback(
+    (nextUsage: Record<string, MosChatEmojiUsageEntry>, bootstrappedAt: string) => {
+      updateUserSidebarPrefs((prev) => ({
+        ...prev,
+        emojiUsage: nextUsage,
+        emojiUsageBootstrappedAt: bootstrappedAt,
+      }));
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const { frequentEmojis, desktopQuickReactionEmojis, recordEmojiUsed, recordEmojisFromText, resetEmojiUsage } =
+    useChatEmojiUsage({
+      emojiUsage: userPrefs.emojiUsage,
+      emojiUsageBootstrappedAt: userPrefs.emojiUsageBootstrappedAt,
+      onUpdateEmojiUsage: handleUpdateEmojiUsage,
+    });
 
   const persistAccessConfig = useCallback(
     async (next: MosChatAccessConfig, showToast = false) => {
@@ -378,5 +398,10 @@ export function usePortalSidebarPrefs({
     filteredConversations,
     sortConversationsForSection,
     sidebarSections,
+    frequentEmojis,
+    desktopQuickReactionEmojis,
+    recordEmojiUsed,
+    recordEmojisFromText,
+    resetEmojiUsage,
   };
 }

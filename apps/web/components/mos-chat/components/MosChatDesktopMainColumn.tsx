@@ -286,6 +286,7 @@ export const MosChatDesktopMainColumn: React.FC<MosChatDesktopMainColumnProps> =
           openStickerPopoverKey={msgSending.openStickerPopoverKey}
           setOpenStickerPopoverKey={msgSending.setOpenStickerPopoverKey}
           renderReactionPickerContent={uiAdapters.renderReactionPickerContent}
+          quickReactionEmojis={sidebarPrefs.desktopQuickReactionEmojis}
           handleOpenThread={navActions.handleOpenThread}
           openTaskModalFromMessage={taskModals.openTaskModalFromMessage}
           isStrictDannySuperAdmin={aiAccess.isStrictDannySuperAdmin}

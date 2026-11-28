@@ -83,6 +83,7 @@ export {
 export * from './types/pinned-links.js';
 export * from './types/telesale-target.js';
 export * from './types/mos-chat.js';
+export * from './utils/chat-emoji-frecency.js';
 export * from './utils/chat-checklist-summarizer.js';
 export * from './utils/google-workspace-link.js';
 export * from './utils/phone.js';

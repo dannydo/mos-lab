@@ -17,6 +17,8 @@ export interface MosChatReactionPickerPopoverProps {
   isDark: boolean;
   borderColor: string;
   surfaceRaised: string;
+  frequentEmojis?: readonly string[];
+  onResetFrequentEmojis?: () => void;
   hasUserReacted: (msgObj: MosChatMessage | MosChatThreadReply | undefined, key: string) => boolean;
   setOpenStickerPopoverKey: (key: string | null) => void;
   handleToggleReaction: (msgId: string, emoji: string, replyId?: string) => Promise<void> | void;
@@ -29,6 +31,8 @@ export const MosChatReactionPickerPopover: React.FC<MosChatReactionPickerPopover
   isDark,
   borderColor,
   surfaceRaised,
+  frequentEmojis,
+  onResetFrequentEmojis,
   hasUserReacted,
   setOpenStickerPopoverKey,
   handleToggleReaction,
@@ -39,6 +43,8 @@ export const MosChatReactionPickerPopover: React.FC<MosChatReactionPickerPopover
     surfaceRaised={surfaceRaised}
     wingsSignatureEmojis={WINGS_SIGNATURE_EMOJIS}
     popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
+    frequentEmojis={frequentEmojis}
+    onResetFrequentEmojis={onResetFrequentEmojis}
     defaultPack="emoji"
     mode="reaction"
     hasUserReacted={(key) => hasUserReacted(msgObj, key)}
@@ -59,6 +65,9 @@ export interface MosChatComposerEmojiPickerPopoverProps {
   isDark: boolean;
   borderColor: string;
   surfaceRaised: string;
+  frequentEmojis?: readonly string[];
+  onResetFrequentEmojis?: () => void;
+  onRecordEmojiUsed?: (emoji: string) => void;
   composerInputRef: React.RefObject<HTMLTextAreaElement | null>;
   composerTextRef: React.MutableRefObject<string>;
   updateComposerText: (val: string) => void;
@@ -80,6 +89,9 @@ export const MosChatComposerEmojiPickerPopover: React.FC<MosChatComposerEmojiPic
   isDark,
   borderColor,
   surfaceRaised,
+  frequentEmojis,
+  onResetFrequentEmojis,
+  onRecordEmojiUsed,
   composerInputRef,
   composerTextRef,
   updateComposerText,
@@ -97,9 +109,12 @@ export const MosChatComposerEmojiPickerPopover: React.FC<MosChatComposerEmojiPic
     surfaceRaised={surfaceRaised}
     wingsSignatureEmojis={WINGS_SIGNATURE_EMOJIS}
     popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
+    frequentEmojis={frequentEmojis}
+    onResetFrequentEmojis={onResetFrequentEmojis}
     defaultPack={defaultPack}
     mode="composer"
     onSelectEmoji={(emoji) => {
+      onRecordEmojiUsed?.(emoji);
       if (target === 'main') {
         const el = composerInputRef.current;
         if (el && typeof el.selectionStart === 'number' && typeof el.selectionEnd === 'number') {

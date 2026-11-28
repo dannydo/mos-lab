@@ -115,6 +115,7 @@ export interface MosChatMessageFeedProps {
   handleOpenReactionUsers?: (target: SafeAny, initialEmoji?: string) => void;
   staffDirectory?: MosChatStaffMember[];
   onLoadOlderMessages?: (conversationId: string) => Promise<void> | void;
+  quickReactionEmojis?: readonly string[];
 }
 
 export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
@@ -218,6 +219,7 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
     handleOpenReactionUsers,
     staffDirectory = [],
     onLoadOlderMessages,
+    quickReactionEmojis,
   }) => {
     const [openMoreMenuMsgId, setOpenMoreMenuMsgId] = useState<string | null>(null);
     const [loadingOlderConvId, setLoadingOlderConvId] = useState<string | null>(null);
@@ -424,6 +426,7 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                 accessibleConversationIds={accessibleConversationIds}
                 onJumpToForwardedSource={onJumpToForwardedSource}
                 handleOpenReactionUsers={handleOpenReactionUsers}
+                quickReactionEmojis={quickReactionEmojis}
               />
             );
           })}
@@ -487,7 +490,8 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
       prev.threadOpen === next.threadOpen &&
       prev.activeThreadMessage === next.activeThreadMessage &&
       prev.isDraggingOver === next.isDraggingOver &&
-      prev.getMemberNickname === next.getMemberNickname
+      prev.getMemberNickname === next.getMemberNickname &&
+      prev.quickReactionEmojis === next.quickReactionEmojis
     );
   }
 );

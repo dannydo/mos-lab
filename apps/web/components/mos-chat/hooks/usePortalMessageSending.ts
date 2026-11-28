@@ -65,6 +65,7 @@ export interface UsePortalMessageSendingParams {
   notifyLivePeers: () => void;
   scrollToChatBottom: (target?: 'main' | 'thread' | { dockConvId: string }, behavior?: ScrollBehavior) => void;
   cleanQuotedText: (txt?: string | null) => string;
+  onRecordEmojisFromText?: (text?: string | null) => void;
   antdMessage: MessageInstance;
 }
 
@@ -109,6 +110,7 @@ export function usePortalMessageSending({
   notifyLivePeers,
   scrollToChatBottom,
   cleanQuotedText,
+  onRecordEmojisFromText,
   antdMessage,
 }: UsePortalMessageSendingParams) {
   const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
@@ -147,6 +149,7 @@ export function usePortalMessageSending({
       return;
     }
     lastSentRef.current = { text, time: now };
+    onRecordEmojisFromText?.(text);
 
     const senderName = currentUser?.displayName || currentUser?.username || 'Danny Do';
     const optimisticMsg = buildOptimisticChatMessage({
@@ -327,6 +330,7 @@ export function usePortalMessageSending({
     if ((!text && attachmentsToSend.length === 0 && !cardToSend) || !activeConversation || !targetMsgId) return;
     if (hasActiveUploadsForScope?.('thread'))
       return void antdMessage.warning('Video đang được tải lên, vui lòng đợi hoàn tất.');
+    onRecordEmojisFromText?.(text);
 
     if (activeThreadMsgId !== targetMsgId) {
       setActiveThreadMsgId(targetMsgId);

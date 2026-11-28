@@ -172,4 +172,5 @@ export interface MosChatThreadDrawerProps {
   handleOpenForwardModal?: (m: MosChatMessage, reply?: MosChatThreadReply | null) => void;
   accessibleConversationIds?: Set<string>;
   onJumpToForwardedSource?: (sourceConversationId: string, sourceMessageId: string) => void;
+  quickReactionEmojis?: readonly string[];
 }

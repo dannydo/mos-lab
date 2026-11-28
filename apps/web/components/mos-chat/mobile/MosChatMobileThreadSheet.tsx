@@ -76,6 +76,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
     stoppedReadersByMsgId,
     openSeenUsersSheetForReply,
     openSeenUsersSheetForMessage,
+    frequentEmojis,
+    quickReactionEmojis,
+    recordEmojiUsed,
+    resetEmojiUsage,
   } = useMosChat();
 
   const [text, setText] = useState<string>('');
@@ -618,6 +622,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         sendThreadReply={sendThreadReply}
         handleSelectSticker={handleSelectSticker}
         handleSend={handleSend}
+        frequentEmojis={frequentEmojis}
+        quickReactionEmojis={quickReactionEmojis}
+        onRecordEmojiUsed={recordEmojiUsed}
+        onResetFrequentEmojis={resetEmojiUsage}
       />
     </div>
   );

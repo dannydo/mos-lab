@@ -88,6 +88,9 @@ interface MobileAppModalsAndSheetsProps {
   spaceConfigModalOpen: boolean;
   setSpaceConfigModalOpen: (open: boolean) => void;
   spaceMembersModalOpen: boolean;
+  frequentEmojis?: readonly string[];
+  onRecordEmojiUsed?: (emoji: string) => void;
+  onResetFrequentEmojis?: () => void;
   setSpaceMembersModalOpen: (open: boolean) => void;
   pushModalOpen: boolean;
   setPushModalOpen: (open: boolean) => void;
@@ -188,6 +191,9 @@ export const MobileAppModalsAndSheets: React.FC<MobileAppModalsAndSheetsProps> =
   setStickerPickerOpen,
   stickerPickerInitialPack,
   setStickerPickerInitialPack,
+  frequentEmojis,
+  onRecordEmojiUsed,
+  onResetFrequentEmojis,
   editingMessage,
   setEditingMessage,
   movingMsgForThread,
@@ -345,8 +351,11 @@ export const MobileAppModalsAndSheets: React.FC<MobileAppModalsAndSheetsProps> =
         open={stickerPickerOpen}
         onClose={() => setStickerPickerOpen(false)}
         initialPack={stickerPickerInitialPack}
+        frequentEmojis={frequentEmojis}
+        onResetFrequentEmojis={onResetFrequentEmojis}
         onSelectSticker={handleSelectSticker}
         onSelectEmoji={(emoji) => {
+          onRecordEmojiUsed?.(emoji);
           setComposerText((prev) => `${prev}${emoji}`);
         }}
         currentText={composerText}
